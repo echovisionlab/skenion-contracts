@@ -17,6 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+        with:
+          repository: echovisionlab/skenion-examples
+          path: .deps/skenion-examples
       - uses: bufbuild/buf-setup-action@v1.50.0
       - uses: pnpm/action-setup@v6
         with:
@@ -27,3 +31,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run ci
+      - run: node scripts/validate-with-contracts.mjs
+        working-directory: .deps/skenion-examples
+        env:
+          SKENION_CONTRACTS_PACKAGE: ../../packages/ts/dist
