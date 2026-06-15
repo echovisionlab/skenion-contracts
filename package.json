@@ -6,7 +6,9 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.12.4",
   "scripts": {
-    "ci": "pnpm lint",
+    "ci": "pnpm lint && pnpm --filter @skenion/contracts run ci",
+    "build": "pnpm --filter @skenion/contracts run build",
+    "test": "pnpm --filter @skenion/contracts run test",
     "lint": "pnpm lint:buf && pnpm lint:json",
     "lint:buf": "buf format --diff --exit-code && buf lint",
     "lint:json": "node scripts/validate-json.mjs"

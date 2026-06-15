@@ -1,0 +1,39 @@
+{
+  "name": "@skenion/contracts",
+  "version": "0.1.0",
+  "description": "Skenion contract schemas and validators",
+  "type": "module",
+  "license": "Apache-2.0",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./graph/v0.1/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
+    },
+    "./node/v0.1/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run generate && tsc -p tsconfig.json",
+    "ci": "pnpm run build && pnpm run test",
+    "generate": "node scripts/generate-schemas.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
