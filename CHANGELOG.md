@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.3.0...skenion-contracts-v0.3.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* align runtime HTTP OpenAPI with local control API ([f7d5bbc](https://github.com/echovisionlab/skenion-contracts/commit/f7d5bbc7e5df2de4ab1b312b5682189821a90e67))
+
 ## [0.3.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.2.1...skenion-contracts-v0.3.0) (2026-06-15)
 
 
