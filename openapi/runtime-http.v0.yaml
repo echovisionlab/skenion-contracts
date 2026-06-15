@@ -71,6 +71,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeApiResponse"
+  /v0/session:
+    get:
+      summary: Return the current local runtime session state.
+      responses:
+        "200":
+          description: Current session state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeSessionResponse"
+    delete:
+      summary: Clear the current local runtime session.
+      responses:
+        "200":
+          description: Cleared session state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeSessionResponse"
+  /v0/session/load:
+    post:
+      summary: Validate and load a project payload into the local runtime session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "200":
+          description: Session state after load attempt.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeSessionResponse"
+  /v0/session/validate:
+    post:
+      summary: Validate the currently loaded local runtime session.
+      responses:
+        "200":
+          description: Session validation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeSessionResponse"
+  /v0/session/plan:
+    post:
+      summary: Build an execution plan for the currently loaded local runtime session.
+      responses:
+        "200":
+          description: Session planning result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeSessionResponse"
+  /v0/session/run:
+    post:
+      summary: Run a dummy execution from the currently loaded local runtime session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionRunRequest"
+      responses:
+        "200":
+          description: Session dummy execution result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeSessionResponse"
 components:
   schemas:
     HealthResponse:
@@ -108,7 +179,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -151,6 +222,51 @@ components:
           anyOf:
             - $ref: "#/components/schemas/DummyExecutionReport"
             - type: "null"
+    RuntimeSessionResponse:
+      type: object
+      required:
+        - ok
+        - loaded
+        - graphId
+        - graphRevision
+        - sessionRevision
+        - diagnostics
+        - plan
+        - report
+      properties:
+        ok:
+          type: boolean
+        loaded:
+          type: boolean
+        graphId:
+          anyOf:
+            - type: string
+            - type: "null"
+        graphRevision:
+          anyOf:
+            - type: string
+            - type: "null"
+        sessionRevision:
+          type: integer
+          minimum: 0
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+        plan:
+          anyOf:
+            - $ref: "#/components/schemas/ExecutionPlan"
+            - type: "null"
+        report:
+          anyOf:
+            - $ref: "#/components/schemas/DummyExecutionReport"
+            - type: "null"
+    SessionRunRequest:
+      type: object
+      properties:
+        frames:
+          type: integer
+          minimum: 0
     RuntimeDiagnostic:
       type: object
       required:
