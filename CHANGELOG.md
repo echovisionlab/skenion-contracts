@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.2.0...skenion-contracts-v0.2.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **contracts:** align package release versioning ([#2](https://github.com/echovisionlab/skenion-contracts/issues/2)) ([e94b352](https://github.com/echovisionlab/skenion-contracts/commit/e94b3527816ca026a600980d96dadfcf24c3f92e))
+
 ## [0.2.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.1.0...skenion-contracts-v0.2.0) (2026-06-15)
 
 
