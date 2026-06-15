@@ -1,0 +1,15 @@
+{
+  "name": "@skenion/contracts-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Skenion contracts workspace",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.12.4",
+  "scripts": {
+    "ci": "pnpm lint",
+    "lint": "pnpm lint:buf && pnpm lint:json",
+    "lint:buf": "buf format --diff --exit-code && buf lint",
+    "lint:json": "node scripts/validate-json.mjs"
+  },
+  "devDependencies": {}
+}

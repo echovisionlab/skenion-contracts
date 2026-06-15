@@ -1,0 +1,8 @@
+version: v2
+plugins:
+  - remote: buf.build/bufbuild/es:v2.2.5
+    out: packages/ts/src/generated
+    opt:
+      - target=ts
+  - remote: buf.build/community/neoeinstein-prost:v0.4.0
+    out: crates/rust/src/generated

@@ -1,0 +1,21 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.0.0",
+  "id": "minimal",
+  "revision": "rev_0001",
+  "nodes": [
+    {
+      "id": "time_1",
+      "kind": "time",
+      "params": {}
+    },
+    {
+      "id": "value_1",
+      "kind": "value",
+      "params": {
+        "value": 1
+      }
+    }
+  ],
+  "edges": []
+}

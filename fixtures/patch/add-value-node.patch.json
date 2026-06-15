@@ -1,0 +1,17 @@
+{
+  "schema": "skenion.graph.patch",
+  "schemaVersion": "0.0.0",
+  "baseRevision": "rev_0001",
+  "ops": [
+    {
+      "op": "add_node",
+      "node": {
+        "id": "value_2",
+        "kind": "value",
+        "params": {
+          "value": 2
+        }
+      }
+    }
+  ]
+}

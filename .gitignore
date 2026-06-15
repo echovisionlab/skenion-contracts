@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+packages/ts/src/generated/
+crates/rust/src/generated/
+target/
+dist/
+build/
+.env
+.env.*
+!.env.example

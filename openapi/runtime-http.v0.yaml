@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Skenion Runtime HTTP API
+  version: 0.0.0
+paths:
+  /health:
+    get:
+      summary: Return runtime health.
+      responses:
+        "200":
+          description: Runtime is reachable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+  /snapshots/latest:
+    get:
+      summary: Return the latest preview snapshot.
+      responses:
+        "200":
+          description: Latest preview snapshot.
+          content:
+            image/png:
+              schema:
+                type: string
+                contentEncoding: base64
