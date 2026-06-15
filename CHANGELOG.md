@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.3.1...skenion-contracts-v0.4.0) (2026-06-15)
+
+
+### Features
+
+* **contracts:** document runtime session API ([1bd1584](https://github.com/echovisionlab/skenion-contracts/commit/1bd1584ab3c9dc2590e1017a536d4ebeddb244e2))
+
 ## [0.3.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.3.0...skenion-contracts-v0.3.1) (2026-06-15)
 
 
