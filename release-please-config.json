@@ -8,6 +8,11 @@
           "type": "json",
           "path": "packages/ts/package.json",
           "jsonpath": "$.version"
+        },
+        {
+          "type": "toml",
+          "path": "packages/rust/Cargo.toml",
+          "jsonpath": "$.package.version"
         }
       ]
     }
