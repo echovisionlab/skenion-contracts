@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.2.1...skenion-contracts-v0.3.0) (2026-06-15)
+
+
+### Features
+
+* **contracts:** add rust contract package ([#5](https://github.com/echovisionlab/skenion-contracts/issues/5)) ([dc6d8c5](https://github.com/echovisionlab/skenion-contracts/commit/dc6d8c5ac8fd0dd2724b155533a8ef94f75af428))
+
 ## [0.2.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.2.0...skenion-contracts-v0.2.1) (2026-06-15)
 
 
