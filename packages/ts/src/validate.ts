@@ -25,13 +25,11 @@ const ajv = new Ajv2020({ allErrors: true });
 const graphV01Validator = ajv.compile(graphV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 
-function schemaErrors(errors: ErrorObject[] | null | undefined): string[] {
-  return (
-    errors?.map((error) => {
-      const path = error.instancePath || "/";
-      return `${path} ${error.message}`;
-    }) ?? ["schema validation failed"]
-  );
+function schemaErrors(errors: ErrorObject[]): string[] {
+  return errors.map((error) => {
+    const path = error.instancePath || "/";
+    return `${path} ${error.message}`;
+  });
 }
 
 function duplicateErrors(values: string[], label: string): string[] {
@@ -146,7 +144,7 @@ function validateNodeDefinitionV01Semantics(definition: NodeDefinitionManifestV0
 
 export function validateGraphDocument(document: unknown): ValidationResult<GraphDocumentV01> {
   if (!graphV01Validator(document)) {
-    return { ok: false, errors: schemaErrors(graphV01Validator.errors) };
+    return { ok: false, errors: schemaErrors(graphV01Validator.errors as ErrorObject[]) };
   }
 
   const graph = document as GraphDocumentV01;
@@ -162,7 +160,7 @@ export function validateNodeDefinition(
   document: unknown
 ): ValidationResult<NodeDefinitionManifestV01> {
   if (!nodeDefinitionV01Validator(document)) {
-    return { ok: false, errors: schemaErrors(nodeDefinitionV01Validator.errors) };
+    return { ok: false, errors: schemaErrors(nodeDefinitionV01Validator.errors as ErrorObject[]) };
   }
 
   const definition = document as NodeDefinitionManifestV01;

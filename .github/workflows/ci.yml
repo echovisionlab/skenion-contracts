@@ -38,3 +38,6 @@ jobs:
       - run: cargo fmt --check --manifest-path packages/rust/Cargo.toml
       - run: cargo clippy --manifest-path packages/rust/Cargo.toml --all-targets --all-features -- -D warnings
       - run: cargo test --manifest-path packages/rust/Cargo.toml --all-targets --all-features
+      - run: rustup component add llvm-tools-preview
+      - run: cargo install cargo-llvm-cov --locked
+      - run: cargo llvm-cov --manifest-path packages/rust/Cargo.toml --all-targets --all-features --fail-under-lines 100 --fail-under-functions 100

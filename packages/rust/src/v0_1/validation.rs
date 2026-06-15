@@ -237,6 +237,7 @@ pub fn validate_graph_document_v01(graph: &GraphDocumentV01) -> Result<(), Valid
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::v0_1::{NumberRangeV01, StringOrStringsV01};
 
     fn node_definition(json: &str) -> NodeDefinitionManifestV01 {
         serde_json::from_str(json).expect("node definition fixture should parse")
@@ -248,6 +249,65 @@ mod tests {
 
     fn error_text(report: &ValidationReportV01) -> String {
         report.to_string()
+    }
+
+    fn value_type(data_kind: &str) -> DataTypeV01 {
+        DataTypeV01 {
+            flow: DataFlowV01::Value,
+            data_kind: data_kind.to_owned(),
+            unit: None,
+            range: None,
+            shape: None,
+            channels: None,
+            sample_rate: None,
+            format: None,
+            color_space: None,
+            frame_rate: None,
+            alpha_policy: None,
+            values: None,
+        }
+    }
+
+    #[test]
+    fn exposes_report_errors_and_string_list_values() {
+        let report = ValidationReportV01::new(vec![ValidationErrorV01::new("one")]);
+        let formats = StringOrStringsV01::Many(vec!["rgba8".to_owned(), "bgra8".to_owned()]);
+
+        assert_eq!(report.errors()[0].message, "one");
+        assert_eq!(formats.values(), vec!["rgba8", "bgra8"]);
+    }
+
+    #[test]
+    fn labels_all_data_flows_and_accepts_format_constraints() {
+        for (flow, expected) in [
+            (DataFlowV01::Value, "value<number.f32>"),
+            (DataFlowV01::Event, "event<number.f32>"),
+            (DataFlowV01::Signal, "signal<number.f32>"),
+            (DataFlowV01::Stream, "stream<number.f32>"),
+            (DataFlowV01::Resource, "resource<number.f32>"),
+        ] {
+            let mut data_type = value_type("number.f32");
+            data_type.flow = flow;
+            assert_eq!(type_label_v01(&data_type), expected);
+        }
+
+        let mut source = value_type("texture");
+        let mut target = value_type("texture");
+        target.format = Some(StringOrStringsV01::One("rgba8".to_owned()));
+        assert!(compatible_data_types_v01(&source, &target));
+
+        source.format = Some(StringOrStringsV01::Many(vec!["rgba8".to_owned()]));
+        assert!(compatible_data_types_v01(&source, &target));
+
+        source.range = Some(NumberRangeV01 {
+            min: Some(0.0),
+            max: Some(1.0),
+            step: Some(0.1),
+        });
+        assert_eq!(
+            source.range.as_ref().and_then(|range| range.step),
+            Some(0.1)
+        );
     }
 
     #[test]
@@ -366,6 +426,30 @@ mod tests {
     }
 
     #[test]
+    fn rejects_node_definition_schema_mismatches() {
+        let definition = node_definition(
+            r#"{
+              "schema": "wrong.node.definition",
+              "schemaVersion": "9.9.9",
+              "id": "script.schema",
+              "version": "0.1.0",
+              "displayName": "Schema",
+              "category": "Script",
+              "ports": [],
+              "execution": { "model": "script_control" },
+              "state": { "persistent": false },
+              "permissions": [],
+              "capabilities": []
+            }"#,
+        );
+
+        let error =
+            validate_node_definition_v01(&definition).expect_err("schema mismatch should fail");
+        assert!(error_text(&error).contains("expected schema skenion.node.definition"));
+        assert!(error_text(&error).contains("expected schemaVersion 0.1.0"));
+    }
+
+    #[test]
     fn accepts_valid_event_bang_graph() {
         let graph = graph_document(
             r#"{
@@ -400,6 +484,55 @@ mod tests {
         );
 
         validate_graph_document_v01(&graph).expect("graph should be valid");
+    }
+
+    #[test]
+    fn rejects_graph_schema_mismatches() {
+        let graph = graph_document(
+            r#"{
+              "schema": "wrong.graph",
+              "schemaVersion": "9.9.9",
+              "id": "schema",
+              "revision": "1",
+              "nodes": [],
+              "edges": []
+            }"#,
+        );
+
+        let error = validate_graph_document_v01(&graph).expect_err("schema mismatch should fail");
+        assert!(error_text(&error).contains("expected schema skenion.graph"));
+        assert!(error_text(&error).contains("expected schemaVersion 0.1.0"));
+    }
+
+    #[test]
+    fn rejects_missing_source_and_non_input_target_edges() {
+        let graph = graph_document(
+            r#"{
+              "schema": "skenion.graph",
+              "schemaVersion": "0.1.0",
+              "id": "edge-errors",
+              "revision": "1",
+              "nodes": [
+                {
+                  "id": "source",
+                  "kind": "core.source",
+                  "kindVersion": "0.1.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+                  ]
+                }
+              ],
+              "edges": [
+                { "from": { "node": "source", "port": "missing" }, "to": { "node": "source", "port": "out" } },
+                { "from": { "node": "source", "port": "out" }, "to": { "node": "source", "port": "out" } }
+              ]
+            }"#,
+        );
+
+        let error = validate_graph_document_v01(&graph).expect_err("edge errors should fail");
+        assert!(error_text(&error).contains("edge references missing source port source:missing"));
+        assert!(error_text(&error).contains("edge target source:out is not an input port"));
     }
 
     #[test]
