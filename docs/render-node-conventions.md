@@ -88,6 +88,22 @@ Node definition:
   "category": "Render",
   "ports": [
     {
+      "id": "u_value",
+      "direction": "input",
+      "label": "u_value",
+      "type": {
+        "flow": "value",
+        "dataKind": "f32",
+        "range": {
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
       "id": "out",
       "direction": "output",
       "label": "Out",
@@ -127,6 +143,12 @@ Rules:
 - `language` must be `"wgsl"` in v0.12.
 - `source` must be a non-empty WGSL module.
 - `source` must provide `vs_main` and `fs_main` entry points.
+- `u_value` is an optional latched `value<f32>` input in the inclusive
+  `0.0..1.0` range.
+- If `u_value` is not connected, runtimes should provide `0.0`.
+- v0.2 node-definition metadata should expose `u_value` as a cold control-rate
+  `value.number` input with `maxConnections: 1`, `mergePolicy: "forbid"`,
+  `triggerMode: "cold"`, `latch: true`, and `required: false`.
 - Runtime may reject invalid shader source.
 - Shader compile or render errors should be surfaced through preview telemetry
   and Runtime diagnostics.
@@ -137,18 +159,41 @@ selected by wiring `render.fullscreen-shader:out` into `render.output:in`.
 
 ### WGSL ABI
 
-Skenion v0.12 exposes a single frame uniform at group 0 binding 0:
+Skenion exposes a single frame uniform at group 0 binding 0. The conceptual ABI
+is:
 
 ```wgsl
 struct SkenionFrame {
   resolution: vec2<f32>,
   time: f32,
+  u_value: f32,
   frame: u32,
 }
 
 @group(0) @binding(0)
 var<uniform> skenion: SkenionFrame;
 ```
+
+The current physical WGSL layout should include explicit padding so it matches
+the 32-byte Runtime uniform buffer:
+
+```wgsl
+struct SkenionFrame {
+  resolution: vec2<f32>,
+  time: f32,
+  u_value: f32,
+  frame: u32,
+  _pad0: u32,
+  _pad1: u32,
+  _pad2: u32,
+}
+
+@group(0) @binding(0)
+var<uniform> skenion: SkenionFrame;
+```
+
+Existing shaders that only declare `resolution`, `time`, and `frame` remain
+valid as long as they do not read `u_value`.
 
 The preview renderer calls:
 
@@ -162,7 +207,11 @@ The default example is:
 struct SkenionFrame {
   resolution: vec2<f32>,
   time: f32,
+  u_value: f32,
   frame: u32,
+  _pad0: u32,
+  _pad1: u32,
+  _pad2: u32,
 }
 
 @group(0) @binding(0)
@@ -188,16 +237,17 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOut {
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
   return vec4<f32>(
-    0.5 + 0.5 * sin(skenion.time),
+    skenion.u_value,
     0.2,
-    0.8,
+    1.0 - skenion.u_value,
     1.0
   );
 }
 ```
 
-The ABI is intentionally small. Do not add mouse, audio, textures, MIDI, custom
-uniforms, or asset-backed shader source to this node convention yet.
+The ABI is intentionally small. Do not add mouse, audio, textures, MIDI,
+additional custom uniforms, or asset-backed shader source to this node
+convention yet.
 
 ## `render.output`
 
