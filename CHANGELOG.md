@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.5.1...skenion-contracts-v0.6.0) (2026-06-16)
+
+
+### Features
+
+* **graph-history:** define patch event history ([#16](https://github.com/echovisionlab/skenion-contracts/issues/16)) ([57ad227](https://github.com/echovisionlab/skenion-contracts/commit/57ad227196fc6a9cb809dc46abc62b74d14f4d98))
+
 ## [0.5.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.5.0...skenion-contracts-v0.5.1) (2026-06-16)
 
 
