@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.6.0...skenion-contracts-v0.7.0) (2026-06-16)
+
+
+### Features
+
+* **preview-protocol:** document local preview lifecycle API ([6580373](https://github.com/echovisionlab/skenion-contracts/commit/6580373c0986e1c5c998e3e59321f12543ba163e))
+
 ## [0.6.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.5.1...skenion-contracts-v0.6.0) (2026-06-16)
 
 
