@@ -20,7 +20,19 @@ Node definition:
   "version": "0.1.0",
   "displayName": "Clear Color",
   "category": "Render",
-  "ports": [],
+  "ports": [
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Out",
+      "type": {
+        "flow": "resource",
+        "dataKind": "gpu.texture2d",
+        "format": "rgba8unorm",
+        "colorSpace": "srgb"
+      }
+    }
+  ],
   "execution": {
     "model": "gpu_pass",
     "clock": "frame"
@@ -54,8 +66,9 @@ Rules:
 - The color space is intentionally simple for v0.1; do not add color
   management fields to the graph schema for this node.
 
-`render.clear-color` has no ports in v0.1. It is a frame-clocked GPU pass that
-clears the local preview output.
+`render.clear-color` is a frame-clocked GPU pass that produces a
+`resource<gpu.texture2d>` output. Starting in v0.13, preview output should be
+selected by wiring `render.clear-color:out` into `render.output:in`.
 
 ## `render.fullscreen-shader`
 
@@ -73,7 +86,19 @@ Node definition:
   "version": "0.1.0",
   "displayName": "Fullscreen Shader",
   "category": "Render",
-  "ports": [],
+  "ports": [
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Out",
+      "type": {
+        "flow": "resource",
+        "dataKind": "gpu.texture2d",
+        "format": "rgba8unorm",
+        "colorSpace": "srgb"
+      }
+    }
+  ],
   "execution": {
     "model": "gpu_pass",
     "clock": "frame"
@@ -106,8 +131,9 @@ Rules:
 - Shader compile or render errors should be surfaced through preview telemetry
   and Runtime diagnostics.
 
-`render.fullscreen-shader` has no ports in v0.12. It is a frame-clocked GPU pass
-that renders a fullscreen triangle into the local preview output.
+`render.fullscreen-shader` is a frame-clocked GPU pass that produces a
+`resource<gpu.texture2d>` output. Starting in v0.13, preview output should be
+selected by wiring `render.fullscreen-shader:out` into `render.output:in`.
 
 ### WGSL ABI
 
@@ -172,6 +198,59 @@ fn fs_main() -> @location(0) vec4<f32> {
 
 The ABI is intentionally small. Do not add mouse, audio, textures, MIDI, custom
 uniforms, or asset-backed shader source to this node convention yet.
+
+## `render.output`
+
+`render.output` is the explicit final preview output selector. It lets Studio
+and Runtime agree on which render node feeds the local preview surface instead
+of relying on first-matching render node scans.
+
+Node definition:
+
+```json
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "render.output",
+  "version": "0.1.0",
+  "displayName": "Render Output",
+  "category": "Render",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": {
+        "flow": "resource",
+        "dataKind": "gpu.texture2d",
+        "format": "rgba8unorm",
+        "colorSpace": "srgb"
+      },
+      "activation": "latched"
+    }
+  ],
+  "execution": {
+    "model": "frame",
+    "clock": "frame"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "render.output.surface"
+  ]
+}
+```
+
+Rules:
+
+- `render.output` selects the final local preview surface source.
+- `render.output:in` accepts `resource<gpu.texture2d>` render outputs.
+- v0.13 supports one effective output. If multiple `render.output` nodes exist,
+  runtimes should select deterministically and report a diagnostic.
+- If no `render.output` node exists, runtimes may use legacy render node
+  selection for backward compatibility and should surface a diagnostic.
 
 ## Preview Document
 
