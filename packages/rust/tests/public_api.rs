@@ -1,7 +1,7 @@
 use skenion_contracts::{
     ApplyPatchErrorV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphPatchOperationV01,
-    GraphPatchV01, NodeDefinitionManifestV01, StringOrStringsV01, apply_graph_patch_v01,
-    compatible_data_types_v01, type_label_v01, validate_graph_document_v01,
+    GraphPatchV01, NodeDefinitionManifestV01, NumberRangeV01, StringOrStringsV01,
+    apply_graph_patch_v01, compatible_data_types_v01, type_label_v01, validate_graph_document_v01,
     validate_node_definition_v01,
 };
 
@@ -20,6 +20,53 @@ fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
         alpha_policy: None,
         values: None,
     }
+}
+
+#[test]
+fn serializes_optional_contract_fields_as_absent() {
+    let mut number = data_type(DataFlowV01::Value, "number.f32");
+    number.range = Some(NumberRangeV01 {
+        min: Some(0.0),
+        max: None,
+        step: None,
+    });
+    let serialized_type = serde_json::to_value(&number).expect("type should serialize");
+
+    assert_eq!(
+        serialized_type,
+        serde_json::json!({
+            "flow": "value",
+            "dataKind": "number.f32",
+            "range": { "min": 0.0 }
+        })
+    );
+
+    let graph: GraphDocumentV01 = serde_json::from_str(
+        r#"{
+          "schema": "skenion.graph",
+          "schemaVersion": "0.1.0",
+          "id": "serialize-graph",
+          "revision": "1",
+          "nodes": [
+            {
+              "id": "source",
+              "kind": "core.slider",
+              "kindVersion": "0.1.0",
+              "params": {},
+              "ports": [
+                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+              ]
+            }
+          ],
+          "edges": []
+        }"#,
+    )
+    .expect("graph should parse");
+    let serialized_graph = serde_json::to_string(&graph).expect("graph should serialize");
+
+    assert!(!serialized_graph.contains("null"));
+    assert!(serialized_graph.contains(r#""dataKind":"number.f32""#));
+    assert!(validate_graph_document_v01(&graph).is_ok());
 }
 
 #[test]

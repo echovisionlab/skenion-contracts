@@ -12,8 +12,11 @@ pub struct GraphPatchV01 {
     pub schema_version: String,
     pub id: String,
     pub base_revision: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub client_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub created_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub ops: Vec<GraphPatchOperationV01>,
 }

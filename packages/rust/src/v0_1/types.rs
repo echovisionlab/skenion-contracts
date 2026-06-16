@@ -42,8 +42,11 @@ pub enum ExecutionModelV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NumberRangeV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub min: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub step: Option<f64>,
 }
 
@@ -69,15 +72,25 @@ impl StringOrStringsV01 {
 pub struct DataTypeV01 {
     pub flow: DataFlowV01,
     pub data_kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub range: Option<NumberRangeV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shape: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub channels: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sample_rate: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub format: Option<StringOrStringsV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color_space: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub frame_rate: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub alpha_policy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub values: Option<Vec<Value>>,
 }
 
@@ -86,11 +99,15 @@ pub struct DataTypeV01 {
 pub struct PortV01 {
     pub id: String,
     pub direction: PortDirectionV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
     #[serde(rename = "type")]
     pub data_type: DataTypeV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub required: Option<bool>,
     #[serde(rename = "default")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_value: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub activation: Option<PortActivationV01>,
 }
