@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.4.0...skenion-contracts-v0.5.0) (2026-06-16)
+
+
+### Features
+
+* **graph-schema:** define graph patch v0.1 ([9889008](https://github.com/echovisionlab/skenion-contracts/commit/98890089b9315dcd802ddf367cefc17d8e9a0169))
+
 ## [0.4.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.3.1...skenion-contracts-v0.4.0) (2026-06-15)
 
 
