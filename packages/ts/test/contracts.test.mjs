@@ -8,13 +8,18 @@ import {
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
   graphV01Schema,
+  graphV02Schema,
   invertGraphPatch,
   nodeDefinitionV01Schema,
+  nodeDefinitionV02Schema,
+  analyzeGraphDocumentV02,
   validateGraphPatchEvent,
   validateGraphPatchHistory,
   validateGraphPatch,
   validateGraphDocument,
-  validateNodeDefinition
+  validateGraphDocumentV02,
+  validateNodeDefinition,
+  validateNodeDefinitionV02
 } from "../dist/index.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
@@ -189,6 +194,194 @@ test("rejects unsupported permissions in node manifests", async () => {
 
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /unsupported permission/);
+});
+
+test("exports and validates v0.2 graph and node schemas", async () => {
+  assert.equal(graphV02Schema.properties.schemaVersion.const, "0.2.0");
+  assert.equal(nodeDefinitionV02Schema.properties.schemaVersion.const, "0.2.0");
+
+  const graph = await readJson("fixtures/graph/v0.2/valid/render-output.graph.json");
+  const node = await readJson("fixtures/node/v0.2/valid/render-clear-color.node.json");
+
+  assert.equal(validateGraphDocumentV02(graph).ok, true);
+  assert.equal(validateNodeDefinitionV02(node).ok, true);
+});
+
+test("v0.2 validates fan-out, fan-in, accepts, and feedback fixtures", async () => {
+  for (const fixture of [
+    "fixtures/graph/v0.2/valid/zero-port-node.graph.json",
+    "fixtures/graph/v0.2/valid/n-input-output-node.graph.json",
+    "fixtures/graph/v0.2/valid/source-fan-out.graph.json",
+    "fixtures/graph/v0.2/valid/ordered-event-fan-in.graph.json",
+    "fixtures/graph/v0.2/valid/audio-mix-fan-in.graph.json",
+    "fixtures/graph/v0.2/valid/render-frame-feedback.graph.json"
+  ]) {
+    const result = validateGraphDocumentV02(await readJson(fixture));
+    assert.equal(result.ok, true, fixture);
+  }
+
+  const feedbackGraph = await readJson("fixtures/graph/v0.2/valid/render-frame-feedback.graph.json");
+  const feedbackAnalysis = analyzeGraphDocumentV02(feedbackGraph);
+  assert.equal(feedbackAnalysis.ok, true);
+  assert.equal(feedbackAnalysis.cycles[0].classification, "valid-feedback");
+  assert.match(feedbackAnalysis.cycles[0].message, /render-frame|explicit boundary/);
+
+  feedbackGraph.edges[0].feedback.boundary = "same-turn";
+  const riskyAnalysis = analyzeGraphDocumentV02(feedbackGraph);
+  assert.equal(riskyAnalysis.ok, true);
+  assert.equal(riskyAnalysis.diagnostics[0].severity, "warning");
+  assert.equal(riskyAnalysis.cycles[0].classification, "risky-feedback");
+
+  delete feedbackGraph.edges[0].feedback;
+  const invalidCycle = analyzeGraphDocumentV02(feedbackGraph);
+  assert.equal(invalidCycle.ok, false);
+  assert.equal(invalidCycle.cycles[0].classification, "invalid-cycle");
+});
+
+test("v0.2 rejects invalid direction fan-in and algebraic-loop fixtures", async () => {
+  const cases = [
+    ["fixtures/graph/v0.2/invalid/input-to-input-edge.graph.json", /invalid-source-direction/],
+    ["fixtures/graph/v0.2/invalid/output-to-output-edge.graph.json", /invalid-target-direction/],
+    ["fixtures/graph/v0.2/invalid/fan-in-without-merge-policy.graph.json", /fan-in-without-merge-policy/],
+    ["fixtures/graph/v0.2/invalid/render-input-fan-in-default.graph.json", /fan-in-cardinality/],
+    ["fixtures/graph/v0.2/invalid/ambiguous-value-algebraic-loop.graph.json", /ambiguous-algebraic-loop/]
+  ];
+
+  for (const [fixture, expected] of cases) {
+    const result = validateGraphDocumentV02(await readJson(fixture));
+    assert.equal(result.ok, false, fixture);
+    assert.match(result.errors.join("\n"), expected, fixture);
+  }
+
+  const controlLoop = await readJson("fixtures/graph/v0.2/invalid/ambiguous-value-algebraic-loop.graph.json");
+  for (const node of controlLoop.nodes) {
+    for (const port of node.ports) {
+      port.type = "control.number";
+    }
+  }
+  const controlLoopResult = validateGraphDocumentV02(controlLoop);
+  assert.equal(controlLoopResult.ok, false);
+  assert.match(controlLoopResult.errors.join("\n"), /ambiguous-algebraic-loop/);
+
+  const missingPortCycle = await readJson("fixtures/graph/v0.2/valid/zero-port-node.graph.json");
+  missingPortCycle.edges.push({
+    id: "edge_missing_cycle",
+    source: { nodeId: "note_1", portId: "missing_out" },
+    target: { nodeId: "note_1", portId: "missing_in" }
+  });
+  const missingPortCycleAnalysis = analyzeGraphDocumentV02(missingPortCycle);
+  assert.equal(missingPortCycleAnalysis.ok, false);
+  assert.equal(missingPortCycleAnalysis.cycles[0].classification, "invalid-cycle");
+});
+
+test("v0.2 reports detailed semantic diagnostics", async () => {
+  const graph = await readJson("fixtures/graph/v0.2/valid/source-fan-out.graph.json");
+  graph.nodes[0].ports[0].fanOutPolicy = "forbid";
+  graph.nodes[1].ports[0].required = true;
+  graph.nodes[2].ports[0].type = "render.frame";
+  graph.nodes[2].ports[0].accepts = ["gpu.texture2d"];
+  graph.edges[1].source.portId = "missing";
+  graph.edges.push({
+    ...graph.edges[0],
+    id: "edge_duplicate_endpoint"
+  });
+  graph.edges.push({
+    ...graph.edges[0],
+    id: "edge_wrong_type",
+    target: { nodeId: "meter_b", portId: "in" }
+  });
+  graph.edges.push({
+    ...graph.edges[0],
+    id: "edge_missing_target",
+    target: { nodeId: "missing", portId: "in" }
+  });
+  graph.edges.push({
+    ...graph.edges[0],
+    id: "edge_duplicate_endpoint"
+  });
+  graph.nodes.push({
+    ...graph.nodes[1],
+    id: "meter_a"
+  });
+  graph.nodes[1].ports.push({
+    ...graph.nodes[1].ports[0]
+  });
+
+  const analysis = analyzeGraphDocumentV02(graph);
+
+  assert.equal(analysis.ok, false);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /missing-source-port/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /missing-target-port/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-node-id/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-port-id/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-edge-id/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-edge/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /incompatible-type/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /fan-out-forbidden/);
+
+  const acceptingGraph = await readJson("fixtures/graph/v0.2/valid/render-output.graph.json");
+  acceptingGraph.nodes[1].ports[0].accepts = ["gpu.texture2d"];
+  acceptingGraph.nodes[0].ports[0].type = "gpu.texture2d";
+  acceptingGraph.edges[0].resolvedType = "gpu.texture2d";
+  assert.equal(validateGraphDocumentV02(acceptingGraph).ok, true);
+
+  const unlimitedGraph = await readJson("fixtures/graph/v0.2/invalid/render-input-fan-in-default.graph.json");
+  unlimitedGraph.nodes[2].ports[0].maxConnections = null;
+  unlimitedGraph.nodes[2].ports[0].mergePolicy = "array";
+  assert.equal(validateGraphDocumentV02(unlimitedGraph).ok, true);
+
+  const requiredGraph = await readJson("fixtures/graph/v0.2/valid/zero-port-node.graph.json");
+  requiredGraph.nodes[0].ports.push({
+    id: "in",
+    direction: "input",
+    type: "value.number",
+    required: true
+  });
+  const requiredResult = validateGraphDocumentV02(requiredGraph);
+  assert.equal(requiredResult.ok, false);
+  assert.match(requiredResult.errors.join("\n"), /missing-required-input/);
+});
+
+test("v0.2 rejects schema and node-definition semantic failures", async () => {
+  assert.equal(validateGraphDocumentV02({
+    schema: "skenion.graph",
+    schemaVersion: "0.2.0"
+  }).ok, false);
+  assert.equal(validateNodeDefinitionV02({
+    schema: "skenion.node.definition",
+    schemaVersion: "0.2.0"
+  }).ok, false);
+
+  const badGroupGraph = await readJson("fixtures/graph/v0.2/valid/zero-port-node.graph.json");
+  badGroupGraph.nodes[0].portGroups = [
+    {
+      id: "bad",
+      direction: "input",
+      type: "value.number",
+      minPorts: 2,
+      maxPorts: 1
+    }
+  ];
+  const badGroupResult = validateGraphDocumentV02(badGroupGraph);
+  assert.equal(badGroupResult.ok, false);
+  assert.match(badGroupResult.errors.join("\n"), /invalid-port-group/);
+
+  const invalidNode = await readJson("fixtures/node/v0.2/invalid/unsupported-permission.node.json");
+  const invalidNodeResult = validateNodeDefinitionV02(invalidNode);
+  assert.equal(invalidNodeResult.ok, false);
+  assert.match(invalidNodeResult.errors.join("\n"), /unsupported permission/);
+
+  const duplicatePortNode = await readJson("fixtures/node/v0.2/valid/render-clear-color.node.json");
+  duplicatePortNode.ports.push({ ...duplicatePortNode.ports[0] });
+  const duplicatePortResult = validateNodeDefinitionV02(duplicatePortNode);
+  assert.equal(duplicatePortResult.ok, false);
+  assert.match(duplicatePortResult.errors.join("\n"), /duplicate port id/);
+
+  const badNodeGroup = await readJson("fixtures/node/v0.2/valid/dynamic-input-group.node.json");
+  badNodeGroup.portGroups[0].maxPorts = 0;
+  const badNodeGroupResult = validateNodeDefinitionV02(badNodeGroup);
+  assert.equal(badNodeGroupResult.ok, false);
+  assert.match(badNodeGroupResult.errors.join("\n"), /maxPorts/);
 });
 
 test("validates v0.1 graph patch fixtures", async () => {

@@ -1,0 +1,18 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.2.0",
+  "id": "zero-port-node",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "core.note",
+      "kindVersion": "0.2.0",
+      "params": {
+        "text": "documentation marker"
+      },
+      "ports": []
+    }
+  ],
+  "edges": []
+}

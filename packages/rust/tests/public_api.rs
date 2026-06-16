@@ -1,8 +1,9 @@
 use skenion_contracts::{
-    ApplyPatchErrorV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphPatchOperationV01,
-    GraphPatchV01, NodeDefinitionManifestV01, NumberRangeV01, StringOrStringsV01,
-    apply_graph_patch_v01, compatible_data_types_v01, invert_graph_patch_v01, type_label_v01,
-    validate_graph_document_v01, validate_node_definition_v01,
+    ApplyPatchErrorV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphDocumentV02,
+    GraphPatchOperationV01, GraphPatchV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02,
+    NumberRangeV01, StringOrStringsV01, analyze_graph_document_v02, apply_graph_patch_v01,
+    compatible_data_types_v01, invert_graph_patch_v01, type_label_v01, validate_graph_document_v01,
+    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -248,4 +249,70 @@ fn inverts_public_graph_patch() {
 
     assert_eq!(inverse.base_revision, "2");
     assert_eq!(inverse.ops.len(), 1);
+}
+
+#[test]
+fn validates_public_v02_graph_and_node_contracts() {
+    let graph: GraphDocumentV02 = serde_json::from_str(
+        r#"{
+          "schema": "skenion.graph",
+          "schemaVersion": "0.2.0",
+          "id": "public-v02",
+          "revision": "1",
+          "nodes": [
+            {
+              "id": "clear",
+              "kind": "render.clear-color",
+              "kindVersion": "0.2.0",
+              "params": { "color": [0, 0, 0, 1] },
+              "ports": [
+                { "id": "out", "direction": "output", "type": "render.frame", "rate": "render" }
+              ]
+            },
+            {
+              "id": "output",
+              "kind": "render.output",
+              "kindVersion": "0.2.0",
+              "params": {},
+              "ports": [
+                { "id": "in", "direction": "input", "type": "render.frame", "rate": "render", "required": true }
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge_clear_output",
+              "source": { "nodeId": "clear", "portId": "out" },
+              "target": { "nodeId": "output", "portId": "in" },
+              "resolvedType": "render.frame"
+            }
+          ]
+        }"#,
+    )
+    .expect("v0.2 graph should parse");
+    let validation = validate_graph_document_v02(&graph).expect("v0.2 graph should validate");
+
+    assert!(validation.ok);
+    assert!(analyze_graph_document_v02(&graph).cycles.is_empty());
+
+    let node: NodeDefinitionManifestV02 = serde_json::from_str(
+        r#"{
+          "schema": "skenion.node.definition",
+          "schemaVersion": "0.2.0",
+          "id": "render.output",
+          "version": "0.2.0",
+          "displayName": "Render Output",
+          "category": "Render",
+          "ports": [
+            { "id": "in", "direction": "input", "type": "render.frame", "rate": "render", "required": true }
+          ],
+          "execution": { "model": "gpu_pass", "clock": "frame" },
+          "state": { "persistent": false },
+          "permissions": [],
+          "capabilities": ["render.output.v0.2"]
+        }"#,
+    )
+    .expect("v0.2 node should parse");
+
+    validate_node_definition_v02(&node).expect("v0.2 node should validate");
 }

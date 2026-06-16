@@ -60,6 +60,141 @@ export interface GraphDocumentV01 {
   edges: EdgeV01[];
 }
 
+export type PortRateV02 = "event" | "control" | "audio" | "render" | "gpu" | "resource" | "io";
+export type MergePolicyV02 = "forbid" | "ordered-events" | "mix" | "array" | "latest" | "first" | "custom";
+export type FanOutPolicyV02 = "allow" | "forbid" | "copy" | "share";
+export type TriggerModeV02 = "passive" | "trigger" | "latched";
+export type FeedbackBoundaryV02 =
+  | "same-turn"
+  | "next-tick"
+  | "control-frame"
+  | "audio-sample"
+  | "audio-block"
+  | "render-frame"
+  | "gpu-pingpong"
+  | "manual";
+export type FeedbackBufferModeV02 = "latest" | "queue" | "ring" | "pingpong";
+export type CycleValidationV02 =
+  | "no-cycle"
+  | "valid-feedback"
+  | "risky-feedback"
+  | "ambiguous-algebraic-loop"
+  | "invalid-cycle";
+
+export interface PortSpecV02 {
+  id: string;
+  direction: PortDirection;
+  type: string;
+  label?: string;
+  rate?: PortRateV02;
+  accepts?: string[];
+  minConnections?: number;
+  maxConnections?: number | null;
+  mergePolicy?: MergePolicyV02;
+  fanOutPolicy?: FanOutPolicyV02;
+  triggerMode?: TriggerModeV02;
+  defaultValue?: unknown;
+  latch?: boolean;
+  required?: boolean;
+  styleKey?: string;
+  group?: string;
+  description?: string;
+}
+
+export interface PortGroupSpecV02 {
+  id: string;
+  direction: PortDirection;
+  type: string;
+  minPorts: number;
+  label?: string;
+  rate?: PortRateV02;
+  maxPorts?: number;
+  ordered?: boolean;
+  portIdPattern?: string;
+  createLabel?: string;
+  defaultPortSpec?: PortSpecV02;
+}
+
+export interface FeedbackPolicyV02 {
+  enabled: boolean;
+  boundary: FeedbackBoundaryV02;
+  initialValue?: unknown;
+  recursionLimit?: number;
+  maxEventsPerTick?: number;
+  maxIterationsPerFrame?: number;
+  bufferMode?: FeedbackBufferModeV02;
+  intentional?: boolean;
+  label?: string;
+}
+
+export interface EdgeEndpointV02 {
+  nodeId: string;
+  portId: string;
+}
+
+export interface EdgeSpecV02 {
+  id: string;
+  source: EdgeEndpointV02;
+  target: EdgeEndpointV02;
+  resolvedType?: string;
+  order?: number;
+  enabled?: boolean;
+  adapter?: string;
+  feedback?: FeedbackPolicyV02;
+  styleOverride?: string;
+  label?: string;
+  description?: string;
+}
+
+export interface CableStyleV02 {
+  color?: string;
+  pattern?: "solid" | "dashed" | "dotted";
+  width?: number;
+  marker?: string;
+}
+
+export type CableStyleRegistryV02 = Record<string, CableStyleV02>;
+
+export interface GraphNodeV02 {
+  id: string;
+  kind: string;
+  kindVersion: string;
+  params: Record<string, unknown>;
+  ports: PortSpecV02[];
+  portGroups?: PortGroupSpecV02[];
+}
+
+export interface GraphDocumentV02 {
+  schema: "skenion.graph";
+  schemaVersion: "0.2.0";
+  id: string;
+  revision: string;
+  nodes: GraphNodeV02[];
+  edges: EdgeSpecV02[];
+  cableStyles?: CableStyleRegistryV02;
+}
+
+export interface GraphValidationDiagnosticV02 {
+  severity: "error" | "warning";
+  code: string;
+  message: string;
+  nodes?: string[];
+  edges?: string[];
+}
+
+export interface GraphCycleValidationV02 {
+  classification: CycleValidationV02;
+  nodes: string[];
+  edges: string[];
+  message: string;
+}
+
+export interface GraphValidationResultV02 {
+  ok: boolean;
+  diagnostics: GraphValidationDiagnosticV02[];
+  cycles: GraphCycleValidationV02[];
+}
+
 export interface AddNodeOperationV01 {
   op: "addNode";
   node: GraphNodeV01;
@@ -178,6 +313,23 @@ export interface NodeDefinitionManifestV01 {
   scriptApiVersion?: string;
   bundleHash?: string;
   ports: PortV01[];
+  execution: NodeExecutionV01;
+  state: NodeStateV01;
+  permissions: string[];
+  capabilities: string[];
+}
+
+export interface NodeDefinitionManifestV02 {
+  schema: "skenion.node.definition";
+  schemaVersion: "0.2.0";
+  id: string;
+  version: string;
+  displayName: string;
+  category: string;
+  scriptApiVersion?: string;
+  bundleHash?: string;
+  ports: PortSpecV02[];
+  portGroups?: PortGroupSpecV02[];
   execution: NodeExecutionV01;
   state: NodeStateV01;
   permissions: string[];

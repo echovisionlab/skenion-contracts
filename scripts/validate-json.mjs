@@ -134,12 +134,249 @@ function validateNodeDefinitionV01Semantics(file, definition) {
   }
 }
 
+function portSpecKey(nodeId, portId) {
+  return `${nodeId}:${portId}`;
+}
+
+function edgeEndpointKey(edge) {
+  return `${edge.source.nodeId}:${edge.source.portId}->${edge.target.nodeId}:${edge.target.portId}`;
+}
+
+function edgeEnabled(edge) {
+  return edge.enabled !== false;
+}
+
+function portTypeAccepts(source, target) {
+  return source.type === target.type || target.accepts?.includes(source.type) === true;
+}
+
+function inputMaxConnections(port) {
+  if (port.direction === "output") {
+    return Number.POSITIVE_INFINITY;
+  }
+  if (port.maxConnections === null) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return port.maxConnections ?? 1;
+}
+
+function mergePolicy(port) {
+  return port.mergePolicy ?? "forbid";
+}
+
+function typeFamily(type) {
+  return type.split(".")[0] ?? type;
+}
+
+function controlCycleTypes(edges, ports) {
+  return edges.every((edge) => {
+    const source = ports.get(portSpecKey(edge.source.nodeId, edge.source.portId));
+    const target = ports.get(portSpecKey(edge.target.nodeId, edge.target.portId));
+    const sourceFamily = source ? typeFamily(source.type) : "";
+    const targetFamily = target ? typeFamily(target.type) : "";
+    return (
+      (sourceFamily === "value" || sourceFamily === "control") &&
+      (targetFamily === "value" || targetFamily === "control")
+    );
+  });
+}
+
+function stronglyConnectedComponents(nodes, edges) {
+  const outgoing = new Map(nodes.map((node) => [node, []]));
+  for (const edge of edges.filter(edgeEnabled)) {
+    outgoing.get(edge.source.nodeId)?.push(edge.target.nodeId);
+  }
+
+  let nextIndex = 0;
+  const stack = [];
+  const onStack = new Set();
+  const index = new Map();
+  const low = new Map();
+  const components = [];
+
+  function visit(node) {
+    index.set(node, nextIndex);
+    low.set(node, nextIndex);
+    nextIndex += 1;
+    stack.push(node);
+    onStack.add(node);
+
+    for (const target of outgoing.get(node) ?? []) {
+      if (!index.has(target)) {
+        visit(target);
+        low.set(node, Math.min(low.get(node), low.get(target)));
+      } else if (onStack.has(target)) {
+        low.set(node, Math.min(low.get(node), index.get(target)));
+      }
+    }
+
+    if (low.get(node) === index.get(node)) {
+      const component = [];
+      let current;
+      do {
+        current = stack.pop();
+        onStack.delete(current);
+        component.push(current);
+      } while (current !== node);
+      components.push(component.sort());
+    }
+  }
+
+  for (const node of nodes) {
+    if (!index.has(node)) {
+      visit(node);
+    }
+  }
+
+  return components;
+}
+
+function cycleEdgesFor(component, edges) {
+  const nodes = new Set(component);
+  return edges.filter((edge) => (
+    edgeEnabled(edge) &&
+    nodes.has(edge.source.nodeId) &&
+    nodes.has(edge.target.nodeId) &&
+    (component.length > 1 || edge.source.nodeId === edge.target.nodeId)
+  ));
+}
+
+function validateGraphV02Semantics(file, graph) {
+  duplicateCheck(
+    file,
+    graph.nodes.map((node) => node.id),
+    "node id"
+  );
+
+  const ports = new Map();
+  const incoming = new Map();
+  const outgoing = new Map();
+  for (const node of graph.nodes) {
+    duplicateCheck(
+      file,
+      node.ports.map((port) => port.id),
+      `port id on ${node.id}`
+    );
+    for (const group of node.portGroups ?? []) {
+      if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
+        fail(file, `port group ${node.id}.${group.id} maxPorts is less than minPorts`);
+      }
+    }
+    for (const port of node.ports) {
+      const key = portSpecKey(node.id, port.id);
+      ports.set(key, port);
+      incoming.set(key, []);
+      outgoing.set(key, []);
+    }
+  }
+
+  duplicateCheck(
+    file,
+    graph.edges.map((edge) => edge.id),
+    "edge id"
+  );
+  const edgeKeys = new Set();
+  for (const edge of graph.edges) {
+    const exactKey = edgeEndpointKey(edge);
+    if (edgeKeys.has(exactKey)) {
+      fail(file, `duplicate edge endpoints: ${exactKey}`);
+    }
+    edgeKeys.add(exactKey);
+
+    const sourceKey = portSpecKey(edge.source.nodeId, edge.source.portId);
+    const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
+    const source = ports.get(sourceKey);
+    const target = ports.get(targetKey);
+    if (!source) {
+      fail(file, `edge ${edge.id} references missing source port ${sourceKey}`);
+    }
+    if (!target) {
+      fail(file, `edge ${edge.id} references missing target port ${targetKey}`);
+    }
+    if (source.direction !== "output") {
+      fail(file, `edge ${edge.id} source ${sourceKey} is not an output port`);
+    }
+    if (target.direction !== "input") {
+      fail(file, `edge ${edge.id} target ${targetKey} is not an input port`);
+    }
+    if (!portTypeAccepts(source, target)) {
+      fail(file, `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}`);
+    }
+    if (edgeEnabled(edge)) {
+      incoming.get(targetKey).push(edge);
+      outgoing.get(sourceKey).push(edge);
+    }
+  }
+
+  for (const [key, connectedEdges] of incoming) {
+    const port = ports.get(key);
+    if (port.direction !== "input") {
+      continue;
+    }
+    const minimum = port.required === true ? Math.max(port.minConnections ?? 0, 1) : port.minConnections ?? 0;
+    if (connectedEdges.length < minimum) {
+      fail(file, `input ${key} requires at least ${minimum} connection(s)`);
+    }
+    if (connectedEdges.length > inputMaxConnections(port)) {
+      fail(file, `input ${key} accepts at most ${port.maxConnections ?? 1} connection(s)`);
+    }
+    if (connectedEdges.length > 1 && mergePolicy(port) === "forbid") {
+      fail(file, `input ${key} has fan-in but mergePolicy is forbid`);
+    }
+  }
+
+  for (const [key, connectedEdges] of outgoing) {
+    const port = ports.get(key);
+    if (port.direction === "output" && connectedEdges.length > 1 && port.fanOutPolicy === "forbid") {
+      fail(file, `output ${key} forbids fan-out`);
+    }
+  }
+
+  const nodes = graph.nodes.map((node) => node.id).sort();
+  for (const component of stronglyConnectedComponents(nodes, graph.edges)) {
+    const cycleEdges = cycleEdgesFor(component, graph.edges);
+    if (cycleEdges.length === 0) {
+      continue;
+    }
+    const feedback = cycleEdges.find((edge) => edge.feedback?.enabled === true);
+    if (!feedback && controlCycleTypes(cycleEdges, ports)) {
+      fail(file, "ambiguous-algebraic-loop: control/value cycle requires explicit latch, delay, or feedback policy");
+    }
+    if (!feedback) {
+      fail(file, "invalid-cycle: cycle requires explicit feedback policy");
+    }
+  }
+}
+
+function validateNodeDefinitionV02Semantics(file, definition) {
+  duplicateCheck(
+    file,
+    definition.ports.map((port) => port.id),
+    `port id on ${definition.id}`
+  );
+
+  for (const group of definition.portGroups ?? []) {
+    if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
+      fail(file, `port group ${definition.id}.${group.id} maxPorts is less than minPorts`);
+    }
+  }
+
+  for (const permission of definition.permissions) {
+    if (!allowedNodePermissions.has(permission)) {
+      fail(file, `unsupported permission: ${permission}`);
+    }
+  }
+}
+
 function selectValidator(file, document, validators) {
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.0.0") {
     return validators.graphV0;
   }
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.1.0") {
     return validators.graphV01;
+  }
+  if (document.schema === "skenion.graph" && document.schemaVersion === "0.2.0") {
+    return validators.graphV02;
   }
   if (document.schema === "skenion.graph.patch" && document.schemaVersion === "0.0.0") {
     return validators.patchV0;
@@ -156,6 +393,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.1.0") {
     return validators.nodeDefinitionV01;
   }
+  if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.2.0") {
+    return validators.nodeDefinitionV02;
+  }
 
   fail(file, `no validator for schema ${document.schema ?? "<missing>"} ${document.schemaVersion ?? "<missing>"}`);
 }
@@ -169,8 +409,14 @@ function validateDocument(file, document, validators) {
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.1.0") {
     validateGraphV01Semantics(file, document);
   }
+  if (document.schema === "skenion.graph" && document.schemaVersion === "0.2.0") {
+    validateGraphV02Semantics(file, document);
+  }
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.1.0") {
     validateNodeDefinitionV01Semantics(file, document);
+  }
+  if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.2.0") {
+    validateNodeDefinitionV02Semantics(file, document);
   }
 }
 
@@ -190,11 +436,15 @@ const validators = {
   graphV0: ajv.compile(await readJson("json-schema/graph/v0/graph.schema.json")),
   patchV0: ajv.compile(await readJson("json-schema/graph/v0/patch.schema.json")),
   graphV01: ajv.compile(await readJson("json-schema/graph/v0.1/graph.schema.json")),
+  graphV02: ajv.compile(await readJson("json-schema/graph/v0.2/graph.schema.json")),
   patchV01: ajv.compile(graphPatchV01Schema),
   patchEventV01: ajv.compile(graphPatchEventV01Schema),
   patchHistoryV01: ajv.compile(await readJson("json-schema/graph/v0.1/patch-history.schema.json")),
   nodeDefinitionV01: ajv.compile(
     await readJson("json-schema/node/v0.1/node-definition.schema.json")
+  ),
+  nodeDefinitionV02: ajv.compile(
+    await readJson("json-schema/node/v0.2/node-definition.schema.json")
   )
 };
 

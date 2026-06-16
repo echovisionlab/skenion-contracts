@@ -1,8 +1,9 @@
 use std::{fs, path::Path};
 
 use skenion_contracts::{
-    GraphDocumentV01, GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01,
-    NodeDefinitionManifestV01, validate_graph_document_v01, validate_node_definition_v01,
+    GraphDocumentV01, GraphDocumentV02, GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01,
+    NodeDefinitionManifestV01, NodeDefinitionManifestV02, validate_graph_document_v01,
+    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
 };
 
 fn collect_json_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
@@ -51,6 +52,28 @@ fn validates_graph_fixtures() {
 }
 
 #[test]
+fn validates_v02_graph_fixtures() {
+    for file in fixture_files("../../fixtures/graph/v0.2/valid") {
+        let graph: GraphDocumentV02 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .expect("valid graph fixture should parse");
+        validate_graph_document_v02(&graph)
+            .unwrap_or_else(|error| panic!("{} should be valid: {error}", file.display()));
+    }
+
+    for file in fixture_files("../../fixtures/graph/v0.2/invalid") {
+        let graph: GraphDocumentV02 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .expect("invalid graph fixture should still parse");
+        assert!(
+            validate_graph_document_v02(&graph).is_err(),
+            "{} should be invalid",
+            file.display()
+        );
+    }
+}
+
+#[test]
 fn validates_node_definition_fixtures() {
     for file in fixture_files("../../fixtures/node/v0.1/valid") {
         let definition: NodeDefinitionManifestV01 =
@@ -66,6 +89,28 @@ fn validates_node_definition_fixtures() {
                 .expect("invalid node fixture should still parse");
         assert!(
             validate_node_definition_v01(&definition).is_err(),
+            "{} should be invalid",
+            file.display()
+        );
+    }
+}
+
+#[test]
+fn validates_v02_node_definition_fixtures() {
+    for file in fixture_files("../../fixtures/node/v0.2/valid") {
+        let definition: NodeDefinitionManifestV02 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .expect("valid node fixture should parse");
+        validate_node_definition_v02(&definition)
+            .unwrap_or_else(|error| panic!("{} should be valid: {error}", file.display()));
+    }
+
+    for file in fixture_files("../../fixtures/node/v0.2/invalid") {
+        let definition: NodeDefinitionManifestV02 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .expect("invalid node fixture should still parse");
+        assert!(
+            validate_node_definition_v02(&definition).is_err(),
             "{} should be invalid",
             file.display()
         );

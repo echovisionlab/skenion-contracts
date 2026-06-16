@@ -1,0 +1,72 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.2.0",
+  "id": "fan-in-without-merge-policy",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "a",
+      "kind": "core.value",
+      "kindVersion": "0.2.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "type": "value.number"
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "kind": "core.value",
+      "kindVersion": "0.2.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "type": "value.number"
+        }
+      ]
+    },
+    {
+      "id": "target",
+      "kind": "core.target",
+      "kindVersion": "0.2.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "type": "value.number",
+          "maxConnections": 2
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_a_target",
+      "source": {
+        "nodeId": "a",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "target",
+        "portId": "in"
+      }
+    },
+    {
+      "id": "edge_b_target",
+      "source": {
+        "nodeId": "b",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "target",
+        "portId": "in"
+      }
+    }
+  ]
+}

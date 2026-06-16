@@ -16,6 +16,10 @@
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
+    "./graph/v0.2/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
+    },
     "./graph/v0.1/patch-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
@@ -29,6 +33,10 @@
       "import": "./dist/generated/schemas.js"
     },
     "./node/v0.1/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
+    },
+    "./node/v0.2/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     }

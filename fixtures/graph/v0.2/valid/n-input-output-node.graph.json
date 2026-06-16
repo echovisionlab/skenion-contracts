@@ -1,0 +1,43 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.2.0",
+  "id": "n-input-output-node",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "matrix_1",
+      "kind": "core.matrix",
+      "kindVersion": "0.2.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "a",
+          "direction": "input",
+          "type": "value.number",
+          "rate": "control",
+          "triggerMode": "passive"
+        },
+        {
+          "id": "b",
+          "direction": "input",
+          "type": "value.number",
+          "rate": "control",
+          "triggerMode": "passive"
+        },
+        {
+          "id": "sum",
+          "direction": "output",
+          "type": "value.number",
+          "rate": "control"
+        },
+        {
+          "id": "diff",
+          "direction": "output",
+          "type": "value.number",
+          "rate": "control"
+        }
+      ]
+    }
+  ],
+  "edges": []
+}

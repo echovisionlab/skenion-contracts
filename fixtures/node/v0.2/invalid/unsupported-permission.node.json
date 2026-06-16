@@ -1,0 +1,17 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.2.0",
+  "id": "script.network",
+  "version": "0.2.0",
+  "displayName": "Network Script",
+  "category": "Script",
+  "ports": [],
+  "execution": {
+    "model": "script_control"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": ["network"],
+  "capabilities": []
+}
