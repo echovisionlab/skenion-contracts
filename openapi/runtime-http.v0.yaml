@@ -158,6 +158,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimePatchResponse"
+  /v0/session/history:
+    get:
+      summary: Return the current local runtime session patch history.
+      responses:
+        "200":
+          description: Current session patch history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphPatchHistoryV01"
+  /v0/session/undo:
+    post:
+      summary: Undo the latest accepted patch in the local runtime session.
+      responses:
+        "200":
+          description: Undo result and current session state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimePatchResponse"
+  /v0/session/redo:
+    post:
+      summary: Redo the latest undone patch in the local runtime session.
+      responses:
+        "200":
+          description: Redo result and current session state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimePatchResponse"
 components:
   schemas:
     HealthResponse:
@@ -195,7 +225,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -291,6 +321,8 @@ components:
         - conflict
         - graph
         - session
+        - event
+        - history
         - diagnostics
       properties:
         ok:
@@ -305,6 +337,12 @@ components:
             - type: "null"
         session:
           $ref: "#/components/schemas/RuntimeSessionResponse"
+        event:
+          anyOf:
+            - $ref: "#/components/schemas/GraphPatchEventV01"
+            - type: "null"
+        history:
+          $ref: "#/components/schemas/GraphPatchHistoryV01"
         diagnostics:
           type: array
           items:
@@ -511,6 +549,86 @@ components:
             type: object
             additionalProperties: true
       additionalProperties: true
+    GraphPatchEventV01:
+      type: object
+      required:
+        - schema
+        - schemaVersion
+        - id
+        - sequence
+        - kind
+        - patch
+        - inversePatch
+        - revisionBefore
+        - revisionAfter
+        - createdAt
+      properties:
+        schema:
+          type: string
+          const: skenion.graph.patch.event
+        schemaVersion:
+          type: string
+          const: 0.1.0
+        id:
+          type: string
+        sequence:
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+            - apply
+            - undo
+            - redo
+        patch:
+          $ref: "#/components/schemas/GraphPatchV01"
+        inversePatch:
+          $ref: "#/components/schemas/GraphPatchV01"
+        revisionBefore:
+          type: string
+        revisionAfter:
+          type: string
+        clientId:
+          type: string
+        description:
+          type: string
+        subjectEventId:
+          type: string
+        createdAt:
+          type: string
+      additionalProperties: true
+    GraphPatchHistoryV01:
+      type: object
+      required:
+        - schema
+        - schemaVersion
+        - events
+        - canUndo
+        - canRedo
+        - undoDepth
+        - redoDepth
+      properties:
+        schema:
+          type: string
+          const: skenion.graph.patch.history
+        schemaVersion:
+          type: string
+          const: 0.1.0
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphPatchEventV01"
+        canUndo:
+          type: boolean
+        canRedo:
+          type: boolean
+        undoDepth:
+          type: integer
+          minimum: 0
+        redoDepth:
+          type: integer
+          minimum: 0
+      additionalProperties: false
     NodeDefinitionManifestV01:
       type: object
       required:

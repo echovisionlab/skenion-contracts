@@ -5,6 +5,8 @@ import type {
   ValidateFunction
 } from "ajv/dist/2020.js";
 import {
+  graphPatchEventV01Schema,
+  graphPatchHistoryV01Schema,
   graphPatchV01Schema,
   graphV01Schema,
   nodeDefinitionV01Schema
@@ -12,6 +14,8 @@ import {
 import type {
   DataTypeV01,
   GraphDocumentV01,
+  GraphPatchEventV01,
+  GraphPatchHistoryV01,
   GraphPatchV01,
   NodeDefinitionManifestV01,
   PortV01,
@@ -22,10 +26,15 @@ const allowedNodePermissions = new Set<string>();
 
 const Ajv2020 = Ajv2020Runtime as unknown as new (opts?: Options) => {
   compile(schema: unknown): ValidateFunction;
+  addSchema(schema: unknown): unknown;
 };
 const ajv = new Ajv2020({ allErrors: true });
+ajv.addSchema(graphPatchV01Schema);
+ajv.addSchema(graphPatchEventV01Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphPatchV01Validator = ajv.compile(graphPatchV01Schema);
+const graphPatchEventV01Validator = ajv.compile(graphPatchEventV01Schema);
+const graphPatchHistoryV01Validator = ajv.compile(graphPatchHistoryV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
@@ -165,6 +174,24 @@ export function validateGraphPatch(document: unknown): ValidationResult<GraphPat
   }
 
   return { ok: true, value: document as GraphPatchV01 };
+}
+
+export function validateGraphPatchEvent(document: unknown): ValidationResult<GraphPatchEventV01> {
+  if (!graphPatchEventV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(graphPatchEventV01Validator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as GraphPatchEventV01 };
+}
+
+export function validateGraphPatchHistory(
+  document: unknown
+): ValidationResult<GraphPatchHistoryV01> {
+  if (!graphPatchHistoryV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(graphPatchHistoryV01Validator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as GraphPatchHistoryV01 };
 }
 
 export function validateNodeDefinition(

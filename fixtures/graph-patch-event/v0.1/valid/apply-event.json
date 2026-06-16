@@ -1,0 +1,45 @@
+{
+  "schema": "skenion.graph.patch.event",
+  "schemaVersion": "0.1.0",
+  "id": "event_000001",
+  "sequence": 1,
+  "kind": "apply",
+  "patch": {
+    "schema": "skenion.graph.patch",
+    "schemaVersion": "0.1.0",
+    "id": "patch_set_value",
+    "baseRevision": "1",
+    "clientId": "studio-local",
+    "description": "Set value.",
+    "ops": [
+      {
+        "op": "setNodeParam",
+        "nodeId": "value_1",
+        "key": "value",
+        "value": 0.75
+      }
+    ]
+  },
+  "inversePatch": {
+    "schema": "skenion.graph.patch",
+    "schemaVersion": "0.1.0",
+    "id": "patch_set_value_inverse",
+    "baseRevision": "2",
+    "clientId": "studio-local",
+    "description": "Undo set value.",
+    "ops": [
+      {
+        "op": "setNodeParams",
+        "nodeId": "value_1",
+        "params": {
+          "value": 0.5
+        }
+      }
+    ]
+  },
+  "revisionBefore": "1",
+  "revisionAfter": "2",
+  "clientId": "studio-local",
+  "description": "Set value.",
+  "createdAt": "2026-06-16T00:00:00.000Z"
+}

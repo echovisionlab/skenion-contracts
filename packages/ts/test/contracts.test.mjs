@@ -4,9 +4,14 @@ import path from "node:path";
 import test from "node:test";
 import {
   applyGraphPatch,
+  graphPatchEventV01Schema,
+  graphPatchHistoryV01Schema,
   graphPatchV01Schema,
   graphV01Schema,
+  invertGraphPatch,
   nodeDefinitionV01Schema,
+  validateGraphPatchEvent,
+  validateGraphPatchHistory,
   validateGraphPatch,
   validateGraphDocument,
   validateNodeDefinition
@@ -21,6 +26,8 @@ async function readJson(relativePath) {
 test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(graphPatchV01Schema.properties.schema.const, "skenion.graph.patch");
+  assert.equal(graphPatchEventV01Schema.properties.schema.const, "skenion.graph.patch.event");
+  assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
   assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
 });
 
@@ -197,6 +204,28 @@ test("rejects schema-invalid graph patches", async () => {
 
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /must match exactly one schema/);
+});
+
+test("validates graph patch event and history fixtures", async () => {
+  const event = await readJson("fixtures/graph-patch-event/v0.1/valid/apply-event.json");
+  const history = await readJson("fixtures/graph-patch-history/v0.1/valid/history-with-events.json");
+
+  assert.equal(validateGraphPatchEvent(event).ok, true);
+  assert.equal(validateGraphPatchHistory(history).ok, true);
+});
+
+test("rejects schema-invalid graph patch events and histories", async () => {
+  const event = await readJson("fixtures/graph-patch-event/v0.1/invalid/invalid-kind.json");
+  const history = await readJson("fixtures/graph-patch-history/v0.1/valid/empty-history.json");
+  history.events.push({ schema: "skenion.graph.patch.event", schemaVersion: "0.1.0" });
+
+  const eventResult = validateGraphPatchEvent(event);
+  const historyResult = validateGraphPatchHistory(history);
+
+  assert.equal(eventResult.ok, false);
+  assert.match(eventResult.errors.join("\n"), /allowed values/);
+  assert.equal(historyResult.ok, false);
+  assert.match(historyResult.errors.join("\n"), /required property/);
 });
 
 test("applies graph patches atomically and updates revision", async () => {
@@ -417,4 +446,234 @@ test("appends deterministic suffix for non-numeric graph revisions", async () =>
 
   assert.equal(result.ok, true);
   assert.equal(result.graph.revision, "rev_0001+1");
+});
+
+test("inverts add node and add edge patches in reverse order", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  const addedNode = {
+    id: "meter_1",
+    kind: "core.meter",
+    kindVersion: "0.1.0",
+    params: {},
+    ports: [
+      {
+        id: "value",
+        direction: "input",
+        type: { flow: "value", dataKind: "number.f32" },
+        activation: "latched"
+      }
+    ]
+  };
+  const edge = {
+    from: { node: "slider_1", port: "out" },
+    to: { node: "meter_1", port: "value" }
+  };
+
+  const result = invertGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_add_meter",
+    baseRevision: "rev_0001",
+    clientId: "studio-local",
+    description: "Add meter.",
+    ops: [
+      { op: "addNode", node: addedNode },
+      { op: "addEdge", edge }
+    ]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.inversePatch.baseRevision, "rev_0001+1");
+  assert.equal(result.inversePatch.clientId, "studio-local");
+  assert.equal(result.inversePatch.description, "Inverse of patch_add_meter: Add meter.");
+  assert.deepEqual(result.inversePatch.ops, [
+    { op: "removeEdge", edge },
+    { op: "removeNode", nodeId: "meter_1" }
+  ]);
+});
+
+test("inverts remove node by restoring node and incident edges", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+
+  const inverse = invertGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_remove_slider",
+    baseRevision: "1",
+    ops: [{ op: "removeNode", nodeId: "slider_1" }]
+  });
+  assert.equal(inverse.ok, true);
+  assert.equal(inverse.inversePatch.baseRevision, "2");
+  assert.deepEqual(inverse.inversePatch.ops.map((op) => op.op), ["addNode", "addEdge"]);
+
+  const removed = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_remove_slider",
+    baseRevision: "1",
+    ops: [{ op: "removeNode", nodeId: "slider_1" }]
+  }, { nextRevision: "2" });
+  assert.equal(removed.ok, true);
+
+  const restored = applyGraphPatch(removed.graph, inverse.inversePatch, { nextRevision: "3" });
+  assert.equal(restored.ok, true);
+  assert.equal(restored.graph.nodes.length, graph.nodes.length);
+  assert.equal(restored.graph.edges.length, graph.edges.length);
+
+  const inverseTarget = invertGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_remove_blur",
+    baseRevision: "1",
+    ops: [{ op: "removeNode", nodeId: "blur_1" }]
+  });
+  assert.equal(inverseTarget.ok, true);
+  assert.deepEqual(inverseTarget.inversePatch.ops.map((op) => op.op), ["addNode", "addEdge"]);
+});
+
+test("inverts param and edge removal operations", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+
+  const result = invertGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_params_edges",
+    baseRevision: "1",
+    ops: [
+      { op: "setNodeParam", nodeId: "slider_1", key: "value", value: 0.75 },
+      { op: "setNodeParams", nodeId: "slider_1", params: { value: 0.25, mode: "fine" } },
+      { op: "removeEdge", edge: graph.edges[0] }
+    ]
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.inversePatch.ops, [
+    { op: "addEdge", edge: graph.edges[0] },
+    { op: "setNodeParams", nodeId: "slider_1", params: { value: 0.75 } },
+    { op: "setNodeParams", nodeId: "slider_1", params: { value: 0.5 } }
+  ]);
+});
+
+test("reports invert failures without mutating input graph", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+  const cases = [
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "bad_op",
+        baseRevision: "1",
+        ops: [{ op: "moveNode", nodeId: "slider_1" }]
+      },
+      /must match exactly one schema/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "wrong_base",
+        baseRevision: "0",
+        ops: []
+      },
+      /baseRevision 0/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "duplicate_node",
+        baseRevision: "1",
+        ops: [{ op: "addNode", node: graph.nodes[0] }]
+      },
+      /already exists/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "remove_missing_node",
+        baseRevision: "1",
+        ops: [{ op: "removeNode", nodeId: "missing" }]
+      },
+      /does not exist/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "set_params_missing_node",
+        baseRevision: "1",
+        ops: [{ op: "setNodeParams", nodeId: "missing", params: {} }]
+      },
+      /does not exist/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "set_param_missing_node",
+        baseRevision: "1",
+        ops: [{ op: "setNodeParam", nodeId: "missing", key: "value", value: 1 }]
+      },
+      /does not exist/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "duplicate_edge",
+        baseRevision: "1",
+        ops: [{ op: "addEdge", edge: graph.edges[0] }]
+      },
+      /already exists/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "missing_edge",
+        baseRevision: "1",
+        ops: [
+          {
+            op: "removeEdge",
+            edge: {
+              from: { node: "slider_1", port: "out" },
+              to: { node: "blur_1", port: "missing" }
+            }
+          }
+        ]
+      },
+      /does not exist/
+    ],
+    [
+      {
+        schema: "skenion.graph.patch",
+        schemaVersion: "0.1.0",
+        id: "invalid_result",
+        baseRevision: "1",
+        ops: [
+          {
+            op: "addEdge",
+            edge: {
+              from: { node: "slider_1", port: "out" },
+              to: { node: "missing", port: "value" }
+            }
+          }
+        ]
+      },
+      /missing target port/
+    ]
+  ];
+
+  for (const [patch, expected] of cases) {
+    const result = invertGraphPatch(graph, patch);
+    assert.equal(result.ok, false, patch.id);
+    assert.match(result.errors.join("\n"), expected, patch.id);
+  }
+
+  assert.equal(graph.nodes.length, 2);
+  assert.equal(graph.edges.length, 1);
 });

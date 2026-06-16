@@ -1,0 +1,41 @@
+{
+  "schema": "skenion.graph.patch.event",
+  "schemaVersion": "0.1.0",
+  "id": "event_000003",
+  "sequence": 3,
+  "kind": "redo",
+  "patch": {
+    "schema": "skenion.graph.patch",
+    "schemaVersion": "0.1.0",
+    "id": "patch_set_value",
+    "baseRevision": "3",
+    "ops": [
+      {
+        "op": "setNodeParams",
+        "nodeId": "value_1",
+        "params": {
+          "value": 0.75
+        }
+      }
+    ]
+  },
+  "inversePatch": {
+    "schema": "skenion.graph.patch",
+    "schemaVersion": "0.1.0",
+    "id": "patch_set_value_inverse",
+    "baseRevision": "4",
+    "ops": [
+      {
+        "op": "setNodeParams",
+        "nodeId": "value_1",
+        "params": {
+          "value": 0.5
+        }
+      }
+    ]
+  },
+  "revisionBefore": "3",
+  "revisionAfter": "4",
+  "subjectEventId": "event_000001",
+  "createdAt": "2026-06-16T00:00:02.000Z"
+}

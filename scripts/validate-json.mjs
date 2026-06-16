@@ -147,6 +147,12 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.graph.patch" && document.schemaVersion === "0.1.0") {
     return validators.patchV01;
   }
+  if (document.schema === "skenion.graph.patch.event" && document.schemaVersion === "0.1.0") {
+    return validators.patchEventV01;
+  }
+  if (document.schema === "skenion.graph.patch.history" && document.schemaVersion === "0.1.0") {
+    return validators.patchHistoryV01;
+  }
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.1.0") {
     return validators.nodeDefinitionV01;
   }
@@ -176,11 +182,17 @@ for (const file of schemaFiles) {
 await readFile("openapi/runtime-http.v0.yaml", "utf8");
 
 const ajv = new Ajv2020({ allErrors: true });
+const graphPatchV01Schema = await readJson("json-schema/graph/v0.1/patch.schema.json");
+const graphPatchEventV01Schema = await readJson("json-schema/graph/v0.1/patch-event.schema.json");
+ajv.addSchema(graphPatchV01Schema);
+ajv.addSchema(graphPatchEventV01Schema);
 const validators = {
   graphV0: ajv.compile(await readJson("json-schema/graph/v0/graph.schema.json")),
   patchV0: ajv.compile(await readJson("json-schema/graph/v0/patch.schema.json")),
   graphV01: ajv.compile(await readJson("json-schema/graph/v0.1/graph.schema.json")),
-  patchV01: ajv.compile(await readJson("json-schema/graph/v0.1/patch.schema.json")),
+  patchV01: ajv.compile(graphPatchV01Schema),
+  patchEventV01: ajv.compile(graphPatchEventV01Schema),
+  patchHistoryV01: ajv.compile(await readJson("json-schema/graph/v0.1/patch-history.schema.json")),
   nodeDefinitionV01: ajv.compile(
     await readJson("json-schema/node/v0.1/node-definition.schema.json")
   )

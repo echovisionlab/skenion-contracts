@@ -1,0 +1,17 @@
+{
+  "schema": "skenion.graph.patch.event",
+  "schemaVersion": "0.1.0",
+  "id": "event_missing_inverse",
+  "sequence": 1,
+  "kind": "apply",
+  "patch": {
+    "schema": "skenion.graph.patch",
+    "schemaVersion": "0.1.0",
+    "id": "patch_set_value",
+    "baseRevision": "1",
+    "ops": []
+  },
+  "revisionBefore": "1",
+  "revisionAfter": "2",
+  "createdAt": "2026-06-16T00:00:00.000Z"
+}

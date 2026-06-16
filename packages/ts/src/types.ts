@@ -112,8 +112,40 @@ export interface GraphPatchV01 {
   ops: GraphPatchOperationV01[];
 }
 
+export type GraphPatchEventKindV01 = "apply" | "undo" | "redo";
+
+export interface GraphPatchEventV01 {
+  schema: "skenion.graph.patch.event";
+  schemaVersion: "0.1.0";
+  id: string;
+  sequence: number;
+  kind: GraphPatchEventKindV01;
+  patch: GraphPatchV01;
+  inversePatch: GraphPatchV01;
+  revisionBefore: string;
+  revisionAfter: string;
+  clientId?: string;
+  description?: string;
+  subjectEventId?: string;
+  createdAt: string;
+}
+
+export interface GraphPatchHistoryV01 {
+  schema: "skenion.graph.patch.history";
+  schemaVersion: "0.1.0";
+  events: GraphPatchEventV01[];
+  canUndo: boolean;
+  canRedo: boolean;
+  undoDepth: number;
+  redoDepth: number;
+}
+
 export type ApplyGraphPatchResult =
   | { ok: true; graph: GraphDocumentV01 }
+  | { ok: false; errors: string[] };
+
+export type InvertGraphPatchResult =
+  | { ok: true; inversePatch: GraphPatchV01 }
   | { ok: false; errors: string[] };
 
 export type ExecutionModelV01 =

@@ -1,4 +1,6 @@
 export {
+  graphPatchEventV01Schema,
+  graphPatchHistoryV01Schema,
   graphPatchV01Schema,
   graphV01Schema,
   nodeDefinitionV01Schema
@@ -14,8 +16,12 @@ export type {
   ExecutionModelV01,
   GraphDocumentV01,
   GraphNodeV01,
+  GraphPatchEventKindV01,
+  GraphPatchEventV01,
+  GraphPatchHistoryV01,
   GraphPatchOperationV01,
   GraphPatchV01,
+  InvertGraphPatchResult,
   NodeDefinitionManifestV01,
   NodeExecutionV01,
   NodeStateV01,
@@ -30,9 +36,11 @@ export type {
   ValidationResult,
   ValidationSuccess
 } from "./types.js";
-export { applyGraphPatch } from "./patch.js";
+export { applyGraphPatch, invertGraphPatch } from "./patch.js";
 export {
   validateGraphDocument,
+  validateGraphPatchEvent,
+  validateGraphPatchHistory,
   validateGraphPatch,
   validateNodeDefinition
 } from "./validate.js";

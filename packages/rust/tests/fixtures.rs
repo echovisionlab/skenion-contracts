@@ -1,8 +1,8 @@
 use std::{fs, path::Path};
 
 use skenion_contracts::{
-    GraphDocumentV01, GraphPatchV01, NodeDefinitionManifestV01, validate_graph_document_v01,
-    validate_node_definition_v01,
+    GraphDocumentV01, GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01,
+    NodeDefinitionManifestV01, validate_graph_document_v01, validate_node_definition_v01,
 };
 
 fn collect_json_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
@@ -100,5 +100,35 @@ fn parses_graph_patch_fixtures() {
             "{} should be structurally invalid",
             file.display()
         );
+    }
+}
+
+#[test]
+fn parses_graph_patch_event_and_history_fixtures() {
+    for file in fixture_files("../../fixtures/graph-patch-event/v0.1/valid") {
+        let event: GraphPatchEventV01 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+        assert_eq!(event.schema, "skenion.graph.patch.event");
+        assert_eq!(event.schema_version, "0.1.0");
+    }
+
+    for file in fixture_files("../../fixtures/graph-patch-event/v0.1/invalid") {
+        let parsed = serde_json::from_slice::<GraphPatchEventV01>(
+            &fs::read(&file).expect("fixture should be readable"),
+        );
+        assert!(
+            parsed.is_err(),
+            "{} should be structurally invalid",
+            file.display()
+        );
+    }
+
+    for file in fixture_files("../../fixtures/graph-patch-history/v0.1/valid") {
+        let history: GraphPatchHistoryV01 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+        assert_eq!(history.schema, "skenion.graph.patch.history");
+        assert_eq!(history.schema_version, "0.1.0");
     }
 }

@@ -11,6 +11,12 @@ async function readSchema(relativePath) {
 
 const graphV01Schema = await readSchema("json-schema/graph/v0.1/graph.schema.json");
 const graphPatchV01Schema = await readSchema("json-schema/graph/v0.1/patch.schema.json");
+const graphPatchEventV01Schema = await readSchema(
+  "json-schema/graph/v0.1/patch-event.schema.json"
+);
+const graphPatchHistoryV01Schema = await readSchema(
+  "json-schema/graph/v0.1/patch-history.schema.json"
+);
 const nodeDefinitionV01Schema = await readSchema(
   "json-schema/node/v0.1/node-definition.schema.json"
 );
@@ -24,6 +30,10 @@ await writeFile(
     `export const graphV01Schema = ${JSON.stringify(graphV01Schema, null, 2)} as const;`,
     "",
     `export const graphPatchV01Schema = ${JSON.stringify(graphPatchV01Schema, null, 2)} as const;`,
+    "",
+    `export const graphPatchEventV01Schema = ${JSON.stringify(graphPatchEventV01Schema, null, 2)} as const;`,
+    "",
+    `export const graphPatchHistoryV01Schema = ${JSON.stringify(graphPatchHistoryV01Schema, null, 2)} as const;`,
     "",
     `export const nodeDefinitionV01Schema = ${JSON.stringify(nodeDefinitionV01Schema, null, 2)} as const;`,
     ""
