@@ -144,6 +144,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.graph.patch" && document.schemaVersion === "0.0.0") {
     return validators.patchV0;
   }
+  if (document.schema === "skenion.graph.patch" && document.schemaVersion === "0.1.0") {
+    return validators.patchV01;
+  }
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.1.0") {
     return validators.nodeDefinitionV01;
   }
@@ -177,6 +180,7 @@ const validators = {
   graphV0: ajv.compile(await readJson("json-schema/graph/v0/graph.schema.json")),
   patchV0: ajv.compile(await readJson("json-schema/graph/v0/patch.schema.json")),
   graphV01: ajv.compile(await readJson("json-schema/graph/v0.1/graph.schema.json")),
+  patchV01: ajv.compile(await readJson("json-schema/graph/v0.1/patch.schema.json")),
   nodeDefinitionV01: ajv.compile(
     await readJson("json-schema/node/v0.1/node-definition.schema.json")
   )

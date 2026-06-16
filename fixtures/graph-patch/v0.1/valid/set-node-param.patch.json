@@ -1,0 +1,15 @@
+{
+  "schema": "skenion.graph.patch",
+  "schemaVersion": "0.1.0",
+  "id": "patch_set_node_param",
+  "baseRevision": "1",
+  "description": "Set one top-level node param.",
+  "ops": [
+    {
+      "op": "setNodeParam",
+      "nodeId": "value_1",
+      "key": "value",
+      "value": 0.5
+    }
+  ]
+}

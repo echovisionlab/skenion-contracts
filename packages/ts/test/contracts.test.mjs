@@ -3,8 +3,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import {
+  applyGraphPatch,
+  graphPatchV01Schema,
   graphV01Schema,
   nodeDefinitionV01Schema,
+  validateGraphPatch,
   validateGraphDocument,
   validateNodeDefinition
 } from "../dist/index.js";
@@ -17,6 +20,7 @@ async function readJson(relativePath) {
 
 test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(graphPatchV01Schema.properties.schema.const, "skenion.graph.patch");
   assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
 });
 
@@ -178,4 +182,239 @@ test("rejects unsupported permissions in node manifests", async () => {
 
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /unsupported permission/);
+});
+
+test("validates v0.1 graph patch fixtures", async () => {
+  const patch = await readJson("fixtures/graph-patch/v0.1/valid/set-node-param.patch.json");
+  const result = validateGraphPatch(patch);
+
+  assert.equal(result.ok, true);
+});
+
+test("rejects schema-invalid graph patches", async () => {
+  const patch = await readJson("fixtures/graph-patch/v0.1/invalid/unsupported-op.patch.json");
+  const result = validateGraphPatch(patch);
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /must match exactly one schema/);
+});
+
+test("applies graph patches atomically and updates revision", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+  const patch = {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_001",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "setNodeParam",
+        nodeId: "slider_1",
+        key: "value",
+        value: 0.75
+      }
+    ]
+  };
+
+  const result = applyGraphPatch(graph, patch, { nextRevision: "2" });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.graph.revision, "2");
+  assert.equal(result.graph.nodes[0].params.value, 0.75);
+  assert.equal(graph.revision, "1");
+  assert.equal(graph.nodes[0].params.value, 0.5);
+});
+
+test("removeNode removes incident edges", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+
+  const result = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_remove",
+    baseRevision: "1",
+    ops: [{ op: "removeNode", nodeId: "slider_1" }]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.graph.revision, "2");
+  assert.equal(result.graph.edges.length, 0);
+  assert.equal(result.graph.nodes.some((node) => node.id === "slider_1"), false);
+});
+
+test("setNodeParams addNode and removeNode apply in order", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+
+  const result = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_ordered",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "addNode",
+        node: {
+          id: "value_2",
+          kind: "core.value-f32",
+          kindVersion: "0.1.0",
+          params: {},
+          ports: []
+        }
+      },
+      { op: "setNodeParams", nodeId: "value_2", params: { value: 1 } },
+      { op: "removeNode", nodeId: "value_2" }
+    ]
+  }, { nextRevision: "accepted" });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.graph.revision, "accepted");
+  assert.equal(result.graph.nodes.some((node) => node.id === "value_2"), false);
+});
+
+test("rejects graph patch conflicts duplicate edges and invalid resulting graphs", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+
+  const conflict = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_conflict",
+    baseRevision: "0",
+    ops: []
+  });
+  assert.equal(conflict.ok, false);
+  assert.match(conflict.errors.join("\n"), /baseRevision 0/);
+
+  const duplicateEdge = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_duplicate_edge",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "addEdge",
+        edge: graph.edges[0]
+      }
+    ]
+  });
+  assert.equal(duplicateEdge.ok, false);
+  assert.match(duplicateEdge.errors.join("\n"), /already exists/);
+
+  const invalidEdge = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_invalid_edge",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "addEdge",
+        edge: {
+          from: { node: "slider_1", port: "out" },
+          to: { node: "missing", port: "value" }
+        }
+      }
+    ]
+  });
+  assert.equal(invalidEdge.ok, false);
+  assert.match(invalidEdge.errors.join("\n"), /missing target port/);
+});
+
+test("rejects missing patch targets and absent edges", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+
+  const missingNode = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_missing_node",
+    baseRevision: "1",
+    ops: [{ op: "setNodeParam", nodeId: "missing", key: "value", value: 1 }]
+  });
+  assert.equal(missingNode.ok, false);
+  assert.match(missingNode.errors.join("\n"), /node missing does not exist/);
+
+  const missingEdge = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_missing_edge",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "removeEdge",
+        edge: {
+          from: { node: "slider_1", port: "out" },
+          to: { node: "blur_1", port: "missing" }
+        }
+      }
+    ]
+  });
+  assert.equal(missingEdge.ok, false);
+  assert.match(missingEdge.errors.join("\n"), /does not exist/);
+});
+
+test("rejects structurally invalid patches and missing add or remove targets", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+
+  const invalidPatch = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "invalid",
+    baseRevision: "1",
+    ops: [{ op: "moveNode", nodeId: "slider_1" }]
+  });
+  assert.equal(invalidPatch.ok, false);
+  assert.match(invalidPatch.errors.join("\n"), /must match exactly one schema/);
+
+  const duplicateNode = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "duplicate_node",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "addNode",
+        node: graph.nodes[0]
+      }
+    ]
+  });
+  assert.equal(duplicateNode.ok, false);
+  assert.match(duplicateNode.errors.join("\n"), /node slider_1 already exists/);
+
+  const missingRemoveNode = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "remove_missing_node",
+    baseRevision: "1",
+    ops: [{ op: "removeNode", nodeId: "missing" }]
+  });
+  assert.equal(missingRemoveNode.ok, false);
+  assert.match(missingRemoveNode.errors.join("\n"), /node missing does not exist/);
+
+  const missingSetParamsNode = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "set_params_missing_node",
+    baseRevision: "1",
+    ops: [{ op: "setNodeParams", nodeId: "missing", params: {} }]
+  });
+  assert.equal(missingSetParamsNode.ok, false);
+  assert.match(missingSetParamsNode.errors.join("\n"), /node missing does not exist/);
+});
+
+test("appends deterministic suffix for non-numeric graph revisions", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  const result = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "patch_suffix",
+    baseRevision: "rev_0001",
+    ops: []
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.graph.revision, "rev_0001+1");
 });

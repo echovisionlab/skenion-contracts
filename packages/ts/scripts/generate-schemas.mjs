@@ -10,6 +10,7 @@ async function readSchema(relativePath) {
 }
 
 const graphV01Schema = await readSchema("json-schema/graph/v0.1/graph.schema.json");
+const graphPatchV01Schema = await readSchema("json-schema/graph/v0.1/patch.schema.json");
 const nodeDefinitionV01Schema = await readSchema(
   "json-schema/node/v0.1/node-definition.schema.json"
 );
@@ -21,6 +22,8 @@ await writeFile(
     "/* This file is generated from the repository JSON Schema sources. */",
     "",
     `export const graphV01Schema = ${JSON.stringify(graphV01Schema, null, 2)} as const;`,
+    "",
+    `export const graphPatchV01Schema = ${JSON.stringify(graphPatchV01Schema, null, 2)} as const;`,
     "",
     `export const nodeDefinitionV01Schema = ${JSON.stringify(nodeDefinitionV01Schema, null, 2)} as const;`,
     ""

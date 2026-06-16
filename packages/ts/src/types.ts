@@ -60,6 +60,62 @@ export interface GraphDocumentV01 {
   edges: EdgeV01[];
 }
 
+export interface AddNodeOperationV01 {
+  op: "addNode";
+  node: GraphNodeV01;
+}
+
+export interface RemoveNodeOperationV01 {
+  op: "removeNode";
+  nodeId: string;
+}
+
+export interface SetNodeParamsOperationV01 {
+  op: "setNodeParams";
+  nodeId: string;
+  params: Record<string, unknown>;
+}
+
+export interface SetNodeParamOperationV01 {
+  op: "setNodeParam";
+  nodeId: string;
+  key: string;
+  value: unknown;
+}
+
+export interface AddEdgeOperationV01 {
+  op: "addEdge";
+  edge: EdgeV01;
+}
+
+export interface RemoveEdgeOperationV01 {
+  op: "removeEdge";
+  edge: EdgeV01;
+}
+
+export type GraphPatchOperationV01 =
+  | AddNodeOperationV01
+  | RemoveNodeOperationV01
+  | SetNodeParamsOperationV01
+  | SetNodeParamOperationV01
+  | AddEdgeOperationV01
+  | RemoveEdgeOperationV01;
+
+export interface GraphPatchV01 {
+  schema: "skenion.graph.patch";
+  schemaVersion: "0.1.0";
+  id: string;
+  baseRevision: string;
+  clientId?: string;
+  createdAt?: string;
+  description?: string;
+  ops: GraphPatchOperationV01[];
+}
+
+export type ApplyGraphPatchResult =
+  | { ok: true; graph: GraphDocumentV01 }
+  | { ok: false; errors: string[] };
+
 export type ExecutionModelV01 =
   | "event"
   | "value"

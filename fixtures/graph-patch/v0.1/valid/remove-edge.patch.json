@@ -1,0 +1,21 @@
+{
+  "schema": "skenion.graph.patch",
+  "schemaVersion": "0.1.0",
+  "id": "patch_remove_edge",
+  "baseRevision": "1",
+  "ops": [
+    {
+      "op": "removeEdge",
+      "edge": {
+        "from": {
+          "node": "value_2",
+          "port": "out"
+        },
+        "to": {
+          "node": "target_1",
+          "port": "value"
+        }
+      }
+    }
+  ]
+}
