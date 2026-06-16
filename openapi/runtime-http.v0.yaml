@@ -188,6 +188,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimePatchResponse"
+  /v0/session/preview:
+    get:
+      summary: Return the current local runtime session preview status.
+      responses:
+        "200":
+          description: Current session preview status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
+  /v0/session/preview/start:
+    post:
+      summary: Start the local native preview for the currently loaded session.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuntimePreviewStartRequest"
+      responses:
+        "200":
+          description: Preview status after start attempt.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
+  /v0/session/preview/stop:
+    post:
+      summary: Stop the current local native preview.
+      responses:
+        "200":
+          description: Preview status after stop attempt.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
+  /v0/session/preview/restart:
+    post:
+      summary: Restart the local native preview from the current session plan.
+      responses:
+        "200":
+          description: Preview status after restart attempt.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
 components:
   schemas:
     HealthResponse:
@@ -225,7 +271,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -347,6 +393,88 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RuntimeDiagnostic"
+    RuntimePreviewStartRequest:
+      type: object
+      properties:
+        restart:
+          type: boolean
+          default: false
+      additionalProperties: false
+    RuntimePreviewState:
+      type: string
+      enum:
+        - stopped
+        - starting
+        - running
+        - exited
+        - error
+    RuntimePreviewStatusResponse:
+      type: object
+      required:
+        - ok
+        - state
+        - pid
+        - graphId
+        - graphRevision
+        - sessionRevision
+        - previewSessionRevision
+        - stale
+        - startedAt
+        - exitedAt
+        - exitCode
+        - message
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        state:
+          $ref: "#/components/schemas/RuntimePreviewState"
+        pid:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        graphId:
+          anyOf:
+            - type: string
+            - type: "null"
+        graphRevision:
+          anyOf:
+            - type: string
+            - type: "null"
+        sessionRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        previewSessionRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        stale:
+          type: boolean
+        startedAt:
+          anyOf:
+            - type: string
+            - type: "null"
+        exitedAt:
+          anyOf:
+            - type: string
+            - type: "null"
+        exitCode:
+          anyOf:
+            - type: integer
+            - type: "null"
+        message:
+          anyOf:
+            - type: string
+            - type: "null"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
     RuntimeDiagnostic:
       type: object
       required:
