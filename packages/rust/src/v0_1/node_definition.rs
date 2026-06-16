@@ -7,6 +7,7 @@ use super::{ExecutionModelV01, PortV01};
 #[serde(rename_all = "camelCase")]
 pub struct NodeExecutionV01 {
     pub model: ExecutionModelV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub clock: Option<String>,
 }
 
@@ -26,7 +27,9 @@ pub struct NodeDefinitionManifestV01 {
     pub version: String,
     pub display_name: String,
     pub category: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub script_api_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bundle_hash: Option<String>,
     pub ports: Vec<PortV01>,
     pub execution: NodeExecutionV01,
