@@ -1,0 +1,21 @@
+{
+  "schema": "skenion.graph.patch",
+  "schemaVersion": "0.1.0",
+  "id": "patch_add_edge",
+  "baseRevision": "1",
+  "ops": [
+    {
+      "op": "addEdge",
+      "edge": {
+        "from": {
+          "node": "value_2",
+          "port": "out"
+        },
+        "to": {
+          "node": "target_1",
+          "port": "value"
+        }
+      }
+    }
+  ]
+}

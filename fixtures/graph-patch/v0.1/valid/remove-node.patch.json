@@ -1,0 +1,12 @@
+{
+  "schema": "skenion.graph.patch",
+  "schemaVersion": "0.1.0",
+  "id": "patch_remove_node",
+  "baseRevision": "1",
+  "ops": [
+    {
+      "op": "removeNode",
+      "nodeId": "value_2"
+    }
+  ]
+}

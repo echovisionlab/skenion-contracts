@@ -1,0 +1,30 @@
+{
+  "schema": "skenion.graph.patch",
+  "schemaVersion": "0.1.0",
+  "id": "patch_add_node",
+  "baseRevision": "1",
+  "clientId": "contracts-test",
+  "ops": [
+    {
+      "op": "addNode",
+      "node": {
+        "id": "value_2",
+        "kind": "core.value-f32",
+        "kindVersion": "0.1.0",
+        "params": {
+          "value": 0.75
+        },
+        "ports": [
+          {
+            "id": "out",
+            "direction": "output",
+            "type": {
+              "flow": "value",
+              "dataKind": "number.f32"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

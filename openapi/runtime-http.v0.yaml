@@ -142,6 +142,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeSessionResponse"
+  /v0/session/patch:
+    post:
+      summary: Apply a graph patch to the currently loaded local runtime session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GraphPatchV01"
+      responses:
+        "200":
+          description: Patch application result and current session state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimePatchResponse"
 components:
   schemas:
     HealthResponse:
@@ -179,7 +195,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -267,6 +283,32 @@ components:
         frames:
           type: integer
           minimum: 0
+    RuntimePatchResponse:
+      type: object
+      required:
+        - ok
+        - applied
+        - conflict
+        - graph
+        - session
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        applied:
+          type: boolean
+        conflict:
+          type: boolean
+        graph:
+          anyOf:
+            - $ref: "#/components/schemas/GraphDocumentV01"
+            - type: "null"
+        session:
+          $ref: "#/components/schemas/RuntimeSessionResponse"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
     RuntimeDiagnostic:
       type: object
       required:
@@ -433,6 +475,37 @@ components:
             type: object
             additionalProperties: true
         edges:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      additionalProperties: true
+    GraphPatchV01:
+      type: object
+      required:
+        - schema
+        - schemaVersion
+        - id
+        - baseRevision
+        - ops
+      properties:
+        schema:
+          type: string
+          const: skenion.graph.patch
+        schemaVersion:
+          type: string
+          const: 0.1.0
+        id:
+          type: string
+        baseRevision:
+          type: string
+        clientId:
+          type: string
+        createdAt:
+          type: string
+        description:
+          type: string
+        ops:
           type: array
           items:
             type: object

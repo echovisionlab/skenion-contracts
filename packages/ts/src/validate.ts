@@ -5,12 +5,14 @@ import type {
   ValidateFunction
 } from "ajv/dist/2020.js";
 import {
+  graphPatchV01Schema,
   graphV01Schema,
   nodeDefinitionV01Schema
 } from "./generated/schemas.js";
 import type {
   DataTypeV01,
   GraphDocumentV01,
+  GraphPatchV01,
   NodeDefinitionManifestV01,
   PortV01,
   ValidationResult
@@ -23,6 +25,7 @@ const Ajv2020 = Ajv2020Runtime as unknown as new (opts?: Options) => {
 };
 const ajv = new Ajv2020({ allErrors: true });
 const graphV01Validator = ajv.compile(graphV01Schema);
+const graphPatchV01Validator = ajv.compile(graphPatchV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
@@ -154,6 +157,14 @@ export function validateGraphDocument(document: unknown): ValidationResult<Graph
   }
 
   return { ok: true, value: graph };
+}
+
+export function validateGraphPatch(document: unknown): ValidationResult<GraphPatchV01> {
+  if (!graphPatchV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(graphPatchV01Validator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as GraphPatchV01 };
 }
 
 export function validateNodeDefinition(

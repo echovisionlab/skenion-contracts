@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 
 use skenion_contracts::{
-    GraphDocumentV01, NodeDefinitionManifestV01, validate_graph_document_v01,
+    GraphDocumentV01, GraphPatchV01, NodeDefinitionManifestV01, validate_graph_document_v01,
     validate_node_definition_v01,
 };
 
@@ -67,6 +67,37 @@ fn validates_node_definition_fixtures() {
         assert!(
             validate_node_definition_v01(&definition).is_err(),
             "{} should be invalid",
+            file.display()
+        );
+    }
+}
+
+#[test]
+fn parses_graph_patch_fixtures() {
+    for file in fixture_files("../../fixtures/graph-patch/v0.1/valid") {
+        let patch: GraphPatchV01 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+        assert_eq!(patch.schema, "skenion.graph.patch");
+        assert_eq!(patch.schema_version, "0.1.0");
+    }
+
+    let schema_invalid = [
+        "add-edge-missing-endpoint.patch.json",
+        "add-node-missing-node.patch.json",
+        "missing-base-revision.patch.json",
+        "unsupported-op.patch.json",
+    ];
+    for file_name in schema_invalid {
+        let file = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/graph-patch/v0.1/invalid")
+            .join(file_name);
+        let parsed = serde_json::from_slice::<GraphPatchV01>(
+            &fs::read(&file).expect("fixture should be readable"),
+        );
+        assert!(
+            parsed.is_err(),
+            "{} should be structurally invalid",
             file.display()
         );
     }

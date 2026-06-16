@@ -22,6 +22,8 @@ jobs:
           repository: echovisionlab/skenion-examples
           path: .deps/skenion-examples
       - uses: bufbuild/buf-setup-action@v1.50.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: pnpm/action-setup@v6
         with:
           version: 10.12.4
