@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.8.0...skenion-contracts-v0.9.0) (2026-06-16)
+
+
+### Features
+
+* **contracts:** add port edge feedback v0.2 ([2f51384](https://github.com/echovisionlab/skenion-contracts/commit/2f51384806e1215dbb5a4c4801560e6179f38c67))
+
 ## [0.8.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.7.0...skenion-contracts-v0.8.0) (2026-06-16)
 
 
