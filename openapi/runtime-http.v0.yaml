@@ -234,6 +234,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimePreviewStatusResponse"
+  /v0/session/telemetry:
+    get:
+      summary: Return a read-only runtime telemetry snapshot.
+      responses:
+        "200":
+          description: Current session, preview, render, and process telemetry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeTelemetrySnapshot"
+  /v0/session/telemetry/stream:
+    get:
+      summary: Stream runtime telemetry snapshots with Server-Sent Events.
+      responses:
+        "200":
+          description: Runtime telemetry event stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                telemetry:
+                  value: |
+                    event: telemetry
+                    data: {"schema":"skenion.runtime.telemetry","schemaVersion":"0.1.0","ok":true}
 components:
   schemas:
     HealthResponse:
@@ -271,7 +296,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.telemetry", "session.telemetry.stream", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -475,6 +500,161 @@ components:
           items:
             $ref: "#/components/schemas/RuntimeDiagnostic"
       additionalProperties: false
+    RuntimeTelemetrySnapshot:
+      type: object
+      required:
+        - schema
+        - schemaVersion
+        - ok
+        - timestamp
+        - session
+        - preview
+        - render
+        - process
+        - diagnostics
+      properties:
+        schema:
+          type: string
+          const: skenion.runtime.telemetry
+        schemaVersion:
+          type: string
+          const: 0.1.0
+        ok:
+          type: boolean
+        timestamp:
+          type: string
+          examples:
+            - unix-ms:1710000000000
+        session:
+          $ref: "#/components/schemas/RuntimeTelemetrySession"
+        preview:
+          $ref: "#/components/schemas/RuntimeTelemetryPreview"
+        render:
+          $ref: "#/components/schemas/RuntimeTelemetryRender"
+        process:
+          $ref: "#/components/schemas/RuntimeTelemetryProcess"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: true
+    RuntimeTelemetrySession:
+      type: object
+      required:
+        - loaded
+        - graphId
+        - graphRevision
+        - sessionRevision
+      properties:
+        loaded:
+          type: boolean
+        graphId:
+          anyOf:
+            - type: string
+            - type: "null"
+        graphRevision:
+          anyOf:
+            - type: string
+            - type: "null"
+        sessionRevision:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    RuntimeTelemetryPreview:
+      type: object
+      required:
+        - state
+        - pid
+        - stale
+        - graphId
+        - graphRevision
+        - sessionRevision
+        - previewSessionRevision
+      properties:
+        state:
+          $ref: "#/components/schemas/RuntimePreviewState"
+        pid:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        stale:
+          type: boolean
+        graphId:
+          anyOf:
+            - type: string
+            - type: "null"
+        graphRevision:
+          anyOf:
+            - type: string
+            - type: "null"
+        sessionRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        previewSessionRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+      additionalProperties: true
+    RuntimeTelemetryRender:
+      type: object
+      required:
+        - active
+        - backend
+        - renderer
+        - framesRendered
+        - approxFps
+        - lastFrameMs
+        - lastError
+        - sourceNodeId
+      properties:
+        active:
+          type: boolean
+        backend:
+          anyOf:
+            - type: string
+            - type: "null"
+        renderer:
+          anyOf:
+            - type: string
+            - type: "null"
+        framesRendered:
+          type: integer
+          minimum: 0
+        approxFps:
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        lastFrameMs:
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        lastError:
+          anyOf:
+            - type: string
+            - type: "null"
+        sourceNodeId:
+          anyOf:
+            - type: string
+            - type: "null"
+      additionalProperties: true
+    RuntimeTelemetryProcess:
+      type: object
+      required:
+        - runtimeVersion
+        - uptimeMs
+      properties:
+        runtimeVersion:
+          type: string
+        uptimeMs:
+          type: integer
+          minimum: 0
+      additionalProperties: true
     RuntimeDiagnostic:
       type: object
       required:
@@ -485,6 +665,8 @@ components:
           type: string
           enum:
             - error
+            - warning
+            - info
         message:
           type: string
     ExecutionPlan:
