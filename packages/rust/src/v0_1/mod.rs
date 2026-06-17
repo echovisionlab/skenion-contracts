@@ -14,7 +14,7 @@ pub use patch::{
     apply_graph_patch_v01, invert_graph_patch_v01,
 };
 pub use project::{
-    CanvasNodeViewV01, CanvasViewportV01, CanvasViewStateV01, ProjectDocumentV01,
+    CanvasNodeViewV01, CanvasViewStateV01, CanvasViewportV01, ProjectDocumentV01,
     ProjectMetadataV01, ViewStateV01, create_default_view_state_for_graph_v01,
 };
 pub use shader_interface::{

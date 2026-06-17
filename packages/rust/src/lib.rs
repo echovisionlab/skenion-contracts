@@ -2,13 +2,12 @@ pub mod v0_1;
 pub mod v0_2;
 
 pub use v0_1::{
-    ApplyPatchErrorV01, CanvasNodeViewV01, CanvasViewportV01, CanvasViewStateV01, DataFlowV01,
+    ApplyPatchErrorV01, CanvasNodeViewV01, CanvasViewStateV01, CanvasViewportV01, DataFlowV01,
     DataTypeV01, EdgeV01, ExecutionModelV01, GeneratedShaderSourceMapV01, GraphDocumentV01,
     GraphNodeV01, GraphPatchEventKindV01, GraphPatchEventV01, GraphPatchHistoryV01,
     GraphPatchOperationV01, GraphPatchV01, InvertPatchErrorV01, NodeDefinitionManifestV01,
     NodeExecutionV01, NodeStateV01, NumberRangeV01, PortActivationV01, PortDirectionV01,
-    PortRefV01, PortV01, ProjectDocumentV01, ProjectMetadataV01,
-    ReplaceNodeInterfaceEdgePolicyV01,
+    PortRefV01, PortV01, ProjectDocumentV01, ProjectMetadataV01, ReplaceNodeInterfaceEdgePolicyV01,
     ShaderDiagnosticPhaseV01, ShaderDiagnosticSeverityV01, ShaderDiagnosticSourceV01,
     ShaderDiagnosticV01, ShaderInterfaceAnalysisV01, ShaderInterfaceDiagnosticSeverityV01,
     ShaderInterfaceDiagnosticV01, ShaderInterfaceV01, ShaderLanguageV01, ShaderUniformV01,

@@ -179,7 +179,9 @@ mod tests {
         assert_eq!(parsed.schema, "skenion.project");
         assert_eq!(parsed.view_state.canvas.nodes.len(), 2);
         assert_eq!(
-            parsed.metadata.and_then(|metadata| metadata.extra.get("owner").cloned()),
+            parsed
+                .metadata
+                .and_then(|metadata| metadata.extra.get("owner").cloned()),
             Some(Value::String("studio".to_owned()))
         );
     }
