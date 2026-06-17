@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.11.0...skenion-contracts-v0.12.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** add multi uniform shader builtins ([#34](https://github.com/echovisionlab/skenion-contracts/issues/34)) ([af1115c](https://github.com/echovisionlab/skenion-contracts/commit/af1115c7647c9514ca73b4daf587037cf8c90ead))
+
 ## [0.11.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.10.0...skenion-contracts-v0.11.0) (2026-06-17)
 
 
