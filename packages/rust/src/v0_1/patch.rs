@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use thiserror::Error;
 
-use super::{EdgeV01, GraphDocumentV01, GraphNodeV01, validate_graph_document_v01};
+use super::{
+    EdgeV01, GraphDocumentV01, GraphNodeV01, PortDirectionV01, PortV01, compatible_data_types_v01,
+    validate_graph_document_v01,
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -91,6 +94,20 @@ pub enum GraphPatchOperationV01 {
     AddEdge { edge: EdgeV01 },
     #[serde(rename = "removeEdge")]
     RemoveEdge { edge: EdgeV01 },
+    #[serde(rename = "replaceNodeInterface")]
+    ReplaceNodeInterface {
+        #[serde(rename = "nodeId")]
+        node_id: String,
+        ports: Vec<PortV01>,
+        #[serde(rename = "edgePolicy")]
+        edge_policy: ReplaceNodeInterfaceEdgePolicyV01,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ReplaceNodeInterfaceEdgePolicyV01 {
+    RemoveInvalidEdges,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -167,6 +184,52 @@ fn find_node_mut<'a>(
 
 fn find_node<'a>(graph: &'a GraphDocumentV01, node_id: &str) -> Option<&'a GraphNodeV01> {
     graph.nodes.iter().find(|node| node.id == node_id)
+}
+
+fn find_port<'a>(graph: &'a GraphDocumentV01, node_id: &str, port_id: &str) -> Option<&'a PortV01> {
+    graph
+        .nodes
+        .iter()
+        .find(|node| node.id == node_id)?
+        .ports
+        .iter()
+        .find(|port| port.id == port_id)
+}
+
+fn edge_is_valid_in_graph(graph: &GraphDocumentV01, edge: &EdgeV01) -> bool {
+    let Some(source) = find_port(graph, &edge.from.node, &edge.from.port) else {
+        return false;
+    };
+    let Some(target) = find_port(graph, &edge.to.node, &edge.to.port) else {
+        return false;
+    };
+    source.direction == PortDirectionV01::Output
+        && target.direction == PortDirectionV01::Input
+        && compatible_data_types_v01(&source.data_type, &target.data_type)
+}
+
+fn replace_node_interface(
+    graph: &mut GraphDocumentV01,
+    node_id: &str,
+    ports: Vec<PortV01>,
+) -> Vec<EdgeV01> {
+    let Some(node) = find_node_mut(graph, node_id) else {
+        return Vec::new();
+    };
+    node.ports = ports;
+
+    let mut removed_edges = Vec::new();
+    let mut kept_edges = Vec::new();
+    for edge in std::mem::take(&mut graph.edges) {
+        let incident_to_node = edge.from.node == node_id || edge.to.node == node_id;
+        if !incident_to_node || edge_is_valid_in_graph(graph, &edge) {
+            kept_edges.push(edge);
+        } else {
+            removed_edges.push(edge);
+        }
+    }
+    graph.edges = kept_edges;
+    removed_edges
 }
 
 pub fn apply_graph_patch_v01(
@@ -249,6 +312,12 @@ pub fn apply_graph_patch_v01(
                 if next_graph.edges.len() == before {
                     return Err(ApplyPatchErrorV01::EdgeMissing(key));
                 }
+            }
+            GraphPatchOperationV01::ReplaceNodeInterface { node_id, ports, .. } => {
+                if find_node(&next_graph, node_id).is_none() {
+                    return Err(ApplyPatchErrorV01::NodeMissing(node_id.clone()));
+                }
+                replace_node_interface(&mut next_graph, node_id, ports.clone());
             }
         }
     }
@@ -383,6 +452,25 @@ pub fn invert_graph_patch_v01(
                     vec![GraphPatchOperationV01::AddEdge { edge: edge.clone() }],
                 );
             }
+            GraphPatchOperationV01::ReplaceNodeInterface { node_id, ports, .. } => {
+                let Some(node) = find_node(&working_graph, node_id) else {
+                    return Err(InvertPatchErrorV01::NodeMissing(node_id.clone()));
+                };
+                let previous_ports = node.ports.clone();
+                let removed_edges =
+                    replace_node_interface(&mut working_graph, node_id, ports.clone());
+                let mut group = vec![GraphPatchOperationV01::ReplaceNodeInterface {
+                    node_id: node_id.clone(),
+                    ports: previous_ports,
+                    edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+                }];
+                group.extend(
+                    removed_edges
+                        .into_iter()
+                        .map(|edge| GraphPatchOperationV01::AddEdge { edge }),
+                );
+                inverse_groups.insert(0, group);
+            }
         }
     }
 
@@ -465,6 +553,32 @@ mod tests {
             }"#,
         )
         .expect("edge should parse")
+    }
+
+    fn bool_input_port(id: &str) -> PortV01 {
+        serde_json::from_str(&format!(
+            r#"{{
+              "id": "{id}",
+              "direction": "input",
+              "type": {{ "flow": "value", "dataKind": "boolean" }},
+              "required": false,
+              "activation": "latched"
+            }}"#
+        ))
+        .expect("port should parse")
+    }
+
+    fn f32_input_port(id: &str) -> PortV01 {
+        serde_json::from_str(&format!(
+            r#"{{
+              "id": "{id}",
+              "direction": "input",
+              "type": {{ "flow": "value", "dataKind": "number.f32" }},
+              "required": false,
+              "activation": "latched"
+            }}"#
+        ))
+        .expect("port should parse")
     }
 
     fn added_node(id: &str) -> GraphNodeV01 {
@@ -610,6 +724,16 @@ mod tests {
             Err(ApplyPatchErrorV01::NodeMissing(id)) if id == "missing"
         ));
 
+        let missing_replace_node = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+            node_id: "missing".to_owned(),
+            ports: vec![],
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        assert!(matches!(
+            apply_graph_patch_v01(&graph(), &missing_replace_node, None),
+            Err(ApplyPatchErrorV01::NodeMissing(id)) if id == "missing"
+        ));
+
         let missing_edge = patch(vec![GraphPatchOperationV01::RemoveEdge { edge: edge() }]);
         let mut graph_without_edge = graph();
         graph_without_edge.edges.clear();
@@ -646,6 +770,81 @@ mod tests {
         assert!(matches!(
             apply_graph_patch_v01(&graph(), &invalid_edge, None),
             Err(ApplyPatchErrorV01::InvalidGraph(message)) if message.contains("missing target port")
+        ));
+    }
+
+    #[test]
+    fn replaces_node_interface_and_removes_invalid_edges() {
+        let result = apply_graph_patch_v01(
+            &graph(),
+            &patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+                node_id: "target".to_owned(),
+                ports: vec![bool_input_port("enabled")],
+                edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+            }]),
+            Some("2"),
+        )
+        .expect("replace interface should apply");
+
+        let target = result
+            .nodes
+            .iter()
+            .find(|node| node.id == "target")
+            .expect("target should exist");
+        assert_eq!(target.ports[0].id, "enabled");
+        assert!(result.edges.is_empty());
+    }
+
+    #[test]
+    fn replace_node_interface_removes_edges_when_source_port_disappears() {
+        let result = apply_graph_patch_v01(
+            &graph(),
+            &patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+                node_id: "source".to_owned(),
+                ports: vec![],
+                edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+            }]),
+            Some("2"),
+        )
+        .expect("replace interface should apply");
+
+        assert!(result.edges.is_empty());
+
+        let mut missing = graph();
+        let removed =
+            replace_node_interface(&mut missing, "missing", vec![f32_input_port("value")]);
+        assert!(removed.is_empty());
+    }
+
+    #[test]
+    fn replace_node_interface_keeps_compatible_edges_and_inverts_removed_edges() {
+        let forward = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+            node_id: "target".to_owned(),
+            ports: vec![f32_input_port("value"), bool_input_port("enabled")],
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        let applied =
+            apply_graph_patch_v01(&graph(), &forward, Some("2")).expect("replace should apply");
+        assert_eq!(applied.edges.len(), 1);
+
+        let inverse = invert_graph_patch_v01(&graph(), &forward).expect("replace should invert");
+        assert!(matches!(
+            &inverse.ops[0],
+            GraphPatchOperationV01::ReplaceNodeInterface { node_id, ports, .. }
+                if node_id == "target" && ports.iter().map(|port| port.id.as_str()).collect::<Vec<_>>() == vec!["value"]
+        ));
+
+        let removing_forward = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+            node_id: "target".to_owned(),
+            ports: vec![bool_input_port("enabled")],
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        let inverse_with_edge =
+            invert_graph_patch_v01(&graph(), &removing_forward).expect("replace should invert");
+        assert_eq!(inverse_with_edge.ops.len(), 2);
+        assert!(matches!(
+            inverse_with_edge.ops[1],
+            GraphPatchOperationV01::AddEdge { .. }
         ));
     }
 
@@ -849,6 +1048,16 @@ mod tests {
         }]);
         assert!(matches!(
             invert_graph_patch_v01(&source, &missing_set_param_node),
+            Err(InvertPatchErrorV01::NodeMissing(id)) if id == "missing"
+        ));
+
+        let missing_replace_node = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+            node_id: "missing".to_owned(),
+            ports: vec![],
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        assert!(matches!(
+            invert_graph_patch_v01(&source, &missing_replace_node),
             Err(InvertPatchErrorV01::NodeMissing(id)) if id == "missing"
         ));
 

@@ -110,6 +110,8 @@ Rules:
 `render.fullscreen-shader` is a built-in fullscreen shader pass convention. The
 node identity names the render pass concept, not a specific shader language.
 The current built-in shader path only supports WGSL through `params.language`.
+Uniform inputs are graph instance ports generated from source annotations, not
+fixed manifest ports.
 
 Canonical manifest:
 
@@ -126,49 +128,6 @@ Shape:
   "displayName": "Fullscreen Shader",
   "category": "Render",
   "ports": [
-    {
-      "id": "u_value",
-      "direction": "input",
-      "label": "u_value",
-      "type": {
-        "flow": "value",
-        "dataKind": "number.f32",
-        "range": {
-          "min": 0,
-          "max": 1,
-          "step": 0.01
-        }
-      },
-      "required": false,
-      "activation": "latched"
-    },
-    {
-      "id": "u_value2",
-      "direction": "input",
-      "label": "u_value2",
-      "type": {
-        "flow": "value",
-        "dataKind": "number.f32",
-        "range": {
-          "min": 0,
-          "max": 1,
-          "step": 0.01
-        }
-      },
-      "required": false,
-      "activation": "latched"
-    },
-    {
-      "id": "u_color",
-      "direction": "input",
-      "label": "u_color",
-      "type": {
-        "flow": "value",
-        "dataKind": "color.rgba"
-      },
-      "required": false,
-      "activation": "latched"
-    },
     {
       "id": "out",
       "direction": "output",
@@ -207,19 +166,23 @@ Graph node params:
 Rules:
 
 - `language` must be `"wgsl"`.
-- `source` must be a non-empty WGSL module.
-- `source` must provide `vs_main` and `fs_main` entry points.
-- `u_value` and `u_value2` are optional latched `value<number.f32>` inputs in
-  the inclusive `0.0..1.0` range.
-- `u_color` is an optional latched `value<color.rgba>` input. The source
-  convention is `core.color-rgba.params.value = [r, g, b, a]`.
-- If `u_value` or `u_value2` is not connected, runtimes should provide `0.0`.
-- If `u_color` is not connected, runtimes should provide white
-  `[1.0, 1.0, 1.0, 1.0]`.
-- Runtimes may clamp out-of-range number and color components.
-- v0.2 node-definition metadata should expose these uniform inputs as cold
-  control-rate value inputs with `maxConnections: 1`, `mergePolicy: "forbid"`,
-  `triggerMode: "cold"`, `latch: true`, and `required: false`.
+- `source` must be a non-empty WGSL fragment module.
+- `source` must provide `fs_main`.
+- `source` must not provide Skenion-reserved `vs_main`; Runtime generates the
+  fullscreen triangle vertex entry point.
+- Uniform input ports are declared by line comments:
+  `// @skenion.uniform <id> <dataKind> [attributes...]`.
+- Supported uniform data kinds are `number.f32`, `number.i32`, `boolean`, and
+  `color.rgba`.
+- Uniform ids are port ids and WGSL field names. They are not types.
+- Reserved ids `out`, `in`, `set`, `bang`, and `value` are invalid.
+- `default`, `min`, `max`, `step`, and quoted `label` attributes may be used
+  where they fit the uniform type.
+- Generated uniform input ports are optional latched value inputs.
+- If a generated uniform input is not connected, runtimes use the annotation
+  default or the type default: `0.0`, `0`, `false`, or white RGBA.
+- Runtimes may clamp out-of-range number and color components where the node
+  convention defines clamping.
 - Runtime may reject invalid shader source.
 - Shader compile or render errors should be surfaced through preview telemetry
   and Runtime diagnostics.
@@ -228,91 +191,76 @@ Rules:
 `resource<gpu.texture2d>` output. Starting in v0.13, preview output should be
 selected by wiring `render.fullscreen-shader:out` into `render.output:in`.
 
-### WGSL ABI
+### Dynamic Interface Sync
 
-Skenion exposes a single frame uniform at group 0 binding 0. The conceptual ABI
-is:
+The shader interface analyzer produces a `skenion.shader.interface` document
+from WGSL annotations. `shaderInterfaceToPortsV01` converts that interface into
+graph node ports. Studio must apply interface changes explicitly through the
+`replaceNodeInterface` graph patch operation with
+`edgePolicy: "removeInvalidEdges"`.
 
-```wgsl
-struct SkenionFrame {
-  resolution: vec2<f32>,
-  time: f32,
-  frame: u32,
-
-  u_value: f32,
-  u_value2: f32,
-  _pad0: vec2<f32>,
-
-  u_color: vec4<f32>,
-}
-
-@group(0) @binding(0)
-var<uniform> skenion: SkenionFrame;
-```
-
-The physical layout is 48 bytes. `_pad0` keeps `u_color` 16-byte aligned.
-Defaults are `u_value = 0.0`, `u_value2 = 0.0`, and
-`u_color = vec4<f32>(1.0, 1.0, 1.0, 1.0)`.
-
-Existing shaders that only declare `resolution`, `time`, `frame`, and
-`u_value` need to update the uniform struct layout before reading the new
-fields.
-
-The preview renderer calls:
-
-- `vs_main` as the vertex entry point
-- `fs_main` as the fragment entry point
-
-The shader should draw a fullscreen triangle using `@builtin(vertex_index)`.
-The default example is:
+Example:
 
 ```wgsl
-struct SkenionFrame {
-  resolution: vec2<f32>,
-  time: f32,
-  frame: u32,
-
-  u_value: f32,
-  u_value2: f32,
-  _pad0: vec2<f32>,
-
-  u_color: vec4<f32>,
-}
-
-@group(0) @binding(0)
-var<uniform> skenion: SkenionFrame;
-
-struct VertexOut {
-  @builtin(position) position: vec4<f32>,
-}
-
-@vertex
-fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOut {
-  var positions = array<vec2<f32>, 3>(
-    vec2<f32>(-1.0, -3.0),
-    vec2<f32>(-1.0,  1.0),
-    vec2<f32>( 3.0,  1.0)
-  );
-
-  var out: VertexOut;
-  out.position = vec4<f32>(positions[vertex_index], 0.0, 1.0);
-  return out;
-}
-
+// @skenion.uniform speed number.f32 default=0.5 min=0 max=2 step=0.01 label="Speed"
+// @skenion.uniform enabled boolean default=true label="Enabled"
+// @skenion.uniform iterations number.i32 default=8 min=1 max=32 step=1 label="Iterations"
+// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1] label="Tint"
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
-  let pulse = 0.5 + 0.5 * sin(skenion.time * 2.0);
-  let mix_value = clamp(skenion.u_value, 0.0, 1.0);
-  let brightness = 0.25 + 0.75 * clamp(skenion.u_value2, 0.0, 1.0);
-  let animated = vec3<f32>(pulse, 0.2 + mix_value * 0.8, 1.0 - mix_value);
-  let rgb = mix(animated, skenion.u_color.rgb, mix_value) * brightness;
-  return vec4<f32>(rgb, skenion.u_color.a);
+  var pulse = 0.5;
+  if (sk_bool(skenion.enabled)) {
+    pulse = 0.5 + 0.5 * sin(skenion.time * skenion.speed * f32(skenion.iterations));
+  }
+  return vec4<f32>(mix(vec3<f32>(pulse), skenion.tint.rgb, 0.45), skenion.tint.a);
 }
 ```
 
-The ABI is intentionally small. Do not add mouse, audio, textures, MIDI,
-additional custom uniforms, or asset-backed shader source to this node
-convention yet.
+Generated graph instance ports:
+
+```text
+speed      value<number.f32>
+enabled    value<boolean>
+iterations value<number.i32>
+tint       value<color.rgba>
+out        resource<gpu.texture2d>
+```
+
+### WGSL ABI
+
+Runtime generates a WGSL header before the user source. Skenion exposes a single
+frame uniform at group 0 binding 0. The conceptual generated ABI is:
+
+```wgsl
+struct SkenionFrame {
+  resolution: vec2<f32>,
+  time: f32,
+  frame: u32,
+  /* generated uniforms, aligned by type */
+  speed: f32,
+  enabled: u32,
+  iterations: i32,
+  tint: vec4<f32>,
+}
+
+@group(0) @binding(0)
+var<uniform> skenion: SkenionFrame;
+
+fn sk_bool(value: u32) -> bool {
+  return value != 0u;
+}
+```
+
+Generated scalar layout rules:
+
+- `number.f32`: `f32`, alignment 4, size 4.
+- `number.i32`: `i32`, alignment 4, size 4.
+- `boolean`: stored as `u32`; use `sk_bool`.
+- `color.rgba`: `vec4<f32>`, alignment 16, size 16.
+
+The ABI is still intentionally small. Do not add GLSL, texture inputs, video,
+audio, MIDI, asset-backed shader source, or multi-pass render graph semantics
+to this node convention yet.
 
 ## `render.output`
 

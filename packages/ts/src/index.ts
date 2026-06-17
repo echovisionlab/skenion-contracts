@@ -5,7 +5,8 @@ export {
   graphV01Schema,
   graphV02Schema,
   nodeDefinitionV01Schema,
-  nodeDefinitionV02Schema
+  nodeDefinitionV02Schema,
+  shaderInterfaceV01Schema
 } from "./generated/schemas.js";
 export {
   builtinManifestV01,
@@ -59,14 +60,22 @@ export type {
   PortSpecV02,
   RemoveEdgeOperationV01,
   RemoveNodeOperationV01,
+  ReplaceNodeInterfaceOperationV01,
   SetNodeParamOperationV01,
   SetNodeParamsOperationV01,
+  ShaderInterfaceAnalysisV01,
+  ShaderInterfaceDiagnosticV01,
+  ShaderInterfaceV01,
+  ShaderLanguageV01,
+  ShaderUniformDataKindV01,
+  ShaderUniformV01,
   TriggerModeV02,
   ValidationFailure,
   ValidationResult,
   ValidationSuccess
 } from "./types.js";
 export { applyGraphPatch, invertGraphPatch } from "./patch.js";
+export { analyzeShaderInterfaceV01, shaderInterfaceToPortsV01 } from "./shaderInterface.js";
 export {
   analyzeGraphDocumentV02,
   validateGraphDocument,
@@ -75,5 +84,6 @@ export {
   validateGraphPatchHistory,
   validateGraphPatch,
   validateNodeDefinition,
-  validateNodeDefinitionV02
+  validateNodeDefinitionV02,
+  validateShaderInterface
 } from "./validate.js";

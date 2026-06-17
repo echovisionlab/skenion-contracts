@@ -6,9 +6,12 @@ pub use v0_1::{
     GraphNodeV01, GraphPatchEventKindV01, GraphPatchEventV01, GraphPatchHistoryV01,
     GraphPatchOperationV01, GraphPatchV01, InvertPatchErrorV01, NodeDefinitionManifestV01,
     NodeExecutionV01, NodeStateV01, NumberRangeV01, PortActivationV01, PortDirectionV01,
-    PortRefV01, PortV01, StringOrStringsV01, ValidationErrorV01, ValidationReportV01,
-    apply_graph_patch_v01, compatible_data_types_v01, invert_graph_patch_v01, type_label_v01,
-    validate_graph_document_v01, validate_node_definition_v01,
+    PortRefV01, PortV01, ReplaceNodeInterfaceEdgePolicyV01, ShaderInterfaceAnalysisV01,
+    ShaderInterfaceDiagnosticSeverityV01, ShaderInterfaceDiagnosticV01, ShaderInterfaceV01,
+    ShaderLanguageV01, ShaderUniformV01, StringOrStringsV01, ValidationErrorV01,
+    ValidationReportV01, analyze_shader_interface_v01, apply_graph_patch_v01,
+    compatible_data_types_v01, invert_graph_patch_v01, shader_interface_to_ports_v01,
+    type_label_v01, validate_graph_document_v01, validate_node_definition_v01,
 };
 pub use v0_2::{
     CableStyleRegistryV02, CableStyleV02, CycleValidationV02, EdgeEndpointV02, EdgeSpecV02,

@@ -5,7 +5,8 @@ import type {
   GraphPatchOperationV01,
   GraphPatchV01,
   ApplyGraphPatchResult,
-  InvertGraphPatchResult
+  InvertGraphPatchResult,
+  PortV01
 } from "./types.js";
 import { validateGraphDocument, validateGraphPatch } from "./validate.js";
 
@@ -27,6 +28,67 @@ function edgeKey(edge: EdgeV01): string {
 
 function findNode(graph: GraphDocumentV01, nodeId: string): GraphNodeV01 | undefined {
   return graph.nodes.find((node) => node.id === nodeId);
+}
+
+function portKey(nodeId: string, portId: string): string {
+  return `${nodeId}:${portId}`;
+}
+
+function formatAccepts(targetFormat: string | string[] | undefined, sourceFormat: string | string[] | undefined): boolean {
+  if (targetFormat === undefined || sourceFormat === undefined) {
+    return true;
+  }
+  const targetFormats = Array.isArray(targetFormat) ? targetFormat : [targetFormat];
+  const sourceFormats = Array.isArray(sourceFormat) ? sourceFormat : [sourceFormat];
+  return sourceFormats.every((format) => targetFormats.includes(format));
+}
+
+function compatiblePorts(source: PortV01, target: PortV01): boolean {
+  return (
+    source.direction === "output" &&
+    target.direction === "input" &&
+    source.type.flow === target.type.flow &&
+    source.type.dataKind === target.type.dataKind &&
+    formatAccepts(target.type.format, source.type.format)
+  );
+}
+
+function portMap(graph: GraphDocumentV01): Map<string, PortV01> {
+  const ports = new Map<string, PortV01>();
+  for (const node of graph.nodes) {
+    for (const port of node.ports) {
+      ports.set(portKey(node.id, port.id), port);
+    }
+  }
+  return ports;
+}
+
+function edgeIsValidInGraph(graph: GraphDocumentV01, edge: EdgeV01): boolean {
+  const ports = portMap(graph);
+  const source = ports.get(portKey(edge.from.node, edge.from.port));
+  const target = ports.get(portKey(edge.to.node, edge.to.port));
+  return Boolean(source && target && compatiblePorts(source, target));
+}
+
+function replaceNodeInterface(
+  graph: GraphDocumentV01,
+  nodeId: string,
+  ports: PortV01[]
+): EdgeV01[] {
+  const node = findNode(graph, nodeId) as GraphNodeV01;
+  node.ports = cloneJson(ports);
+  const removedEdges: EdgeV01[] = [];
+  graph.edges = graph.edges.filter((edge) => {
+    if (edge.from.node !== nodeId && edge.to.node !== nodeId) {
+      return true;
+    }
+    if (edgeIsValidInGraph(graph, edge)) {
+      return true;
+    }
+    removedEdges.push(cloneJson(edge));
+    return false;
+  });
+  return removedEdges;
 }
 
 function nextRevision(current: string, explicit?: string): string {
@@ -102,6 +164,12 @@ export function applyGraphPatch(
       if (nextGraph.edges.length === before) {
         return { ok: false, errors: [`edge ${key} does not exist`] };
       }
+    } else if (operation.op === "replaceNodeInterface") {
+      const node = findNode(nextGraph, operation.nodeId);
+      if (!node) {
+        return { ok: false, errors: [`node ${operation.nodeId} does not exist`] };
+      }
+      replaceNodeInterface(nextGraph, operation.nodeId, operation.ports);
     }
   }
 
@@ -187,7 +255,7 @@ export function invertGraphPatch(
       }
       inverseGroups.unshift([{ op: "removeEdge", edge: cloneJson(operation.edge) }]);
       workingGraph.edges.push(cloneJson(operation.edge));
-    } else {
+    } else if (operation.op === "removeEdge") {
       const key = edgeKey(operation.edge);
       const before = workingGraph.edges.length;
       workingGraph.edges = workingGraph.edges.filter((edge) => edgeKey(edge) !== key);
@@ -195,6 +263,22 @@ export function invertGraphPatch(
         return { ok: false, errors: [`edge ${key} does not exist`] };
       }
       inverseGroups.unshift([{ op: "addEdge", edge: cloneJson(operation.edge) }]);
+    } else if (operation.op === "replaceNodeInterface") {
+      const node = findNode(workingGraph, operation.nodeId);
+      if (!node) {
+        return { ok: false, errors: [`node ${operation.nodeId} does not exist`] };
+      }
+      const previousPorts = cloneJson(node.ports);
+      const removedEdges = replaceNodeInterface(workingGraph, operation.nodeId, operation.ports);
+      inverseGroups.unshift([
+        {
+          op: "replaceNodeInterface",
+          nodeId: operation.nodeId,
+          ports: previousPorts,
+          edgePolicy: "removeInvalidEdges"
+        },
+        ...removedEdges.map((edge): GraphPatchOperationV01 => ({ op: "addEdge", edge }))
+      ]);
     }
   }
 

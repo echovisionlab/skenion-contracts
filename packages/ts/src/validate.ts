@@ -11,7 +11,8 @@ import {
   graphV01Schema,
   graphV02Schema,
   nodeDefinitionV01Schema,
-  nodeDefinitionV02Schema
+  nodeDefinitionV02Schema,
+  shaderInterfaceV01Schema
 } from "./generated/schemas.js";
 import type {
   DataTypeV01,
@@ -28,6 +29,7 @@ import type {
   NodeDefinitionManifestV02,
   PortV01,
   PortSpecV02,
+  ShaderInterfaceV01,
   ValidationResult
 } from "./types.js";
 
@@ -47,6 +49,7 @@ const graphPatchEventV01Validator = ajv.compile(graphPatchEventV01Schema);
 const graphPatchHistoryV01Validator = ajv.compile(graphPatchHistoryV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 const nodeDefinitionV02Validator = ajv.compile(nodeDefinitionV02Schema);
+const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
   return errors.map((error) => {
@@ -567,4 +570,12 @@ export function validateNodeDefinitionV02(
   }
 
   return { ok: true, value: definition };
+}
+
+export function validateShaderInterface(document: unknown): ValidationResult<ShaderInterfaceV01> {
+  if (!shaderInterfaceV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(shaderInterfaceV01Validator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as ShaderInterfaceV01 };
 }

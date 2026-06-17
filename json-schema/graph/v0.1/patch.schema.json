@@ -51,6 +51,9 @@
           },
           {
             "$ref": "#/$defs/removeEdge"
+          },
+          {
+            "$ref": "#/$defs/replaceNodeInterface"
           }
         ]
       }
@@ -144,6 +147,29 @@
         },
         "edge": {
           "$ref": "#/$defs/edge"
+        }
+      },
+      "additionalProperties": false
+    },
+    "replaceNodeInterface": {
+      "type": "object",
+      "required": ["op", "nodeId", "ports", "edgePolicy"],
+      "properties": {
+        "op": {
+          "const": "replaceNodeInterface"
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/port"
+          }
+        },
+        "edgePolicy": {
+          "const": "removeInvalidEdges"
         }
       },
       "additionalProperties": false

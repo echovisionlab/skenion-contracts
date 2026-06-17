@@ -192,15 +192,12 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
 
   const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
   const shaderPorts = new Map(shaderDefinition?.ports.map((port) => [port.id, port]));
-  for (const portId of ["u_value", "u_value2"]) {
-    const shaderValuePort = shaderPorts.get(portId);
-    if (shaderValuePort?.type.dataKind !== "number.f32") {
-      fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", `render.fullscreen-shader.${portId} must use dataKind number.f32`);
-    }
-  }
-  const shaderColorPort = shaderPorts.get("u_color");
-  if (shaderColorPort?.type.dataKind !== "color.rgba") {
-    fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", "render.fullscreen-shader.u_color must use dataKind color.rgba");
+  const dynamicInputPorts = [...shaderPorts.keys()].filter((portId) => portId !== "out");
+  if (dynamicInputPorts.length > 0) {
+    fail(
+      "builtins/v0.1/nodes/render.fullscreen-shader.node.json",
+      `render.fullscreen-shader builtin should only declare static out port; dynamic inputs are graph instance ports: ${dynamicInputPorts.join(", ")}`
+    );
   }
   const shaderOutPort = shaderPorts.get("out");
   if (shaderOutPort?.type.dataKind !== "gpu.texture2d") {
@@ -623,6 +620,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.2.0") {
     return validators.nodeDefinitionV02;
   }
+  if (document.schema === "skenion.shader.interface" && document.schemaVersion === "0.1.0") {
+    return validators.shaderInterfaceV01;
+  }
 
   fail(file, `no validator for schema ${document.schema ?? "<missing>"} ${document.schemaVersion ?? "<missing>"}`);
 }
@@ -672,6 +672,9 @@ const validators = {
   ),
   nodeDefinitionV02: ajv.compile(
     await readJson("json-schema/node/v0.2/node-definition.schema.json")
+  ),
+  shaderInterfaceV01: ajv.compile(
+    await readJson("json-schema/shader/v0.1/shader-interface.schema.json")
   )
 };
 

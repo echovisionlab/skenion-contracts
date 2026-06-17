@@ -21,7 +21,7 @@ Examples:
 ```text
 node:value_1/param:value
 node:value_1/port:value
-node:shader_1/port:u_value
+node:shader_1/port:speed
 node:toggle_1/state:value
 ```
 
@@ -31,7 +31,7 @@ Inspector and control panels may read values by address:
 
 - graph params, such as `node:value_1/param:value`
 - runtime output/control state, such as `node:value_1/state:value`
-- port metadata and diagnostics, such as `node:shader_1/port:u_value`
+- port metadata and diagnostics, such as `node:shader_1/port:speed`
 
 Runtime graph execution must not read another node through an address unless the
 saved graph contains an explicit edge or an explicit future reference node. This

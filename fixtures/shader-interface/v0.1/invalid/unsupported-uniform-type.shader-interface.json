@@ -1,0 +1,16 @@
+{
+  "schema": "skenion.shader.interface",
+  "schemaVersion": "0.1.0",
+  "language": "wgsl",
+  "uniforms": [
+    {
+      "id": "direction",
+      "label": "Direction",
+      "type": {
+        "flow": "value",
+        "dataKind": "vector.vec3"
+      },
+      "required": false
+    }
+  ]
+}

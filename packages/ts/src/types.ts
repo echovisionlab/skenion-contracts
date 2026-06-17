@@ -228,13 +228,21 @@ export interface RemoveEdgeOperationV01 {
   edge: EdgeV01;
 }
 
+export interface ReplaceNodeInterfaceOperationV01 {
+  op: "replaceNodeInterface";
+  nodeId: string;
+  ports: PortV01[];
+  edgePolicy: "removeInvalidEdges";
+}
+
 export type GraphPatchOperationV01 =
   | AddNodeOperationV01
   | RemoveNodeOperationV01
   | SetNodeParamsOperationV01
   | SetNodeParamOperationV01
   | AddEdgeOperationV01
-  | RemoveEdgeOperationV01;
+  | RemoveEdgeOperationV01
+  | ReplaceNodeInterfaceOperationV01;
 
 export interface GraphPatchV01 {
   schema: "skenion.graph.patch";
@@ -334,6 +342,38 @@ export interface NodeDefinitionManifestV02 {
   state: NodeStateV01;
   permissions: string[];
   capabilities: string[];
+}
+
+export type ShaderLanguageV01 = "wgsl";
+export type ShaderUniformDataKindV01 = "number.f32" | "number.i32" | "boolean" | "color.rgba";
+
+export interface ShaderUniformV01 {
+  id: string;
+  label: string;
+  type: DataTypeV01;
+  default?: unknown;
+  required: boolean;
+}
+
+export interface ShaderInterfaceV01 {
+  schema: "skenion.shader.interface";
+  schemaVersion: "0.1.0";
+  language: ShaderLanguageV01;
+  uniforms: ShaderUniformV01[];
+}
+
+export interface ShaderInterfaceDiagnosticV01 {
+  severity: "error" | "warning";
+  code: string;
+  message: string;
+  line?: number;
+  uniformId?: string;
+}
+
+export interface ShaderInterfaceAnalysisV01 {
+  ok: boolean;
+  shaderInterface: ShaderInterfaceV01;
+  diagnostics: ShaderInterfaceDiagnosticV01[];
 }
 
 export interface ValidationSuccess<T> {

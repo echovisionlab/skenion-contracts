@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/shader/v0.1/shader-interface.schema.json",
+  "title": "Skenion Shader Interface v0.1",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "language", "uniforms"],
+  "properties": {
+    "schema": {
+      "const": "skenion.shader.interface"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "language": {
+      "const": "wgsl"
+    },
+    "uniforms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/uniform"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "uniform": {
+      "type": "object",
+      "required": ["id", "label", "type", "required"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "not": {
+            "enum": ["out", "in", "set", "bang", "value"]
+          }
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/dataType"
+        },
+        "default": true,
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dataType": {
+      "type": "object",
+      "required": ["flow", "dataKind"],
+      "properties": {
+        "flow": {
+          "const": "value"
+        },
+        "dataKind": {
+          "enum": ["number.f32", "number.i32", "boolean", "color.rgba"]
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "step": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

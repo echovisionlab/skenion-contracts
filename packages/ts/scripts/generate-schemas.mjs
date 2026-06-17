@@ -24,6 +24,9 @@ const nodeDefinitionV01Schema = await readSchema(
 const nodeDefinitionV02Schema = await readSchema(
   "json-schema/node/v0.2/node-definition.schema.json"
 );
+const shaderInterfaceV01Schema = await readSchema(
+  "json-schema/shader/v0.1/shader-interface.schema.json"
+);
 
 await mkdir(generatedDir, { recursive: true });
 await writeFile(
@@ -44,6 +47,8 @@ await writeFile(
     `export const nodeDefinitionV01Schema = ${JSON.stringify(nodeDefinitionV01Schema, null, 2)} as const;`,
     "",
     `export const nodeDefinitionV02Schema = ${JSON.stringify(nodeDefinitionV02Schema, null, 2)} as const;`,
+    "",
+    `export const shaderInterfaceV01Schema = ${JSON.stringify(shaderInterfaceV01Schema, null, 2)} as const;`,
     ""
   ].join("\n")
 );

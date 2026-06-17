@@ -17,6 +17,9 @@ import {
   invertGraphPatch,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  shaderInterfaceV01Schema,
+  analyzeShaderInterfaceV01,
+  shaderInterfaceToPortsV01,
   analyzeGraphDocumentV02,
   validateGraphPatchEvent,
   validateGraphPatchHistory,
@@ -24,7 +27,8 @@ import {
   validateGraphDocument,
   validateGraphDocumentV02,
   validateNodeDefinition,
-  validateNodeDefinitionV02
+  validateNodeDefinitionV02,
+  validateShaderInterface
 } from "../dist/index.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
@@ -39,6 +43,7 @@ test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphPatchEventV01Schema.properties.schema.const, "skenion.graph.patch.event");
   assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
   assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
+  assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
 });
 
 test("validates a v0.1 graph fixture", async () => {
@@ -224,9 +229,7 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.equal(messageDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
 
   const shaderDefinition = getBuiltinNodeDefinition("render.fullscreen-shader");
-  assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_value")?.type.dataKind, "number.f32");
-  assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_value2")?.type.dataKind, "number.f32");
-  assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_color")?.type.dataKind, "color.rgba");
+  assert.deepEqual(shaderDefinition?.ports.map((port) => port.id), ["out"]);
   assert.equal(shaderDefinition?.ports.find((port) => port.id === "out")?.type.dataKind, "gpu.texture2d");
   assert.equal(getBuiltinNodeDefinition("missing.node"), undefined);
   assert.equal(
@@ -250,6 +253,96 @@ test("exports the canonical v0.1 builtin manifest", () => {
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("event.bang"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("f32"), false);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
+});
+
+test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
+  const source = [
+    "// @skenion.uniform speed number.f32 default=0.5 min=0 max=2 step=0.01 label=\"Speed Amount\"",
+    "// @skenion.uniform enabled boolean default=true",
+    "// @skenion.uniform disabled boolean default=false",
+    "// @skenion.uniform iterations number.i32 default=8",
+    "// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1]",
+    "fn fs_main() -> @location(0) vec4<f32> { return vec4<f32>(1.0); }"
+  ].join("\n");
+
+  const result = analyzeShaderInterfaceV01(source, { language: "wgsl" });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.diagnostics.length, 0);
+  assert.equal(validateShaderInterface(result.shaderInterface).ok, true);
+  assert.deepEqual(
+    result.shaderInterface.uniforms.map((uniform) => [uniform.id, uniform.type.dataKind, uniform.default]),
+    [
+      ["speed", "number.f32", 0.5],
+      ["enabled", "boolean", true],
+      ["disabled", "boolean", false],
+      ["iterations", "number.i32", 8],
+      ["tint", "color.rgba", [1, 0.2, 0.1, 1]]
+    ]
+  );
+  assert.equal(result.shaderInterface.uniforms[0].label, "Speed Amount");
+  assert.deepEqual(result.shaderInterface.uniforms[0].type.range, { min: 0, max: 2, step: 0.01 });
+
+  const ports = shaderInterfaceToPortsV01(result.shaderInterface);
+  assert.deepEqual(ports.map((port) => port.id), ["speed", "enabled", "disabled", "iterations", "tint", "out"]);
+  assert.equal(ports[0].activation, "latched");
+  assert.equal(ports[5].direction, "output");
+  assert.equal(ports[5].type.dataKind, "gpu.texture2d");
+});
+
+test("reports shader uniform annotation diagnostics", () => {
+  const source = [
+    "// @skenion.uniform 1bad number.f32 default=nope min=nope step=-1",
+    "// @skenion.uniform out number.f32",
+    "// @skenion.uniform speed vec3 default=0",
+    "// @skenion.uniform speed number.f32 default=0.2",
+    "// @skenion.uniform badFloat number.f32 default=nope",
+    "// @skenion.uniform flag boolean default=maybe",
+    "// @skenion.uniform count number.i32 default=1.5",
+    "// @skenion.uniform color color.rgba default=nope",
+    "// @skenion.uniform color2 color.rgba default=[1,2,3]",
+    "// @skenion.uniform ranged number.f32 min=nope max=Infinity step=-1",
+    "// @skenion.uniform plain number.f32 label=Plain"
+  ].join("\n");
+
+  const result = analyzeShaderInterfaceV01(source, { language: "glsl" });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(
+    result.diagnostics.map((diagnostic) => diagnostic.code),
+    [
+      "unsupported-language",
+      "invalid-uniform-id",
+      "reserved-uniform-id",
+      "unsupported-uniform-type",
+      "duplicate-uniform-id",
+      "invalid-default",
+      "invalid-default",
+      "invalid-default",
+      "invalid-default",
+      "invalid-default"
+    ]
+  );
+  assert.equal(result.shaderInterface.uniforms.at(-1)?.label, "Plain");
+});
+
+test("rejects schema-invalid shader interfaces", () => {
+  const result = validateShaderInterface({
+    schema: "skenion.shader.interface",
+    schemaVersion: "0.1.0",
+    language: "wgsl",
+    uniforms: [
+      {
+        id: "out",
+        label: "Out",
+        type: { flow: "value", dataKind: "number.f32" },
+        required: false
+      }
+    ]
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /must NOT be valid/);
 });
 
 test("exports builtin node help", () => {
@@ -737,6 +830,242 @@ test("rejects structurally invalid patches and missing add or remove targets", a
   });
   assert.equal(missingSetParamsNode.ok, false);
   assert.match(missingSetParamsNode.errors.join("\n"), /node missing does not exist/);
+});
+
+test("replaceNodeInterface updates ports and removes invalid incident edges", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+  graph.nodes.push(
+    {
+      id: "source_2",
+      kind: "core.value-f32",
+      kindVersion: "0.1.0",
+      params: {},
+      ports: [
+        {
+          id: "value",
+          direction: "output",
+          type: { flow: "value", dataKind: "number.f32" }
+        }
+      ]
+    },
+    {
+      id: "target_2",
+      kind: "core.preview",
+      kindVersion: "0.1.0",
+      params: {},
+      ports: [
+        {
+          id: "value",
+          direction: "input",
+          type: { flow: "value", dataKind: "number.f32" },
+          required: false,
+          activation: "latched"
+        }
+      ]
+    }
+  );
+  graph.edges.push({
+    from: { node: "source_2", port: "value" },
+    to: { node: "target_2", port: "value" }
+  });
+
+  const result = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "replace_interface",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "replaceNodeInterface",
+        nodeId: "blur_1",
+        edgePolicy: "removeInvalidEdges",
+        ports: [
+          {
+            id: "enabled",
+            direction: "input",
+            label: "Enabled",
+            type: { flow: "value", dataKind: "boolean" },
+            required: false,
+            activation: "latched"
+          }
+        ]
+      }
+    ]
+  }, { nextRevision: "2" });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.graph.nodes.find((node) => node.id === "blur_1").ports[0].id, "enabled");
+  assert.equal(result.graph.edges.length, 1);
+  assert.equal(result.graph.edges[0].from.node, "source_2");
+});
+
+test("replaceNodeInterface keeps compatible edges and inverts removed edges", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+  const noFormatResult = applyGraphPatch(graph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "replace_interface_no_format",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "replaceNodeInterface",
+        nodeId: "blur_1",
+        edgePolicy: "removeInvalidEdges",
+        ports: [
+          {
+            id: "radius",
+            direction: "input",
+            label: "Radius",
+            type: { flow: "value", dataKind: "number.f32" },
+            required: false,
+            activation: "latched"
+          }
+        ]
+      }
+    ]
+  }, { nextRevision: "2" });
+  assert.equal(noFormatResult.ok, true);
+  assert.equal(noFormatResult.graph.edges.length, 1);
+
+  const scalarSourceFormatGraph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  scalarSourceFormatGraph.revision = "1";
+  scalarSourceFormatGraph.nodes[0].ports[0].type.format = "float32";
+  const scalarSourceFormatResult = applyGraphPatch(scalarSourceFormatGraph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "replace_interface_scalar_source_format",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "replaceNodeInterface",
+        nodeId: "blur_1",
+        edgePolicy: "removeInvalidEdges",
+        ports: [
+          {
+            id: "radius",
+            direction: "input",
+            label: "Radius",
+            type: { flow: "value", dataKind: "number.f32", format: ["float32"] },
+            required: false,
+            activation: "latched"
+          }
+        ]
+      }
+    ]
+  }, { nextRevision: "2" });
+  assert.equal(scalarSourceFormatResult.ok, true);
+  assert.equal(scalarSourceFormatResult.graph.edges.length, 1);
+
+  const formatMismatchGraph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  formatMismatchGraph.revision = "1";
+  formatMismatchGraph.nodes[0].ports[0].type.format = ["float16"];
+  const formatMismatchResult = applyGraphPatch(formatMismatchGraph, {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "replace_interface_format_mismatch",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "replaceNodeInterface",
+        nodeId: "blur_1",
+        edgePolicy: "removeInvalidEdges",
+        ports: [
+          {
+            id: "radius",
+            direction: "input",
+            label: "Radius",
+            type: { flow: "value", dataKind: "number.f32", format: "float32" },
+            required: false,
+            activation: "latched"
+          }
+        ]
+      }
+    ]
+  }, { nextRevision: "2" });
+  assert.equal(formatMismatchResult.ok, true);
+  assert.equal(formatMismatchResult.graph.edges.length, 0);
+
+  graph.nodes[0].ports[0].type.format = ["float32"];
+  const replacementPorts = [
+    {
+      id: "radius",
+      direction: "input",
+      label: "Radius",
+      type: { flow: "value", dataKind: "number.f32", format: ["float32"] },
+      required: false,
+      activation: "latched"
+    },
+    {
+      id: "enabled",
+      direction: "input",
+      label: "Enabled",
+      type: { flow: "value", dataKind: "boolean" },
+      required: false,
+      activation: "latched"
+    }
+  ];
+  const patch = {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "replace_interface",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "replaceNodeInterface",
+        nodeId: "blur_1",
+        edgePolicy: "removeInvalidEdges",
+        ports: replacementPorts
+      }
+    ]
+  };
+
+  const result = applyGraphPatch(graph, patch, { nextRevision: "2" });
+  assert.equal(result.ok, true);
+  assert.equal(result.graph.edges.length, 1);
+
+  const inverse = invertGraphPatch(graph, patch);
+  assert.equal(inverse.ok, true);
+  assert.deepEqual(inverse.inversePatch.ops[0].ports.map((port) => port.id), ["radius"]);
+
+  const removedEdgePatch = {
+    ...patch,
+    ops: [
+      {
+        ...patch.ops[0],
+        ports: [
+          {
+            id: "enabled",
+            direction: "input",
+            type: { flow: "value", dataKind: "boolean" },
+            required: false,
+            activation: "latched"
+          }
+        ]
+      }
+    ]
+  };
+  const inverseWithRemovedEdge = invertGraphPatch(graph, removedEdgePatch);
+  assert.equal(inverseWithRemovedEdge.ok, true);
+  assert.equal(inverseWithRemovedEdge.inversePatch.ops.length, 2);
+  assert.equal(inverseWithRemovedEdge.inversePatch.ops[1].op, "addEdge");
+
+  const missingApply = applyGraphPatch(graph, {
+    ...patch,
+    id: "replace_missing",
+    ops: [{ ...patch.ops[0], nodeId: "missing" }]
+  });
+  assert.equal(missingApply.ok, false);
+  assert.match(missingApply.errors.join("\n"), /node missing does not exist/);
+
+  const missingInvert = invertGraphPatch(graph, {
+    ...patch,
+    id: "replace_missing",
+    ops: [{ ...patch.ops[0], nodeId: "missing" }]
+  });
+  assert.equal(missingInvert.ok, false);
+  assert.match(missingInvert.errors.join("\n"), /node missing does not exist/);
 });
 
 test("appends deterministic suffix for non-numeric graph revisions", async () => {
