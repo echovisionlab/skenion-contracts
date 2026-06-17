@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.9.0...skenion-contracts-v0.10.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** publish canonical builtin node definitions ([59aab8d](https://github.com/echovisionlab/skenion-contracts/commit/59aab8d6f6b81072ab9d10c3eac2dac2db9d2562))
+
 ## [0.9.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.8.0...skenion-contracts-v0.9.0) (2026-06-16)
 
 
