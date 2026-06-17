@@ -134,6 +134,73 @@ function validateNodeDefinitionV01Semantics(file, definition) {
   }
 }
 
+function dataKindsInDefinition(definition) {
+  return definition.ports.map((port) => port.type.dataKind);
+}
+
+function validateBuiltins(builtinFiles, validators) {
+  const requiredBuiltinIds = [
+    "core.value-f32",
+    "core.target",
+    "core.bang-button",
+    "core.event-log",
+    "core.video-asset",
+    "core.video-decode",
+    "core.gpu-upload",
+    "core.preview",
+    "render.clear-color",
+    "render.fullscreen-shader",
+    "render.output"
+  ];
+  const definitions = [];
+
+  for (const file of builtinFiles) {
+    const definition = builtinFileDocuments.get(file);
+    if (!definition) {
+      fail(file, "builtin document was not loaded");
+    }
+    if (!validators.nodeDefinitionV01(definition)) {
+      fail(file, validators.nodeDefinitionV01.errors?.map((error) => `${error.instancePath} ${error.message}`).join("; "));
+    }
+    validateNodeDefinitionV01Semantics(file, definition);
+    definitions.push(definition);
+  }
+
+  duplicateCheck(
+    "builtins/v0.1/nodes",
+    definitions.map((definition) => definition.id),
+    "builtin node id"
+  );
+
+  const ids = new Set(definitions.map((definition) => definition.id));
+  for (const id of requiredBuiltinIds) {
+    if (!ids.has(id)) {
+      fail("builtins/v0.1/nodes", `missing required builtin node id: ${id}`);
+    }
+  }
+
+  for (const definition of definitions) {
+    if (dataKindsInDefinition(definition).includes("f32")) {
+      fail(`builtins/v0.1/nodes/${definition.id}.node.json`, "non-canonical dataKind f32 is forbidden; use number.f32");
+    }
+  }
+
+  const valueDefinition = definitions.find((definition) => definition.id === "core.value-f32");
+  const valuePort = valueDefinition?.ports.find((port) => port.id === "value");
+  if (valuePort?.type.dataKind !== "number.f32") {
+    fail("builtins/v0.1/nodes/core.value-f32.node.json", "core.value-f32.value must use dataKind number.f32");
+  }
+  if (valuePort?.type.range?.step !== 0.01) {
+    fail("builtins/v0.1/nodes/core.value-f32.node.json", "core.value-f32.value must declare range step 0.01");
+  }
+
+  const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
+  const shaderValuePort = shaderDefinition?.ports.find((port) => port.id === "u_value");
+  if (shaderValuePort?.type.dataKind !== "number.f32") {
+    fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", "render.fullscreen-shader.u_value must use dataKind number.f32");
+  }
+}
+
 function portSpecKey(nodeId, portId) {
   return `${nodeId}:${portId}`;
 }
@@ -451,6 +518,8 @@ const validators = {
 const fixtureFiles = (await walk("fixtures")).filter((file) => file.endsWith(".json"));
 const validFixtureFiles = fixtureFiles.filter((file) => !file.includes(`${path.sep}invalid${path.sep}`));
 const invalidFixtureFiles = fixtureFiles.filter((file) => file.includes(`${path.sep}invalid${path.sep}`));
+const builtinFiles = (await walk("builtins")).filter((file) => file.endsWith(".json"));
+const builtinFileDocuments = new Map();
 
 for (const file of validFixtureFiles) {
   validateDocument(file, await readJson(file), validators);
@@ -465,6 +534,11 @@ for (const file of invalidFixtureFiles) {
   fail(file, "invalid fixture unexpectedly passed");
 }
 
+for (const file of builtinFiles) {
+  builtinFileDocuments.set(file, await readJson(file));
+}
+validateBuiltins(builtinFiles, validators);
+
 console.log(
-  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, and ${invalidFixtureFiles.length} invalid fixtures`
+  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, and ${builtinFiles.length} builtins`
 );

@@ -48,7 +48,7 @@
     "build": "pnpm run generate && tsc -p tsconfig.json",
     "ci": "pnpm run build && pnpm run coverage",
     "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/generated/**' test/*.test.mjs",
-    "generate": "node scripts/generate-schemas.mjs",
+    "generate": "node scripts/generate-schemas.mjs && node scripts/generate-builtins.mjs",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {

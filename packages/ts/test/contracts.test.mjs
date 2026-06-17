@@ -4,6 +4,8 @@ import path from "node:path";
 import test from "node:test";
 import {
   applyGraphPatch,
+  builtinNodeDefinitionsV01,
+  getBuiltinNodeDefinition,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -156,6 +158,37 @@ test("validates a script node manifest fixture", async () => {
   const result = validateNodeDefinition(definition);
 
   assert.equal(result.ok, true);
+});
+
+test("exports canonical v0.1 builtin node definitions", () => {
+  const ids = builtinNodeDefinitionsV01.map((definition) => definition.id);
+
+  assert.deepEqual(ids, [
+    "core.bang-button",
+    "core.event-log",
+    "core.gpu-upload",
+    "core.preview",
+    "core.target",
+    "core.value-f32",
+    "core.video-asset",
+    "core.video-decode",
+    "render.clear-color",
+    "render.fullscreen-shader",
+    "render.output"
+  ]);
+
+  const valueDefinition = getBuiltinNodeDefinition("core.value-f32");
+  assert.equal(valueDefinition?.ports[0].id, "value");
+  assert.equal(valueDefinition?.ports[0].type.dataKind, "number.f32");
+  assert.equal(valueDefinition?.ports[0].type.range.step, 0.01);
+
+  const shaderDefinition = getBuiltinNodeDefinition("render.fullscreen-shader");
+  assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_value")?.type.dataKind, "number.f32");
+  assert.equal(getBuiltinNodeDefinition("missing.node"), undefined);
+  assert.equal(
+    builtinNodeDefinitionsV01.flatMap((definition) => definition.ports).some((port) => port.type.dataKind === "f32"),
+    false
+  );
 });
 
 test("rejects schema-invalid node definitions", () => {

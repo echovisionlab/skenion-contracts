@@ -7,6 +7,10 @@ export {
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema
 } from "./generated/schemas.js";
+export {
+  builtinNodeDefinitionsV01,
+  getBuiltinNodeDefinition
+} from "./builtins.generated.js";
 export type {
   AddEdgeOperationV01,
   AddNodeOperationV01,

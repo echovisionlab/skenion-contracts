@@ -6,11 +6,20 @@ small and stable enough for examples, runtimes, and Studio tooling to share.
 The graph schema is unchanged. Render node behavior is defined by node
 definition manifests plus graph node params.
 
+Canonical built-in node manifests live under `builtins/v0.1/nodes`. This
+document explains behavior and ABI expectations; it is not the source of truth
+for manifest JSON. Consumers should import `builtinNodeDefinitionsV01` from
+`@skenion/contracts` or audit their local copies against the builtins directory.
+
 ## `render.clear-color`
 
 `render.clear-color` is the first built-in render node convention.
 
-Node definition:
+Canonical manifest:
+
+`builtins/v0.1/nodes/render.clear-color.node.json`
+
+Shape:
 
 ```json
 {
@@ -76,7 +85,11 @@ selected by wiring `render.clear-color:out` into `render.output:in`.
 node identity names the render pass concept, not a specific shader language.
 Skenion v0.12 only supports WGSL through `params.language`.
 
-Node definition:
+Canonical manifest:
+
+`builtins/v0.1/nodes/render.fullscreen-shader.node.json`
+
+Shape:
 
 ```json
 {
@@ -93,7 +106,7 @@ Node definition:
       "label": "u_value",
       "type": {
         "flow": "value",
-        "dataKind": "f32",
+        "dataKind": "number.f32",
         "range": {
           "min": 0,
           "max": 1,
@@ -143,7 +156,7 @@ Rules:
 - `language` must be `"wgsl"` in v0.12.
 - `source` must be a non-empty WGSL module.
 - `source` must provide `vs_main` and `fs_main` entry points.
-- `u_value` is an optional latched `value<f32>` input in the inclusive
+- `u_value` is an optional latched `value<number.f32>` input in the inclusive
   `0.0..1.0` range.
 - If `u_value` is not connected, runtimes should provide `0.0`.
 - v0.2 node-definition metadata should expose `u_value` as a cold control-rate
