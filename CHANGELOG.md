@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.13.0...skenion-contracts-v0.14.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** add control layer help model ([77ddb5f](https://github.com/echovisionlab/skenion-contracts/commit/77ddb5f8ad0ab82ef696cfdd2b1c930619a8ca06))
+* **shader:** add dynamic shader interface contract ([#40](https://github.com/echovisionlab/skenion-contracts/issues/40)) ([74b4028](https://github.com/echovisionlab/skenion-contracts/commit/74b4028a9b527bc596b425179f28dabd192bd0da))
+
 ## [0.13.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.12.0...skenion-contracts-v0.13.0) (2026-06-17)
 
 
