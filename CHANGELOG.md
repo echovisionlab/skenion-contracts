@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.10.0...skenion-contracts-v0.11.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** export builtin manifest ([#31](https://github.com/echovisionlab/skenion-contracts/issues/31)) ([a58cf91](https://github.com/echovisionlab/skenion-contracts/commit/a58cf918a9bd8e1f499e541369fba5dd31980d66))
+
 ## [0.10.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.9.0...skenion-contracts-v0.10.0) (2026-06-17)
 
 
