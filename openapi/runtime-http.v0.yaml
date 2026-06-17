@@ -348,7 +348,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.render.generatedShader", "session.telemetry", "session.telemetry.stream", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.preview.controlState", "session.render.generatedShader", "session.telemetry", "session.telemetry.stream", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -399,6 +399,7 @@ components:
         - graphId
         - graphRevision
         - sessionRevision
+        - controlRevision
         - diagnostics
         - plan
         - report
@@ -418,6 +419,10 @@ components:
         sessionRevision:
           type: integer
           minimum: 0
+        controlRevision:
+          type: integer
+          minimum: 0
+          description: Monotonic revision for runtime control state changes. Graph/session mutations use sessionRevision.
         diagnostics:
           type: array
           items:
@@ -580,6 +585,8 @@ components:
       required:
         - ok
         - emitted
+        - changed
+        - controlRevision
         - diagnostics
       properties:
         ok:
@@ -588,6 +595,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RuntimeControlEmission"
+        changed:
+          type: boolean
+          description: True when the event changed runtime control values or typed channel state.
+        controlRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+          description: Current runtime control revision when available.
         diagnostics:
           type: array
           items:
@@ -597,12 +613,16 @@ components:
       type: object
       required:
         - ok
+        - controlRevision
         - values
         - channels
         - diagnostics
       properties:
         ok:
           type: boolean
+        controlRevision:
+          type: integer
+          minimum: 0
         values:
           type: object
           additionalProperties:
@@ -616,6 +636,43 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
+    PreviewControlStateSnapshot:
+      type: object
+      description: Runtime-internal control snapshot written by the Runtime server and polled by the local preview child process.
+      required:
+        - schema
+        - schemaVersion
+        - sessionRevision
+        - controlRevision
+        - values
+        - channels
+        - writtenAt
+      properties:
+        schema:
+          type: string
+          const: skenion.preview.control-state
+        schemaVersion:
+          type: string
+          const: 0.1.0
+        sessionRevision:
+          type: integer
+          minimum: 0
+        controlRevision:
+          type: integer
+          minimum: 0
+        values:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/RuntimeControlValue"
+        channels:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/RuntimeControlValue"
+        writtenAt:
+          type: string
+          examples:
+            - unix-ms:1710000000000
       additionalProperties: false
     RuntimeControlReadTarget:
       type: string
@@ -696,6 +753,10 @@ components:
         - graphRevision
         - sessionRevision
         - previewSessionRevision
+        - controlRevision
+        - previewControlRevision
+        - controlLive
+        - lastControlUpdateAt
         - stale
         - startedAt
         - exitedAt
@@ -729,6 +790,25 @@ components:
           anyOf:
             - type: integer
               minimum: 0
+            - type: "null"
+        controlRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+          description: Runtime session control revision at the time status was produced.
+        previewControlRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+          description: Latest control revision written to or observed by the preview process.
+        controlLive:
+          type: boolean
+          description: True when the running preview is using the latest known runtime control revision.
+        lastControlUpdateAt:
+          anyOf:
+            - type: string
             - type: "null"
         stale:
           type: boolean
@@ -798,6 +878,7 @@ components:
         - graphId
         - graphRevision
         - sessionRevision
+        - controlRevision
       properties:
         loaded:
           type: boolean
@@ -812,6 +893,9 @@ components:
         sessionRevision:
           type: integer
           minimum: 0
+        controlRevision:
+          type: integer
+          minimum: 0
       additionalProperties: true
     RuntimeTelemetryPreview:
       type: object
@@ -823,6 +907,10 @@ components:
         - graphRevision
         - sessionRevision
         - previewSessionRevision
+        - controlRevision
+        - previewControlRevision
+        - controlLive
+        - lastControlUpdateAt
       properties:
         state:
           $ref: "#/components/schemas/RuntimePreviewState"
@@ -851,6 +939,22 @@ components:
             - type: integer
               minimum: 0
             - type: "null"
+        controlRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        previewControlRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        controlLive:
+          type: boolean
+        lastControlUpdateAt:
+          anyOf:
+            - type: string
+            - type: "null"
       additionalProperties: true
     RuntimeTelemetryRender:
       type: object
@@ -865,6 +969,10 @@ components:
         - sourceNodeId
         - diagnostics
         - generatedSourceAvailable
+        - controlRevision
+        - previewControlRevision
+        - controlLive
+        - lastControlUpdateAt
       properties:
         active:
           type: boolean
@@ -903,6 +1011,22 @@ components:
             $ref: "#/components/schemas/ShaderDiagnosticV01"
         generatedSourceAvailable:
           type: boolean
+        controlRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        previewControlRevision:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+        controlLive:
+          type: boolean
+        lastControlUpdateAt:
+          anyOf:
+            - type: string
+            - type: "null"
       additionalProperties: true
     GeneratedShaderResponse:
       type: object

@@ -60,6 +60,11 @@ Changing graph parameters such as `label`, `min`, `max`, `step`, `name`, or
 `default` remains a graph patch. Moving a runtime slider or clicking a runtime
 toggle must not create a graph patch.
 
+When local preview is running, Runtime may write the updated control state to a
+preview control-state snapshot so the preview can consume new typed values on a
+later frame without restarting. Graph structure changes still make the preview
+stale; see [Live Preview Control Updates](./live-preview-control-updates.md).
+
 ## Hidden Reads
 
 Studio inspectors and remote-control panels may read by node address for UI
