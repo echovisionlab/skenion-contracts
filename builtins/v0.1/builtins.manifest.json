@@ -4,6 +4,7 @@
   "version": "0.1",
   "nodes": [
     "core.value-f32",
+    "core.color-rgba",
     "core.target",
     "core.bang-button",
     "core.event-log",
