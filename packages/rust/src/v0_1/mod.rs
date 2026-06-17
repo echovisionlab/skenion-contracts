@@ -1,6 +1,7 @@
 mod graph;
 mod node_definition;
 mod patch;
+mod project;
 mod shader_interface;
 mod types;
 mod validation;
@@ -11,6 +12,10 @@ pub use patch::{
     ApplyPatchErrorV01, GraphPatchEventKindV01, GraphPatchEventV01, GraphPatchHistoryV01,
     GraphPatchOperationV01, GraphPatchV01, InvertPatchErrorV01, ReplaceNodeInterfaceEdgePolicyV01,
     apply_graph_patch_v01, invert_graph_patch_v01,
+};
+pub use project::{
+    CanvasNodeViewV01, CanvasViewStateV01, CanvasViewportV01, ProjectDocumentV01,
+    ProjectMetadataV01, ViewStateV01, create_default_view_state_for_graph_v01,
 };
 pub use shader_interface::{
     GeneratedShaderSourceMapV01, ShaderDiagnosticPhaseV01, ShaderDiagnosticSeverityV01,

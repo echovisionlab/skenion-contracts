@@ -125,6 +125,17 @@ function validateGraphV01Semantics(file, graph) {
   }
 }
 
+function validateProjectV01Semantics(file, project) {
+  validateGraphV01Semantics(file, project.graph);
+
+  const graphNodeIds = new Set(project.graph.nodes.map((node) => node.id));
+  for (const nodeId of Object.keys(project.viewState.canvas.nodes)) {
+    if (!graphNodeIds.has(nodeId)) {
+      fail(file, `viewState references missing graph node: ${nodeId}`);
+    }
+  }
+}
+
 function validateNodeDefinitionV01Semantics(file, definition) {
   validatePorts(file, definition.id, definition.ports);
 
@@ -665,6 +676,12 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.2.0") {
     return validators.graphV02;
   }
+  if (document.schema === "skenion.view-state" && document.schemaVersion === "0.1.0") {
+    return validators.viewStateV01;
+  }
+  if (document.schema === "skenion.project" && document.schemaVersion === "0.1.0") {
+    return validators.projectV01;
+  }
   if (document.schema === "skenion.graph.patch" && document.schemaVersion === "0.0.0") {
     return validators.patchV0;
   }
@@ -702,6 +719,9 @@ function validateDocument(file, document, validators) {
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.2.0") {
     validateGraphV02Semantics(file, document);
   }
+  if (document.schema === "skenion.project" && document.schemaVersion === "0.1.0") {
+    validateProjectV01Semantics(file, document);
+  }
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.1.0") {
     validateNodeDefinitionV01Semantics(file, document);
   }
@@ -718,6 +738,9 @@ for (const file of schemaFiles) {
 await readFile("openapi/runtime-http.v0.yaml", "utf8");
 
 const ajv = new Ajv2020({ allErrors: true });
+const graphV01Schema = await readJson("json-schema/graph/v0.1/graph.schema.json");
+const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.schema.json");
+const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const graphPatchV01Schema = await readJson("json-schema/graph/v0.1/patch.schema.json");
 const graphPatchEventV01Schema = await readJson("json-schema/graph/v0.1/patch-event.schema.json");
 ajv.addSchema(graphPatchV01Schema);
@@ -725,8 +748,10 @@ ajv.addSchema(graphPatchEventV01Schema);
 const validators = {
   graphV0: ajv.compile(await readJson("json-schema/graph/v0/graph.schema.json")),
   patchV0: ajv.compile(await readJson("json-schema/graph/v0/patch.schema.json")),
-  graphV01: ajv.compile(await readJson("json-schema/graph/v0.1/graph.schema.json")),
+  graphV01: ajv.compile(graphV01Schema),
   graphV02: ajv.compile(await readJson("json-schema/graph/v0.2/graph.schema.json")),
+  viewStateV01: ajv.compile(viewStateV01Schema),
+  projectV01: ajv.compile(projectV01Schema),
   patchV01: ajv.compile(graphPatchV01Schema),
   patchEventV01: ajv.compile(graphPatchEventV01Schema),
   patchHistoryV01: ajv.compile(await readJson("json-schema/graph/v0.1/patch-history.schema.json")),

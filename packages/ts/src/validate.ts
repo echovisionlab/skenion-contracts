@@ -12,7 +12,9 @@ import {
   graphV02Schema,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
-  shaderInterfaceV01Schema
+  projectV01Schema,
+  shaderInterfaceV01Schema,
+  viewStateV01Schema
 } from "./generated/schemas.js";
 import type {
   DataTypeV01,
@@ -29,8 +31,10 @@ import type {
   NodeDefinitionManifestV02,
   PortV01,
   PortSpecV02,
+  ProjectDocumentV01,
   ShaderInterfaceV01,
-  ValidationResult
+  ValidationResult,
+  ViewStateV01
 } from "./types.js";
 
 const allowedNodePermissions = new Set<string>();
@@ -50,6 +54,8 @@ const graphPatchHistoryV01Validator = ajv.compile(graphPatchHistoryV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 const nodeDefinitionV02Validator = ajv.compile(nodeDefinitionV02Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
+const viewStateV01Validator = ajv.compile(viewStateV01Schema);
+const projectV01Validator = ajv.compile(projectV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
   return errors.map((error) => {
@@ -162,6 +168,19 @@ function validateNodeDefinitionV01Semantics(definition: NodeDefinitionManifestV0
   for (const permission of definition.permissions) {
     if (!allowedNodePermissions.has(permission)) {
       errors.push(`unsupported permission: ${permission}`);
+    }
+  }
+
+  return errors;
+}
+
+function validateProjectDocumentV01Semantics(project: ProjectDocumentV01): string[] {
+  const errors = validateGraphV01Semantics(project.graph);
+  const graphNodeIds = new Set(project.graph.nodes.map((node) => node.id));
+
+  for (const nodeId of Object.keys(project.viewState.canvas.nodes)) {
+    if (!graphNodeIds.has(nodeId)) {
+      errors.push(`viewState references missing graph node: ${nodeId}`);
     }
   }
 
@@ -578,4 +597,26 @@ export function validateShaderInterface(document: unknown): ValidationResult<Sha
   }
 
   return { ok: true, value: document as ShaderInterfaceV01 };
+}
+
+export function validateViewState(document: unknown): ValidationResult<ViewStateV01> {
+  if (!viewStateV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(viewStateV01Validator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as ViewStateV01 };
+}
+
+export function validateProjectDocument(document: unknown): ValidationResult<ProjectDocumentV01> {
+  if (!projectV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(projectV01Validator.errors as ErrorObject[]) };
+  }
+
+  const project = document as ProjectDocumentV01;
+  const errors = validateProjectDocumentV01Semantics(project);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: project };
 }

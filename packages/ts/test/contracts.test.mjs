@@ -8,6 +8,7 @@ import {
   builtinNodeHelpGraphsV01,
   builtinNodeHelpV01,
   builtinNodeDefinitionsV01,
+  createDefaultViewStateForGraph,
   getBuiltinNodeDefinition,
   getBuiltinNodeHelp,
   getBuiltinNodeHelpGraph,
@@ -19,8 +20,10 @@ import {
   invertGraphPatch,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  projectV01Schema,
   shaderDiagnosticV01Schema,
   shaderInterfaceV01Schema,
+  viewStateV01Schema,
   analyzeShaderInterfaceV01,
   shaderInterfaceToPortsV01,
   analyzeGraphDocumentV02,
@@ -31,6 +34,8 @@ import {
   validateGraphDocumentV02,
   validateNodeDefinition,
   validateNodeDefinitionV02,
+  validateProjectDocument,
+  validateViewState,
   validateShaderInterface
 } from "../dist/index.js";
 
@@ -42,6 +47,8 @@ async function readJson(relativePath) {
 
 test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(projectV01Schema.properties.schema.const, "skenion.project");
+  assert.equal(viewStateV01Schema.properties.schema.const, "skenion.view-state");
   assert.equal(graphPatchV01Schema.properties.schema.const, "skenion.graph.patch");
   assert.equal(graphPatchEventV01Schema.properties.schema.const, "skenion.graph.patch.event");
   assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
@@ -55,6 +62,56 @@ test("exports v0.1 graph and node definition schemas", () => {
     "render-pipeline",
     "render-frame"
   ]);
+});
+
+test("validates project documents and view state fixtures", async () => {
+  const project = await readJson("fixtures/project/v0.1/valid/minimal.project.json");
+  const result = validateProjectDocument(project);
+
+  assert.equal(result.ok, true);
+  assert.equal(validateViewState(project.viewState).ok, true);
+
+  const partialViewProject = await readJson("fixtures/project/v0.1/valid/send-receive-panel.project.json");
+  assert.equal(validateProjectDocument(partialViewProject).ok, true);
+});
+
+test("rejects invalid project view state", async () => {
+  const missingNode = await readJson("fixtures/project/v0.1/invalid/view-references-missing-node.project.json");
+  const missingNodeResult = validateProjectDocument(missingNode);
+  assert.equal(missingNodeResult.ok, false);
+  assert.match(missingNodeResult.errors.join("\n"), /viewState references missing graph node/);
+
+  const invalidPosition = await readJson("fixtures/project/v0.1/invalid/invalid-view-position.project.json");
+  const invalidPositionResult = validateProjectDocument(invalidPosition);
+  assert.equal(invalidPositionResult.ok, false);
+  assert.match(invalidPositionResult.errors.join("\n"), /must be number/);
+
+  const invalidViewStateResult = validateViewState({
+    schema: "skenion.view-state",
+    schemaVersion: "0.1.0",
+    canvas: {
+      nodes: {
+        value_1: {
+          x: 0,
+          y: 0,
+          width: 0
+        }
+      }
+    }
+  });
+  assert.equal(invalidViewStateResult.ok, false);
+  assert.match(invalidViewStateResult.errors.join("\n"), /must be > 0/);
+});
+
+test("creates default view state for graph nodes", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  const viewState = createDefaultViewStateForGraph(graph);
+
+  assert.equal(viewState.schema, "skenion.view-state");
+  assert.deepEqual(Object.keys(viewState.canvas.nodes), ["slider_1", "blur_1"]);
+  assert.deepEqual(viewState.canvas.nodes.slider_1, { x: 96, y: 96 });
+  assert.deepEqual(viewState.canvas.nodes.blur_1, { x: 376, y: 96 });
+  assert.deepEqual(viewState.canvas.viewport, { x: 0, y: 0, zoom: 1 });
 });
 
 test("validates a v0.1 graph fixture", async () => {

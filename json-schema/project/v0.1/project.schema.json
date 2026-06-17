@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/project/v0.1/project.schema.json",
+  "title": "Skenion Project Document v0.1",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "id", "revision", "graph", "viewState"],
+  "properties": {
+    "schema": {
+      "const": "skenion.project"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "graph": {
+      "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json"
+    },
+    "viewState": {
+      "$ref": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json"
+    },
+    "tutorial": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "help": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

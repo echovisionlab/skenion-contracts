@@ -60,6 +60,47 @@ export interface GraphDocumentV01 {
   edges: EdgeV01[];
 }
 
+export interface CanvasNodeViewV01 {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  collapsed?: boolean;
+}
+
+export interface CanvasViewportV01 {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
+export interface ViewStateV01 {
+  schema: "skenion.view-state";
+  schemaVersion: "0.1.0";
+  canvas: {
+    nodes: Record<string, CanvasNodeViewV01>;
+    viewport?: CanvasViewportV01;
+  };
+}
+
+export interface ProjectDocumentV01 {
+  schema: "skenion.project";
+  schemaVersion: "0.1.0";
+  id: string;
+  revision: string;
+  metadata?: {
+    title?: string;
+    description?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    [key: string]: unknown;
+  };
+  graph: GraphDocumentV01;
+  viewState: ViewStateV01;
+  tutorial?: Record<string, unknown>;
+  help?: Record<string, unknown>;
+}
+
 export type PortRateV02 = "event" | "control" | "audio" | "render" | "gpu" | "resource" | "io";
 export type MergePolicyV02 = "forbid" | "ordered-events" | "mix" | "array" | "latest" | "first" | "custom";
 export type FanOutPolicyV02 = "allow" | "forbid" | "copy" | "share";

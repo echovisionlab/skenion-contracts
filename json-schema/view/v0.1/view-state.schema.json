@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json",
+  "title": "Skenion View State v0.1",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "canvas"],
+  "properties": {
+    "schema": {
+      "const": "skenion.view-state"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "canvas": {
+      "type": "object",
+      "required": ["nodes"],
+      "properties": {
+        "nodes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/canvasNodeView"
+          }
+        },
+        "viewport": {
+          "$ref": "#/$defs/canvasViewport"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "canvasNodeView": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "collapsed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "canvasViewport": {
+      "type": "object",
+      "required": ["x", "y", "zoom"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "zoom": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

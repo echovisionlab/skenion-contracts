@@ -1,0 +1,36 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "invalid-view-position",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "invalid-view-position-graph",
+    "revision": "1",
+    "nodes": [
+      {
+        "id": "value_1",
+        "kind": "core.value-f32",
+        "kindVersion": "0.1.0",
+        "params": {
+          "value": 0.5
+        },
+        "ports": []
+      }
+    ],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {
+        "value_1": {
+          "x": "left",
+          "y": 0
+        }
+      }
+    }
+  }
+}

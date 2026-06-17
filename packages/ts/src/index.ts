@@ -6,8 +6,10 @@ export {
   graphV02Schema,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  projectV01Schema,
   shaderDiagnosticV01Schema,
-  shaderInterfaceV01Schema
+  shaderInterfaceV01Schema,
+  viewStateV01Schema
 } from "./generated/schemas.js";
 export {
   builtinManifestV01,
@@ -26,6 +28,8 @@ export type {
   ApplyGraphPatchResult,
   CableStyleRegistryV02,
   CableStyleV02,
+  CanvasNodeViewV01,
+  CanvasViewportV01,
   CycleValidationV02,
   DataFlow,
   DataTypeV01,
@@ -61,6 +65,7 @@ export type {
   PortV01,
   PortRateV02,
   PortSpecV02,
+  ProjectDocumentV01,
   RemoveEdgeOperationV01,
   RemoveNodeOperationV01,
   ReplaceNodeInterfaceOperationV01,
@@ -80,9 +85,11 @@ export type {
   TriggerModeV02,
   ValidationFailure,
   ValidationResult,
-  ValidationSuccess
+  ValidationSuccess,
+  ViewStateV01
 } from "./types.js";
 export { applyGraphPatch, invertGraphPatch } from "./patch.js";
+export { createDefaultViewStateForGraph } from "./project.js";
 export { analyzeShaderInterfaceV01, shaderInterfaceToPortsV01 } from "./shaderInterface.js";
 export {
   analyzeGraphDocumentV02,
@@ -93,5 +100,7 @@ export {
   validateGraphPatch,
   validateNodeDefinition,
   validateNodeDefinitionV02,
+  validateProjectDocument,
+  validateViewState,
   validateShaderInterface
 } from "./validate.js";
