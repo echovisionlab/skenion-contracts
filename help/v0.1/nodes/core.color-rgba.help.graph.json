@@ -1,0 +1,140 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-core-color-rgba",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "RGBA controls shader tint uniforms with normalized components."
+      },
+      "ports": []
+    },
+    {
+      "id": "tint_1",
+      "kind": "core.color-rgba",
+      "kindVersion": "0.1.0",
+      "params": {
+        "value": [1, 0.2, 0.1, 1]
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "value",
+            "dataKind": "color.rgba"
+          },
+          "activation": "trigger"
+        },
+        {
+          "id": "set",
+          "direction": "input",
+          "label": "Set",
+          "type": {
+            "flow": "value",
+            "dataKind": "color.rgba"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "bang",
+          "direction": "input",
+          "label": "Bang",
+          "type": {
+            "flow": "event",
+            "dataKind": "event.bang"
+          },
+          "activation": "trigger"
+        },
+        {
+          "id": "value",
+          "direction": "output",
+          "label": "Color",
+          "type": {
+            "flow": "value",
+            "dataKind": "color.rgba"
+          }
+        }
+      ]
+    },
+    {
+      "id": "shader_1",
+      "kind": "render.fullscreen-shader",
+      "kindVersion": "0.1.0",
+      "params": {
+        "language": "wgsl",
+        "source": "// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint; }"
+      },
+      "ports": [
+        {
+          "id": "tint",
+          "direction": "input",
+          "label": "Tint",
+          "type": {
+            "flow": "value",
+            "dataKind": "color.rgba"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "label": "Out",
+          "type": {
+            "flow": "resource",
+            "dataKind": "gpu.texture2d",
+            "format": "rgba8unorm",
+            "colorSpace": "srgb"
+          }
+        }
+      ]
+    },
+    {
+      "id": "output_1",
+      "kind": "render.output",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "resource",
+            "dataKind": "gpu.texture2d",
+            "format": "rgba8unorm",
+            "colorSpace": "srgb"
+          },
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "tint_1",
+        "port": "value"
+      },
+      "to": {
+        "node": "shader_1",
+        "port": "tint"
+      }
+    },
+    {
+      "from": {
+        "node": "shader_1",
+        "port": "out"
+      },
+      "to": {
+        "node": "output_1",
+        "port": "in"
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-core-video-asset",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "Video Asset is a resource. Decode it before using video frames."
+      },
+      "ports": []
+    },
+    {
+      "id": "asset_1",
+      "kind": "core.video-asset",
+      "kindVersion": "0.1.0",
+      "params": {
+        "src": "example.mp4"
+      },
+      "ports": [
+        {
+          "id": "asset",
+          "direction": "output",
+          "label": "Asset",
+          "type": {
+            "flow": "resource",
+            "dataKind": "asset.video"
+          }
+        }
+      ]
+    },
+    {
+      "id": "decode_1",
+      "kind": "core.video-decode",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "asset",
+          "direction": "input",
+          "label": "Asset",
+          "type": {
+            "flow": "resource",
+            "dataKind": "asset.video"
+          },
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "asset_1",
+        "port": "asset"
+      },
+      "to": {
+        "node": "decode_1",
+        "port": "asset"
+      }
+    }
+  ]
+}

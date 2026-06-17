@@ -6,6 +6,7 @@ const repoRoot = path.resolve(packageRoot, "../..");
 const generatedPath = path.join(packageRoot, "src", "builtins.generated.ts");
 const builtinsDir = path.join(repoRoot, "builtins", "v0.1", "nodes");
 const helpDir = path.join(repoRoot, "builtins", "v0.1", "help");
+const helpGraphDir = path.join(repoRoot, "help", "v0.1", "nodes");
 const manifestPath = path.join(repoRoot, "builtins", "v0.1", "builtins.manifest.json");
 
 const files = (await readdir(builtinsDir))
@@ -13,6 +14,9 @@ const files = (await readdir(builtinsDir))
   .sort();
 const helpFiles = (await readdir(helpDir))
   .filter((file) => file.endsWith(".help.json"))
+  .sort();
+const helpGraphFiles = (await readdir(helpGraphDir))
+  .filter((file) => file.endsWith(".help.graph.json"))
   .sort();
 
 const definitions = [];
@@ -23,6 +27,14 @@ const helpDocuments = [];
 for (const file of helpFiles) {
   helpDocuments.push(JSON.parse(await readFile(path.join(helpDir, file), "utf8")));
 }
+const helpGraphs = [];
+for (const file of helpGraphFiles) {
+  const id = file.replace(/\.help\.graph\.json$/, "");
+  helpGraphs.push({
+    id,
+    graph: JSON.parse(await readFile(path.join(helpGraphDir, file), "utf8"))
+  });
+}
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 
 await mkdir(path.dirname(generatedPath), { recursive: true });
@@ -30,7 +42,7 @@ await writeFile(
   generatedPath,
   [
     "/* This file is generated from builtins/v0.1. */",
-    "import type { NodeDefinitionManifestV01 } from \"./types.js\";",
+    "import type { GraphDocumentV01, NodeDefinitionManifestV01 } from \"./types.js\";",
     "",
     "export interface BuiltinManifestV01 {",
     "  schema: \"skenion.builtins.manifest\";",
@@ -57,9 +69,19 @@ await writeFile(
     "  id: string;",
     "  summary: string;",
     "  description: string;",
+    "  docsPath?: string;",
+    "  helpGraph: string;",
+    "  tags: string[];",
+    "  runtimeBehavior?: string;",
+    "  relatedNodes?: string[];",
     "  ports?: BuiltinNodeHelpItemV01[];",
     "  params?: BuiltinNodeHelpItemV01[];",
     "  example?: BuiltinNodeHelpExampleV01;",
+    "}",
+    "",
+    "export interface BuiltinNodeHelpGraphV01 {",
+    "  id: string;",
+    "  graph: GraphDocumentV01;",
     "}",
     "",
     `export const builtinManifestV01 = ${JSON.stringify(manifest, null, 2)} satisfies BuiltinManifestV01;`,
@@ -68,12 +90,18 @@ await writeFile(
     "",
     `export const builtinNodeHelpV01 = ${JSON.stringify(helpDocuments, null, 2)} satisfies BuiltinNodeHelpV01[];`,
     "",
+    `export const builtinNodeHelpGraphsV01 = ${JSON.stringify(helpGraphs, null, 2)} satisfies BuiltinNodeHelpGraphV01[];`,
+    "",
     "export function getBuiltinNodeDefinition(id: string): NodeDefinitionManifestV01 | undefined {",
     "  return builtinNodeDefinitionsV01.find((definition) => definition.id === id);",
     "}",
     "",
     "export function getBuiltinNodeHelp(id: string): BuiltinNodeHelpV01 | undefined {",
     "  return builtinNodeHelpV01.find((help) => help.id === id);",
+    "}",
+    "",
+    "export function getBuiltinNodeHelpGraph(id: string): GraphDocumentV01 | undefined {",
+    "  return builtinNodeHelpGraphsV01.find((helpGraph) => helpGraph.id === id)?.graph;",
     "}",
     ""
   ].join("\n")

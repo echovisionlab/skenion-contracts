@@ -1,0 +1,22 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "render.output",
+  "summary": "Selects the GPU texture rendered by the preview window.",
+  "description": "Render Output makes the final render source explicit. Runtime preview selection follows the node connected to this input instead of guessing the first render node.",
+  "helpGraph": "help/v0.1/nodes/render.output.help.graph.json",
+  "tags": ["render", "output", "preview"],
+  "runtimeBehavior": "Consumes one gpu.texture2d resource and marks it as the session preview/render output.",
+  "relatedNodes": ["render.clear-color", "render.fullscreen-shader"],
+  "ports": [
+    {
+      "id": "in",
+      "description": "Receives the GPU texture resource selected for output."
+    }
+  ],
+  "example": {
+    "title": "Make output explicit",
+    "description": "Connect a render producer into Render Output so Runtime knows which scene to preview.",
+    "graph": "help/v0.1/nodes/render.output.help.graph.json"
+  }
+}

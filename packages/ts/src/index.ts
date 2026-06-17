@@ -11,12 +11,14 @@ export {
 } from "./generated/schemas.js";
 export {
   builtinManifestV01,
+  builtinNodeHelpGraphsV01,
   builtinNodeHelpV01,
   builtinNodeDefinitionsV01,
   getBuiltinNodeDefinition,
-  getBuiltinNodeHelp
+  getBuiltinNodeHelp,
+  getBuiltinNodeHelpGraph
 } from "./builtins.generated.js";
-export type { BuiltinManifestV01, BuiltinNodeHelpV01 } from "./builtins.generated.js";
+export type { BuiltinManifestV01, BuiltinNodeHelpGraphV01, BuiltinNodeHelpV01 } from "./builtins.generated.js";
 export type {
   AddEdgeOperationV01,
   AddNodeOperationV01,

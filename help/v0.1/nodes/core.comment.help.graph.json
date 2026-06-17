@@ -1,0 +1,27 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-core-comment",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "Comments annotate a patch and do not participate in execution."
+      },
+      "ports": []
+    },
+    {
+      "id": "note_2",
+      "kind": "core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "Use comments near important control or render decisions."
+      },
+      "ports": []
+    }
+  ],
+  "edges": []
+}

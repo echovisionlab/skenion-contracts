@@ -5,10 +5,12 @@ import test from "node:test";
 import {
   applyGraphPatch,
   builtinManifestV01,
+  builtinNodeHelpGraphsV01,
   builtinNodeHelpV01,
   builtinNodeDefinitionsV01,
   getBuiltinNodeDefinition,
   getBuiltinNodeHelp,
+  getBuiltinNodeHelpGraph,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -370,19 +372,40 @@ test("rejects schema-invalid shader interfaces", () => {
 test("exports builtin node help", () => {
   const helpIds = builtinNodeHelpV01.map((help) => help.id);
 
-  assert.equal(helpIds.includes("core.value-f32"), true);
-  assert.equal(helpIds.includes("core.string"), true);
-  assert.equal(helpIds.includes("core.toggle"), true);
-  assert.equal(helpIds.includes("core.comment"), true);
-  assert.equal(helpIds.includes("core.message"), true);
+  assert.deepEqual([...helpIds].sort(), [...builtinManifestV01.nodes].sort());
+  assert.deepEqual(
+    builtinNodeHelpGraphsV01.map((helpGraph) => helpGraph.id).sort(),
+    [...builtinManifestV01.nodes].sort()
+  );
 
   const valueHelp = getBuiltinNodeHelp("core.value-f32");
   assert.match(valueHelp?.summary ?? "", /floating-point/);
   assert.deepEqual(valueHelp?.ports?.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.equal(valueHelp?.docsPath, "docs/nodes/core.value-f32.md");
+  assert.equal(valueHelp?.helpGraph, "help/v0.1/nodes/core.value-f32.help.graph.json");
+  assert.equal(valueHelp?.tags.includes("control"), true);
 
   const toggleHelp = getBuiltinNodeHelp("core.toggle");
   assert.match(toggleHelp?.ports?.find((port) => port.id === "bang")?.description ?? "", /Flips/);
+
+  const shaderHelp = getBuiltinNodeHelp("render.fullscreen-shader");
+  assert.match(shaderHelp?.runtimeBehavior ?? "", /dynamic uniform layout/);
+  assert.equal(shaderHelp?.relatedNodes?.includes("render.output"), true);
+
+  const valueHelpGraph = getBuiltinNodeHelpGraph("core.value-f32");
+  assert.equal(valueHelpGraph?.id, "help-core-value-f32");
+  assert.equal(validateGraphDocument(valueHelpGraph).ok, true);
+  assert.deepEqual(valueHelpGraph?.edges[0], {
+    from: { node: "bang_1", port: "bang" },
+    to: { node: "value_1", port: "bang" }
+  });
+
+  const shaderHelpGraph = getBuiltinNodeHelpGraph("render.fullscreen-shader");
+  assert.equal(shaderHelpGraph?.nodes.find((node) => node.id === "shader_1")?.ports.map((port) => port.id).join(","), "speed,tint,out");
+  assert.equal(validateGraphDocument(shaderHelpGraph).ok, true);
+
   assert.equal(getBuiltinNodeHelp("missing.node"), undefined);
+  assert.equal(getBuiltinNodeHelpGraph("missing.node"), undefined);
 });
 
 test("rejects schema-invalid node definitions", () => {
