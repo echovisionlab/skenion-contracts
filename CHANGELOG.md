@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.16.0...skenion-contracts-v0.17.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** add typed send receive panel controls ([9602ff0](https://github.com/echovisionlab/skenion-contracts/commit/9602ff0d636fc59233c844a02f18d50f473c4c0f))
+
 ## [0.16.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.15.0...skenion-contracts-v0.16.0) (2026-06-17)
 
 
