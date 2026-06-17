@@ -37,6 +37,13 @@ jobs:
         working-directory: .deps/skenion-examples
         env:
           SKENION_CONTRACTS_PACKAGE: ../../packages/ts/dist
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: skenion-contracts-rust
+          workspaces: packages/rust -> target
+          cache-all-crates: "true"
+          cache-on-failure: "true"
       - run: cargo fmt --check --manifest-path packages/rust/Cargo.toml
       - run: cargo clippy --manifest-path packages/rust/Cargo.toml --all-targets --all-features -- -D warnings
       - run: cargo test --manifest-path packages/rust/Cargo.toml --all-targets --all-features
