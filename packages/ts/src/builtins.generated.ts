@@ -15,6 +15,7 @@ export const builtinManifestV01 = {
   "version": "0.1",
   "nodes": [
     "core.value-f32",
+    "core.color-rgba",
     "core.target",
     "core.bang-button",
     "core.event-log",
@@ -57,6 +58,33 @@ export const builtinNodeDefinitionsV01 = [
     ],
     "execution": {
       "model": "event"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": []
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.color-rgba",
+    "version": "0.1.0",
+    "displayName": "RGBA Color",
+    "category": "Values",
+    "ports": [
+      {
+        "id": "value",
+        "direction": "output",
+        "label": "Color",
+        "type": {
+          "flow": "value",
+          "dataKind": "color.rgba"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
     },
     "state": {
       "persistent": false
@@ -353,6 +381,33 @@ export const builtinNodeDefinitionsV01 = [
             "max": 1,
             "step": 0.01
           }
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "u_value2",
+        "direction": "input",
+        "label": "u_value2",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.f32",
+          "range": {
+            "min": 0,
+            "max": 1,
+            "step": 0.01
+          }
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "u_color",
+        "direction": "input",
+        "label": "u_color",
+        "type": {
+          "flow": "value",
+          "dataKind": "color.rgba"
         },
         "required": false,
         "activation": "latched"

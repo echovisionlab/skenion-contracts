@@ -79,11 +79,37 @@ Rules:
 `resource<gpu.texture2d>` output. Starting in v0.13, preview output should be
 selected by wiring `render.clear-color:out` into `render.output:in`.
 
+## `core.color-rgba`
+
+`core.color-rgba` is a value source convention used by render nodes that accept
+`value<color.rgba>` controls.
+
+Canonical manifest:
+
+`builtins/v0.1/nodes/core.color-rgba.node.json`
+
+Graph node params:
+
+```json
+{
+  "value": [1.0, 1.0, 1.0, 1.0]
+}
+```
+
+`value` is `[r, g, b, a]`.
+
+Rules:
+
+- Components are numeric.
+- Components are interpreted in the `0.0..1.0` range.
+- Runtimes may clamp out-of-range values.
+- Missing or invalid values should fall back to `[1.0, 1.0, 1.0, 1.0]`.
+
 ## `render.fullscreen-shader`
 
 `render.fullscreen-shader` is a built-in fullscreen shader pass convention. The
 node identity names the render pass concept, not a specific shader language.
-Skenion v0.12 only supports WGSL through `params.language`.
+The current built-in shader path only supports WGSL through `params.language`.
 
 Canonical manifest:
 
@@ -112,6 +138,33 @@ Shape:
           "max": 1,
           "step": 0.01
         }
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
+      "id": "u_value2",
+      "direction": "input",
+      "label": "u_value2",
+      "type": {
+        "flow": "value",
+        "dataKind": "number.f32",
+        "range": {
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
+      "id": "u_color",
+      "direction": "input",
+      "label": "u_color",
+      "type": {
+        "flow": "value",
+        "dataKind": "color.rgba"
       },
       "required": false,
       "activation": "latched"
@@ -153,14 +206,19 @@ Graph node params:
 
 Rules:
 
-- `language` must be `"wgsl"` in v0.12.
+- `language` must be `"wgsl"`.
 - `source` must be a non-empty WGSL module.
 - `source` must provide `vs_main` and `fs_main` entry points.
-- `u_value` is an optional latched `value<number.f32>` input in the inclusive
-  `0.0..1.0` range.
-- If `u_value` is not connected, runtimes should provide `0.0`.
-- v0.2 node-definition metadata should expose `u_value` as a cold control-rate
-  `value.number` input with `maxConnections: 1`, `mergePolicy: "forbid"`,
+- `u_value` and `u_value2` are optional latched `value<number.f32>` inputs in
+  the inclusive `0.0..1.0` range.
+- `u_color` is an optional latched `value<color.rgba>` input. The source
+  convention is `core.color-rgba.params.value = [r, g, b, a]`.
+- If `u_value` or `u_value2` is not connected, runtimes should provide `0.0`.
+- If `u_color` is not connected, runtimes should provide white
+  `[1.0, 1.0, 1.0, 1.0]`.
+- Runtimes may clamp out-of-range number and color components.
+- v0.2 node-definition metadata should expose these uniform inputs as cold
+  control-rate value inputs with `maxConnections: 1`, `mergePolicy: "forbid"`,
   `triggerMode: "cold"`, `latch: true`, and `required: false`.
 - Runtime may reject invalid shader source.
 - Shader compile or render errors should be surfaced through preview telemetry
@@ -179,34 +237,26 @@ is:
 struct SkenionFrame {
   resolution: vec2<f32>,
   time: f32,
-  u_value: f32,
   frame: u32,
+
+  u_value: f32,
+  u_value2: f32,
+  _pad0: vec2<f32>,
+
+  u_color: vec4<f32>,
 }
 
 @group(0) @binding(0)
 var<uniform> skenion: SkenionFrame;
 ```
 
-The current physical WGSL layout should include explicit padding so it matches
-the 32-byte Runtime uniform buffer:
+The physical layout is 48 bytes. `_pad0` keeps `u_color` 16-byte aligned.
+Defaults are `u_value = 0.0`, `u_value2 = 0.0`, and
+`u_color = vec4<f32>(1.0, 1.0, 1.0, 1.0)`.
 
-```wgsl
-struct SkenionFrame {
-  resolution: vec2<f32>,
-  time: f32,
-  u_value: f32,
-  frame: u32,
-  _pad0: u32,
-  _pad1: u32,
-  _pad2: u32,
-}
-
-@group(0) @binding(0)
-var<uniform> skenion: SkenionFrame;
-```
-
-Existing shaders that only declare `resolution`, `time`, and `frame` remain
-valid as long as they do not read `u_value`.
+Existing shaders that only declare `resolution`, `time`, `frame`, and
+`u_value` need to update the uniform struct layout before reading the new
+fields.
 
 The preview renderer calls:
 
@@ -220,11 +270,13 @@ The default example is:
 struct SkenionFrame {
   resolution: vec2<f32>,
   time: f32,
-  u_value: f32,
   frame: u32,
-  _pad0: u32,
-  _pad1: u32,
-  _pad2: u32,
+
+  u_value: f32,
+  u_value2: f32,
+  _pad0: vec2<f32>,
+
+  u_color: vec4<f32>,
 }
 
 @group(0) @binding(0)
@@ -249,12 +301,12 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOut {
 
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
-  return vec4<f32>(
-    skenion.u_value,
-    0.2,
-    1.0 - skenion.u_value,
-    1.0
-  );
+  let pulse = 0.5 + 0.5 * sin(skenion.time * 2.0);
+  let mix_value = clamp(skenion.u_value, 0.0, 1.0);
+  let brightness = 0.25 + 0.75 * clamp(skenion.u_value2, 0.0, 1.0);
+  let animated = vec3<f32>(pulse, 0.2 + mix_value * 0.8, 1.0 - mix_value);
+  let rgb = mix(animated, skenion.u_color.rgb, mix_value) * brightness;
+  return vec4<f32>(rgb, skenion.u_color.a);
 }
 ```
 

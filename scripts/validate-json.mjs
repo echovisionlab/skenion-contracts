@@ -190,10 +190,27 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
     fail("builtins/v0.1/nodes/core.value-f32.node.json", "core.value-f32.value must declare range step 0.01");
   }
 
+  const colorDefinition = definitions.find((definition) => definition.id === "core.color-rgba");
+  const colorPort = colorDefinition?.ports.find((port) => port.id === "value");
+  if (colorPort?.type.dataKind !== "color.rgba") {
+    fail("builtins/v0.1/nodes/core.color-rgba.node.json", "core.color-rgba.value must use dataKind color.rgba");
+  }
+
   const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
-  const shaderValuePort = shaderDefinition?.ports.find((port) => port.id === "u_value");
-  if (shaderValuePort?.type.dataKind !== "number.f32") {
-    fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", "render.fullscreen-shader.u_value must use dataKind number.f32");
+  const shaderPorts = new Map(shaderDefinition?.ports.map((port) => [port.id, port]));
+  for (const portId of ["u_value", "u_value2"]) {
+    const shaderValuePort = shaderPorts.get(portId);
+    if (shaderValuePort?.type.dataKind !== "number.f32") {
+      fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", `render.fullscreen-shader.${portId} must use dataKind number.f32`);
+    }
+  }
+  const shaderColorPort = shaderPorts.get("u_color");
+  if (shaderColorPort?.type.dataKind !== "color.rgba") {
+    fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", "render.fullscreen-shader.u_color must use dataKind color.rgba");
+  }
+  const shaderOutPort = shaderPorts.get("out");
+  if (shaderOutPort?.type.dataKind !== "gpu.texture2d") {
+    fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", "render.fullscreen-shader.out must use dataKind gpu.texture2d");
   }
 }
 

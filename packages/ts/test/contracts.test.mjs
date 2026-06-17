@@ -166,6 +166,7 @@ test("exports canonical v0.1 builtin node definitions", () => {
 
   assert.deepEqual(ids, [
     "core.bang-button",
+    "core.color-rgba",
     "core.event-log",
     "core.gpu-upload",
     "core.preview",
@@ -183,8 +184,15 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.equal(valueDefinition?.ports[0].type.dataKind, "number.f32");
   assert.equal(valueDefinition?.ports[0].type.range.step, 0.01);
 
+  const colorDefinition = getBuiltinNodeDefinition("core.color-rgba");
+  assert.equal(colorDefinition?.ports[0].id, "value");
+  assert.equal(colorDefinition?.ports[0].type.dataKind, "color.rgba");
+
   const shaderDefinition = getBuiltinNodeDefinition("render.fullscreen-shader");
   assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_value")?.type.dataKind, "number.f32");
+  assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_value2")?.type.dataKind, "number.f32");
+  assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_color")?.type.dataKind, "color.rgba");
+  assert.equal(shaderDefinition?.ports.find((port) => port.id === "out")?.type.dataKind, "gpu.texture2d");
   assert.equal(getBuiltinNodeDefinition("missing.node"), undefined);
   assert.equal(
     builtinNodeDefinitionsV01.flatMap((definition) => definition.ports).some((port) => port.type.dataKind === "f32"),
