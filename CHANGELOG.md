@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.17.0...skenion-contracts-v0.18.0) (2026-06-17)
+
+
+### Features
+
+* **runtime-api:** document live preview control updates ([#47](https://github.com/echovisionlab/skenion-contracts/issues/47)) ([b4c549f](https://github.com/echovisionlab/skenion-contracts/commit/b4c549fd0d431f95539f16273067349b5c516396))
+
 ## [0.17.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.16.0...skenion-contracts-v0.17.0) (2026-06-17)
 
 
