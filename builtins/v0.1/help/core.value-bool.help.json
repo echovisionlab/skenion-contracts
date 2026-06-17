@@ -1,0 +1,31 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.value-bool",
+  "summary": "Stores and emits a boolean control value.",
+  "description": "Use Bool for an explicit true/false value. Bang emits the current value; it does not toggle.",
+  "ports": [
+    {
+      "id": "in",
+      "description": "Updates the stored value and emits it."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored value without emitting."
+    },
+    {
+      "id": "bang",
+      "description": "Emits the current stored value without changing it."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current value."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default boolean value."
+    }
+  ]
+}

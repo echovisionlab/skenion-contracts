@@ -1,0 +1,31 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.string",
+  "summary": "Stores and emits a string control value.",
+  "description": "Use String for labels, symbolic control values, and text payloads that should move through the graph as data.",
+  "ports": [
+    {
+      "id": "in",
+      "description": "Updates the stored text and emits it."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored text without emitting."
+    },
+    {
+      "id": "bang",
+      "description": "Emits the current stored text without changing it."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current text."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default text."
+    }
+  ]
+}

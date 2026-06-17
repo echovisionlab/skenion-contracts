@@ -1,0 +1,31 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.value-i32",
+  "summary": "Stores and emits a signed integer control value.",
+  "description": "Use I32 for discrete numeric controls such as counts, selected indices, and integer mode values.",
+  "ports": [
+    {
+      "id": "in",
+      "description": "Updates the stored value and emits it."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored value without emitting."
+    },
+    {
+      "id": "bang",
+      "description": "Emits the current stored value without changing it."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current value."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default integer value."
+    }
+  ]
+}

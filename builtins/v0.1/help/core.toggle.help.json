@@ -1,0 +1,31 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.toggle",
+  "summary": "Stores a boolean value and flips it when banged.",
+  "description": "Toggle is the performer-facing boolean control. Use Bool when bang should only re-emit the current value; use Toggle when bang should flip the stored state.",
+  "ports": [
+    {
+      "id": "in",
+      "description": "Updates the stored boolean and emits it."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored boolean without emitting."
+    },
+    {
+      "id": "bang",
+      "description": "Flips the stored boolean and emits the new value."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current boolean."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default boolean value."
+    }
+  ]
+}

@@ -3,6 +3,10 @@
   "schemaVersion": "0.1.0",
   "version": "0.1",
   "nodes": [
+    "core.comment",
+    "core.message",
+    "core.string",
+    "core.toggle",
     "core.value-f32",
     "core.value-i32",
     "core.value-bool",
@@ -22,6 +26,7 @@
     "number.f32",
     "number.i32",
     "boolean",
+    "string",
     "event.bang",
     "asset.video",
     "video.frame",

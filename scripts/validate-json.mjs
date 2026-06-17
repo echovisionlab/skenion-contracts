@@ -185,6 +185,10 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
   validateTypedValueBuiltin(definitions, "core.value-i32", "number.i32", "Value");
   validateTypedValueBuiltin(definitions, "core.value-bool", "boolean", "Value");
   validateTypedValueBuiltin(definitions, "core.color-rgba", "color.rgba", "Color");
+  validateTypedValueBuiltin(definitions, "core.string", "string", "Value");
+  validateTypedValueBuiltin(definitions, "core.toggle", "boolean", "Value");
+  validateCommentBuiltin(definitions);
+  validateMessageBuiltin(definitions);
 
   const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
   const shaderPorts = new Map(shaderDefinition?.ports.map((port) => [port.id, port]));
@@ -201,6 +205,93 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
   const shaderOutPort = shaderPorts.get("out");
   if (shaderOutPort?.type.dataKind !== "gpu.texture2d") {
     fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", "render.fullscreen-shader.out must use dataKind gpu.texture2d");
+  }
+}
+
+function validateBuiltinsHelp(helpFiles, definitions) {
+  const byId = new Map(definitions.map((definition) => [definition.id, definition]));
+  const helpDocuments = helpFiles.map((file) => [file, builtinFileDocuments.get(file)]);
+
+  duplicateCheck(
+    "builtins/v0.1/help",
+    helpDocuments.map(([, document]) => document?.id),
+    "builtin help id"
+  );
+
+  for (const [file, help] of helpDocuments) {
+    if (!help || typeof help !== "object") {
+      fail(file, "help document must be a JSON object");
+    }
+    if (help.schema !== "skenion.node.help") {
+      fail(file, "help schema must be skenion.node.help");
+    }
+    if (help.schemaVersion !== "0.1.0") {
+      fail(file, "help schemaVersion must be 0.1.0");
+    }
+    if (typeof help.id !== "string" || help.id.length === 0) {
+      fail(file, "help id must be a non-empty string");
+    }
+    if (typeof help.summary !== "string" || help.summary.length === 0) {
+      fail(file, "help summary must be a non-empty string");
+    }
+    if (typeof help.description !== "string" || help.description.length === 0) {
+      fail(file, "help description must be a non-empty string");
+    }
+
+    const definition = byId.get(help.id);
+    if (!definition) {
+      fail(file, `help references missing builtin node ${help.id}`);
+    }
+
+    const ports = new Set(definition.ports.map((port) => port.id));
+    for (const item of help.ports ?? []) {
+      if (!ports.has(item.id)) {
+        fail(file, `help references missing port ${help.id}.${item.id}`);
+      }
+      if (typeof item.description !== "string" || item.description.length === 0) {
+        fail(file, `help port ${help.id}.${item.id} needs a description`);
+      }
+    }
+
+    for (const item of help.params ?? []) {
+      if (typeof item.id !== "string" || item.id.length === 0) {
+        fail(file, "help param id must be a non-empty string");
+      }
+      if (typeof item.description !== "string" || item.description.length === 0) {
+        fail(file, `help param ${item.id} needs a description`);
+      }
+    }
+  }
+}
+
+function validateCommentBuiltin(definitions) {
+  const definition = definitions.find((candidate) => candidate.id === "core.comment");
+  const file = "builtins/v0.1/nodes/core.comment.node.json";
+  if (!definition) {
+    fail(file, "core.comment must exist");
+  }
+  if (definition.ports.length !== 0) {
+    fail(file, "core.comment must not declare ports");
+  }
+}
+
+function validateMessageBuiltin(definitions) {
+  const definition = definitions.find((candidate) => candidate.id === "core.message");
+  const file = "builtins/v0.1/nodes/core.message.node.json";
+  if (!definition) {
+    fail(file, "core.message must exist");
+  }
+  const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const bang = ports.get("bang");
+  if (bang?.direction !== "input" || bang?.type.flow !== "event" || bang?.type.dataKind !== "event.bang") {
+    fail(file, "core.message.bang must be input event<event.bang>");
+  }
+  if (bang.activation !== "trigger") {
+    fail(file, "core.message.bang activation must be trigger");
+  }
+  const value = ports.get("value");
+  if (value?.direction !== "output" || value?.type.flow !== "value" || value?.type.dataKind !== "string") {
+    fail(file, "core.message.value must be output value<string>");
   }
 }
 
@@ -590,6 +681,7 @@ const invalidFixtureFiles = fixtureFiles.filter((file) => file.includes(`${path.
 const builtinFiles = (await walk("builtins")).filter((file) => file.endsWith(".json"));
 const builtinManifestFile = "builtins/v0.1/builtins.manifest.json";
 const builtinNodeFiles = builtinFiles.filter((file) => file.endsWith(".node.json"));
+const builtinHelpFiles = builtinFiles.filter((file) => file.endsWith(".help.json"));
 const builtinFileDocuments = new Map();
 
 for (const file of validFixtureFiles) {
@@ -612,7 +704,11 @@ if (!builtinFileDocuments.has(builtinManifestFile)) {
   fail(builtinManifestFile, "missing builtin manifest");
 }
 validateBuiltins(builtinManifestFile, builtinNodeFiles, validators);
+validateBuiltinsHelp(
+  builtinHelpFiles,
+  builtinNodeFiles.map((file) => builtinFileDocuments.get(file))
+);
 
 console.log(
-  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinNodeFiles.length} builtins, and 1 builtin manifest`
+  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinNodeFiles.length} builtins, ${builtinHelpFiles.length} builtin help files, and 1 builtin manifest`
 );

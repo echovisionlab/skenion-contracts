@@ -1,0 +1,23 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.message",
+  "summary": "Emits a saved string payload when triggered.",
+  "description": "Message is the first simple message-box form. It is intentionally string-only in v0.1; typed multi-message, pack/unpack, and send/receive nodes are deferred until the control graph model is stable.",
+  "ports": [
+    {
+      "id": "bang",
+      "description": "Emits the saved message payload."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the saved message text."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved message text."
+    }
+  ]
+}

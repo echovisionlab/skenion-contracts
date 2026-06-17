@@ -1,0 +1,35 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.value-f32",
+  "summary": "Stores and emits a 32-bit floating-point control value.",
+  "description": "Use F32 when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
+  "ports": [
+    {
+      "id": "in",
+      "description": "Updates the stored value and emits it."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored value without emitting."
+    },
+    {
+      "id": "bang",
+      "description": "Emits the current stored value without changing it."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current value."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default numeric value."
+    }
+  ],
+  "example": {
+    "title": "Drive a shader uniform",
+    "description": "Connect value to a fullscreen shader numeric input, then send runtime in/set/bang events while the preview runs."
+  }
+}

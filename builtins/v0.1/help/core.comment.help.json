@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.comment",
+  "summary": "Documents a patch without participating in execution.",
+  "description": "Comment nodes are persisted graph annotations. Runtime validation keeps them in the graph, but execution and planning ignore them.",
+  "ports": [],
+  "params": [
+    {
+      "id": "text",
+      "description": "Saved annotation text."
+    }
+  ]
+}

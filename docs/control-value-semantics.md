@@ -11,6 +11,11 @@ The canonical v0.1 typed value nodes are:
 - `core.value-i32` for `value<number.i32>`
 - `core.value-bool` for `value<boolean>`
 - `core.color-rgba` for `value<color.rgba>`
+- `core.string` for `value<string>`
+
+`core.toggle` also uses `value<boolean>`, but its `bang` input flips the stored
+boolean before emitting. `core.value-bool` keeps the generic value-box behavior:
+`bang` only emits the current value.
 
 Each typed value node has the same control surface:
 
@@ -50,6 +55,16 @@ patches unless a later user action explicitly edits the graph.
 clamp/map node, or later interface metadata. Runtime shader demos may clamp
 values at the uniform extraction boundary, but the canonical `core.value-f32`
 builtin itself stays unconstrained.
+
+## Comments And Messages
+
+`core.comment` is a persisted graph annotation. It has no ports and does not
+participate in runtime execution.
+
+`core.message` is the first simple message-box form. In v0.1 it stores a string
+payload and emits that payload when banged. Typed multi-message payloads,
+`pack`/`unpack`, `send`/`receive`, and panel/dashboard nodes are deferred until
+the typed control graph is stable.
 
 ## Pre-v1 Compatibility
 

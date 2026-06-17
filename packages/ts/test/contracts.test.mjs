@@ -5,8 +5,10 @@ import test from "node:test";
 import {
   applyGraphPatch,
   builtinManifestV01,
+  builtinNodeHelpV01,
   builtinNodeDefinitionsV01,
   getBuiltinNodeDefinition,
+  getBuiltinNodeHelp,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -167,10 +169,14 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.deepEqual(ids, [
     "core.bang-button",
     "core.color-rgba",
+    "core.comment",
     "core.event-log",
     "core.gpu-upload",
+    "core.message",
     "core.preview",
+    "core.string",
     "core.target",
+    "core.toggle",
     "core.value-bool",
     "core.value-f32",
     "core.value-i32",
@@ -202,6 +208,21 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.deepEqual(colorDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
   assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "color.rgba");
 
+  const stringDefinition = getBuiltinNodeDefinition("core.string");
+  assert.deepEqual(stringDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.equal(stringDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
+
+  const toggleDefinition = getBuiltinNodeDefinition("core.toggle");
+  assert.deepEqual(toggleDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.equal(toggleDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "boolean");
+
+  const commentDefinition = getBuiltinNodeDefinition("core.comment");
+  assert.deepEqual(commentDefinition?.ports, []);
+
+  const messageDefinition = getBuiltinNodeDefinition("core.message");
+  assert.deepEqual(messageDefinition?.ports.map((port) => port.id), ["bang", "value"]);
+  assert.equal(messageDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
+
   const shaderDefinition = getBuiltinNodeDefinition("render.fullscreen-shader");
   assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_value")?.type.dataKind, "number.f32");
   assert.equal(shaderDefinition?.ports.find((port) => port.id === "u_value2")?.type.dataKind, "number.f32");
@@ -225,9 +246,28 @@ test("exports the canonical v0.1 builtin manifest", () => {
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.f32"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.i32"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("boolean"), true);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("string"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("event.bang"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("f32"), false);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
+});
+
+test("exports builtin node help", () => {
+  const helpIds = builtinNodeHelpV01.map((help) => help.id);
+
+  assert.equal(helpIds.includes("core.value-f32"), true);
+  assert.equal(helpIds.includes("core.string"), true);
+  assert.equal(helpIds.includes("core.toggle"), true);
+  assert.equal(helpIds.includes("core.comment"), true);
+  assert.equal(helpIds.includes("core.message"), true);
+
+  const valueHelp = getBuiltinNodeHelp("core.value-f32");
+  assert.match(valueHelp?.summary ?? "", /floating-point/);
+  assert.deepEqual(valueHelp?.ports?.map((port) => port.id), ["in", "set", "bang", "value"]);
+
+  const toggleHelp = getBuiltinNodeHelp("core.toggle");
+  assert.match(toggleHelp?.ports?.find((port) => port.id === "bang")?.description ?? "", /Flips/);
+  assert.equal(getBuiltinNodeHelp("missing.node"), undefined);
 });
 
 test("rejects schema-invalid node definitions", () => {

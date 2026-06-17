@@ -1,0 +1,31 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.color-rgba",
+  "summary": "Stores and emits an RGBA color control value.",
+  "description": "Use RGBA for color controls. Component values are normalized floats in graph and runtime payloads.",
+  "ports": [
+    {
+      "id": "in",
+      "description": "Updates the stored color and emits it."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored color without emitting."
+    },
+    {
+      "id": "bang",
+      "description": "Emits the current stored color without changing it."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current color."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default RGBA color."
+    }
+  ]
+}

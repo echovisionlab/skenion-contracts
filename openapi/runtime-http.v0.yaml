@@ -194,6 +194,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeControlStateResponse"
+  /v0/session/control/read:
+    post:
+      summary: Read a graph param, port metadata, or runtime control state by node address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuntimeControlReadRequest"
+      responses:
+        "200":
+          description: Addressed control read result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeControlReadResponse"
   /v0/session/undo:
     post:
       summary: Undo the latest accepted patch in the local runtime session.
@@ -322,7 +338,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.telemetry", "session.telemetry.stream", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.telemetry", "session.telemetry.stream", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -494,6 +510,17 @@ components:
           properties:
             type:
               type: string
+              const: string
+            value:
+              type: string
+          additionalProperties: false
+        - type: object
+          required:
+            - type
+            - value
+          properties:
+            type:
+              type: string
               const: rgba
             value:
               type: array
@@ -568,6 +595,60 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/RuntimeControlValue"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
+    RuntimeControlReadTarget:
+      type: string
+      enum:
+        - param
+        - port
+        - state
+    RuntimeControlReadRequest:
+      type: object
+      required:
+        - nodeId
+        - target
+        - id
+      properties:
+        nodeId:
+          type: string
+        target:
+          $ref: "#/components/schemas/RuntimeControlReadTarget"
+        id:
+          type: string
+      additionalProperties: false
+    RuntimeControlReadValue:
+      oneOf:
+        - $ref: "#/components/schemas/RuntimeControlValue"
+        - type: object
+          required:
+            - type
+            - value
+          properties:
+            type:
+              type: string
+              const: json
+            value: true
+          additionalProperties: false
+    RuntimeControlReadResponse:
+      type: object
+      required:
+        - ok
+        - address
+        - value
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        address:
+          $ref: "#/components/schemas/RuntimeControlReadRequest"
+        value:
+          anyOf:
+            - $ref: "#/components/schemas/RuntimeControlReadValue"
+            - type: "null"
         diagnostics:
           type: array
           items:
