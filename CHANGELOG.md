@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.14.0...skenion-contracts-v0.15.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** add structured shader diagnostics ([#41](https://github.com/echovisionlab/skenion-contracts/issues/41)) ([038fdd0](https://github.com/echovisionlab/skenion-contracts/commit/038fdd0f0821a1f4301debd332819b062b3867c4))
+
 ## [0.14.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.13.0...skenion-contracts-v0.14.0) (2026-06-17)
 
 
