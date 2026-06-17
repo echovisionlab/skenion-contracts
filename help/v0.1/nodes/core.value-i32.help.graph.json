@@ -1,0 +1,95 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-core-value-i32",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "I32 stores discrete integer values such as counts or modes."
+      },
+      "ports": []
+    },
+    {
+      "id": "bang_1",
+      "kind": "core.bang-button",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "bang",
+          "direction": "output",
+          "label": "Bang",
+          "type": {
+            "flow": "event",
+            "dataKind": "event.bang"
+          }
+        }
+      ]
+    },
+    {
+      "id": "value_1",
+      "kind": "core.value-i32",
+      "kindVersion": "0.1.0",
+      "params": {
+        "value": 8
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.i32"
+          },
+          "activation": "trigger"
+        },
+        {
+          "id": "set",
+          "direction": "input",
+          "label": "Set",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.i32"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "bang",
+          "direction": "input",
+          "label": "Bang",
+          "type": {
+            "flow": "event",
+            "dataKind": "event.bang"
+          },
+          "activation": "trigger"
+        },
+        {
+          "id": "value",
+          "direction": "output",
+          "label": "Value",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.i32"
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "bang_1",
+        "port": "bang"
+      },
+      "to": {
+        "node": "value_1",
+        "port": "bang"
+      }
+    }
+  ]
+}

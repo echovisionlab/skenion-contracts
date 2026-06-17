@@ -4,6 +4,11 @@
   "id": "core.value-f32",
   "summary": "Stores and emits a 32-bit floating-point control value.",
   "description": "Use F32 when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
+  "docsPath": "docs/nodes/core.value-f32.md",
+  "helpGraph": "help/v0.1/nodes/core.value-f32.help.graph.json",
+  "tags": ["value", "control", "number"],
+  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored value without changing it.",
+  "relatedNodes": ["core.bang-button", "core.target", "render.fullscreen-shader"],
   "ports": [
     {
       "id": "in",
@@ -30,6 +35,7 @@
   ],
   "example": {
     "title": "Drive a shader uniform",
-    "description": "Connect value to a fullscreen shader numeric input, then send runtime in/set/bang events while the preview runs."
+    "description": "Connect value to a fullscreen shader numeric input, then send runtime in/set/bang events while the preview runs.",
+    "graph": "help/v0.1/nodes/core.value-f32.help.graph.json"
   }
 }

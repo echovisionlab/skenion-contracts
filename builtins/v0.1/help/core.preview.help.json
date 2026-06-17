@@ -1,0 +1,22 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.preview",
+  "summary": "Consumes a GPU texture for preview-oriented output.",
+  "description": "Preview is a generic GPU texture sink for examples that are not selecting the final render surface with render.output.",
+  "helpGraph": "help/v0.1/nodes/core.preview.help.graph.json",
+  "tags": ["output", "preview", "gpu"],
+  "runtimeBehavior": "Receives a GPU texture resource and marks it as a preview target.",
+  "relatedNodes": ["core.gpu-upload", "render.output", "render.fullscreen-shader"],
+  "ports": [
+    {
+      "id": "texture",
+      "description": "Receives the GPU texture resource to preview."
+    }
+  ],
+  "example": {
+    "title": "Preview a texture",
+    "description": "Connect an explicit GPU texture producer to Preview.",
+    "graph": "help/v0.1/nodes/core.preview.help.graph.json"
+  }
+}

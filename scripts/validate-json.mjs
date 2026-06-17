@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -205,15 +206,31 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
   }
 }
 
-function validateBuiltinsHelp(helpFiles, definitions) {
+function expectedHelpGraphPath(id) {
+  return `help/v0.1/nodes/${id}.help.graph.json`;
+}
+
+function expectedHelpGraphId(id) {
+  return `help-${id.replaceAll(".", "-")}`;
+}
+
+function validateBuiltinsHelp(helpFiles, helpGraphFiles, definitions, validators) {
   const byId = new Map(definitions.map((definition) => [definition.id, definition]));
   const helpDocuments = helpFiles.map((file) => [file, builtinFileDocuments.get(file)]);
+  const helpGraphDocuments = new Map(helpGraphFiles.map((file) => [file, builtinFileDocuments.get(file)]));
 
   duplicateCheck(
     "builtins/v0.1/help",
     helpDocuments.map(([, document]) => document?.id),
     "builtin help id"
   );
+
+  const helpIds = new Set(helpDocuments.map(([, document]) => document?.id));
+  for (const definition of definitions) {
+    if (!helpIds.has(definition.id)) {
+      fail("builtins/v0.1/help", `missing builtin help for ${definition.id}`);
+    }
+  }
 
   for (const [file, help] of helpDocuments) {
     if (!help || typeof help !== "object") {
@@ -233,6 +250,24 @@ function validateBuiltinsHelp(helpFiles, definitions) {
     }
     if (typeof help.description !== "string" || help.description.length === 0) {
       fail(file, "help description must be a non-empty string");
+    }
+    if (typeof help.helpGraph !== "string" || help.helpGraph.length === 0) {
+      fail(file, "help helpGraph must be a non-empty string");
+    }
+    const expectedGraphPath = expectedHelpGraphPath(help.id);
+    if (help.helpGraph !== expectedGraphPath) {
+      fail(file, `helpGraph must be ${expectedGraphPath}`);
+    }
+    if (help.docsPath !== undefined && !existsSync(help.docsPath)) {
+      fail(file, `docsPath does not exist: ${help.docsPath}`);
+    }
+    if (!Array.isArray(help.tags) || help.tags.length === 0) {
+      fail(file, "help tags must be a non-empty array");
+    }
+    for (const tag of help.tags) {
+      if (typeof tag !== "string" || tag.length === 0) {
+        fail(file, "help tags must contain non-empty strings");
+      }
     }
 
     const definition = byId.get(help.id);
@@ -258,7 +293,35 @@ function validateBuiltinsHelp(helpFiles, definitions) {
         fail(file, `help param ${item.id} needs a description`);
       }
     }
+
+    for (const nodeId of help.relatedNodes ?? []) {
+      if (!byId.has(nodeId)) {
+        fail(file, `related node ${nodeId} is not a builtin node`);
+      }
+    }
+
+    const helpGraph = helpGraphDocuments.get(help.helpGraph);
+    if (!helpGraph) {
+      fail(file, `help graph file was not loaded: ${help.helpGraph}`);
+    }
+    validateDocument(help.helpGraph, helpGraph, validators);
+    const expectedGraphId = expectedHelpGraphId(help.id);
+    if (helpGraph.id !== expectedGraphId) {
+      fail(help.helpGraph, `help graph id must be ${expectedGraphId}`);
+    }
+    const graphNodeKinds = new Set(helpGraph.nodes.map((node) => node.kind));
+    for (const kind of graphNodeKinds) {
+      if (!byId.has(kind)) {
+        fail(help.helpGraph, `help graph references non-builtin node kind ${kind}`);
+      }
+    }
   }
+
+  duplicateCheck(
+    "help/v0.1/nodes",
+    [...helpGraphDocuments.values()].map((document) => document?.id),
+    "help graph id"
+  );
 }
 
 function validateCommentBuiltin(definitions) {
@@ -682,6 +745,7 @@ const fixtureFiles = (await walk("fixtures")).filter((file) => file.endsWith(".j
 const validFixtureFiles = fixtureFiles.filter((file) => !file.includes(`${path.sep}invalid${path.sep}`));
 const invalidFixtureFiles = fixtureFiles.filter((file) => file.includes(`${path.sep}invalid${path.sep}`));
 const builtinFiles = (await walk("builtins")).filter((file) => file.endsWith(".json"));
+const helpGraphFiles = (await walk("help")).filter((file) => file.endsWith(".help.graph.json"));
 const builtinManifestFile = "builtins/v0.1/builtins.manifest.json";
 const builtinNodeFiles = builtinFiles.filter((file) => file.endsWith(".node.json"));
 const builtinHelpFiles = builtinFiles.filter((file) => file.endsWith(".help.json"));
@@ -703,15 +767,20 @@ for (const file of invalidFixtureFiles) {
 for (const file of builtinFiles) {
   builtinFileDocuments.set(file, await readJson(file));
 }
+for (const file of helpGraphFiles) {
+  builtinFileDocuments.set(file, await readJson(file));
+}
 if (!builtinFileDocuments.has(builtinManifestFile)) {
   fail(builtinManifestFile, "missing builtin manifest");
 }
 validateBuiltins(builtinManifestFile, builtinNodeFiles, validators);
 validateBuiltinsHelp(
   builtinHelpFiles,
-  builtinNodeFiles.map((file) => builtinFileDocuments.get(file))
+  helpGraphFiles,
+  builtinNodeFiles.map((file) => builtinFileDocuments.get(file)),
+  validators
 );
 
 console.log(
-  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinNodeFiles.length} builtins, ${builtinHelpFiles.length} builtin help files, and 1 builtin manifest`
+  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinNodeFiles.length} builtins, ${builtinHelpFiles.length} builtin help files, ${helpGraphFiles.length} help graphs, and 1 builtin manifest`
 );

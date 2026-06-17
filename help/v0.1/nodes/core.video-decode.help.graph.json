@@ -1,0 +1,100 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-core-video-decode",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "asset_1",
+      "kind": "core.video-asset",
+      "kindVersion": "0.1.0",
+      "params": {
+        "src": "example.mp4"
+      },
+      "ports": [
+        {
+          "id": "asset",
+          "direction": "output",
+          "label": "Asset",
+          "type": {
+            "flow": "resource",
+            "dataKind": "asset.video"
+          }
+        }
+      ]
+    },
+    {
+      "id": "decode_1",
+      "kind": "core.video-decode",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "asset",
+          "direction": "input",
+          "label": "Asset",
+          "type": {
+            "flow": "resource",
+            "dataKind": "asset.video"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "frames",
+          "direction": "output",
+          "label": "Frames",
+          "type": {
+            "flow": "stream",
+            "dataKind": "video.frame",
+            "frameRate": 60,
+            "colorSpace": "srgb",
+            "alphaPolicy": "black"
+          }
+        }
+      ]
+    },
+    {
+      "id": "upload_1",
+      "kind": "core.gpu-upload",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "frames",
+          "direction": "input",
+          "label": "Frames",
+          "type": {
+            "flow": "stream",
+            "dataKind": "video.frame",
+            "frameRate": 60,
+            "colorSpace": "srgb",
+            "alphaPolicy": "black"
+          },
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "asset_1",
+        "port": "asset"
+      },
+      "to": {
+        "node": "decode_1",
+        "port": "asset"
+      }
+    },
+    {
+      "from": {
+        "node": "decode_1",
+        "port": "frames"
+      },
+      "to": {
+        "node": "upload_1",
+        "port": "frames"
+      }
+    }
+  ]
+}

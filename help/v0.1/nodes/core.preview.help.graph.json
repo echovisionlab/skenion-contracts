@@ -1,0 +1,61 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-core-preview",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "clear_1",
+      "kind": "render.clear-color",
+      "kindVersion": "0.1.0",
+      "params": {
+        "color": [0.1, 0.2, 0.4, 1]
+      },
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "label": "Out",
+          "type": {
+            "flow": "resource",
+            "dataKind": "gpu.texture2d",
+            "format": "rgba8unorm",
+            "colorSpace": "srgb"
+          }
+        }
+      ]
+    },
+    {
+      "id": "preview_1",
+      "kind": "core.preview",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "texture",
+          "direction": "input",
+          "label": "Texture",
+          "type": {
+            "flow": "resource",
+            "dataKind": "gpu.texture2d",
+            "format": "rgba8unorm",
+            "colorSpace": "srgb"
+          },
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "clear_1",
+        "port": "out"
+      },
+      "to": {
+        "node": "preview_1",
+        "port": "texture"
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.gpu-upload",
+  "summary": "Uploads decoded video frames to a GPU texture resource.",
+  "description": "GPU Upload is an explicit converter from stream<video.frame> to resource<gpu.texture2d>. Skenion does not perform this conversion implicitly.",
+  "helpGraph": "help/v0.1/nodes/core.gpu-upload.help.graph.json",
+  "tags": ["converter", "gpu", "video"],
+  "runtimeBehavior": "Consumes video frames on the frame clock and produces a GPU texture resource for preview or render nodes.",
+  "relatedNodes": ["core.video-decode", "core.preview", "render.output"],
+  "ports": [
+    {
+      "id": "frames",
+      "description": "Receives decoded video frame stream data."
+    },
+    {
+      "id": "texture",
+      "description": "Outputs a GPU texture resource."
+    }
+  ],
+  "example": {
+    "title": "Explicit media conversion",
+    "description": "Video assets must pass through decode and upload converter nodes before they can feed GPU consumers.",
+    "graph": "help/v0.1/nodes/core.gpu-upload.help.graph.json"
+  }
+}

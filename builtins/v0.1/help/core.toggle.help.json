@@ -4,6 +4,11 @@
   "id": "core.toggle",
   "summary": "Stores a boolean value and flips it when banged.",
   "description": "Toggle is the performer-facing boolean control. Use Bool when bang should only re-emit the current value; use Toggle when bang should flip the stored state.",
+  "docsPath": "docs/nodes/core.toggle.md",
+  "helpGraph": "help/v0.1/nodes/core.toggle.help.graph.json",
+  "tags": ["value", "control", "boolean"],
+  "runtimeBehavior": "in updates and emits, set updates silently, and bang flips the stored boolean before emitting it.",
+  "relatedNodes": ["core.value-bool", "core.bang-button", "core.message"],
   "ports": [
     {
       "id": "in",
@@ -27,5 +32,10 @@
       "id": "value",
       "description": "Saved default boolean value."
     }
-  ]
+  ],
+  "example": {
+    "title": "Bang to flip",
+    "description": "Connect Bang Button to Toggle to see event-triggered state changes.",
+    "graph": "help/v0.1/nodes/core.toggle.help.graph.json"
+  }
 }
