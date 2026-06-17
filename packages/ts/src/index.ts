@@ -8,9 +8,11 @@ export {
   nodeDefinitionV02Schema
 } from "./generated/schemas.js";
 export {
+  builtinManifestV01,
   builtinNodeDefinitionsV01,
   getBuiltinNodeDefinition
 } from "./builtins.generated.js";
+export type { BuiltinManifestV01 } from "./builtins.generated.js";
 export type {
   AddEdgeOperationV01,
   AddNodeOperationV01,

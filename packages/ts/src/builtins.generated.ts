@@ -1,5 +1,40 @@
-/* This file is generated from builtins/v0.1/nodes. */
+/* This file is generated from builtins/v0.1. */
 import type { NodeDefinitionManifestV01 } from "./types.js";
+
+export interface BuiltinManifestV01 {
+  schema: "skenion.builtins.manifest";
+  schemaVersion: "0.1.0";
+  version: "0.1";
+  nodes: string[];
+  canonicalDataKinds: string[];
+}
+
+export const builtinManifestV01 = {
+  "schema": "skenion.builtins.manifest",
+  "schemaVersion": "0.1.0",
+  "version": "0.1",
+  "nodes": [
+    "core.value-f32",
+    "core.target",
+    "core.bang-button",
+    "core.event-log",
+    "core.video-asset",
+    "core.video-decode",
+    "core.gpu-upload",
+    "core.preview",
+    "render.clear-color",
+    "render.fullscreen-shader",
+    "render.output"
+  ],
+  "canonicalDataKinds": [
+    "number.f32",
+    "event.bang",
+    "asset.video",
+    "video.frame",
+    "gpu.texture2d",
+    "color.rgba"
+  ]
+} satisfies BuiltinManifestV01;
 
 export const builtinNodeDefinitionsV01 = [
   {

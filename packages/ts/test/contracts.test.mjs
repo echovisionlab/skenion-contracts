@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   applyGraphPatch,
+  builtinManifestV01,
   builtinNodeDefinitionsV01,
   getBuiltinNodeDefinition,
   graphPatchEventV01Schema,
@@ -189,6 +190,20 @@ test("exports canonical v0.1 builtin node definitions", () => {
     builtinNodeDefinitionsV01.flatMap((definition) => definition.ports).some((port) => port.type.dataKind === "f32"),
     false
   );
+});
+
+test("exports the canonical v0.1 builtin manifest", () => {
+  assert.equal(builtinManifestV01.schema, "skenion.builtins.manifest");
+  assert.equal(builtinManifestV01.schemaVersion, "0.1.0");
+  assert.equal(builtinManifestV01.version, "0.1");
+  assert.deepEqual(
+    [...builtinManifestV01.nodes].sort(),
+    builtinNodeDefinitionsV01.map((definition) => definition.id).sort()
+  );
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.f32"), true);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("event.bang"), true);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("f32"), false);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
 });
 
 test("rejects schema-invalid node definitions", () => {
