@@ -36,21 +36,59 @@ pub struct ShaderInterfaceV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ShaderInterfaceDiagnosticSeverityV01 {
+pub enum ShaderDiagnosticSeverityV01 {
     Error,
     Warning,
+    Info,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ShaderDiagnosticPhaseV01 {
+    InterfaceAnalysis,
+    SourceSync,
+    WgslGeneration,
+    WgslCompile,
+    RenderPipeline,
+    RenderFrame,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ShaderDiagnosticSourceV01 {
+    User,
+    Generated,
+    Runtime,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ShaderInterfaceDiagnosticV01 {
-    pub severity: ShaderInterfaceDiagnosticSeverityV01,
+pub struct ShaderDiagnosticV01 {
+    pub severity: ShaderDiagnosticSeverityV01,
+    pub phase: ShaderDiagnosticPhaseV01,
     pub code: String,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub line: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub column: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_line: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_column: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub uniform_id: Option<String>,
+    pub source: ShaderDiagnosticSourceV01,
+}
+
+pub type ShaderInterfaceDiagnosticSeverityV01 = ShaderDiagnosticSeverityV01;
+pub type ShaderInterfaceDiagnosticV01 = ShaderDiagnosticV01;
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratedShaderSourceMapV01 {
+    pub user_source_start_line: usize,
+    pub generated_line_offset: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -68,6 +106,17 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
 
     for (line_index, line) in source.lines().enumerate() {
         let Some(rest) = annotation_payload(line) else {
+            if line.trim_start().starts_with("//") {
+                if let Some(column) = line.find("@skenion.uniform").map(|index| index + 1) {
+                    diagnostics.push(diagnostic(
+                        "malformed-annotation",
+                        "malformed @skenion.uniform annotation",
+                        Some(line_index + 1),
+                        Some(column),
+                        None,
+                    ));
+                }
+            }
             continue;
         };
         let line_number = line_index + 1;
@@ -75,13 +124,22 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
             .splitn(3, char::is_whitespace)
             .filter(|part| !part.is_empty());
         let Some(id) = parts.next() else {
+            diagnostics.push(diagnostic(
+                "malformed-annotation",
+                "malformed @skenion.uniform annotation",
+                Some(line_number),
+                line.find("@skenion.uniform").map(|index| index + 1),
+                None,
+            ));
             continue;
         };
+        let id_column = line.find(id).map(|index| index + 1);
         let Some(raw_type) = parts.next() else {
-            diagnostics.push(error(
+            diagnostics.push(diagnostic(
                 "missing-uniform-type",
                 format!("missing uniform type for {id}"),
-                line_number,
+                Some(line_number),
+                id_column,
                 Some(id),
             ));
             continue;
@@ -89,28 +147,31 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
         let attributes = parse_attributes(parts.next().unwrap_or_default());
 
         if !valid_port_id(id) {
-            diagnostics.push(error(
+            diagnostics.push(diagnostic(
                 "invalid-uniform-id",
                 format!("invalid uniform id: {id}"),
-                line_number,
+                Some(line_number),
+                id_column,
                 Some(id),
             ));
             continue;
         }
         if ["out", "in", "set", "bang", "value"].contains(&id) {
-            diagnostics.push(error(
+            diagnostics.push(diagnostic(
                 "reserved-uniform-id",
                 format!("reserved uniform id: {id}"),
-                line_number,
+                Some(line_number),
+                id_column,
                 Some(id),
             ));
             continue;
         }
         if !ids.insert(id.to_owned()) {
-            diagnostics.push(error(
+            diagnostics.push(diagnostic(
                 "duplicate-uniform-id",
                 format!("duplicate uniform id: {id}"),
-                line_number,
+                Some(line_number),
+                id_column,
                 Some(id),
             ));
             continue;
@@ -120,15 +181,17 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
             raw_type,
             "number.f32" | "number.i32" | "boolean" | "color.rgba"
         ) {
-            diagnostics.push(error(
+            diagnostics.push(diagnostic(
                 "unsupported-uniform-type",
                 format!("unsupported uniform type: {raw_type}"),
-                line_number,
+                Some(line_number),
+                id_column,
                 Some(id),
             ));
             continue;
         }
 
+        diagnostics.extend(range_diagnostics(&attributes, line, line_number, id));
         let mut uniform = ShaderUniformV01 {
             id: id.to_owned(),
             label: attributes
@@ -141,9 +204,13 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
         if let Some(default) = attributes.get("default") {
             match parse_default(raw_type, default) {
                 Ok(value) => uniform.default = Some(value),
-                Err(message) => {
-                    diagnostics.push(error("invalid-default", message, line_number, Some(id)))
-                }
+                Err(message) => diagnostics.push(diagnostic(
+                    "invalid-default",
+                    message,
+                    Some(line_number),
+                    attribute_column(line, "default").or(id_column),
+                    Some(id),
+                )),
             }
         }
         uniforms.push(uniform);
@@ -152,7 +219,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
     ShaderInterfaceAnalysisV01 {
         ok: diagnostics
             .iter()
-            .all(|diagnostic| diagnostic.severity != ShaderInterfaceDiagnosticSeverityV01::Error),
+            .all(|diagnostic| diagnostic.severity != ShaderDiagnosticSeverityV01::Error),
         shader_interface: ShaderInterfaceV01 {
             schema: "skenion.shader.interface".to_owned(),
             schema_version: "0.1.0".to_owned(),
@@ -305,6 +372,53 @@ fn number_attribute(
         .filter(|value| value.is_finite())
 }
 
+fn range_diagnostics(
+    attributes: &std::collections::BTreeMap<String, String>,
+    line: &str,
+    line_number: usize,
+    uniform_id: &str,
+) -> Vec<ShaderInterfaceDiagnosticV01> {
+    let mut diagnostics = Vec::new();
+    for key in ["min", "max"] {
+        if let Some(raw_value) = attributes.get(key) {
+            if raw_value
+                .parse::<f64>()
+                .ok()
+                .is_none_or(|value| !value.is_finite())
+            {
+                diagnostics.push(diagnostic(
+                    "invalid-number-range",
+                    format!("invalid {key} range value: {raw_value}"),
+                    Some(line_number),
+                    attribute_column(line, key),
+                    Some(uniform_id),
+                ));
+            }
+        }
+    }
+
+    if let Some(raw_value) = attributes.get("step") {
+        if raw_value
+            .parse::<f64>()
+            .ok()
+            .is_none_or(|value| !value.is_finite() || value <= 0.0)
+        {
+            diagnostics.push(diagnostic(
+                "invalid-number-range",
+                format!("invalid step range value: {raw_value}"),
+                Some(line_number),
+                attribute_column(line, "step"),
+                Some(uniform_id),
+            ));
+        }
+    }
+    diagnostics
+}
+
+fn attribute_column(line: &str, key: &str) -> Option<usize> {
+    line.find(&format!("{key}=")).map(|index| index + 1)
+}
+
 fn parse_default(data_kind: &str, value: &str) -> Result<Value, String> {
     match data_kind {
         "number.f32" => value
@@ -367,18 +481,24 @@ fn default_label(id: &str) -> String {
     format!("{}{}", first.to_ascii_uppercase(), chars.as_str())
 }
 
-fn error(
+fn diagnostic(
     code: &str,
-    message: String,
-    line: usize,
+    message: impl Into<String>,
+    line: Option<usize>,
+    column: Option<usize>,
     uniform_id: Option<&str>,
 ) -> ShaderInterfaceDiagnosticV01 {
     ShaderInterfaceDiagnosticV01 {
-        severity: ShaderInterfaceDiagnosticSeverityV01::Error,
+        severity: ShaderDiagnosticSeverityV01::Error,
+        phase: ShaderDiagnosticPhaseV01::InterfaceAnalysis,
         code: code.to_owned(),
-        message,
-        line: Some(line),
+        message: message.into(),
+        line,
+        column,
+        end_line: None,
+        end_column: None,
         uniform_id: uniform_id.map(ToOwned::to_owned),
+        source: ShaderDiagnosticSourceV01::User,
     }
 }
 
@@ -429,7 +549,7 @@ mod tests {
     #[test]
     fn handles_annotation_attribute_grammar() {
         let source = r#"
-// @skenion.uniform shaderSpeed_value number.f32 label="Shader \"Speed\"" junk default=0.25 min=-1 max=1 step=0
+// @skenion.uniform shaderSpeed_value number.f32 label="Shader \"Speed\"" junk default=0.25 min=-1 max=1 step=0.5
 // @skenion.uniform phase number.f32 label=Phase stray
 // @skenion.uniform ready boolean default=true
 "#;
@@ -448,12 +568,13 @@ mod tests {
                 .and_then(|range| range.min),
             Some(-1.0)
         );
-        assert!(
+        assert_eq!(
             analysis.shader_interface.uniforms[0]
                 .data_type
                 .range
                 .as_ref()
-                .is_some_and(|range| range.step.is_none())
+                .and_then(|range| range.step),
+            Some(0.5)
         );
         assert_eq!(analysis.shader_interface.uniforms[1].label, "Phase");
         assert_eq!(
@@ -495,6 +616,7 @@ mod tests {
 // @skenion.uniform count number.i32 default=1.2
 // @skenion.uniform tint color.rgba default=nope
 // @skenion.uniform bad_tint color.rgba default=[1,2,3,"x"]
+// @skenion.uniform ranged number.f32 min=nope max=Infinity step=-1
 "#;
         let analysis = analyze_shader_interface_v01(source);
 
@@ -506,6 +628,7 @@ mod tests {
                 .map(|diagnostic| diagnostic.code.as_str())
                 .collect::<Vec<_>>(),
             vec![
+                "malformed-annotation",
                 "missing-uniform-type",
                 "invalid-uniform-id",
                 "reserved-uniform-id",
@@ -515,8 +638,21 @@ mod tests {
                 "invalid-default",
                 "invalid-default",
                 "invalid-default",
-                "invalid-default"
+                "invalid-default",
+                "invalid-number-range",
+                "invalid-number-range",
+                "invalid-number-range"
             ]
         );
+        assert_eq!(
+            analysis.diagnostics[0].phase,
+            ShaderDiagnosticPhaseV01::InterfaceAnalysis
+        );
+        assert_eq!(
+            analysis.diagnostics[0].source,
+            ShaderDiagnosticSourceV01::User
+        );
+        assert_eq!(analysis.diagnostics[0].line, Some(3));
+        assert!(analysis.diagnostics[0].column.is_some());
     }
 }

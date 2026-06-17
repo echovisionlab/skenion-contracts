@@ -17,6 +17,7 @@ import {
   invertGraphPatch,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  shaderDiagnosticV01Schema,
   shaderInterfaceV01Schema,
   analyzeShaderInterfaceV01,
   shaderInterfaceToPortsV01,
@@ -44,6 +45,14 @@ test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
   assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
+  assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
+    "interface-analysis",
+    "source-sync",
+    "wgsl-generation",
+    "wgsl-compile",
+    "render-pipeline",
+    "render-frame"
+  ]);
 });
 
 test("validates a v0.1 graph fixture", async () => {
@@ -292,6 +301,8 @@ test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
 
 test("reports shader uniform annotation diagnostics", () => {
   const source = [
+    "// @skenion.uniform",
+    "const note = \"@skenion.uniform\";",
     "// @skenion.uniform 1bad number.f32 default=nope min=nope step=-1",
     "// @skenion.uniform out number.f32",
     "// @skenion.uniform speed vec3 default=0",
@@ -312,6 +323,7 @@ test("reports shader uniform annotation diagnostics", () => {
     result.diagnostics.map((diagnostic) => diagnostic.code),
     [
       "unsupported-language",
+      "malformed-annotation",
       "invalid-uniform-id",
       "reserved-uniform-id",
       "unsupported-uniform-type",
@@ -320,9 +332,19 @@ test("reports shader uniform annotation diagnostics", () => {
       "invalid-default",
       "invalid-default",
       "invalid-default",
-      "invalid-default"
+      "invalid-default",
+      "invalid-number-range",
+      "invalid-number-range",
+      "invalid-number-range"
     ]
   );
+  assert.deepEqual(
+    result.diagnostics.map((diagnostic) => [diagnostic.phase, diagnostic.source]),
+    result.diagnostics.map(() => ["interface-analysis", "user"])
+  );
+  assert.equal(result.diagnostics[1]?.line, 1);
+  assert.equal(result.diagnostics[1]?.column, 4);
+  assert.equal(result.diagnostics.find((diagnostic) => diagnostic.code === "invalid-default")?.column, 41);
   assert.equal(result.shaderInterface.uniforms.at(-1)?.label, "Plain");
 });
 

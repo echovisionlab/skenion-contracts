@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/shader/v0.1/shader-diagnostic.schema.json",
+  "title": "Skenion Shader Diagnostic v0.1",
+  "type": "object",
+  "required": ["severity", "phase", "code", "message", "source"],
+  "properties": {
+    "severity": {
+      "enum": ["error", "warning", "info"]
+    },
+    "phase": {
+      "enum": [
+        "interface-analysis",
+        "source-sync",
+        "wgsl-generation",
+        "wgsl-compile",
+        "render-pipeline",
+        "render-frame"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "endLine": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "endColumn": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "uniformId": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "source": {
+      "enum": ["user", "generated", "runtime"]
+    }
+  },
+  "additionalProperties": false
+}

@@ -301,6 +301,16 @@ paths:
                   value: |
                     event: telemetry
                     data: {"schema":"skenion.runtime.telemetry","schemaVersion":"0.1.0","ok":true}
+  /v0/session/render/generated-shader:
+    get:
+      summary: Return the generated WGSL source for the current fullscreen shader preview.
+      responses:
+        "200":
+          description: Generated shader source or diagnostics explaining why it is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedShaderResponse"
 components:
   schemas:
     HealthResponse:
@@ -338,7 +348,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.telemetry", "session.telemetry.stream", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.render.generatedShader", "session.telemetry", "session.telemetry.stream", "session.clear"]
     ProjectRequest:
       type: object
       required:
@@ -846,6 +856,8 @@ components:
         - lastFrameMs
         - lastError
         - sourceNodeId
+        - diagnostics
+        - generatedSourceAvailable
       properties:
         active:
           type: boolean
@@ -878,7 +890,109 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShaderDiagnosticV01"
+        generatedSourceAvailable:
+          type: boolean
       additionalProperties: true
+    GeneratedShaderResponse:
+      type: object
+      required:
+        - ok
+        - nodeId
+        - language
+        - source
+        - sourceMap
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        nodeId:
+          anyOf:
+            - type: string
+            - type: "null"
+        language:
+          anyOf:
+            - type: string
+              const: wgsl
+            - type: "null"
+        source:
+          anyOf:
+            - type: string
+            - type: "null"
+        sourceMap:
+          anyOf:
+            - $ref: "#/components/schemas/GeneratedShaderSourceMapV01"
+            - type: "null"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShaderDiagnosticV01"
+      additionalProperties: false
+    GeneratedShaderSourceMapV01:
+      type: object
+      required:
+        - userSourceStartLine
+        - generatedLineOffset
+      properties:
+        userSourceStartLine:
+          type: integer
+          minimum: 1
+        generatedLineOffset:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+    ShaderDiagnosticV01:
+      type: object
+      required:
+        - severity
+        - phase
+        - code
+        - message
+        - source
+      properties:
+        severity:
+          type: string
+          enum:
+            - error
+            - warning
+            - info
+        phase:
+          type: string
+          enum:
+            - interface-analysis
+            - source-sync
+            - wgsl-generation
+            - wgsl-compile
+            - render-pipeline
+            - render-frame
+        code:
+          type: string
+        message:
+          type: string
+        line:
+          type: integer
+          minimum: 1
+        column:
+          type: integer
+          minimum: 1
+        endLine:
+          type: integer
+          minimum: 1
+        endColumn:
+          type: integer
+          minimum: 1
+        uniformId:
+          type: string
+        source:
+          type: string
+          enum:
+            - user
+            - generated
+            - runtime
+      additionalProperties: false
     RuntimeTelemetryProcess:
       type: object
       required:
