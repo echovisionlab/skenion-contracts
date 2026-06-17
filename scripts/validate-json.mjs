@@ -138,23 +138,14 @@ function dataKindsInDefinition(definition) {
   return definition.ports.map((port) => port.type.dataKind);
 }
 
-function validateBuiltins(builtinFiles, validators) {
-  const requiredBuiltinIds = [
-    "core.value-f32",
-    "core.target",
-    "core.bang-button",
-    "core.event-log",
-    "core.video-asset",
-    "core.video-decode",
-    "core.gpu-upload",
-    "core.preview",
-    "render.clear-color",
-    "render.fullscreen-shader",
-    "render.output"
-  ];
+function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
+  const manifest = builtinFileDocuments.get(manifestFile);
+  validateBuiltinsManifest(manifestFile, manifest);
+  const requiredBuiltinIds = manifest.nodes;
+  const canonicalDataKinds = new Set(manifest.canonicalDataKinds);
   const definitions = [];
 
-  for (const file of builtinFiles) {
+  for (const file of builtinNodeFiles) {
     const definition = builtinFileDocuments.get(file);
     if (!definition) {
       fail(file, "builtin document was not loaded");
@@ -173,15 +164,20 @@ function validateBuiltins(builtinFiles, validators) {
   );
 
   const ids = new Set(definitions.map((definition) => definition.id));
+  if (ids.size !== requiredBuiltinIds.length) {
+    fail(manifestFile, `manifest declares ${requiredBuiltinIds.length} builtin ids but ${ids.size} node files were found`);
+  }
   for (const id of requiredBuiltinIds) {
     if (!ids.has(id)) {
-      fail("builtins/v0.1/nodes", `missing required builtin node id: ${id}`);
+      fail(manifestFile, `missing required builtin node id: ${id}`);
     }
   }
 
   for (const definition of definitions) {
-    if (dataKindsInDefinition(definition).includes("f32")) {
-      fail(`builtins/v0.1/nodes/${definition.id}.node.json`, "non-canonical dataKind f32 is forbidden; use number.f32");
+    for (const dataKind of dataKindsInDefinition(definition)) {
+      if (!canonicalDataKinds.has(dataKind)) {
+        fail(`builtins/v0.1/nodes/${definition.id}.node.json`, `dataKind ${dataKind} is not listed in ${manifestFile}`);
+      }
     }
   }
 
@@ -198,6 +194,35 @@ function validateBuiltins(builtinFiles, validators) {
   const shaderValuePort = shaderDefinition?.ports.find((port) => port.id === "u_value");
   if (shaderValuePort?.type.dataKind !== "number.f32") {
     fail("builtins/v0.1/nodes/render.fullscreen-shader.node.json", "render.fullscreen-shader.u_value must use dataKind number.f32");
+  }
+}
+
+function validateBuiltinsManifest(file, manifest) {
+  if (!manifest || typeof manifest !== "object") {
+    fail(file, "manifest must be a JSON object");
+  }
+  if (manifest.schema !== "skenion.builtins.manifest") {
+    fail(file, "manifest schema must be skenion.builtins.manifest");
+  }
+  if (manifest.schemaVersion !== "0.1.0") {
+    fail(file, "manifest schemaVersion must be 0.1.0");
+  }
+  if (manifest.version !== "0.1") {
+    fail(file, "manifest version must be 0.1");
+  }
+  if (!Array.isArray(manifest.nodes) || manifest.nodes.length === 0) {
+    fail(file, "manifest nodes must be a non-empty array");
+  }
+  if (!Array.isArray(manifest.canonicalDataKinds) || manifest.canonicalDataKinds.length === 0) {
+    fail(file, "manifest canonicalDataKinds must be a non-empty array");
+  }
+  duplicateCheck(file, manifest.nodes, "manifest node id");
+  duplicateCheck(file, manifest.canonicalDataKinds, "canonical dataKind");
+  if (manifest.canonicalDataKinds.includes("f32")) {
+    fail(file, "legacy dataKind f32 must not be canonical");
+  }
+  if (manifest.canonicalDataKinds.includes("bang")) {
+    fail(file, "legacy dataKind bang must not be canonical");
   }
 }
 
@@ -519,6 +544,8 @@ const fixtureFiles = (await walk("fixtures")).filter((file) => file.endsWith(".j
 const validFixtureFiles = fixtureFiles.filter((file) => !file.includes(`${path.sep}invalid${path.sep}`));
 const invalidFixtureFiles = fixtureFiles.filter((file) => file.includes(`${path.sep}invalid${path.sep}`));
 const builtinFiles = (await walk("builtins")).filter((file) => file.endsWith(".json"));
+const builtinManifestFile = "builtins/v0.1/builtins.manifest.json";
+const builtinNodeFiles = builtinFiles.filter((file) => file.endsWith(".node.json"));
 const builtinFileDocuments = new Map();
 
 for (const file of validFixtureFiles) {
@@ -537,8 +564,11 @@ for (const file of invalidFixtureFiles) {
 for (const file of builtinFiles) {
   builtinFileDocuments.set(file, await readJson(file));
 }
-validateBuiltins(builtinFiles, validators);
+if (!builtinFileDocuments.has(builtinManifestFile)) {
+  fail(builtinManifestFile, "missing builtin manifest");
+}
+validateBuiltins(builtinManifestFile, builtinNodeFiles, validators);
 
 console.log(
-  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, and ${builtinFiles.length} builtins`
+  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinNodeFiles.length} builtins, and 1 builtin manifest`
 );

@@ -1,0 +1,26 @@
+{
+  "schema": "skenion.builtins.manifest",
+  "schemaVersion": "0.1.0",
+  "version": "0.1",
+  "nodes": [
+    "core.value-f32",
+    "core.target",
+    "core.bang-button",
+    "core.event-log",
+    "core.video-asset",
+    "core.video-decode",
+    "core.gpu-upload",
+    "core.preview",
+    "render.clear-color",
+    "render.fullscreen-shader",
+    "render.output"
+  ],
+  "canonicalDataKinds": [
+    "number.f32",
+    "event.bang",
+    "asset.video",
+    "video.frame",
+    "gpu.texture2d",
+    "color.rgba"
+  ]
+}
