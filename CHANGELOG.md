@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.12.0...skenion-contracts-v0.13.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** define typed value control semantics ([#36](https://github.com/echovisionlab/skenion-contracts/issues/36)) ([590540b](https://github.com/echovisionlab/skenion-contracts/commit/590540b1e01d46c651e170ccb766d04eac854a4d))
+
 ## [0.12.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.11.0...skenion-contracts-v0.12.0) (2026-06-17)
 
 
