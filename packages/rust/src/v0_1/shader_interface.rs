@@ -603,6 +603,7 @@ mod tests {
     fn reports_invalid_annotations() {
         let source = r#"
 // ordinary shader comment
+// malformed @skenion.uniform marker
 // @skenion.uniform
 // @skenion.uniform only_id
 // @skenion.uniform 1bad number.f32
@@ -626,6 +627,7 @@ mod tests {
                 .map(|diagnostic| diagnostic.code.as_str())
                 .collect::<Vec<_>>(),
             vec![
+                "malformed-annotation",
                 "malformed-annotation",
                 "missing-uniform-type",
                 "invalid-uniform-id",
