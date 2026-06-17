@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.18.0...skenion-contracts-v0.19.0) (2026-06-17)
+
+
+### Features
+
+* **contracts:** define project document view state ([78d4a28](https://github.com/echovisionlab/skenion-contracts/commit/78d4a289cea6fffee1fa4439c9ad2e5b2d50dfe5))
+* **contracts:** define project document view state ([4e53f78](https://github.com/echovisionlab/skenion-contracts/commit/4e53f787cd6ac5ec57ef83b3ccc7c12ffba5055b))
+
 ## [0.18.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.17.0...skenion-contracts-v0.18.0) (2026-06-17)
 
 
