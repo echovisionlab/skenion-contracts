@@ -10,6 +10,7 @@ import type {
 } from "./types.js";
 
 const UNIFORM_RE = /^\s*\/\/\s*@skenion\.uniform\s+(\S+)\s+([A-Za-z0-9_.]+)(.*)$/;
+const UNIFORM_MARKER = "@skenion.uniform";
 const PORT_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const RESERVED_UNIFORM_IDS = new Set(["out", "in", "set", "bang", "value"]);
 const SUPPORTED_TYPES = new Set<ShaderUniformDataKindV01>([
@@ -30,40 +31,55 @@ export function analyzeShaderInterfaceV01(
   if (options.language !== "wgsl") {
     diagnostics.push({
       severity: "error",
+      phase: "interface-analysis",
       code: "unsupported-language",
-      message: `unsupported shader language: ${options.language}`
+      message: `unsupported shader language: ${options.language}`,
+      source: "user"
     });
   }
 
   const lines = source.split(/\r?\n/);
   for (const [lineIndex, line] of lines.entries()) {
+    const markerIndex = line.indexOf(UNIFORM_MARKER);
     const match = line.match(UNIFORM_RE);
     if (!match) {
+      if (markerIndex >= 0 && line.trimStart().startsWith("//")) {
+        diagnostics.push(diagnostic({
+          code: "malformed-annotation",
+          message: "malformed @skenion.uniform annotation",
+          line: lineIndex + 1,
+          column: markerIndex + 1
+        }));
+      }
       continue;
     }
 
     const [, id, rawType, rest = ""] = match;
     const lineNumber = lineIndex + 1;
+    const idColumn = Math.max(1, line.indexOf(id) + 1);
     if (!PORT_ID_RE.test(id)) {
-      diagnostics.push(error("invalid-uniform-id", `invalid uniform id: ${id}`, lineNumber, id));
+      diagnostics.push(error("invalid-uniform-id", `invalid uniform id: ${id}`, lineNumber, id, idColumn));
       continue;
     }
     if (RESERVED_UNIFORM_IDS.has(id)) {
-      diagnostics.push(error("reserved-uniform-id", `reserved uniform id: ${id}`, lineNumber, id));
+      diagnostics.push(error("reserved-uniform-id", `reserved uniform id: ${id}`, lineNumber, id, idColumn));
       continue;
     }
     if (ids.has(id)) {
-      diagnostics.push(error("duplicate-uniform-id", `duplicate uniform id: ${id}`, lineNumber, id));
+      diagnostics.push(error("duplicate-uniform-id", `duplicate uniform id: ${id}`, lineNumber, id, idColumn));
       continue;
     }
     ids.add(id);
 
     if (!isSupportedType(rawType)) {
-      diagnostics.push(error("unsupported-uniform-type", `unsupported uniform type: ${rawType}`, lineNumber, id));
+      diagnostics.push(error("unsupported-uniform-type", `unsupported uniform type: ${rawType}`, lineNumber, id, idColumn));
       continue;
     }
 
     const attributes = parseAttributes(rest);
+    for (const rangeDiagnostic of rangeDiagnostics(attributes, line, lineNumber, id)) {
+      diagnostics.push(rangeDiagnostic);
+    }
     const type = dataTypeFor(rawType, attributes);
     const uniform: ShaderUniformV01 = {
       id,
@@ -76,7 +92,13 @@ export function analyzeShaderInterfaceV01(
       if (parsedDefault.ok) {
         uniform.default = parsedDefault.value;
       } else {
-        diagnostics.push(error("invalid-default", parsedDefault.message, lineNumber, id));
+        diagnostics.push(error(
+          "invalid-default",
+          parsedDefault.message,
+          lineNumber,
+          id,
+          attributeColumn(line, "default")
+        ));
       }
     }
     uniforms.push(uniform);
@@ -128,9 +150,35 @@ function error(
   code: string,
   message: string,
   line: number,
-  uniformId?: string
+  uniformId?: string,
+  column?: number
 ): ShaderInterfaceDiagnosticV01 {
-  return { severity: "error", code, message, line, uniformId };
+  return diagnostic({ code, message, line, column, uniformId });
+}
+
+function diagnostic({
+  code,
+  message,
+  line,
+  column,
+  uniformId
+}: {
+  code: string;
+  message: string;
+  line?: number;
+  column?: number;
+  uniformId?: string;
+}): ShaderInterfaceDiagnosticV01 {
+  return {
+    severity: "error",
+    phase: "interface-analysis",
+    code,
+    message,
+    line,
+    column,
+    uniformId,
+    source: "user"
+  };
 }
 
 function isSupportedType(value: string): value is ShaderUniformDataKindV01 {
@@ -182,6 +230,46 @@ function numberAttribute(attributes: Map<string, string>, key: string): number |
 function positiveNumberAttribute(attributes: Map<string, string>, key: string): number | undefined {
   const value = numberAttribute(attributes, key);
   return value !== undefined && value > 0 ? value : undefined;
+}
+
+function rangeDiagnostics(
+  attributes: Map<string, string>,
+  line: string,
+  lineNumber: number,
+  uniformId: string
+): ShaderInterfaceDiagnosticV01[] {
+  const diagnostics: ShaderInterfaceDiagnosticV01[] = [];
+  for (const key of ["min", "max"] as const) {
+    const rawValue = attributes.get(key);
+    if (rawValue !== undefined && !Number.isFinite(Number(rawValue))) {
+      diagnostics.push(error(
+        "invalid-number-range",
+        `invalid ${key} range value: ${rawValue}`,
+        lineNumber,
+        uniformId,
+        attributeColumn(line, key)
+      ));
+    }
+  }
+
+  const step = attributes.get("step");
+  if (step !== undefined) {
+    const parsed = Number(step);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      diagnostics.push(error(
+        "invalid-number-range",
+        `invalid step range value: ${step}`,
+        lineNumber,
+        uniformId,
+        attributeColumn(line, "step")
+      ));
+    }
+  }
+  return diagnostics;
+}
+
+function attributeColumn(line: string, key: string): number {
+  return line.indexOf(`${key}=`) + 1;
 }
 
 function parseDefault(

@@ -6,6 +6,7 @@ export {
   graphV02Schema,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  shaderDiagnosticV01Schema,
   shaderInterfaceV01Schema
 } from "./generated/schemas.js";
 export {
@@ -63,6 +64,11 @@ export type {
   ReplaceNodeInterfaceOperationV01,
   SetNodeParamOperationV01,
   SetNodeParamsOperationV01,
+  GeneratedShaderSourceMapV01,
+  ShaderDiagnosticPhaseV01,
+  ShaderDiagnosticSeverityV01,
+  ShaderDiagnosticSourceV01,
+  ShaderDiagnosticV01,
   ShaderInterfaceAnalysisV01,
   ShaderInterfaceDiagnosticV01,
   ShaderInterfaceV01,

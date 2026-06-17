@@ -362,12 +362,37 @@ export interface ShaderInterfaceV01 {
   uniforms: ShaderUniformV01[];
 }
 
-export interface ShaderInterfaceDiagnosticV01 {
-  severity: "error" | "warning";
+export type ShaderDiagnosticSeverityV01 = "error" | "warning" | "info";
+export type ShaderDiagnosticPhaseV01 =
+  | "interface-analysis"
+  | "source-sync"
+  | "wgsl-generation"
+  | "wgsl-compile"
+  | "render-pipeline"
+  | "render-frame";
+export type ShaderDiagnosticSourceV01 = "user" | "generated" | "runtime";
+
+export interface ShaderSourceSpanV01 {
+  line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
+}
+
+export interface ShaderDiagnosticV01 extends ShaderSourceSpanV01 {
+  severity: ShaderDiagnosticSeverityV01;
+  phase: ShaderDiagnosticPhaseV01;
   code: string;
   message: string;
-  line?: number;
   uniformId?: string;
+  source: ShaderDiagnosticSourceV01;
+}
+
+export type ShaderInterfaceDiagnosticV01 = ShaderDiagnosticV01;
+
+export interface GeneratedShaderSourceMapV01 {
+  userSourceStartLine: number;
+  generatedLineOffset: number;
 }
 
 export interface ShaderInterfaceAnalysisV01 {

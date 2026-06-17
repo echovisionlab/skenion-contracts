@@ -13,8 +13,10 @@ pub use patch::{
     apply_graph_patch_v01, invert_graph_patch_v01,
 };
 pub use shader_interface::{
-    ShaderInterfaceAnalysisV01, ShaderInterfaceDiagnosticSeverityV01, ShaderInterfaceDiagnosticV01,
-    ShaderInterfaceV01, ShaderLanguageV01, ShaderUniformV01, analyze_shader_interface_v01,
+    GeneratedShaderSourceMapV01, ShaderDiagnosticPhaseV01, ShaderDiagnosticSeverityV01,
+    ShaderDiagnosticSourceV01, ShaderDiagnosticV01, ShaderInterfaceAnalysisV01,
+    ShaderInterfaceDiagnosticSeverityV01, ShaderInterfaceDiagnosticV01, ShaderInterfaceV01,
+    ShaderLanguageV01, ShaderUniformV01, analyze_shader_interface_v01,
     shader_interface_to_ports_v01,
 };
 pub use types::{

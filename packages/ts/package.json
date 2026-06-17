@@ -43,6 +43,10 @@
     "./shader/v0.1/interface-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
+    },
+    "./shader/v0.1/diagnostic-schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
     }
   },
   "files": [
