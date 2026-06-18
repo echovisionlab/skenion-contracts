@@ -9,7 +9,7 @@
       "kind": "core.comment",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "UI Toggle emits boolean runtime control values. Connect it to Send Bool for named routing."
+        "text": "UI Toggle flips on bang/click and emits boolean values. Use sendName for named routing."
       },
       "ports": []
     },
@@ -19,9 +19,32 @@
       "kindVersion": "0.1.0",
       "params": {
         "label": "Enabled",
-        "value": true
+        "value": true,
+        "sendName": "enabled"
       },
       "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "value",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        },
+        {
+          "id": "set",
+          "direction": "input",
+          "label": "Set",
+          "type": {
+            "flow": "value",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "latched"
+        },
         {
           "id": "value",
           "direction": "output",
@@ -32,39 +55,7 @@
           }
         }
       ]
-    },
-    {
-      "id": "send_1",
-      "kind": "core.send-bool",
-      "kindVersion": "0.1.0",
-      "params": {
-        "name": "enabled"
-      },
-      "ports": [
-        {
-          "id": "in",
-          "direction": "input",
-          "label": "In",
-          "type": {
-            "flow": "value",
-            "dataKind": "boolean"
-          },
-          "required": true,
-          "activation": "trigger"
-        }
-      ]
     }
   ],
-  "edges": [
-    {
-      "from": {
-        "node": "toggle_1",
-        "port": "value"
-      },
-      "to": {
-        "node": "send_1",
-        "port": "in"
-      }
-    }
-  ]
+  "edges": []
 }

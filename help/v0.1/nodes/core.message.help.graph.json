@@ -9,7 +9,7 @@
       "kind": "core.comment",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "Message emits its saved text only when banged."
+        "text": "Message emits its saved text when clicked, banged, or triggered. set updates the runtime message silently."
       },
       "ports": []
     },
@@ -19,6 +19,26 @@
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "value",
+            "dataKind": "message.any"
+          },
+          "activation": "trigger"
+        },
+        {
+          "id": "set",
+          "direction": "input",
+          "label": "Set",
+          "type": {
+            "flow": "value",
+            "dataKind": "message.any"
+          },
+          "activation": "latched"
+        },
         {
           "id": "bang",
           "direction": "output",

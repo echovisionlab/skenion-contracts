@@ -311,6 +311,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GeneratedShaderResponse"
+  /v0/assets/import:
+    post:
+      summary: Import a local asset into the Runtime's local asset store.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/RuntimeAssetImportRequest"
+      responses:
+        "200":
+          description: Imported asset metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeAssetImportResponse"
+  /v0/assets:
+    get:
+      summary: List assets imported into the local Runtime asset store.
+      responses:
+        "200":
+          description: Current local runtime assets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeAssetListResponse"
+  /v0/assets/{assetId}:
+    get:
+      summary: Return metadata for one imported runtime asset.
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Runtime asset metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeAssetGetResponse"
 components:
   schemas:
     HealthResponse:
@@ -629,7 +671,7 @@ components:
             $ref: "#/components/schemas/RuntimeControlValue"
         channels:
           type: object
-          description: Latest values for typed send/receive channels keyed as dataKind:name.
+          description: Latest values for object-owned named channels keyed as dataKind:name.
           additionalProperties:
             $ref: "#/components/schemas/RuntimeControlValue"
         diagnostics:
@@ -1074,6 +1116,100 @@ components:
         generatedLineOffset:
           type: integer
           minimum: 0
+      additionalProperties: false
+    RuntimeAssetImportRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+        kind:
+          type: string
+          enum:
+            - video
+            - image
+            - audio
+            - binary
+      additionalProperties: false
+    RuntimeAsset:
+      type: object
+      required:
+        - id
+        - name
+        - mimeType
+        - kind
+        - sizeBytes
+        - runtimeUri
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mimeType:
+          type: string
+        kind:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 0
+        runtimeUri:
+          type: string
+      additionalProperties: false
+    RuntimeAssetImportResponse:
+      type: object
+      required:
+        - ok
+        - asset
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        asset:
+          anyOf:
+            - $ref: "#/components/schemas/RuntimeAsset"
+            - type: "null"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
+    RuntimeAssetListResponse:
+      type: object
+      required:
+        - ok
+        - assets
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeAsset"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
+    RuntimeAssetGetResponse:
+      type: object
+      required:
+        - ok
+        - asset
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        asset:
+          anyOf:
+            - $ref: "#/components/schemas/RuntimeAsset"
+            - type: "null"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
       additionalProperties: false
     ShaderDiagnosticV01:
       type: object

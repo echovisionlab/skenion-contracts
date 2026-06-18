@@ -5,9 +5,16 @@
   "summary": "Stores and emits a string control value.",
   "description": "Use String for labels, symbolic control values, and text payloads that should move through the graph as data.",
   "helpGraph": "help/v0.1/nodes/core.string.help.graph.json",
-  "tags": ["value", "control", "text"],
+  "tags": [
+    "value",
+    "control",
+    "text"
+  ],
   "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored string without changing it.",
-  "relatedNodes": ["core.message", "core.bang-button"],
+  "relatedNodes": [
+    "core.message",
+    "core.bang-button"
+  ],
   "ports": [
     {
       "id": "in",
@@ -30,6 +37,14 @@
     {
       "id": "value",
       "description": "Saved default text."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional typed channel name updated whenever this object emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional typed channel name used to receive routed updates."
     }
   ],
   "example": {
