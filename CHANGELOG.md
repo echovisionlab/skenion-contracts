@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.20.0...skenion-contracts-v0.21.0) (2026-06-18)
+
+
+### Features
+
+* **contracts:** remove legacy routing builtins ([#54](https://github.com/echovisionlab/skenion-contracts/issues/54)) ([1338599](https://github.com/echovisionlab/skenion-contracts/commit/13385998f9450169118f50897720c8c7a62304da))
+
 ## [0.20.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.19.0...skenion-contracts-v0.20.0) (2026-06-18)
 
 
