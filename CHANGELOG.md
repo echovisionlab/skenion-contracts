@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.19.0...skenion-contracts-v0.20.0) (2026-06-18)
+
+
+### Features
+
+* **contracts:** add object-owned panel controls ([2904c7a](https://github.com/echovisionlab/skenion-contracts/commit/2904c7a509b4cc9b571de6b75897a4637cccf6bc))
+* **contracts:** add object-owned panel controls ([cabb7af](https://github.com/echovisionlab/skenion-contracts/commit/cabb7af625a23d77481fa7c328c7f13c1d1980a3))
+
 ## [0.19.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.18.0...skenion-contracts-v0.19.0) (2026-06-17)
 
 
