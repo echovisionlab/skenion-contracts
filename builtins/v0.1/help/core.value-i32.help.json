@@ -5,9 +5,16 @@
   "summary": "Stores and emits a signed integer control value.",
   "description": "Use I32 for discrete numeric controls such as counts, selected indices, and integer mode values.",
   "helpGraph": "help/v0.1/nodes/core.value-i32.help.graph.json",
-  "tags": ["value", "control", "integer"],
+  "tags": [
+    "value",
+    "control",
+    "integer"
+  ],
   "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored integer value without changing it.",
-  "relatedNodes": ["core.bang-button", "render.fullscreen-shader"],
+  "relatedNodes": [
+    "core.bang-button",
+    "render.fullscreen-shader"
+  ],
   "ports": [
     {
       "id": "in",
@@ -30,6 +37,14 @@
     {
       "id": "value",
       "description": "Saved default integer value."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional typed channel name updated whenever this object emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional typed channel name used to receive routed updates."
     }
   ],
   "example": {

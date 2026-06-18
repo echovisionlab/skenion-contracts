@@ -3,16 +3,25 @@
   "schemaVersion": "0.1.0",
   "id": "core.comment",
   "summary": "Documents a patch without participating in execution.",
-  "description": "Comment nodes are persisted graph annotations. Runtime validation keeps them in the graph, but execution and planning ignore them.",
+  "description": "Comment nodes are persisted graph annotations. They render as canvas text and expose a set inlet for Max/Pd-style text updates without output.",
   "helpGraph": "help/v0.1/nodes/core.comment.help.graph.json",
   "tags": ["documentation", "annotation"],
-  "runtimeBehavior": "Comment nodes are retained in graph documents and ignored by execution.",
+  "runtimeBehavior": "set <text> updates runtime comment text state silently. Inspector edits remain graph patches. Comment has no output.",
   "relatedNodes": ["core.message"],
-  "ports": [],
+  "ports": [
+    {
+      "id": "set",
+      "description": "Updates comment text from a set <text> message without output."
+    }
+  ],
   "params": [
     {
       "id": "text",
       "description": "Saved annotation text."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional string channel name used to receive routed text updates."
     }
   ],
   "example": {

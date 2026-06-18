@@ -9,7 +9,7 @@
       "kind": "core.comment",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "Button emits a bang as a runtime control event. It is for panel interaction, not graph mutation."
+        "text": "Button accepts any input or runtime click and emits a bang. sendName can publish the bang to a named event channel."
       },
       "ports": []
     },
@@ -18,9 +18,21 @@
       "kind": "ui.button",
       "kindVersion": "0.1.0",
       "params": {
-        "label": "Bang"
+        "label": "Bang",
+        "sendName": "reset"
       },
       "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "value",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        },
         {
           "id": "bang",
           "direction": "output",

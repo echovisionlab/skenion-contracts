@@ -4,6 +4,7 @@
   "version": "0.1",
   "nodes": [
     "core.comment",
+    "core.panel",
     "core.message",
     "core.string",
     "core.toggle",
@@ -38,6 +39,7 @@
     "number.i32",
     "boolean",
     "string",
+    "message.any",
     "event.bang",
     "asset.video",
     "video.frame",

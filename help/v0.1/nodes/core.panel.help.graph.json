@@ -1,15 +1,16 @@
 {
   "schema": "skenion.graph",
   "schemaVersion": "0.1.0",
-  "id": "help-core-comment",
+  "id": "help-core-panel",
   "revision": "1",
   "nodes": [
     {
-      "id": "note_1",
-      "kind": "core.comment",
+      "id": "panel_1",
+      "kind": "core.panel",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "Comments annotate a patch. set <text> updates comment text state without output."
+        "label": "Panel",
+        "color": "transparent"
       },
       "ports": [
         {
@@ -26,25 +27,13 @@
       ]
     },
     {
-      "id": "note_2",
+      "id": "note_1",
       "kind": "core.comment",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "Use comments near important control or render decisions."
+        "text": "Panel is a colored visual grouping object. set #00ff00 updates its runtime color state."
       },
-      "ports": [
-        {
-          "id": "set",
-          "direction": "input",
-          "label": "Set",
-          "type": {
-            "flow": "value",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "latched"
-        }
-      ]
+      "ports": []
     }
   ],
   "edges": []

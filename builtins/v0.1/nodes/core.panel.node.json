@@ -1,9 +1,9 @@
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "core.comment",
+  "id": "core.panel",
   "version": "0.1.0",
-  "displayName": "Comment",
+  "displayName": "Panel",
   "category": "Control",
   "ports": [
     {

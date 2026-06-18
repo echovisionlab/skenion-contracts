@@ -6,9 +6,17 @@
   "description": "Use F32 when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
   "docsPath": "docs/nodes/core.value-f32.md",
   "helpGraph": "help/v0.1/nodes/core.value-f32.help.graph.json",
-  "tags": ["value", "control", "number"],
+  "tags": [
+    "value",
+    "control",
+    "number"
+  ],
   "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored value without changing it.",
-  "relatedNodes": ["core.bang-button", "core.target", "render.fullscreen-shader"],
+  "relatedNodes": [
+    "core.bang-button",
+    "core.target",
+    "render.fullscreen-shader"
+  ],
   "ports": [
     {
       "id": "in",
@@ -31,6 +39,14 @@
     {
       "id": "value",
       "description": "Saved default numeric value."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional typed channel name updated whenever this object emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional typed channel name used to receive routed updates."
     }
   ],
   "example": {

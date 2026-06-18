@@ -2,8 +2,8 @@
   "schema": "skenion.node.help",
   "schemaVersion": "0.1.0",
   "id": "ui.toggle",
-  "summary": "Emits boolean values from a runtime toggle control.",
-  "description": "UI Toggle is a panel control node. Clicking it toggles runtime state and emits a typed boolean value without patching the graph.",
+  "summary": "Emits boolean values from a Max/Pd-like toggle control.",
+  "description": "UI Toggle is a panel control node. Click or bang flips runtime state, 0/1/off/on set and emit, and set messages update silently without patching the graph.",
   "helpGraph": "help/v0.1/nodes/ui.toggle.help.graph.json",
   "tags": [
     "ui",
@@ -11,13 +11,21 @@
     "value",
     "boolean"
   ],
-  "runtimeBehavior": "Runtime clicks flip the current boolean control state and emit the new boolean from value.",
+  "runtimeBehavior": "bang flips and emits. 0/1/off/on/false/true update and emit. set 0, set 1, set off, and set on update the runtime state without output.",
   "relatedNodes": [
-    "core.send-bool",
-    "core.receive-bool",
-    "core.value-bool"
+    "core.value-bool",
+    "ui.button",
+    "core.message"
   ],
   "ports": [
+    {
+      "id": "in",
+      "description": "Accepts bang, boolean, 0/1, or off/on style messages and emits the resulting boolean."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored toggle state without output."
+    },
     {
       "id": "value",
       "description": "Emits the current toggle value as boolean."
@@ -31,11 +39,19 @@
     {
       "id": "value",
       "description": "Initial boolean value saved in the graph."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional boolean channel name updated whenever the toggle emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional boolean channel name used to receive routed toggle updates."
     }
   ],
   "example": {
-    "title": "Drive a boolean channel",
-    "description": "Connect UI Toggle to Send Bool and read it elsewhere with Receive Bool.",
+    "title": "Drive a boolean value",
+    "description": "Connect UI Toggle directly to a boolean input or give it sendName for named routing.",
     "graph": "help/v0.1/nodes/ui.toggle.help.graph.json"
   }
 }

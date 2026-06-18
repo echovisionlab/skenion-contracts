@@ -1,0 +1,36 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.panel",
+  "summary": "Draws a colored background panel on the patch canvas.",
+  "description": "Panel is a visual patch annotation object. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
+  "helpGraph": "help/v0.1/nodes/core.panel.help.graph.json",
+  "tags": ["annotation", "panel", "background"],
+  "runtimeBehavior": "set updates the runtime panel color silently. Inspector color edits remain graph patches.",
+  "relatedNodes": ["core.comment", "core.message"],
+  "ports": [
+    {
+      "id": "set",
+      "description": "Updates the panel color from a message such as set #00ff00 without output."
+    }
+  ],
+  "params": [
+    {
+      "id": "color",
+      "description": "Saved panel color as a CSS hex string."
+    },
+    {
+      "id": "label",
+      "description": "Optional panel title text."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional string channel name used to receive routed color updates."
+    }
+  ],
+  "example": {
+    "title": "Group related controls",
+    "description": "Use panels as colored backgrounds behind related controls and comments.",
+    "graph": "help/v0.1/nodes/core.panel.help.graph.json"
+  }
+}

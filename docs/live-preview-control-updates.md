@@ -12,7 +12,7 @@ produce graph patch operations.
 Runtime control events may update:
 
 - stored runtime control values
-- typed send/receive channel state
+- named object routing channel state
 - a running preview control-state snapshot
 - telemetry control revision fields
 

@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "id": "core.video-asset",
   "summary": "Represents a video asset resource.",
-  "description": "Video Asset is a resource source. It does not output decoded frames directly; explicit converter nodes preserve graph intent.",
+  "description": "Video Asset is a resource source. It stores a project-safe assetRef, name, and mimeType; explicit converter nodes preserve graph intent.",
   "helpGraph": "help/v0.1/nodes/core.video-asset.help.graph.json",
   "tags": ["media", "resource", "video"],
   "runtimeBehavior": "Provides an asset.video resource reference for async media loading.",
@@ -16,8 +16,16 @@
   ],
   "params": [
     {
-      "id": "src",
-      "description": "Saved source locator for the video asset."
+      "id": "assetRef",
+      "description": "Persisted project asset reference such as skenion-runtime://assets/asset_abc123. Absolute source paths must not be saved in portable projects."
+    },
+    {
+      "id": "name",
+      "description": "Display name for the selected asset."
+    },
+    {
+      "id": "mimeType",
+      "description": "MIME type reported by the runtime asset import flow."
     }
   ],
   "example": {

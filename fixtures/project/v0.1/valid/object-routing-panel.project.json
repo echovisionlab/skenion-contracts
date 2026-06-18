@@ -1,0 +1,82 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "object-routing-panel-project",
+  "revision": "1",
+  "metadata": {
+    "title": "Object Routing Panel",
+    "description": "A project fixture where the slider object itself owns sendName routing."
+  },
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "object-routing-panel",
+    "revision": "1",
+    "nodes": [
+      {
+        "id": "slider_speed",
+        "kind": "ui.slider-f32",
+        "kindVersion": "0.1.0",
+        "params": {
+          "label": "Speed",
+          "value": 0.25,
+          "sendName": "speed"
+        },
+        "ports": [
+          {
+            "id": "in",
+            "direction": "input",
+            "label": "In",
+            "type": {
+              "flow": "value",
+              "dataKind": "number.f32"
+            },
+            "activation": "trigger"
+          },
+          {
+            "id": "set",
+            "direction": "input",
+            "label": "Set",
+            "type": {
+              "flow": "value",
+              "dataKind": "number.f32"
+            },
+            "activation": "latched"
+          },
+          {
+            "id": "bang",
+            "direction": "input",
+            "label": "Bang",
+            "type": {
+              "flow": "event",
+              "dataKind": "event.bang"
+            },
+            "activation": "trigger"
+          },
+          {
+            "id": "value",
+            "direction": "output",
+            "label": "Value",
+            "type": {
+              "flow": "value",
+              "dataKind": "number.f32"
+            }
+          }
+        ]
+      }
+    ],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {
+        "slider_speed": {
+          "x": 80,
+          "y": 96
+        }
+      }
+    }
+  }
+}

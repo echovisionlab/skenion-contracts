@@ -47,6 +47,7 @@ export const builtinManifestV01 = {
   "version": "0.1",
   "nodes": [
     "core.comment",
+    "core.panel",
     "core.message",
     "core.string",
     "core.toggle",
@@ -81,6 +82,7 @@ export const builtinManifestV01 = {
     "number.i32",
     "boolean",
     "string",
+    "message.any",
     "event.bang",
     "asset.video",
     "video.frame",
@@ -184,7 +186,19 @@ export const builtinNodeDefinitionsV01 = [
     "version": "0.1.0",
     "displayName": "Comment",
     "category": "Control",
-    "ports": [],
+    "ports": [
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "latched"
+      }
+    ],
     "execution": {
       "model": "value"
     },
@@ -275,6 +289,28 @@ export const builtinNodeDefinitionsV01 = [
     "category": "Control",
     "ports": [
       {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "value",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
         "id": "bang",
         "direction": "input",
         "label": "Bang",
@@ -297,6 +333,35 @@ export const builtinNodeDefinitionsV01 = [
     ],
     "execution": {
       "model": "event"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": []
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.panel",
+    "version": "0.1.0",
+    "displayName": "Panel",
+    "category": "Control",
+    "ports": [
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "latched"
+      }
+    ],
+    "execution": {
+      "model": "value"
     },
     "state": {
       "persistent": false
@@ -1112,6 +1177,17 @@ export const builtinNodeDefinitionsV01 = [
     "category": "UI Controls",
     "ports": [
       {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "value",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
         "id": "bang",
         "direction": "output",
         "label": "Bang",
@@ -1139,6 +1215,39 @@ export const builtinNodeDefinitionsV01 = [
     "category": "UI Controls",
     "ports": [
       {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.f32"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.f32"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "bang",
+        "direction": "input",
+        "label": "Bang",
+        "type": {
+          "flow": "event",
+          "dataKind": "event.bang"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
         "id": "value",
         "direction": "output",
         "label": "Value",
@@ -1165,6 +1274,28 @@ export const builtinNodeDefinitionsV01 = [
     "displayName": "Toggle Control",
     "category": "UI Controls",
     "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "value",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "latched"
+      },
       {
         "id": "value",
         "direction": "output",
@@ -1256,6 +1387,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Saved default RGBA color."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
       }
     ],
     "example": {
@@ -1269,21 +1408,30 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "core.comment",
     "summary": "Documents a patch without participating in execution.",
-    "description": "Comment nodes are persisted graph annotations. Runtime validation keeps them in the graph, but execution and planning ignore them.",
+    "description": "Comment nodes are persisted graph annotations. They render as canvas text and expose a set inlet for Max/Pd-style text updates without output.",
     "helpGraph": "help/v0.1/nodes/core.comment.help.graph.json",
     "tags": [
       "documentation",
       "annotation"
     ],
-    "runtimeBehavior": "Comment nodes are retained in graph documents and ignored by execution.",
+    "runtimeBehavior": "set <text> updates runtime comment text state silently. Inspector edits remain graph patches. Comment has no output.",
     "relatedNodes": [
       "core.message"
     ],
-    "ports": [],
+    "ports": [
+      {
+        "id": "set",
+        "description": "Updates comment text from a set <text> message without output."
+      }
+    ],
     "params": [
       {
         "id": "text",
         "description": "Saved annotation text."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional string channel name used to receive routed text updates."
       }
     ],
     "example": {
@@ -1358,8 +1506,8 @@ export const builtinNodeHelpV01 = [
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
     "id": "core.message",
-    "summary": "Emits a saved string payload when triggered.",
-    "description": "Message is the first simple message-box form. It is intentionally string-only in v0.1; typed multi-message, pack/unpack, and send/receive nodes are deferred until the control graph model is stable.",
+    "summary": "Emits a saved message payload when clicked or triggered.",
+    "description": "Message is a Max/Pd-like message box. Click or bang emits the stored message; set <message> replaces the runtime message silently.",
     "docsPath": "docs/nodes/core.message.md",
     "helpGraph": "help/v0.1/nodes/core.message.help.graph.json",
     "tags": [
@@ -1367,13 +1515,21 @@ export const builtinNodeHelpV01 = [
       "message",
       "text"
     ],
-    "runtimeBehavior": "bang emits the saved string payload; the node does not emit until triggered.",
+    "runtimeBehavior": "click, in, or bang emits the saved message payload. set updates runtime message text without output. Inspector edits are graph patches, not runtime control events.",
     "relatedNodes": [
       "core.bang-button",
       "core.string",
       "core.event-log"
     ],
     "ports": [
+      {
+        "id": "in",
+        "description": "Accepts any message and emits the current message payload."
+      },
+      {
+        "id": "set",
+        "description": "Updates the runtime message payload without output."
+      },
       {
         "id": "bang",
         "description": "Emits the saved message payload."
@@ -1387,12 +1543,63 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Saved message text."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional string channel name updated whenever the message emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional string channel name used to receive routed message updates."
       }
     ],
     "example": {
       "title": "Trigger a string message",
       "description": "Use Bang Button to emit the saved message text on demand.",
       "graph": "help/v0.1/nodes/core.message.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.panel",
+    "summary": "Draws a colored background panel on the patch canvas.",
+    "description": "Panel is a visual patch annotation object. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
+    "helpGraph": "help/v0.1/nodes/core.panel.help.graph.json",
+    "tags": [
+      "annotation",
+      "panel",
+      "background"
+    ],
+    "runtimeBehavior": "set updates the runtime panel color silently. Inspector color edits remain graph patches.",
+    "relatedNodes": [
+      "core.comment",
+      "core.message"
+    ],
+    "ports": [
+      {
+        "id": "set",
+        "description": "Updates the panel color from a message such as set #00ff00 without output."
+      }
+    ],
+    "params": [
+      {
+        "id": "color",
+        "description": "Saved panel color as a CSS hex string."
+      },
+      {
+        "id": "label",
+        "description": "Optional panel title text."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional string channel name used to receive routed color updates."
+      }
+    ],
+    "example": {
+      "title": "Group related controls",
+      "description": "Use panels as colored backgrounds behind related controls and comments.",
+      "graph": "help/v0.1/nodes/core.panel.help.graph.json"
     }
   },
   {
@@ -1790,6 +1997,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Saved default text."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
       }
     ],
     "example": {
@@ -1867,6 +2082,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Saved default boolean value."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
       }
     ],
     "example": {
@@ -1915,6 +2138,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Saved default boolean value."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
       }
     ],
     "example": {
@@ -1964,6 +2195,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Saved default numeric value."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
       }
     ],
     "example": {
@@ -2011,6 +2250,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Saved default integer value."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
       }
     ],
     "example": {
@@ -2024,7 +2271,7 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "core.video-asset",
     "summary": "Represents a video asset resource.",
-    "description": "Video Asset is a resource source. It does not output decoded frames directly; explicit converter nodes preserve graph intent.",
+    "description": "Video Asset is a resource source. It stores a project-safe assetRef, name, and mimeType; explicit converter nodes preserve graph intent.",
     "helpGraph": "help/v0.1/nodes/core.video-asset.help.graph.json",
     "tags": [
       "media",
@@ -2044,8 +2291,16 @@ export const builtinNodeHelpV01 = [
     ],
     "params": [
       {
-        "id": "src",
-        "description": "Saved source locator for the video asset."
+        "id": "assetRef",
+        "description": "Persisted project asset reference such as skenion-runtime://assets/asset_abc123. Absolute source paths must not be saved in portable projects."
+      },
+      {
+        "id": "name",
+        "description": "Display name for the selected asset."
+      },
+      {
+        "id": "mimeType",
+        "description": "MIME type reported by the runtime asset import flow."
       }
     ],
     "example": {
@@ -2198,8 +2453,8 @@ export const builtinNodeHelpV01 = [
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
     "id": "ui.button",
-    "summary": "Emits a bang event when clicked in a runtime control panel.",
-    "description": "Button is a panel control node. Its runtime click is a control event and does not mutate the graph.",
+    "summary": "Emits a bang event when clicked or when any input arrives.",
+    "description": "Button is the Max/Pd-like bang control. Runtime clicks and incoming messages both emit event.bang without mutating the graph.",
     "helpGraph": "help/v0.1/nodes/ui.button.help.graph.json",
     "tags": [
       "ui",
@@ -2207,13 +2462,17 @@ export const builtinNodeHelpV01 = [
       "event",
       "bang"
     ],
-    "runtimeBehavior": "A runtime click emits event.bang from bang. Parameter edits such as label remain graph edits.",
+    "runtimeBehavior": "Runtime click or any input on in emits event.bang from bang. If sendName is set, the bang is also published to the named event.bang channel.",
     "relatedNodes": [
       "core.message",
       "core.event-log",
-      "core.send-bool"
+      "core.message"
     ],
     "ports": [
+      {
+        "id": "in",
+        "description": "Accepts any incoming message or value and converts it to bang."
+      },
       {
         "id": "bang",
         "description": "Emits an event.bang when the control is clicked."
@@ -2223,6 +2482,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "label",
         "description": "Text shown on the runtime control."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional event.bang channel name updated whenever the button emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional event.bang channel name that can trigger this button."
       }
     ],
     "example": {
@@ -2236,7 +2503,7 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "ui.slider-f32",
     "summary": "Emits number.f32 values from a runtime slider control.",
-    "description": "Slider F32 is a panel control node for performer-facing numeric input. Moving the runtime slider emits a typed value event without creating a graph patch.",
+    "description": "Slider F32 is a panel control node for performer-facing numeric input. Incoming values can update it, and moving the runtime slider emits a typed value event without creating a graph patch.",
     "helpGraph": "help/v0.1/nodes/ui.slider-f32.help.graph.json",
     "tags": [
       "ui",
@@ -2244,13 +2511,23 @@ export const builtinNodeHelpV01 = [
       "value",
       "f32"
     ],
-    "runtimeBehavior": "Runtime slider changes update the control state for this node and emit number.f32 from value.",
+    "runtimeBehavior": "Runtime slider changes update the control state and emit number.f32 from value. in updates and emits, set updates silently, and bang emits the current value.",
     "relatedNodes": [
-      "core.send-f32",
-      "core.receive-f32",
       "core.value-f32"
     ],
     "ports": [
+      {
+        "id": "in",
+        "description": "Updates the slider value and emits number.f32."
+      },
+      {
+        "id": "set",
+        "description": "Updates the slider value without output."
+      },
+      {
+        "id": "bang",
+        "description": "Emits the current slider value."
+      },
       {
         "id": "value",
         "description": "Emits the current slider value as number.f32."
@@ -2276,11 +2553,19 @@ export const builtinNodeHelpV01 = [
       {
         "id": "step",
         "description": "Slider increment."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional number.f32 channel name updated whenever the slider emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional number.f32 channel name used to receive routed slider updates."
       }
     ],
     "example": {
-      "title": "Drive a send channel",
-      "description": "Connect Slider F32 to Send F32 to control a named channel from a panel.",
+      "title": "Drive a shader uniform",
+      "description": "Connect Slider F32 directly to a shader input or give it sendName for named routing.",
       "graph": "help/v0.1/nodes/ui.slider-f32.help.graph.json"
     }
   },
@@ -2288,8 +2573,8 @@ export const builtinNodeHelpV01 = [
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
     "id": "ui.toggle",
-    "summary": "Emits boolean values from a runtime toggle control.",
-    "description": "UI Toggle is a panel control node. Clicking it toggles runtime state and emits a typed boolean value without patching the graph.",
+    "summary": "Emits boolean values from a Max/Pd-like toggle control.",
+    "description": "UI Toggle is a panel control node. Click or bang flips runtime state, 0/1/off/on set and emit, and set messages update silently without patching the graph.",
     "helpGraph": "help/v0.1/nodes/ui.toggle.help.graph.json",
     "tags": [
       "ui",
@@ -2297,13 +2582,21 @@ export const builtinNodeHelpV01 = [
       "value",
       "boolean"
     ],
-    "runtimeBehavior": "Runtime clicks flip the current boolean control state and emit the new boolean from value.",
+    "runtimeBehavior": "bang flips and emits. 0/1/off/on/false/true update and emit. set 0, set 1, set off, and set on update the runtime state without output.",
     "relatedNodes": [
-      "core.send-bool",
-      "core.receive-bool",
-      "core.value-bool"
+      "core.value-bool",
+      "ui.button",
+      "core.message"
     ],
     "ports": [
+      {
+        "id": "in",
+        "description": "Accepts bang, boolean, 0/1, or off/on style messages and emits the resulting boolean."
+      },
+      {
+        "id": "set",
+        "description": "Updates the stored toggle state without output."
+      },
       {
         "id": "value",
         "description": "Emits the current toggle value as boolean."
@@ -2317,11 +2610,19 @@ export const builtinNodeHelpV01 = [
       {
         "id": "value",
         "description": "Initial boolean value saved in the graph."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional boolean channel name updated whenever the toggle emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional boolean channel name used to receive routed toggle updates."
       }
     ],
     "example": {
-      "title": "Drive a boolean channel",
-      "description": "Connect UI Toggle to Send Bool and read it elsewhere with Receive Bool.",
+      "title": "Drive a boolean value",
+      "description": "Connect UI Toggle directly to a boolean input or give it sendName for named routing.",
       "graph": "help/v0.1/nodes/ui.toggle.help.graph.json"
     }
   }
@@ -2547,9 +2848,21 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Comments annotate a patch and do not participate in execution."
+            "text": "Comments annotate a patch. set <text> updates comment text state without output."
           },
-          "ports": []
+          "ports": [
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "latched"
+            }
+          ]
         },
         {
           "id": "note_2",
@@ -2558,7 +2871,19 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {
             "text": "Use comments near important control or render decisions."
           },
-          "ports": []
+          "ports": [
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "latched"
+            }
+          ]
         }
       ],
       "edges": []
@@ -2788,7 +3113,7 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Message emits its saved text only when banged."
+            "text": "Message emits its saved text when clicked, banged, or triggered. set updates the runtime message silently."
           },
           "ports": []
         },
@@ -2798,6 +3123,26 @@ export const builtinNodeHelpGraphsV01 = [
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "activation": "latched"
+            },
             {
               "id": "bang",
               "direction": "output",
@@ -2851,6 +3196,49 @@ export const builtinNodeHelpGraphsV01 = [
           }
         }
       ]
+    }
+  },
+  {
+    "id": "core.panel",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-panel",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "panel_1",
+          "kind": "core.panel",
+          "kindVersion": "0.1.0",
+          "params": {
+            "label": "Panel",
+            "color": "transparent"
+          },
+          "ports": [
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "latched"
+            }
+          ]
+        },
+        {
+          "id": "note_1",
+          "kind": "core.comment",
+          "kindVersion": "0.1.0",
+          "params": {
+            "text": "Panel is a colored visual grouping object. set #00ff00 updates its runtime color state."
+          },
+          "ports": []
+        }
+      ],
+      "edges": []
     }
   },
   {
@@ -4653,7 +5041,7 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Button emits a bang as a runtime control event. It is for panel interaction, not graph mutation."
+            "text": "Button accepts any input or runtime click and emits a bang. sendName can publish the bang to a named event channel."
           },
           "ports": []
         },
@@ -4662,9 +5050,21 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "ui.button",
           "kindVersion": "0.1.0",
           "params": {
-            "label": "Bang"
+            "label": "Bang",
+            "sendName": "reset"
           },
           "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
             {
               "id": "bang",
               "direction": "output",
@@ -4723,7 +5123,7 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Slider F32 emits typed runtime control values. Connect it to Send F32 for named routing."
+            "text": "Slider F32 emits typed runtime control values. Use sendName for named routing, or connect value directly."
           },
           "ports": []
         },
@@ -4736,26 +5136,8 @@ export const builtinNodeHelpGraphsV01 = [
             "value": 0.5,
             "min": 0,
             "max": 2,
-            "step": 0.01
-          },
-          "ports": [
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.f32"
-              }
-            }
-          ]
-        },
-        {
-          "id": "send_1",
-          "kind": "core.send-f32",
-          "kindVersion": "0.1.0",
-          "params": {
-            "name": "speed"
+            "step": 0.01,
+            "sendName": "speed"
           },
           "ports": [
             {
@@ -4766,24 +5148,44 @@ export const builtinNodeHelpGraphsV01 = [
                 "flow": "value",
                 "dataKind": "number.f32"
               },
-              "required": true,
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.f32"
+              },
+              "required": false,
+              "activation": "latched"
+            },
+            {
+              "id": "bang",
+              "direction": "input",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "value",
+              "direction": "output",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.f32"
+              }
             }
           ]
         }
       ],
-      "edges": [
-        {
-          "from": {
-            "node": "slider_1",
-            "port": "value"
-          },
-          "to": {
-            "node": "send_1",
-            "port": "in"
-          }
-        }
-      ]
+      "edges": []
     }
   },
   {
@@ -4799,7 +5201,7 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "UI Toggle emits boolean runtime control values. Connect it to Send Bool for named routing."
+            "text": "UI Toggle flips on bang/click and emits boolean values. Use sendName for named routing."
           },
           "ports": []
         },
@@ -4809,9 +5211,32 @@ export const builtinNodeHelpGraphsV01 = [
           "kindVersion": "0.1.0",
           "params": {
             "label": "Enabled",
-            "value": true
+            "value": true,
+            "sendName": "enabled"
           },
           "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "latched"
+            },
             {
               "id": "value",
               "direction": "output",
@@ -4822,41 +5247,9 @@ export const builtinNodeHelpGraphsV01 = [
               }
             }
           ]
-        },
-        {
-          "id": "send_1",
-          "kind": "core.send-bool",
-          "kindVersion": "0.1.0",
-          "params": {
-            "name": "enabled"
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "required": true,
-              "activation": "trigger"
-            }
-          ]
         }
       ],
-      "edges": [
-        {
-          "from": {
-            "node": "toggle_1",
-            "port": "value"
-          },
-          "to": {
-            "node": "send_1",
-            "port": "in"
-          }
-        }
-      ]
+      "edges": []
     }
   }
 ] satisfies BuiltinNodeHelpGraphV01[];

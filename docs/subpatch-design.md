@@ -17,7 +17,7 @@ on nested patch execution.
 - no implicit access to parent node params or runtime state
 - no dynamic inlet/outlet UI yet
 - no pack/unpack semantics yet
-- no implicit subpatch access to send/receive channels
+- no implicit subpatch access to named routing channels
 
 ## Proposed Model
 
@@ -34,7 +34,7 @@ Values cross the boundary only through declared inlet/outlet ports. Runtime
 control panels may inspect child addresses when a session exposes them, but graph
 execution may not implicitly read parent or sibling state.
 
-Typed send/receive channels may exist inside a future subpatch, but subpatch
+Named object routing channels may exist inside a future subpatch, but subpatch
 boundaries must still make external dependencies explicit. A child graph must
 not silently inherit parent channels unless a later contract defines that policy.
 

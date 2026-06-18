@@ -14,14 +14,24 @@ typed values and simple control annotations.
 - `value`: output the current stored value
 
 `core.toggle` uses the same boolean type as `core.value-bool`, but `bang` flips
-the stored value and emits the new value.
+the stored value and emits the new value. Value objects may also use
+`sendName` and `receiveName` graph params for named typed routing.
 
 ## Message And Comment
 
-`core.message` is a simple string message box. It emits its saved string payload
-when banged. Typed multi-message forms are deferred.
+`core.message` is a Max/Pd-like message box. Click, `in`, or `bang` emits its
+saved payload. `set <message>` updates runtime message state silently. Inspector
+text edits remain graph patches.
 
-`core.comment` documents the patch and has no runtime behavior.
+`core.comment` documents the patch and has no runtime behavior. It is rendered
+as a text annotation, not as a generic node card. It may still expose a `set`
+inlet and `receiveName` for patcher-style live text updates; it does not emit.
+
+## UI Objects
+
+`ui.button`, `ui.slider-f32`, and `ui.toggle` are object controls, not generic
+cards. They may use `sendName` and `receiveName` just like core value objects.
+Standalone routing nodes are not part of the builtin object model.
 
 ## Addressing
 

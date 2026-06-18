@@ -2,14 +2,22 @@
   "schema": "skenion.node.help",
   "schemaVersion": "0.1.0",
   "id": "core.message",
-  "summary": "Emits a saved string payload when triggered.",
-  "description": "Message is the first simple message-box form. It is intentionally string-only in v0.1; typed multi-message, pack/unpack, and send/receive nodes are deferred until the control graph model is stable.",
+  "summary": "Emits a saved message payload when clicked or triggered.",
+  "description": "Message is a Max/Pd-like message box. Click or bang emits the stored message; set <message> replaces the runtime message silently.",
   "docsPath": "docs/nodes/core.message.md",
   "helpGraph": "help/v0.1/nodes/core.message.help.graph.json",
   "tags": ["event", "message", "text"],
-  "runtimeBehavior": "bang emits the saved string payload; the node does not emit until triggered.",
+  "runtimeBehavior": "click, in, or bang emits the saved message payload. set updates runtime message text without output. Inspector edits are graph patches, not runtime control events.",
   "relatedNodes": ["core.bang-button", "core.string", "core.event-log"],
   "ports": [
+    {
+      "id": "in",
+      "description": "Accepts any message and emits the current message payload."
+    },
+    {
+      "id": "set",
+      "description": "Updates the runtime message payload without output."
+    },
     {
       "id": "bang",
       "description": "Emits the saved message payload."
@@ -23,6 +31,14 @@
     {
       "id": "value",
       "description": "Saved message text."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional string channel name updated whenever the message emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional string channel name used to receive routed message updates."
     }
   ],
   "example": {

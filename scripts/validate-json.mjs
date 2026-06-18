@@ -60,6 +60,9 @@ function formatAccepts(targetFormat, sourceFormat) {
 }
 
 function compatibleTypes(sourceType, targetType) {
+  if (targetType.dataKind === "message.any") {
+    return true;
+  }
   if (sourceType.flow !== targetType.flow) {
     return false;
   }
@@ -201,6 +204,9 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
   validateTypedValueBuiltin(definitions, "core.toggle", "boolean", "Value");
   validateCommentBuiltin(definitions);
   validateMessageBuiltin(definitions);
+  validateUiButtonBuiltin(definitions);
+  validateUiPanelValueBuiltin(definitions, "ui.slider-f32", "number.f32");
+  validateUiToggleBuiltin(definitions);
 
   const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
   const shaderPorts = new Map(shaderDefinition?.ports.map((port) => [port.id, port]));
@@ -341,8 +347,10 @@ function validateCommentBuiltin(definitions) {
   if (!definition) {
     fail(file, "core.comment must exist");
   }
-  if (definition.ports.length !== 0) {
-    fail(file, "core.comment must not declare ports");
+  const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const set = ports.get("set");
+  if (set?.direction !== "input" || set?.type.dataKind !== "message.any" || set.activation !== "latched") {
+    fail(file, "core.comment.set must be latched input message.any");
   }
 }
 
@@ -353,6 +361,20 @@ function validateMessageBuiltin(definitions) {
     fail(file, "core.message must exist");
   }
   const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const input = ports.get("in");
+  if (input?.direction !== "input" || input?.type.dataKind !== "message.any") {
+    fail(file, "core.message.in must be input message.any");
+  }
+  if (input.activation !== "trigger") {
+    fail(file, "core.message.in activation must be trigger");
+  }
+  const set = ports.get("set");
+  if (set?.direction !== "input" || set?.type.dataKind !== "message.any") {
+    fail(file, "core.message.set must be input message.any");
+  }
+  if (set.activation !== "latched") {
+    fail(file, "core.message.set activation must be latched");
+  }
   const bang = ports.get("bang");
   if (bang?.direction !== "input" || bang?.type.flow !== "event" || bang?.type.dataKind !== "event.bang") {
     fail(file, "core.message.bang must be input event<event.bang>");
@@ -363,6 +385,72 @@ function validateMessageBuiltin(definitions) {
   const value = ports.get("value");
   if (value?.direction !== "output" || value?.type.flow !== "value" || value?.type.dataKind !== "string") {
     fail(file, "core.message.value must be output value<string>");
+  }
+}
+
+function validateUiButtonBuiltin(definitions) {
+  const definition = definitions.find((candidate) => candidate.id === "ui.button");
+  const file = "builtins/v0.1/nodes/ui.button.node.json";
+  if (!definition) {
+    fail(file, "ui.button must exist");
+  }
+  const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const input = ports.get("in");
+  if (input?.direction !== "input" || input?.type.dataKind !== "message.any") {
+    fail(file, "ui.button.in must accept message.any input");
+  }
+  if (input.activation !== "trigger") {
+    fail(file, "ui.button.in activation must be trigger");
+  }
+  const bang = ports.get("bang");
+  if (bang?.direction !== "output" || bang?.type.flow !== "event" || bang?.type.dataKind !== "event.bang") {
+    fail(file, "ui.button.bang must be output event<event.bang>");
+  }
+}
+
+function validateUiPanelValueBuiltin(definitions, id, dataKind) {
+  const definition = definitions.find((candidate) => candidate.id === id);
+  const file = `builtins/v0.1/nodes/${id}.node.json`;
+  if (!definition) {
+    fail(file, `${id} must exist`);
+  }
+  const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const input = ports.get("in");
+  if (input?.direction !== "input" || input?.type.dataKind !== dataKind || input.activation !== "trigger") {
+    fail(file, `${id}.in must be trigger input ${dataKind}`);
+  }
+  const set = ports.get("set");
+  if (set?.direction !== "input" || set?.type.dataKind !== dataKind || set.activation !== "latched") {
+    fail(file, `${id}.set must be latched input ${dataKind}`);
+  }
+  const bang = ports.get("bang");
+  if (bang?.direction !== "input" || bang?.type.dataKind !== "event.bang" || bang.activation !== "trigger") {
+    fail(file, `${id}.bang must be trigger input event.bang`);
+  }
+  const value = ports.get("value");
+  if (value?.direction !== "output" || value?.type.dataKind !== dataKind) {
+    fail(file, `${id}.value must be output ${dataKind}`);
+  }
+}
+
+function validateUiToggleBuiltin(definitions) {
+  const definition = definitions.find((candidate) => candidate.id === "ui.toggle");
+  const file = "builtins/v0.1/nodes/ui.toggle.node.json";
+  if (!definition) {
+    fail(file, "ui.toggle must exist");
+  }
+  const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const input = ports.get("in");
+  if (input?.direction !== "input" || input?.type.dataKind !== "message.any" || input.activation !== "trigger") {
+    fail(file, "ui.toggle.in must be trigger input message.any");
+  }
+  const set = ports.get("set");
+  if (set?.direction !== "input" || set?.type.dataKind !== "message.any" || set.activation !== "latched") {
+    fail(file, "ui.toggle.set must be latched input message.any");
+  }
+  const value = ports.get("value");
+  if (value?.direction !== "output" || value?.type.dataKind !== "boolean") {
+    fail(file, "ui.toggle.value must be output boolean");
   }
 }
 
