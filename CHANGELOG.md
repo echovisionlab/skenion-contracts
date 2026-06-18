@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.21.0...skenion-contracts-v0.22.0) (2026-06-18)
+
+
+### Features
+
+* **contracts:** define control message model ([3a623e9](https://github.com/echovisionlab/skenion-contracts/commit/3a623e93ae8a4950ca847ce25d90b5380ab6efe7))
+
 ## [0.21.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.20.0...skenion-contracts-v0.21.0) (2026-06-18)
 
 
