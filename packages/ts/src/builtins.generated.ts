@@ -7,6 +7,7 @@ export interface BuiltinManifestV01 {
   version: "0.1";
   nodes: string[];
   canonicalDataKinds: string[];
+  representations: Record<string, string[]>;
 }
 
 export interface BuiltinNodeHelpItemV01 {
@@ -51,12 +52,13 @@ export const builtinManifestV01 = {
     "core.message",
     "core.string",
     "core.toggle",
-    "core.value-f32",
-    "core.value-i32",
-    "core.value-bool",
-    "core.color-rgba",
+    "core.float",
+    "core.int",
+    "core.uint",
+    "core.bool",
+    "core.color",
     "ui.button",
-    "ui.slider-f32",
+    "ui.slider-float",
     "ui.toggle",
     "core.target",
     "core.bang-button",
@@ -70,8 +72,9 @@ export const builtinManifestV01 = {
     "render.output"
   ],
   "canonicalDataKinds": [
-    "number.f32",
-    "number.i32",
+    "number.float",
+    "number.int",
+    "number.uint",
     "boolean",
     "string",
     "message.any",
@@ -79,8 +82,35 @@ export const builtinManifestV01 = {
     "asset.video",
     "video.frame",
     "gpu.texture2d",
-    "color.rgba"
-  ]
+    "color"
+  ],
+  "representations": {
+    "number.float": [
+      "f64",
+      "f32",
+      "f16",
+      "f8.e4m3",
+      "f8.e5m2"
+    ],
+    "number.int": [
+      "i64",
+      "i32",
+      "i16",
+      "i8"
+    ],
+    "number.uint": [
+      "u64",
+      "u32",
+      "u16",
+      "u8"
+    ],
+    "color": [
+      "rgba32f",
+      "rgba16f",
+      "rgba8unorm",
+      "rgb8unorm"
+    ]
+  }
 } satisfies BuiltinManifestV01;
 
 export const builtinNodeDefinitionsV01 = [
@@ -114,9 +144,9 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
-    "id": "core.color-rgba",
+    "id": "core.bool",
     "version": "0.1.0",
-    "displayName": "RGBA",
+    "displayName": "Bool",
     "category": "Values",
     "ports": [
       {
@@ -125,7 +155,7 @@ export const builtinNodeDefinitionsV01 = [
         "label": "In",
         "type": {
           "flow": "value",
-          "dataKind": "color.rgba"
+          "dataKind": "boolean"
         },
         "required": false,
         "activation": "trigger"
@@ -136,7 +166,71 @@ export const builtinNodeDefinitionsV01 = [
         "label": "Set",
         "type": {
           "flow": "value",
-          "dataKind": "color.rgba"
+          "dataKind": "boolean"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "bang",
+        "direction": "input",
+        "label": "Bang",
+        "type": {
+          "flow": "event",
+          "dataKind": "event.bang"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "value",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "boolean"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": []
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.color",
+    "version": "0.1.0",
+    "displayName": "Color",
+    "category": "Values",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "value",
+          "dataKind": "color",
+          "format": "rgba32f",
+          "colorSpace": "linear"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "color",
+          "format": "rgba32f",
+          "colorSpace": "linear"
         },
         "required": false,
         "activation": "latched"
@@ -158,7 +252,9 @@ export const builtinNodeDefinitionsV01 = [
         "label": "Color",
         "type": {
           "flow": "value",
-          "dataKind": "color.rgba"
+          "dataKind": "color",
+          "format": "rgba32f",
+          "colorSpace": "linear"
         }
       }
     ],
@@ -220,6 +316,69 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
+    "id": "core.float",
+    "version": "0.1.0",
+    "displayName": "Float",
+    "category": "Values",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "bang",
+        "direction": "input",
+        "label": "Bang",
+        "type": {
+          "flow": "event",
+          "dataKind": "event.bang"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "value",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": []
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
     "id": "core.gpu-upload",
     "version": "0.1.0",
     "displayName": "GPU Upload",
@@ -253,6 +412,69 @@ export const builtinNodeDefinitionsV01 = [
     ],
     "execution": {
       "model": "gpu_pass"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": []
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.int",
+    "version": "0.1.0",
+    "displayName": "Int",
+    "category": "Values",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.int",
+          "format": "i32"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "set",
+        "direction": "input",
+        "label": "Set",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.int",
+          "format": "i32"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "bang",
+        "direction": "input",
+        "label": "Bang",
+        "type": {
+          "flow": "event",
+          "dataKind": "event.bang"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "value",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.int",
+          "format": "i32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
     },
     "state": {
       "persistent": false
@@ -454,12 +676,13 @@ export const builtinNodeDefinitionsV01 = [
         "label": "Value",
         "type": {
           "flow": "value",
-          "dataKind": "number.f32",
+          "dataKind": "number.float",
           "range": {
             "min": 0,
             "max": 1,
             "step": 0.01
-          }
+          },
+          "format": "f32"
         },
         "required": true,
         "activation": "latched"
@@ -537,9 +760,9 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
-    "id": "core.value-bool",
+    "id": "core.uint",
     "version": "0.1.0",
-    "displayName": "Bool",
+    "displayName": "UInt",
     "category": "Values",
     "ports": [
       {
@@ -548,7 +771,8 @@ export const builtinNodeDefinitionsV01 = [
         "label": "In",
         "type": {
           "flow": "value",
-          "dataKind": "boolean"
+          "dataKind": "number.uint",
+          "format": "u32"
         },
         "required": false,
         "activation": "trigger"
@@ -559,7 +783,8 @@ export const builtinNodeDefinitionsV01 = [
         "label": "Set",
         "type": {
           "flow": "value",
-          "dataKind": "boolean"
+          "dataKind": "number.uint",
+          "format": "u32"
         },
         "required": false,
         "activation": "latched"
@@ -581,127 +806,8 @@ export const builtinNodeDefinitionsV01 = [
         "label": "Value",
         "type": {
           "flow": "value",
-          "dataKind": "boolean"
-        }
-      }
-    ],
-    "execution": {
-      "model": "value"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
-    "id": "core.value-f32",
-    "version": "0.1.0",
-    "displayName": "F32",
-    "category": "Values",
-    "ports": [
-      {
-        "id": "in",
-        "direction": "input",
-        "label": "In",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.f32"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "set",
-        "direction": "input",
-        "label": "Set",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.f32"
-        },
-        "required": false,
-        "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "value",
-        "direction": "output",
-        "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.f32"
-        }
-      }
-    ],
-    "execution": {
-      "model": "value"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
-    "id": "core.value-i32",
-    "version": "0.1.0",
-    "displayName": "I32",
-    "category": "Values",
-    "ports": [
-      {
-        "id": "in",
-        "direction": "input",
-        "label": "In",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.i32"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "set",
-        "direction": "input",
-        "label": "Set",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.i32"
-        },
-        "required": false,
-        "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "value",
-        "direction": "output",
-        "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.i32"
+          "dataKind": "number.uint",
+          "format": "u32"
         }
       }
     ],
@@ -921,9 +1027,9 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
-    "id": "ui.slider-f32",
+    "id": "ui.slider-float",
     "version": "0.1.0",
-    "displayName": "Slider F32",
+    "displayName": "Slider",
     "category": "UI Controls",
     "ports": [
       {
@@ -932,7 +1038,8 @@ export const builtinNodeDefinitionsV01 = [
         "label": "In",
         "type": {
           "flow": "value",
-          "dataKind": "number.f32"
+          "dataKind": "number.float",
+          "format": "f32"
         },
         "required": false,
         "activation": "trigger"
@@ -943,7 +1050,8 @@ export const builtinNodeDefinitionsV01 = [
         "label": "Set",
         "type": {
           "flow": "value",
-          "dataKind": "number.f32"
+          "dataKind": "number.float",
+          "format": "f32"
         },
         "required": false,
         "activation": "latched"
@@ -965,7 +1073,8 @@ export const builtinNodeDefinitionsV01 = [
         "label": "Value",
         "type": {
           "flow": "value",
-          "dataKind": "number.f32"
+          "dataKind": "number.float",
+          "format": "f32"
         }
       }
     ],
@@ -1044,7 +1153,7 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "When activated, the node emits one event.bang from its bang output.",
     "relatedNodes": [
-      "core.value-f32",
+      "core.float",
       "core.toggle",
       "core.message"
     ],
@@ -1063,16 +1172,72 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
-    "id": "core.color-rgba",
-    "summary": "Stores and emits an RGBA color control value.",
-    "description": "Use RGBA for color controls. Component values are normalized floats in graph and runtime payloads.",
-    "helpGraph": "help/v0.1/nodes/core.color-rgba.help.graph.json",
+    "id": "core.bool",
+    "summary": "Stores and emits a boolean control value.",
+    "description": "Use Bool for an explicit true/false value. Bang emits the current value; it does not toggle.",
+    "helpGraph": "help/v0.1/nodes/core.bool.help.graph.json",
+    "tags": [
+      "value",
+      "control",
+      "boolean"
+    ],
+    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean without toggling.",
+    "relatedNodes": [
+      "core.toggle",
+      "core.bang-button",
+      "render.fullscreen-shader"
+    ],
+    "ports": [
+      {
+        "id": "in",
+        "description": "Updates the stored value and emits it."
+      },
+      {
+        "id": "set",
+        "description": "Updates the stored value without emitting."
+      },
+      {
+        "id": "bang",
+        "description": "Emits the current stored value without changing it."
+      },
+      {
+        "id": "value",
+        "description": "Outputs the current value."
+      }
+    ],
+    "params": [
+      {
+        "id": "value",
+        "description": "Saved default boolean value."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
+      }
+    ],
+    "example": {
+      "title": "Bool versus Toggle",
+      "description": "Bool keeps bang as re-emit behavior; Toggle flips on bang.",
+      "graph": "help/v0.1/nodes/core.bool.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.color",
+    "summary": "Stores and emits an Color color control value.",
+    "description": "Use Color for color controls. Component values are normalized floats in graph and runtime payloads.",
+    "helpGraph": "help/v0.1/nodes/core.color.help.graph.json",
     "tags": [
       "value",
       "control",
       "color"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored RGBA color without changing it.",
+    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored RGBA color/rgba32f without changing it.",
     "relatedNodes": [
       "core.bang-button",
       "render.fullscreen-shader"
@@ -1080,25 +1245,25 @@ export const builtinNodeHelpV01 = [
     "ports": [
       {
         "id": "in",
-        "description": "Updates the stored color and emits it."
+        "description": "Updates the stored color/rgba32f and emits it."
       },
       {
         "id": "set",
-        "description": "Updates the stored color without emitting."
+        "description": "Updates the stored color/rgba32f without emitting."
       },
       {
         "id": "bang",
-        "description": "Emits the current stored color without changing it."
+        "description": "Emits the current stored color/rgba32f without changing it."
       },
       {
         "id": "value",
-        "description": "Outputs the current color."
+        "description": "Outputs the current color/rgba32f."
       }
     ],
     "params": [
       {
         "id": "value",
-        "description": "Saved default RGBA color."
+        "description": "Saved default RGBA color/rgba32f."
       },
       {
         "id": "sendName",
@@ -1112,7 +1277,7 @@ export const builtinNodeHelpV01 = [
     "example": {
       "title": "Drive shader tint",
       "description": "Connect color to an annotation-generated shader tint uniform.",
-      "graph": "help/v0.1/nodes/core.color-rgba.help.graph.json"
+      "graph": "help/v0.1/nodes/core.color.help.graph.json"
     }
   },
   {
@@ -1174,6 +1339,63 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
+    "id": "core.float",
+    "summary": "Stores and emits a 32-bit floating-point control value.",
+    "description": "Use Float when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
+    "docsPath": "docs/nodes/core.float.md",
+    "helpGraph": "help/v0.1/nodes/core.float.help.graph.json",
+    "tags": [
+      "value",
+      "control",
+      "number"
+    ],
+    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored value without changing it.",
+    "relatedNodes": [
+      "core.bang-button",
+      "core.target",
+      "render.fullscreen-shader"
+    ],
+    "ports": [
+      {
+        "id": "in",
+        "description": "Updates the stored value and emits it."
+      },
+      {
+        "id": "set",
+        "description": "Updates the stored value without emitting."
+      },
+      {
+        "id": "bang",
+        "description": "Emits the current stored value without changing it."
+      },
+      {
+        "id": "value",
+        "description": "Outputs the current value."
+      }
+    ],
+    "params": [
+      {
+        "id": "value",
+        "description": "Saved default numeric value."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
+      }
+    ],
+    "example": {
+      "title": "Drive a shader uniform",
+      "description": "Connect value to a fullscreen shader numeric input, then send runtime in/set/bang events while the preview runs.",
+      "graph": "help/v0.1/nodes/core.float.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
     "id": "core.gpu-upload",
     "summary": "Uploads decoded video frames to a GPU texture resource.",
     "description": "GPU Upload is an explicit converter from stream<video.frame> to resource<gpu.texture2d>. Skenion does not perform this conversion implicitly.",
@@ -1203,6 +1425,61 @@ export const builtinNodeHelpV01 = [
       "title": "Explicit media conversion",
       "description": "Video assets must pass through decode and upload converter nodes before they can feed GPU consumers.",
       "graph": "help/v0.1/nodes/core.gpu-upload.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.int",
+    "summary": "Stores and emits a signed integer control value.",
+    "description": "Use Int for discrete numeric controls such as counts, selected indices, and integer mode values.",
+    "helpGraph": "help/v0.1/nodes/core.int.help.graph.json",
+    "tags": [
+      "value",
+      "control",
+      "integer"
+    ],
+    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored integer value without changing it.",
+    "relatedNodes": [
+      "core.bang-button",
+      "render.fullscreen-shader"
+    ],
+    "ports": [
+      {
+        "id": "in",
+        "description": "Updates the stored value and emits it."
+      },
+      {
+        "id": "set",
+        "description": "Updates the stored value without emitting."
+      },
+      {
+        "id": "bang",
+        "description": "Emits the current stored value without changing it."
+      },
+      {
+        "id": "value",
+        "description": "Outputs the current value."
+      }
+    ],
+    "params": [
+      {
+        "id": "value",
+        "description": "Saved default integer value."
+      },
+      {
+        "id": "sendName",
+        "description": "Optional typed channel name updated whenever this object emits."
+      },
+      {
+        "id": "receiveName",
+        "description": "Optional typed channel name used to receive routed updates."
+      }
+    ],
+    "example": {
+      "title": "Trigger an integer value",
+      "description": "Use bang to re-emit the current integer after a set event updates it silently.",
+      "graph": "help/v0.1/nodes/core.int.help.graph.json"
     }
   },
   {
@@ -1274,7 +1551,7 @@ export const builtinNodeHelpV01 = [
       "panel",
       "background"
     ],
-    "runtimeBehavior": "set updates the runtime panel color silently. Inspector color edits remain graph patches.",
+    "runtimeBehavior": "set updates the runtime panel color/rgba32f silently. Inspector color/rgba32f edits remain graph patches.",
     "relatedNodes": [
       "core.comment",
       "core.message"
@@ -1282,13 +1559,13 @@ export const builtinNodeHelpV01 = [
     "ports": [
       {
         "id": "set",
-        "description": "Updates the panel color from a message such as set #00ff00 without output."
+        "description": "Updates the panel color/rgba32f from a message such as set #00ff00 without output."
       }
     ],
     "params": [
       {
         "id": "color",
-        "description": "Saved panel color as a CSS hex string."
+        "description": "Saved panel color/rgba32f as a CSS hex string."
       },
       {
         "id": "label",
@@ -1296,7 +1573,7 @@ export const builtinNodeHelpV01 = [
       },
       {
         "id": "receiveName",
-        "description": "Optional string channel name used to receive routed color updates."
+        "description": "Optional string channel name used to receive routed color/rgba32f updates."
       }
     ],
     "example": {
@@ -1395,21 +1672,21 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "core.target",
     "summary": "Receives a normalized floating-point control value.",
-    "description": "Value Target is a minimal sink for tutorials and validator examples. It demonstrates value<number.f32> wiring without creating a render output.",
+    "description": "Value Target is a minimal sink for tutorials and validator examples. It demonstrates value<number.float> wiring without creating a render output.",
     "helpGraph": "help/v0.1/nodes/core.target.help.graph.json",
     "tags": [
       "value",
       "sink",
       "tutorial"
     ],
-    "runtimeBehavior": "Consumes the latest latched number.f32 value.",
+    "runtimeBehavior": "Consumes the latest latched number.float/f32 value.",
     "relatedNodes": [
-      "core.value-f32"
+      "core.float"
     ],
     "ports": [
       {
         "id": "value",
-        "description": "Receives a number.f32 value. This tutorial sink constrains the preferred range to 0..1."
+        "description": "Receives a number.float/f32 value. This tutorial sink constrains the preferred range to 0..1."
       }
     ],
     "example": {
@@ -1433,7 +1710,7 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "in updates and emits, set updates silently, and bang flips the stored boolean before emitting it.",
     "relatedNodes": [
-      "core.value-bool",
+      "core.bool",
       "core.bang-button",
       "core.message"
     ],
@@ -1478,129 +1755,17 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
-    "id": "core.value-bool",
-    "summary": "Stores and emits a boolean control value.",
-    "description": "Use Bool for an explicit true/false value. Bang emits the current value; it does not toggle.",
-    "helpGraph": "help/v0.1/nodes/core.value-bool.help.graph.json",
+    "id": "core.uint",
+    "summary": "Stores and emits an unsigned integer control value.",
+    "description": "UInt is a Max-style unsigned integer value object. in updates and emits, set updates silently, and bang emits the current value.",
+    "helpGraph": "help/v0.1/nodes/core.uint.help.graph.json",
     "tags": [
       "value",
       "control",
-      "boolean"
+      "integer",
+      "uint"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean without toggling.",
-    "relatedNodes": [
-      "core.toggle",
-      "core.bang-button",
-      "render.fullscreen-shader"
-    ],
-    "ports": [
-      {
-        "id": "in",
-        "description": "Updates the stored value and emits it."
-      },
-      {
-        "id": "set",
-        "description": "Updates the stored value without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored value without changing it."
-      },
-      {
-        "id": "value",
-        "description": "Outputs the current value."
-      }
-    ],
-    "params": [
-      {
-        "id": "value",
-        "description": "Saved default boolean value."
-      },
-      {
-        "id": "sendName",
-        "description": "Optional typed channel name updated whenever this object emits."
-      },
-      {
-        "id": "receiveName",
-        "description": "Optional typed channel name used to receive routed updates."
-      }
-    ],
-    "example": {
-      "title": "Bool versus Toggle",
-      "description": "Bool keeps bang as re-emit behavior; Toggle flips on bang.",
-      "graph": "help/v0.1/nodes/core.value-bool.help.graph.json"
-    }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
-    "id": "core.value-f32",
-    "summary": "Stores and emits a 32-bit floating-point control value.",
-    "description": "Use F32 when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
-    "docsPath": "docs/nodes/core.value-f32.md",
-    "helpGraph": "help/v0.1/nodes/core.value-f32.help.graph.json",
-    "tags": [
-      "value",
-      "control",
-      "number"
-    ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored value without changing it.",
-    "relatedNodes": [
-      "core.bang-button",
-      "core.target",
-      "render.fullscreen-shader"
-    ],
-    "ports": [
-      {
-        "id": "in",
-        "description": "Updates the stored value and emits it."
-      },
-      {
-        "id": "set",
-        "description": "Updates the stored value without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored value without changing it."
-      },
-      {
-        "id": "value",
-        "description": "Outputs the current value."
-      }
-    ],
-    "params": [
-      {
-        "id": "value",
-        "description": "Saved default numeric value."
-      },
-      {
-        "id": "sendName",
-        "description": "Optional typed channel name updated whenever this object emits."
-      },
-      {
-        "id": "receiveName",
-        "description": "Optional typed channel name used to receive routed updates."
-      }
-    ],
-    "example": {
-      "title": "Drive a shader uniform",
-      "description": "Connect value to a fullscreen shader numeric input, then send runtime in/set/bang events while the preview runs.",
-      "graph": "help/v0.1/nodes/core.value-f32.help.graph.json"
-    }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
-    "id": "core.value-i32",
-    "summary": "Stores and emits a signed integer control value.",
-    "description": "Use I32 for discrete numeric controls such as counts, selected indices, and integer mode values.",
-    "helpGraph": "help/v0.1/nodes/core.value-i32.help.graph.json",
-    "tags": [
-      "value",
-      "control",
-      "integer"
-    ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored integer value without changing it.",
+    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored unsigned integer value without changing it.",
     "relatedNodes": [
       "core.bang-button",
       "render.fullscreen-shader"
@@ -1626,7 +1791,7 @@ export const builtinNodeHelpV01 = [
     "params": [
       {
         "id": "value",
-        "description": "Saved default integer value."
+        "description": "Saved default unsigned integer value."
       },
       {
         "id": "sendName",
@@ -1640,7 +1805,7 @@ export const builtinNodeHelpV01 = [
     "example": {
       "title": "Trigger an integer value",
       "description": "Use bang to re-emit the current integer after a set event updates it silently.",
-      "graph": "help/v0.1/nodes/core.value-i32.help.graph.json"
+      "graph": "help/v0.1/nodes/core.uint.help.graph.json"
     }
   },
   {
@@ -1731,11 +1896,11 @@ export const builtinNodeHelpV01 = [
       "gpu",
       "output"
     ],
-    "runtimeBehavior": "On each preview frame, produces a gpu.texture2d resource cleared to params.color.",
+    "runtimeBehavior": "On each preview frame, produces a gpu.texture2d resource cleared to params.color/rgba32f.",
     "relatedNodes": [
       "render.output",
       "render.fullscreen-shader",
-      "core.color-rgba"
+      "core.color"
     ],
     "ports": [
       {
@@ -1746,7 +1911,7 @@ export const builtinNodeHelpV01 = [
     "params": [
       {
         "id": "color",
-        "description": "Saved RGBA clear color."
+        "description": "Saved RGBA clear color/rgba32f."
       }
     ],
     "example": {
@@ -1771,8 +1936,8 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "Runtime builds a dynamic uniform layout from the synced input ports, generates WGSL support code, and falls back to clear rendering with structured diagnostics on compile failure.",
     "relatedNodes": [
-      "core.value-f32",
-      "core.color-rgba",
+      "core.float",
+      "core.color",
       "render.output"
     ],
     "ports": [
@@ -1878,24 +2043,24 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
-    "id": "ui.slider-f32",
-    "summary": "Emits number.f32 values from a runtime slider control.",
-    "description": "Slider F32 is a panel control node for performer-facing numeric input. Incoming values can update it, and moving the runtime slider emits a typed value event without creating a graph patch.",
-    "helpGraph": "help/v0.1/nodes/ui.slider-f32.help.graph.json",
+    "id": "ui.slider-float",
+    "summary": "Emits floating-point values from a runtime slider control.",
+    "description": "Slider Float is a panel control node for performer-facing numeric input. Incoming values can update it, and moving the runtime slider emits a typed value event without creating a graph patch.",
+    "helpGraph": "help/v0.1/nodes/ui.slider-float.help.graph.json",
     "tags": [
       "ui",
       "panel",
       "value",
       "f32"
     ],
-    "runtimeBehavior": "Runtime slider changes update the control state and emit number.f32 from value. in updates and emits, set updates silently, and bang emits the current value.",
+    "runtimeBehavior": "Runtime slider changes update the control state and emit number.float/f32 from value. in updates and emits, set updates silently, and bang emits the current value.",
     "relatedNodes": [
-      "core.value-f32"
+      "core.float"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Updates the slider value and emits number.f32."
+        "description": "Updates the slider value and emits number.float/f32."
       },
       {
         "id": "set",
@@ -1907,7 +2072,7 @@ export const builtinNodeHelpV01 = [
       },
       {
         "id": "value",
-        "description": "Emits the current slider value as number.f32."
+        "description": "Emits the current slider value as number.float/f32."
       }
     ],
     "params": [
@@ -1933,17 +2098,17 @@ export const builtinNodeHelpV01 = [
       },
       {
         "id": "sendName",
-        "description": "Optional number.f32 channel name updated whenever the slider emits."
+        "description": "Optional number.float/f32 channel name updated whenever the slider emits."
       },
       {
         "id": "receiveName",
-        "description": "Optional number.f32 channel name used to receive routed slider updates."
+        "description": "Optional number.float/f32 channel name used to receive routed slider updates."
       }
     ],
     "example": {
       "title": "Drive a shader uniform",
       "description": "Connect Slider F32 directly to a shader input or give it sendName for named routing.",
-      "graph": "help/v0.1/nodes/ui.slider-f32.help.graph.json"
+      "graph": "help/v0.1/nodes/ui.slider-float.help.graph.json"
     }
   },
   {
@@ -1961,7 +2126,7 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "bang flips and emits. 0/1/off/on/false/true update and emit. set 0, set 1, set off, and set on update the runtime state without output.",
     "relatedNodes": [
-      "core.value-bool",
+      "core.bool",
       "ui.button",
       "core.message"
     ],
@@ -2065,11 +2230,168 @@ export const builtinNodeHelpGraphsV01 = [
     }
   },
   {
-    "id": "core.color-rgba",
+    "id": "core.bool",
     "graph": {
       "schema": "skenion.graph",
       "schemaVersion": "0.1.0",
-      "id": "help-core-color-rgba",
+      "id": "help-core-bool",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "note_1",
+          "kind": "core.comment",
+          "kindVersion": "0.1.0",
+          "params": {
+            "text": "Bool re-emits its stored boolean on bang. It does not flip state."
+          },
+          "ports": []
+        },
+        {
+          "id": "bang_1",
+          "kind": "core.bang-button",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "bang",
+              "direction": "output",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              }
+            }
+          ]
+        },
+        {
+          "id": "value_1",
+          "kind": "core.bool",
+          "kindVersion": "0.1.0",
+          "params": {
+            "value": true
+          },
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "bang",
+              "direction": "input",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "value",
+              "direction": "output",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "id": "toggle_1",
+          "kind": "core.toggle",
+          "kindVersion": "0.1.0",
+          "params": {
+            "value": false
+          },
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "bang",
+              "direction": "input",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "value",
+              "direction": "output",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              }
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "bang_1",
+            "port": "bang"
+          },
+          "to": {
+            "node": "value_1",
+            "port": "bang"
+          }
+        },
+        {
+          "from": {
+            "node": "value_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "toggle_1",
+            "port": "set"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "core.color",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-color",
       "revision": "1",
       "nodes": [
         {
@@ -2083,7 +2405,7 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "tint_1",
-          "kind": "core.color-rgba",
+          "kind": "core.color",
           "kindVersion": "0.1.0",
           "params": {
             "value": [
@@ -2091,7 +2413,9 @@ export const builtinNodeHelpGraphsV01 = [
               0.2,
               0.1,
               1
-            ]
+            ],
+            "representation": "rgba32f",
+            "colorSpace": "linear"
           },
           "ports": [
             {
@@ -2100,7 +2424,9 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "In",
               "type": {
                 "flow": "value",
-                "dataKind": "color.rgba"
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
               },
               "activation": "trigger"
             },
@@ -2110,7 +2436,9 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Set",
               "type": {
                 "flow": "value",
-                "dataKind": "color.rgba"
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
               },
               "activation": "latched"
             },
@@ -2130,7 +2458,9 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Color",
               "type": {
                 "flow": "value",
-                "dataKind": "color.rgba"
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
               }
             }
           ]
@@ -2141,7 +2471,7 @@ export const builtinNodeHelpGraphsV01 = [
           "kindVersion": "0.1.0",
           "params": {
             "language": "wgsl",
-            "source": "// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint; }"
+            "source": "// @skenion.uniform tint color default=[1,0.2,0.1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint; }"
           },
           "ports": [
             {
@@ -2150,7 +2480,9 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Tint",
               "type": {
                 "flow": "value",
-                "dataKind": "color.rgba"
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
               },
               "activation": "latched"
             },
@@ -2310,6 +2642,137 @@ export const builtinNodeHelpGraphsV01 = [
     }
   },
   {
+    "id": "core.float",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-float",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "note_1",
+          "kind": "core.comment",
+          "kindVersion": "0.1.0",
+          "params": {
+            "text": "F32 stores a number. in emits, set stores silently, bang emits the current value."
+          },
+          "ports": []
+        },
+        {
+          "id": "bang_1",
+          "kind": "core.bang-button",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "bang",
+              "direction": "output",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              }
+            }
+          ]
+        },
+        {
+          "id": "value_1",
+          "kind": "core.float",
+          "kindVersion": "0.1.0",
+          "params": {
+            "value": 0.5,
+            "representation": "f32"
+          },
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "bang",
+              "direction": "input",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "value",
+              "direction": "output",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              }
+            }
+          ]
+        },
+        {
+          "id": "target_1",
+          "kind": "core.target",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "value",
+              "direction": "input",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "bang_1",
+            "port": "bang"
+          },
+          "to": {
+            "node": "value_1",
+            "port": "bang"
+          }
+        },
+        {
+          "from": {
+            "node": "value_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "target_1",
+            "port": "value"
+          }
+        }
+      ]
+    }
+  },
+  {
     "id": "core.gpu-upload",
     "graph": {
       "schema": "skenion.graph",
@@ -2448,6 +2911,108 @@ export const builtinNodeHelpGraphsV01 = [
           "to": {
             "node": "preview_1",
             "port": "texture"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "core.int",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-int",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "note_1",
+          "kind": "core.comment",
+          "kindVersion": "0.1.0",
+          "params": {
+            "text": "I32 stores discrete integer values such as counts or modes."
+          },
+          "ports": []
+        },
+        {
+          "id": "bang_1",
+          "kind": "core.bang-button",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "bang",
+              "direction": "output",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              }
+            }
+          ]
+        },
+        {
+          "id": "value_1",
+          "kind": "core.int",
+          "kindVersion": "0.1.0",
+          "params": {
+            "value": 8,
+            "representation": "i32"
+          },
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.int",
+                "format": "i32"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.int",
+                "format": "i32"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "bang",
+              "direction": "input",
+              "label": "Bang",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "value",
+              "direction": "output",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.int",
+                "format": "i32"
+              }
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "bang_1",
+            "port": "bang"
+          },
+          "to": {
+            "node": "value_1",
+            "port": "bang"
           }
         }
       ]
@@ -2771,10 +3336,11 @@ export const builtinNodeHelpGraphsV01 = [
       "nodes": [
         {
           "id": "value_1",
-          "kind": "core.value-f32",
+          "kind": "core.float",
           "kindVersion": "0.1.0",
           "params": {
-            "value": 0.75
+            "value": 0.75,
+            "representation": "f32"
           },
           "ports": [
             {
@@ -2783,7 +3349,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Value",
               "type": {
                 "flow": "value",
-                "dataKind": "number.f32"
+                "dataKind": "number.float",
+                "format": "f32"
               }
             }
           ]
@@ -2800,7 +3367,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Value",
               "type": {
                 "flow": "value",
-                "dataKind": "number.f32"
+                "dataKind": "number.float",
+                "format": "f32"
               },
               "activation": "latched"
             }
@@ -2920,11 +3488,11 @@ export const builtinNodeHelpGraphsV01 = [
     }
   },
   {
-    "id": "core.value-bool",
+    "id": "core.uint",
     "graph": {
       "schema": "skenion.graph",
       "schemaVersion": "0.1.0",
-      "id": "help-core-value-bool",
+      "id": "help-core-uint",
       "revision": "1",
       "nodes": [
         {
@@ -2932,7 +3500,7 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Bool re-emits its stored boolean on bang. It does not flip state."
+            "text": "UInt stores non-negative integer values such as counts or modes."
           },
           "ports": []
         },
@@ -2955,10 +3523,11 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "value_1",
-          "kind": "core.value-bool",
+          "kind": "core.uint",
           "kindVersion": "0.1.0",
           "params": {
-            "value": true
+            "value": 8,
+            "representation": "u32"
           },
           "ports": [
             {
@@ -2967,7 +3536,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "In",
               "type": {
                 "flow": "value",
-                "dataKind": "boolean"
+                "dataKind": "number.uint",
+                "format": "u32"
               },
               "activation": "trigger"
             },
@@ -2977,7 +3547,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Set",
               "type": {
                 "flow": "value",
-                "dataKind": "boolean"
+                "dataKind": "number.uint",
+                "format": "u32"
               },
               "activation": "latched"
             },
@@ -2997,290 +3568,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Value",
               "type": {
                 "flow": "value",
-                "dataKind": "boolean"
-              }
-            }
-          ]
-        },
-        {
-          "id": "toggle_1",
-          "kind": "core.toggle",
-          "kindVersion": "0.1.0",
-          "params": {
-            "value": false
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              }
-            }
-          ]
-        }
-      ],
-      "edges": [
-        {
-          "from": {
-            "node": "bang_1",
-            "port": "bang"
-          },
-          "to": {
-            "node": "value_1",
-            "port": "bang"
-          }
-        },
-        {
-          "from": {
-            "node": "value_1",
-            "port": "value"
-          },
-          "to": {
-            "node": "toggle_1",
-            "port": "set"
-          }
-        }
-      ]
-    }
-  },
-  {
-    "id": "core.value-f32",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-core-value-f32",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "note_1",
-          "kind": "core.comment",
-          "kindVersion": "0.1.0",
-          "params": {
-            "text": "F32 stores a number. in emits, set stores silently, bang emits the current value."
-          },
-          "ports": []
-        },
-        {
-          "id": "bang_1",
-          "kind": "core.bang-button",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "bang",
-              "direction": "output",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
-            }
-          ]
-        },
-        {
-          "id": "value_1",
-          "kind": "core.value-f32",
-          "kindVersion": "0.1.0",
-          "params": {
-            "value": 0.5
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.f32"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.f32"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.f32"
-              }
-            }
-          ]
-        },
-        {
-          "id": "target_1",
-          "kind": "core.target",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "value",
-              "direction": "input",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.f32"
-              },
-              "activation": "latched"
-            }
-          ]
-        }
-      ],
-      "edges": [
-        {
-          "from": {
-            "node": "bang_1",
-            "port": "bang"
-          },
-          "to": {
-            "node": "value_1",
-            "port": "bang"
-          }
-        },
-        {
-          "from": {
-            "node": "value_1",
-            "port": "value"
-          },
-          "to": {
-            "node": "target_1",
-            "port": "value"
-          }
-        }
-      ]
-    }
-  },
-  {
-    "id": "core.value-i32",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-core-value-i32",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "note_1",
-          "kind": "core.comment",
-          "kindVersion": "0.1.0",
-          "params": {
-            "text": "I32 stores discrete integer values such as counts or modes."
-          },
-          "ports": []
-        },
-        {
-          "id": "bang_1",
-          "kind": "core.bang-button",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "bang",
-              "direction": "output",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
-            }
-          ]
-        },
-        {
-          "id": "value_1",
-          "kind": "core.value-i32",
-          "kindVersion": "0.1.0",
-          "params": {
-            "value": 8
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.i32"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.i32"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.i32"
+                "dataKind": "number.uint",
+                "format": "u32"
               }
             }
           ]
@@ -3551,10 +3840,11 @@ export const builtinNodeHelpGraphsV01 = [
       "nodes": [
         {
           "id": "speed_1",
-          "kind": "core.value-f32",
+          "kind": "core.float",
           "kindVersion": "0.1.0",
           "params": {
-            "value": 0.35
+            "value": 0.35,
+            "representation": "f32"
           },
           "ports": [
             {
@@ -3563,14 +3853,15 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Value",
               "type": {
                 "flow": "value",
-                "dataKind": "number.f32"
+                "dataKind": "number.float",
+                "format": "f32"
               }
             }
           ]
         },
         {
           "id": "tint_1",
-          "kind": "core.color-rgba",
+          "kind": "core.color",
           "kindVersion": "0.1.0",
           "params": {
             "value": [
@@ -3578,7 +3869,9 @@ export const builtinNodeHelpGraphsV01 = [
               0.6,
               1,
               1
-            ]
+            ],
+            "representation": "rgba32f",
+            "colorSpace": "linear"
           },
           "ports": [
             {
@@ -3587,7 +3880,9 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Color",
               "type": {
                 "flow": "value",
-                "dataKind": "color.rgba"
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
               }
             }
           ]
@@ -3598,7 +3893,7 @@ export const builtinNodeHelpGraphsV01 = [
           "kindVersion": "0.1.0",
           "params": {
             "language": "wgsl",
-            "source": "// @skenion.uniform speed number.f32 default=0.35\n// @skenion.uniform tint color.rgba default=[0.2,0.6,1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint * skenion_uniforms.speed; }"
+            "source": "// @skenion.uniform speed number.float default=0.35\n// @skenion.uniform tint color default=[0.2,0.6,1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint * skenion_uniforms.speed; }"
           },
           "ports": [
             {
@@ -3607,7 +3902,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Speed",
               "type": {
                 "flow": "value",
-                "dataKind": "number.f32"
+                "dataKind": "number.float",
+                "format": "f32"
               },
               "activation": "latched"
             },
@@ -3617,7 +3913,9 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Tint",
               "type": {
                 "flow": "value",
-                "dataKind": "color.rgba"
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
               },
               "activation": "latched"
             },
@@ -3841,11 +4139,11 @@ export const builtinNodeHelpGraphsV01 = [
     }
   },
   {
-    "id": "ui.slider-f32",
+    "id": "ui.slider-float",
     "graph": {
       "schema": "skenion.graph",
       "schemaVersion": "0.1.0",
-      "id": "help-ui-slider-f32",
+      "id": "help-ui-slider-float",
       "revision": "1",
       "nodes": [
         {
@@ -3859,7 +4157,7 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "slider_1",
-          "kind": "ui.slider-f32",
+          "kind": "ui.slider-float",
           "kindVersion": "0.1.0",
           "params": {
             "label": "Speed",
@@ -3867,7 +4165,8 @@ export const builtinNodeHelpGraphsV01 = [
             "min": 0,
             "max": 2,
             "step": 0.01,
-            "sendName": "speed"
+            "sendName": "speed",
+            "representation": "f32"
           },
           "ports": [
             {
@@ -3876,7 +4175,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "In",
               "type": {
                 "flow": "value",
-                "dataKind": "number.f32"
+                "dataKind": "number.float",
+                "format": "f32"
               },
               "required": false,
               "activation": "trigger"
@@ -3887,7 +4187,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Set",
               "type": {
                 "flow": "value",
-                "dataKind": "number.f32"
+                "dataKind": "number.float",
+                "format": "f32"
               },
               "required": false,
               "activation": "latched"
@@ -3909,7 +4210,8 @@ export const builtinNodeHelpGraphsV01 = [
               "label": "Value",
               "type": {
                 "flow": "value",
-                "dataKind": "number.f32"
+                "dataKind": "number.float",
+                "format": "f32"
               }
             }
           ]

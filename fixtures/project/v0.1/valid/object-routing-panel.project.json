@@ -15,7 +15,7 @@
     "nodes": [
       {
         "id": "slider_speed",
-        "kind": "ui.slider-f32",
+        "kind": "ui.slider-float",
         "kindVersion": "0.1.0",
         "params": {
           "label": "Speed",
@@ -29,7 +29,7 @@
             "label": "In",
             "type": {
               "flow": "value",
-              "dataKind": "number.f32"
+              "dataKind": "number.float"
             },
             "activation": "trigger"
           },
@@ -39,7 +39,7 @@
             "label": "Set",
             "type": {
               "flow": "value",
-              "dataKind": "number.f32"
+              "dataKind": "number.float"
             },
             "activation": "latched"
           },
@@ -59,7 +59,7 @@
             "label": "Value",
             "type": {
               "flow": "value",
-              "dataKind": "number.f32"
+              "dataKind": "number.float"
             }
           }
         ]

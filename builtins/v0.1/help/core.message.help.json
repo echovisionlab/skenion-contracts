@@ -6,9 +6,17 @@
   "description": "Message is a Max/Pd-like message box. Click or bang emits the stored message; set <message> replaces the runtime message silently.",
   "docsPath": "docs/nodes/core.message.md",
   "helpGraph": "help/v0.1/nodes/core.message.help.graph.json",
-  "tags": ["event", "message", "text"],
+  "tags": [
+    "event",
+    "message",
+    "text"
+  ],
   "runtimeBehavior": "click, in, or bang emits the saved message payload. set updates runtime message text without output. Inspector edits are graph patches, not runtime control events.",
-  "relatedNodes": ["core.bang-button", "core.string", "core.event-log"],
+  "relatedNodes": [
+    "core.bang-button",
+    "core.string",
+    "core.event-log"
+  ],
   "ports": [
     {
       "id": "in",

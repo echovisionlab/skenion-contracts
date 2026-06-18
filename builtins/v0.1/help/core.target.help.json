@@ -3,15 +3,21 @@
   "schemaVersion": "0.1.0",
   "id": "core.target",
   "summary": "Receives a normalized floating-point control value.",
-  "description": "Value Target is a minimal sink for tutorials and validator examples. It demonstrates value<number.f32> wiring without creating a render output.",
+  "description": "Value Target is a minimal sink for tutorials and validator examples. It demonstrates value<number.float> wiring without creating a render output.",
   "helpGraph": "help/v0.1/nodes/core.target.help.graph.json",
-  "tags": ["value", "sink", "tutorial"],
-  "runtimeBehavior": "Consumes the latest latched number.f32 value.",
-  "relatedNodes": ["core.value-f32"],
+  "tags": [
+    "value",
+    "sink",
+    "tutorial"
+  ],
+  "runtimeBehavior": "Consumes the latest latched number.float/f32 value.",
+  "relatedNodes": [
+    "core.float"
+  ],
   "ports": [
     {
       "id": "value",
-      "description": "Receives a number.f32 value. This tutorial sink constrains the preferred range to 0..1."
+      "description": "Receives a number.float/f32 value. This tutorial sink constrains the preferred range to 0..1."
     }
   ],
   "example": {

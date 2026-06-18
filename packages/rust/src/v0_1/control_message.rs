@@ -1,13 +1,26 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", content = "value", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum ControlAtomV01 {
-    F32(f64),
-    I32(i64),
-    Bool(bool),
-    String(String),
-    Rgba([f64; 4]),
+    #[serde(rename = "float")]
+    Float { representation: String, value: f64 },
+    #[serde(rename = "int")]
+    Int { representation: String, value: i64 },
+    #[serde(rename = "uint")]
+    Uint { representation: String, value: u64 },
+    #[serde(rename = "bool")]
+    Bool { value: bool },
+    #[serde(rename = "string")]
+    String { value: String },
+    #[serde(rename = "color")]
+    Color {
+        representation: String,
+        #[serde(rename = "colorSpace")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        color_space: Option<String>,
+        value: [f64; 4],
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -54,18 +67,32 @@ mod tests {
             serde_json::to_value(ControlMessageV01 {
                 selector: "set".to_owned(),
                 atoms: vec![
-                    ControlAtomV01::I32(1),
-                    ControlAtomV01::String("on".to_owned()),
-                    ControlAtomV01::Rgba([1.0, 0.0, 0.5, 1.0])
+                    ControlAtomV01::Int {
+                        representation: "i32".to_owned(),
+                        value: 1
+                    },
+                    ControlAtomV01::Uint {
+                        representation: "u8".to_owned(),
+                        value: 255
+                    },
+                    ControlAtomV01::String {
+                        value: "on".to_owned()
+                    },
+                    ControlAtomV01::Color {
+                        representation: "rgba32f".to_owned(),
+                        color_space: Some("linear".to_owned()),
+                        value: [1.0, 0.0, 0.5, 1.0]
+                    }
                 ]
             })
             .unwrap(),
             json!({
                 "selector": "set",
                 "atoms": [
-                    { "type": "i32", "value": 1 },
+                    { "type": "int", "representation": "i32", "value": 1 },
+                    { "type": "uint", "representation": "u8", "value": 255 },
                     { "type": "string", "value": "on" },
-                    { "type": "rgba", "value": [1.0, 0.0, 0.5, 1.0] }
+                    { "type": "color", "representation": "rgba32f", "colorSpace": "linear", "value": [1.0, 0.0, 0.5, 1.0] }
                 ]
             })
         );
@@ -75,16 +102,26 @@ mod tests {
     fn constructs_set_messages() {
         assert_eq!(
             ControlMessageV01::set(vec![
-                ControlAtomV01::F32(0.5),
-                ControlAtomV01::Bool(true),
-                ControlAtomV01::String("armed".to_owned())
+                ControlAtomV01::Float {
+                    representation: "f32".to_owned(),
+                    value: 0.5
+                },
+                ControlAtomV01::Bool { value: true },
+                ControlAtomV01::String {
+                    value: "armed".to_owned()
+                }
             ]),
             ControlMessageV01 {
                 selector: "set".to_owned(),
                 atoms: vec![
-                    ControlAtomV01::F32(0.5),
-                    ControlAtomV01::Bool(true),
-                    ControlAtomV01::String("armed".to_owned())
+                    ControlAtomV01::Float {
+                        representation: "f32".to_owned(),
+                        value: 0.5
+                    },
+                    ControlAtomV01::Bool { value: true },
+                    ControlAtomV01::String {
+                        value: "armed".to_owned()
+                    }
                 ]
             }
         );

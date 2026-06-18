@@ -7,14 +7,14 @@ typed value behavior used by built-in value nodes and runtime control events.
 
 The canonical v0.1 typed value nodes are:
 
-- `core.value-f32` for `value<number.f32>`
-- `core.value-i32` for `value<number.i32>`
-- `core.value-bool` for `value<boolean>`
-- `core.color-rgba` for `value<color.rgba>`
+- `core.float` for `value<number.float>`
+- `core.int` for `value<number.int>`
+- `core.bool` for `value<boolean>`
+- `core.color` for `value<color>`
 - `core.string` for `value<string>`
 
 `core.toggle` also uses `value<boolean>`, but its `bang` input flips the stored
-boolean before emitting. `core.value-bool` keeps the generic value-box behavior:
+boolean before emitting. `core.bool` keeps the generic value-box behavior:
 `bang` only emits the current value.
 
 Each typed value node has the same control surface:
@@ -50,10 +50,10 @@ patches unless a later user action explicitly edits the graph.
 
 ## Range Metadata
 
-`number.f32` is a generic floating-point value type and must not globally imply
+`number.float` is a generic floating-point value type and must not globally imply
 `0..1`. Range constraints belong to a specific shader uniform, UI widget,
 clamp/map node, or later interface metadata. Runtime shader demos may clamp
-values at the uniform extraction boundary, but the canonical `core.value-f32`
+values at the uniform extraction boundary, but the canonical `core.float`
 builtin itself stays unconstrained.
 
 ## Comments And Messages

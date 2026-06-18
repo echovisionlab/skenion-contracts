@@ -5,9 +5,16 @@
   "summary": "Decodes a video asset resource into a frame stream.",
   "description": "Video Decode is the explicit adapter between asset.video and stream<video.frame>.",
   "helpGraph": "help/v0.1/nodes/core.video-decode.help.graph.json",
-  "tags": ["converter", "media", "video"],
+  "tags": [
+    "converter",
+    "media",
+    "video"
+  ],
   "runtimeBehavior": "Consumes a video asset resource and emits decoded video frames on the video/frame clock.",
-  "relatedNodes": ["core.video-asset", "core.gpu-upload"],
+  "relatedNodes": [
+    "core.video-asset",
+    "core.gpu-upload"
+  ],
   "ports": [
     {
       "id": "asset",

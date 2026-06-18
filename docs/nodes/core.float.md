@@ -1,6 +1,6 @@
-# core.value-f32
+# core.float
 
-`core.value-f32` stores a `number.f32` control value.
+`core.float` stores a `number.float` control value.
 
 Inputs:
 
@@ -10,6 +10,6 @@ Inputs:
 
 Output:
 
-- `value`: the current `number.f32` value.
+- `value`: the current `number.float` value.
 
 The graph `params.value` is the saved default. Runtime control events may change the session value without changing the persisted graph.

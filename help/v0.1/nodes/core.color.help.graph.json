@@ -1,7 +1,7 @@
 {
   "schema": "skenion.graph",
   "schemaVersion": "0.1.0",
-  "id": "help-core-color-rgba",
+  "id": "help-core-color",
   "revision": "1",
   "nodes": [
     {
@@ -15,10 +15,17 @@
     },
     {
       "id": "tint_1",
-      "kind": "core.color-rgba",
+      "kind": "core.color",
       "kindVersion": "0.1.0",
       "params": {
-        "value": [1, 0.2, 0.1, 1]
+        "value": [
+          1,
+          0.2,
+          0.1,
+          1
+        ],
+        "representation": "rgba32f",
+        "colorSpace": "linear"
       },
       "ports": [
         {
@@ -27,7 +34,9 @@
           "label": "In",
           "type": {
             "flow": "value",
-            "dataKind": "color.rgba"
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
           },
           "activation": "trigger"
         },
@@ -37,7 +46,9 @@
           "label": "Set",
           "type": {
             "flow": "value",
-            "dataKind": "color.rgba"
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
           },
           "activation": "latched"
         },
@@ -57,7 +68,9 @@
           "label": "Color",
           "type": {
             "flow": "value",
-            "dataKind": "color.rgba"
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
           }
         }
       ]
@@ -68,7 +81,7 @@
       "kindVersion": "0.1.0",
       "params": {
         "language": "wgsl",
-        "source": "// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint; }"
+        "source": "// @skenion.uniform tint color default=[1,0.2,0.1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint; }"
       },
       "ports": [
         {
@@ -77,7 +90,9 @@
           "label": "Tint",
           "type": {
             "flow": "value",
-            "dataKind": "color.rgba"
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
           },
           "activation": "latched"
         },

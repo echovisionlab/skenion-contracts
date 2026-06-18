@@ -9,7 +9,7 @@ typed atoms, dispatched by the receiving object.
 ```json
 {
   "selector": "set",
-  "atoms": [{ "type": "f32", "value": 0.75 }]
+  "atoms": [{ "type": "float", "representation": "f32", "value": 0.75 }]
 }
 ```
 

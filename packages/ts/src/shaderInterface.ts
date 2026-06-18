@@ -14,10 +14,11 @@ const UNIFORM_MARKER = "@skenion.uniform";
 const PORT_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const RESERVED_UNIFORM_IDS = new Set(["out", "in", "set", "bang", "value"]);
 const SUPPORTED_TYPES = new Set<ShaderUniformDataKindV01>([
-  "number.f32",
-  "number.i32",
+  "number.float",
+  "number.int",
+  "number.uint",
   "boolean",
-  "color.rgba"
+  "color"
 ]);
 
 export function analyzeShaderInterfaceV01(
@@ -187,6 +188,16 @@ function isSupportedType(value: string): value is ShaderUniformDataKindV01 {
 
 function dataTypeFor(dataKind: ShaderUniformDataKindV01, attributes: Map<string, string>): DataTypeV01 {
   const type: DataTypeV01 = { flow: "value", dataKind };
+  if (dataKind === "number.float") {
+    type.format = "f32";
+  } else if (dataKind === "number.int") {
+    type.format = "i32";
+  } else if (dataKind === "number.uint") {
+    type.format = "u32";
+  } else if (dataKind === "color") {
+    type.format = "rgba32f";
+    type.colorSpace = "linear";
+  }
   const range = {
     min: numberAttribute(attributes, "min"),
     max: numberAttribute(attributes, "max"),
@@ -276,17 +287,23 @@ function parseDefault(
   dataKind: ShaderUniformDataKindV01,
   value: string
 ): { ok: true; value: unknown } | { ok: false; message: string } {
-  if (dataKind === "number.f32") {
+  if (dataKind === "number.float") {
     const parsed = Number(value);
     return Number.isFinite(parsed)
       ? { ok: true, value: parsed }
-      : { ok: false, message: `invalid number.f32 default: ${value}` };
+      : { ok: false, message: `invalid number.float default: ${value}` };
   }
-  if (dataKind === "number.i32") {
+  if (dataKind === "number.int") {
     const parsed = Number(value);
     return Number.isInteger(parsed)
       ? { ok: true, value: parsed }
-      : { ok: false, message: `invalid number.i32 default: ${value}` };
+      : { ok: false, message: `invalid number.int default: ${value}` };
+  }
+  if (dataKind === "number.uint") {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= 0
+      ? { ok: true, value: parsed }
+      : { ok: false, message: `invalid number.uint default: ${value}` };
   }
   if (dataKind === "boolean") {
     if (value === "true") {
@@ -310,7 +327,7 @@ function parseDefault(
   } catch {
     // Report below with a stable diagnostic.
   }
-  return { ok: false, message: `invalid color.rgba default: ${value}` };
+  return { ok: false, message: `invalid color default: ${value}` };
 }
 
 function defaultLabel(id: string): string {

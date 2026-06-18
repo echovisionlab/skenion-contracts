@@ -522,24 +522,61 @@ components:
         - type: object
           required:
             - type
+            - representation
             - value
           properties:
             type:
               type: string
-              const: f32
+              const: float
+            representation:
+              type: string
+              enum:
+                - f64
+                - f32
+                - f16
+                - f8.e4m3
+                - f8.e5m2
             value:
               type: number
           additionalProperties: false
         - type: object
           required:
             - type
+            - representation
             - value
           properties:
             type:
               type: string
-              const: i32
+              const: int
+            representation:
+              type: string
+              enum:
+                - i64
+                - i32
+                - i16
+                - i8
             value:
               type: integer
+          additionalProperties: false
+        - type: object
+          required:
+            - type
+            - representation
+            - value
+          properties:
+            type:
+              type: string
+              const: uint
+            representation:
+              type: string
+              enum:
+                - u64
+                - u32
+                - u16
+                - u8
+            value:
+              type: integer
+              minimum: 0
           additionalProperties: false
         - type: object
           required:
@@ -566,11 +603,24 @@ components:
         - type: object
           required:
             - type
+            - representation
             - value
           properties:
             type:
               type: string
-              const: rgba
+              const: color
+            representation:
+              type: string
+              enum:
+                - rgba32f
+                - rgba16f
+                - rgba8unorm
+                - rgb8unorm
+            colorSpace:
+              type: string
+              enum:
+                - linear
+                - srgb
             value:
               type: array
               prefixItems:

@@ -9,7 +9,7 @@
       "op": "addNode",
       "node": {
         "id": "value_2",
-        "kind": "core.value-f32",
+        "kind": "core.float",
         "kindVersion": "0.1.0",
         "params": {
           "value": 0.75
@@ -20,7 +20,7 @@
             "direction": "output",
             "type": {
               "flow": "value",
-              "dataKind": "number.f32"
+              "dataKind": "number.float"
             }
           }
         ]

@@ -1,18 +1,17 @@
 {
   "schema": "skenion.node.help",
   "schemaVersion": "0.1.0",
-  "id": "core.value-bool",
-  "summary": "Stores and emits a boolean control value.",
-  "description": "Use Bool for an explicit true/false value. Bang emits the current value; it does not toggle.",
-  "helpGraph": "help/v0.1/nodes/core.value-bool.help.graph.json",
+  "id": "core.int",
+  "summary": "Stores and emits a signed integer control value.",
+  "description": "Use Int for discrete numeric controls such as counts, selected indices, and integer mode values.",
+  "helpGraph": "help/v0.1/nodes/core.int.help.graph.json",
   "tags": [
     "value",
     "control",
-    "boolean"
+    "integer"
   ],
-  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean without toggling.",
+  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored integer value without changing it.",
   "relatedNodes": [
-    "core.toggle",
     "core.bang-button",
     "render.fullscreen-shader"
   ],
@@ -37,7 +36,7 @@
   "params": [
     {
       "id": "value",
-      "description": "Saved default boolean value."
+      "description": "Saved default integer value."
     },
     {
       "id": "sendName",
@@ -49,8 +48,8 @@
     }
   ],
   "example": {
-    "title": "Bool versus Toggle",
-    "description": "Bool keeps bang as re-emit behavior; Toggle flips on bang.",
-    "graph": "help/v0.1/nodes/core.value-bool.help.graph.json"
+    "title": "Trigger an integer value",
+    "description": "Use bang to re-emit the current integer after a set event updates it silently.",
+    "graph": "help/v0.1/nodes/core.int.help.graph.json"
   }
 }

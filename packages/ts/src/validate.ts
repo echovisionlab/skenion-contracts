@@ -17,6 +17,7 @@ import {
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
+import { planConversion } from "./conversion.js";
 import type {
   ControlMessageV01,
   DataTypeV01,
@@ -89,25 +90,8 @@ function typeLabel(type: DataTypeV01): string {
   return `${type.flow}<${type.dataKind}>`;
 }
 
-function formatAccepts(targetFormat: DataTypeV01["format"], sourceFormat: DataTypeV01["format"]): boolean {
-  if (targetFormat === undefined || sourceFormat === undefined) {
-    return true;
-  }
-
-  const targetFormats = Array.isArray(targetFormat) ? targetFormat : [targetFormat];
-  const sourceFormats = Array.isArray(sourceFormat) ? sourceFormat : [sourceFormat];
-  return sourceFormats.every((format) => targetFormats.includes(format));
-}
-
 function compatibleTypes(sourceType: DataTypeV01, targetType: DataTypeV01): boolean {
-  if (targetType.dataKind === "message.any") {
-    return true;
-  }
-  return (
-    sourceType.flow === targetType.flow &&
-    sourceType.dataKind === targetType.dataKind &&
-    formatAccepts(targetType.format, sourceType.format)
-  );
+  return planConversion(sourceType, targetType).ok;
 }
 
 function validatePorts(ownerId: string, ports: PortV01[]): string[] {

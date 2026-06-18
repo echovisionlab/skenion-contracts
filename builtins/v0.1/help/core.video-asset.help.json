@@ -5,9 +5,16 @@
   "summary": "Represents a video asset resource.",
   "description": "Video Asset is a resource source. It stores a project-safe assetRef, name, and mimeType; explicit converter nodes preserve graph intent.",
   "helpGraph": "help/v0.1/nodes/core.video-asset.help.graph.json",
-  "tags": ["media", "resource", "video"],
+  "tags": [
+    "media",
+    "resource",
+    "video"
+  ],
   "runtimeBehavior": "Provides an asset.video resource reference for async media loading.",
-  "relatedNodes": ["core.video-decode", "core.gpu-upload"],
+  "relatedNodes": [
+    "core.video-decode",
+    "core.gpu-upload"
+  ],
   "ports": [
     {
       "id": "asset",

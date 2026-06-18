@@ -56,7 +56,13 @@
           "const": "value"
         },
         "dataKind": {
-          "enum": ["number.f32", "number.i32", "boolean", "color.rgba"]
+          "enum": ["number.float", "number.int", "number.uint", "boolean", "color"]
+        },
+        "format": {
+          "type": "string"
+        },
+        "colorSpace": {
+          "type": "string"
         },
         "range": {
           "type": "object",

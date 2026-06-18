@@ -85,25 +85,20 @@ fn validate_ports(owner_id: &str, ports: &[PortV01]) -> Vec<ValidationErrorV01> 
     errors
 }
 
-fn format_accepts(target_type: &DataTypeV01, source_type: &DataTypeV01) -> bool {
-    let Some(target_format) = &target_type.format else {
-        return true;
-    };
-    let Some(source_format) = &source_type.format else {
-        return true;
-    };
-
-    let target_formats = target_format.values();
-    source_format
-        .values()
-        .iter()
-        .all(|format| target_formats.contains(format))
+fn is_numeric_data_kind(data_kind: &str) -> bool {
+    matches!(data_kind, "number.float" | "number.int" | "number.uint")
 }
 
 pub fn compatible_data_types_v01(source_type: &DataTypeV01, target_type: &DataTypeV01) -> bool {
-    source_type.flow == target_type.flow
-        && source_type.data_kind == target_type.data_kind
-        && format_accepts(target_type, source_type)
+    if target_type.data_kind == "message.any" {
+        return true;
+    }
+    if source_type.flow != target_type.flow {
+        return false;
+    }
+    source_type.data_kind == target_type.data_kind
+        || (is_numeric_data_kind(&source_type.data_kind)
+            && is_numeric_data_kind(&target_type.data_kind))
 }
 
 pub fn type_label_v01(data_type: &DataTypeV01) -> String {
@@ -280,13 +275,13 @@ mod tests {
     #[test]
     fn labels_all_data_flows_and_accepts_format_constraints() {
         for (flow, expected) in [
-            (DataFlowV01::Value, "value<number.f32>"),
-            (DataFlowV01::Event, "event<number.f32>"),
-            (DataFlowV01::Signal, "signal<number.f32>"),
-            (DataFlowV01::Stream, "stream<number.f32>"),
-            (DataFlowV01::Resource, "resource<number.f32>"),
+            (DataFlowV01::Value, "value<number.float>"),
+            (DataFlowV01::Event, "event<number.float>"),
+            (DataFlowV01::Signal, "signal<number.float>"),
+            (DataFlowV01::Stream, "stream<number.float>"),
+            (DataFlowV01::Resource, "resource<number.float>"),
         ] {
-            let mut data_type = value_type("number.f32");
+            let mut data_type = value_type("number.float");
             data_type.flow = flow;
             assert_eq!(type_label_v01(&data_type), expected);
         }
@@ -357,8 +352,8 @@ mod tests {
               "displayName": "Duplicate",
               "category": "Script",
               "ports": [
-                { "id": "value", "direction": "input", "type": { "flow": "value", "dataKind": "number.f32" } },
-                { "id": "value", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+                { "id": "value", "direction": "input", "type": { "flow": "value", "dataKind": "number.float" } },
+                { "id": "value", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
               ],
               "execution": { "model": "script_control" },
               "state": { "persistent": false },
@@ -519,7 +514,7 @@ mod tests {
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+                    { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
                   ]
                 }
               ],

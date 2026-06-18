@@ -1,7 +1,7 @@
 {
   "schema": "skenion.graph",
   "schemaVersion": "0.1.0",
-  "id": "help-core-value-bool",
+  "id": "help-core-float",
   "revision": "1",
   "nodes": [
     {
@@ -9,7 +9,7 @@
       "kind": "core.comment",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "Bool re-emits its stored boolean on bang. It does not flip state."
+        "text": "F32 stores a number. in emits, set stores silently, bang emits the current value."
       },
       "ports": []
     },
@@ -32,10 +32,11 @@
     },
     {
       "id": "value_1",
-      "kind": "core.value-bool",
+      "kind": "core.float",
       "kindVersion": "0.1.0",
       "params": {
-        "value": true
+        "value": 0.5,
+        "representation": "f32"
       },
       "ports": [
         {
@@ -44,7 +45,8 @@
           "label": "In",
           "type": {
             "flow": "value",
-            "dataKind": "boolean"
+            "dataKind": "number.float",
+            "format": "f32"
           },
           "activation": "trigger"
         },
@@ -54,7 +56,8 @@
           "label": "Set",
           "type": {
             "flow": "value",
-            "dataKind": "boolean"
+            "dataKind": "number.float",
+            "format": "f32"
           },
           "activation": "latched"
         },
@@ -74,57 +77,28 @@
           "label": "Value",
           "type": {
             "flow": "value",
-            "dataKind": "boolean"
+            "dataKind": "number.float",
+            "format": "f32"
           }
         }
       ]
     },
     {
-      "id": "toggle_1",
-      "kind": "core.toggle",
+      "id": "target_1",
+      "kind": "core.target",
       "kindVersion": "0.1.0",
-      "params": {
-        "value": false
-      },
+      "params": {},
       "ports": [
         {
-          "id": "in",
-          "direction": "input",
-          "label": "In",
-          "type": {
-            "flow": "value",
-            "dataKind": "boolean"
-          },
-          "activation": "trigger"
-        },
-        {
-          "id": "set",
-          "direction": "input",
-          "label": "Set",
-          "type": {
-            "flow": "value",
-            "dataKind": "boolean"
-          },
-          "activation": "latched"
-        },
-        {
-          "id": "bang",
-          "direction": "input",
-          "label": "Bang",
-          "type": {
-            "flow": "event",
-            "dataKind": "event.bang"
-          },
-          "activation": "trigger"
-        },
-        {
           "id": "value",
-          "direction": "output",
+          "direction": "input",
           "label": "Value",
           "type": {
             "flow": "value",
-            "dataKind": "boolean"
-          }
+            "dataKind": "number.float",
+            "format": "f32"
+          },
+          "activation": "latched"
         }
       ]
     }
@@ -146,8 +120,8 @@
         "port": "value"
       },
       "to": {
-        "node": "toggle_1",
-        "port": "set"
+        "node": "target_1",
+        "port": "value"
       }
     }
   ]

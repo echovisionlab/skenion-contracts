@@ -1,24 +1,24 @@
 {
   "schema": "skenion.node.help",
   "schemaVersion": "0.1.0",
-  "id": "ui.slider-f32",
-  "summary": "Emits number.f32 values from a runtime slider control.",
-  "description": "Slider F32 is a panel control node for performer-facing numeric input. Incoming values can update it, and moving the runtime slider emits a typed value event without creating a graph patch.",
-  "helpGraph": "help/v0.1/nodes/ui.slider-f32.help.graph.json",
+  "id": "ui.slider-float",
+  "summary": "Emits floating-point values from a runtime slider control.",
+  "description": "Slider Float is a panel control node for performer-facing numeric input. Incoming values can update it, and moving the runtime slider emits a typed value event without creating a graph patch.",
+  "helpGraph": "help/v0.1/nodes/ui.slider-float.help.graph.json",
   "tags": [
     "ui",
     "panel",
     "value",
     "f32"
   ],
-  "runtimeBehavior": "Runtime slider changes update the control state and emit number.f32 from value. in updates and emits, set updates silently, and bang emits the current value.",
+  "runtimeBehavior": "Runtime slider changes update the control state and emit number.float/f32 from value. in updates and emits, set updates silently, and bang emits the current value.",
   "relatedNodes": [
-    "core.value-f32"
+    "core.float"
   ],
   "ports": [
     {
       "id": "in",
-      "description": "Updates the slider value and emits number.f32."
+      "description": "Updates the slider value and emits number.float/f32."
     },
     {
       "id": "set",
@@ -30,7 +30,7 @@
     },
     {
       "id": "value",
-      "description": "Emits the current slider value as number.f32."
+      "description": "Emits the current slider value as number.float/f32."
     }
   ],
   "params": [
@@ -56,16 +56,16 @@
     },
     {
       "id": "sendName",
-      "description": "Optional number.f32 channel name updated whenever the slider emits."
+      "description": "Optional number.float/f32 channel name updated whenever the slider emits."
     },
     {
       "id": "receiveName",
-      "description": "Optional number.f32 channel name used to receive routed slider updates."
+      "description": "Optional number.float/f32 channel name used to receive routed slider updates."
     }
   ],
   "example": {
     "title": "Drive a shader uniform",
     "description": "Connect Slider F32 directly to a shader input or give it sendName for named routing.",
-    "graph": "help/v0.1/nodes/ui.slider-f32.help.graph.json"
+    "graph": "help/v0.1/nodes/ui.slider-float.help.graph.json"
   }
 }

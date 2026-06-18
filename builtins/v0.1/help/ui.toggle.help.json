@@ -13,7 +13,7 @@
   ],
   "runtimeBehavior": "bang flips and emits. 0/1/off/on/false/true update and emit. set 0, set 1, set off, and set on update the runtime state without output.",
   "relatedNodes": [
-    "core.value-bool",
+    "core.bool",
     "ui.button",
     "core.message"
   ],

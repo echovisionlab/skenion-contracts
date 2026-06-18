@@ -16,7 +16,7 @@
           "label": "Speed",
           "type": {
             "flow": "value",
-            "dataKind": "number.f32",
+            "dataKind": "number.float",
             "range": {
               "min": 0,
               "max": 2,
@@ -33,7 +33,7 @@
           "label": "Tint",
           "type": {
             "flow": "value",
-            "dataKind": "color.rgba"
+            "dataKind": "color"
           },
           "required": false,
           "default": [1, 0.2, 0.1, 1],

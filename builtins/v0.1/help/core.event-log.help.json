@@ -5,9 +5,15 @@
   "summary": "Receives bang events for diagnostics.",
   "description": "Event Log is a small inspection target for event patches. It helps examples show when a bang path fires.",
   "helpGraph": "help/v0.1/nodes/core.event-log.help.graph.json",
-  "tags": ["event", "diagnostics"],
+  "tags": [
+    "event",
+    "diagnostics"
+  ],
   "runtimeBehavior": "The node records or reports incoming bang events in diagnostic contexts.",
-  "relatedNodes": ["core.bang-button", "core.message"],
+  "relatedNodes": [
+    "core.bang-button",
+    "core.message"
+  ],
   "ports": [
     {
       "id": "bang",

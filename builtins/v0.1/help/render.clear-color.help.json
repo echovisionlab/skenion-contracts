@@ -5,9 +5,17 @@
   "summary": "Produces a GPU texture cleared to one color.",
   "description": "Clear Color is the first simple render producer. It is useful for validating preview lifecycle and render.output selection before adding shader code.",
   "helpGraph": "help/v0.1/nodes/render.clear-color.help.graph.json",
-  "tags": ["render", "gpu", "output"],
-  "runtimeBehavior": "On each preview frame, produces a gpu.texture2d resource cleared to params.color.",
-  "relatedNodes": ["render.output", "render.fullscreen-shader", "core.color-rgba"],
+  "tags": [
+    "render",
+    "gpu",
+    "output"
+  ],
+  "runtimeBehavior": "On each preview frame, produces a gpu.texture2d resource cleared to params.color/rgba32f.",
+  "relatedNodes": [
+    "render.output",
+    "render.fullscreen-shader",
+    "core.color"
+  ],
   "ports": [
     {
       "id": "out",
@@ -17,7 +25,7 @@
   "params": [
     {
       "id": "color",
-      "description": "Saved RGBA clear color."
+      "description": "Saved RGBA clear color/rgba32f."
     }
   ],
   "example": {

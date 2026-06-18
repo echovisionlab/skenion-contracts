@@ -5,19 +5,26 @@
   "summary": "Draws a colored background panel on the patch canvas.",
   "description": "Panel is a visual patch annotation object. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
   "helpGraph": "help/v0.1/nodes/core.panel.help.graph.json",
-  "tags": ["annotation", "panel", "background"],
-  "runtimeBehavior": "set updates the runtime panel color silently. Inspector color edits remain graph patches.",
-  "relatedNodes": ["core.comment", "core.message"],
+  "tags": [
+    "annotation",
+    "panel",
+    "background"
+  ],
+  "runtimeBehavior": "set updates the runtime panel color/rgba32f silently. Inspector color/rgba32f edits remain graph patches.",
+  "relatedNodes": [
+    "core.comment",
+    "core.message"
+  ],
   "ports": [
     {
       "id": "set",
-      "description": "Updates the panel color from a message such as set #00ff00 without output."
+      "description": "Updates the panel color/rgba32f from a message such as set #00ff00 without output."
     }
   ],
   "params": [
     {
       "id": "color",
-      "description": "Saved panel color as a CSS hex string."
+      "description": "Saved panel color/rgba32f as a CSS hex string."
     },
     {
       "id": "label",
@@ -25,7 +32,7 @@
     },
     {
       "id": "receiveName",
-      "description": "Optional string channel name used to receive routed color updates."
+      "description": "Optional string channel name used to receive routed color/rgba32f updates."
     }
   ],
   "example": {

@@ -5,7 +5,7 @@ typed values and simple control annotations.
 
 ## Value Nodes
 
-`core.value-f32`, `core.value-i32`, `core.value-bool`, `core.color-rgba`, and
+`core.float`, `core.int`, `core.bool`, `core.color`, and
 `core.string` share the same stored-value surface:
 
 - `in`: update the stored value and emit it
@@ -13,7 +13,7 @@ typed values and simple control annotations.
 - `bang`: emit the current stored value without changing it
 - `value`: output the current stored value
 
-`core.toggle` uses the same boolean type as `core.value-bool`, but `bang` flips
+`core.toggle` uses the same boolean type as `core.bool`, but `bang` flips
 the stored value and emits the new value. Value objects may also use
 `sendName` and `receiveName` graph params for named typed routing.
 
@@ -29,7 +29,7 @@ inlet and `receiveName` for patcher-style live text updates; it does not emit.
 
 ## UI Objects
 
-`ui.button`, `ui.slider-f32`, and `ui.toggle` are object controls, not generic
+`ui.button`, `ui.slider-float`, and `ui.toggle` are object controls, not generic
 cards. They may use `sendName` and `receiveName` just like core value objects.
 Standalone routing nodes are not part of the builtin object model.
 

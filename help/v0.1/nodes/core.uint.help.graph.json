@@ -1,0 +1,99 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-core-uint",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "UInt stores non-negative integer values such as counts or modes."
+      },
+      "ports": []
+    },
+    {
+      "id": "bang_1",
+      "kind": "core.bang-button",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "bang",
+          "direction": "output",
+          "label": "Bang",
+          "type": {
+            "flow": "event",
+            "dataKind": "event.bang"
+          }
+        }
+      ]
+    },
+    {
+      "id": "value_1",
+      "kind": "core.uint",
+      "kindVersion": "0.1.0",
+      "params": {
+        "value": 8,
+        "representation": "u32"
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.uint",
+            "format": "u32"
+          },
+          "activation": "trigger"
+        },
+        {
+          "id": "set",
+          "direction": "input",
+          "label": "Set",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.uint",
+            "format": "u32"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "bang",
+          "direction": "input",
+          "label": "Bang",
+          "type": {
+            "flow": "event",
+            "dataKind": "event.bang"
+          },
+          "activation": "trigger"
+        },
+        {
+          "id": "value",
+          "direction": "output",
+          "label": "Value",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.uint",
+            "format": "u32"
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "bang_1",
+        "port": "bang"
+      },
+      "to": {
+        "node": "value_1",
+        "port": "bang"
+      }
+    }
+  ]
+}

@@ -79,14 +79,14 @@ Rules:
 `resource<gpu.texture2d>` output. Starting in v0.13, preview output should be
 selected by wiring `render.clear-color:out` into `render.output:in`.
 
-## `core.color-rgba`
+## `core.color`
 
-`core.color-rgba` is a value source convention used by render nodes that accept
-`value<color.rgba>` controls.
+`core.color` is a value source convention used by render nodes that accept
+`value<color>` controls.
 
 Canonical manifest:
 
-`builtins/v0.1/nodes/core.color-rgba.node.json`
+`builtins/v0.1/nodes/core.color.node.json`
 
 Graph node params:
 
@@ -172,8 +172,8 @@ Rules:
   fullscreen triangle vertex entry point.
 - Uniform input ports are declared by line comments:
   `// @skenion.uniform <id> <dataKind> [attributes...]`.
-- Supported uniform data kinds are `number.f32`, `number.i32`, `boolean`, and
-  `color.rgba`.
+- Supported uniform data kinds are `number.float`, `number.int`, `boolean`, and
+  `color`.
 - Uniform ids are port ids and WGSL field names. They are not types.
 - Reserved ids `out`, `in`, `set`, `bang`, and `value` are invalid.
 - `default`, `min`, `max`, `step`, and quoted `label` attributes may be used
@@ -202,10 +202,10 @@ graph node ports. Studio must apply interface changes explicitly through the
 Example:
 
 ```wgsl
-// @skenion.uniform speed number.f32 default=0.5 min=0 max=2 step=0.01 label="Speed"
+// @skenion.uniform speed number.float default=0.5 min=0 max=2 step=0.01 label="Speed"
 // @skenion.uniform enabled boolean default=true label="Enabled"
-// @skenion.uniform iterations number.i32 default=8 min=1 max=32 step=1 label="Iterations"
-// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1] label="Tint"
+// @skenion.uniform iterations number.int default=8 min=1 max=32 step=1 label="Iterations"
+// @skenion.uniform tint color default=[1,0.2,0.1,1] label="Tint"
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
   var pulse = 0.5;
@@ -219,10 +219,10 @@ fn fs_main() -> @location(0) vec4<f32> {
 Generated graph instance ports:
 
 ```text
-speed      value<number.f32>
+speed      value<number.float>
 enabled    value<boolean>
-iterations value<number.i32>
-tint       value<color.rgba>
+iterations value<number.int>
+tint       value<color>
 out        resource<gpu.texture2d>
 ```
 
@@ -253,10 +253,10 @@ fn sk_bool(value: u32) -> bool {
 
 Generated scalar layout rules:
 
-- `number.f32`: `f32`, alignment 4, size 4.
-- `number.i32`: `i32`, alignment 4, size 4.
+- `number.float`: `f32`, alignment 4, size 4.
+- `number.int`: `i32`, alignment 4, size 4.
 - `boolean`: stored as `u32`; use `sk_bool`.
-- `color.rgba`: `vec4<f32>`, alignment 16, size 16.
+- `color`: `vec4<f32>`, alignment 16, size 16.
 
 The ABI is still intentionally small. Do not add GLSL, texture inputs, video,
 audio, MIDI, asset-backed shader source, or multi-pass render graph semantics

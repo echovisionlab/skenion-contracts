@@ -1,11 +1,11 @@
 {
   "schema": "skenion.node.help",
   "schemaVersion": "0.1.0",
-  "id": "core.value-f32",
+  "id": "core.float",
   "summary": "Stores and emits a 32-bit floating-point control value.",
-  "description": "Use F32 when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
-  "docsPath": "docs/nodes/core.value-f32.md",
-  "helpGraph": "help/v0.1/nodes/core.value-f32.help.graph.json",
+  "description": "Use Float when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
+  "docsPath": "docs/nodes/core.float.md",
+  "helpGraph": "help/v0.1/nodes/core.float.help.graph.json",
   "tags": [
     "value",
     "control",
@@ -52,6 +52,6 @@
   "example": {
     "title": "Drive a shader uniform",
     "description": "Connect value to a fullscreen shader numeric input, then send runtime in/set/bang events while the preview runs.",
-    "graph": "help/v0.1/nodes/core.value-f32.help.graph.json"
+    "graph": "help/v0.1/nodes/core.float.help.graph.json"
   }
 }

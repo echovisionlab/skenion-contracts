@@ -8,6 +8,7 @@ import type {
   InvertGraphPatchResult,
   PortV01
 } from "./types.js";
+import { planConversion } from "./conversion.js";
 import { validateGraphDocument, validateGraphPatch } from "./validate.js";
 
 export interface ApplyGraphPatchOptions {
@@ -34,22 +35,11 @@ function portKey(nodeId: string, portId: string): string {
   return `${nodeId}:${portId}`;
 }
 
-function formatAccepts(targetFormat: string | string[] | undefined, sourceFormat: string | string[] | undefined): boolean {
-  if (targetFormat === undefined || sourceFormat === undefined) {
-    return true;
-  }
-  const targetFormats = Array.isArray(targetFormat) ? targetFormat : [targetFormat];
-  const sourceFormats = Array.isArray(sourceFormat) ? sourceFormat : [sourceFormat];
-  return sourceFormats.every((format) => targetFormats.includes(format));
-}
-
 function compatiblePorts(source: PortV01, target: PortV01): boolean {
   return (
     source.direction === "output" &&
     target.direction === "input" &&
-    source.type.flow === target.type.flow &&
-    source.type.dataKind === target.type.dataKind &&
-    formatAccepts(target.type.format, source.type.format)
+    planConversion(source.type, target.type).ok
   );
 }
 

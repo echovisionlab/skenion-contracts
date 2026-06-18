@@ -17,9 +17,9 @@ help-<node-id-with-dots-replaced-by-hyphens>
 Example:
 
 ```text
-core.value-f32
-help/v0.1/nodes/core.value-f32.help.graph.json
-help-core-value-f32
+core.float
+help/v0.1/nodes/core.float.help.graph.json
+help-core-float
 ```
 
 Help graphs are read-only learning patches by default. Studio may offer "Open as New Graph" to copy a help graph into the user's editable patch, but the canonical help graph itself is not mutated.

@@ -6,10 +6,11 @@
   "nodes": [
     {
       "id": "speed_1",
-      "kind": "core.value-f32",
+      "kind": "core.float",
       "kindVersion": "0.1.0",
       "params": {
-        "value": 0.35
+        "value": 0.35,
+        "representation": "f32"
       },
       "ports": [
         {
@@ -18,17 +19,25 @@
           "label": "Value",
           "type": {
             "flow": "value",
-            "dataKind": "number.f32"
+            "dataKind": "number.float",
+            "format": "f32"
           }
         }
       ]
     },
     {
       "id": "tint_1",
-      "kind": "core.color-rgba",
+      "kind": "core.color",
       "kindVersion": "0.1.0",
       "params": {
-        "value": [0.2, 0.6, 1, 1]
+        "value": [
+          0.2,
+          0.6,
+          1,
+          1
+        ],
+        "representation": "rgba32f",
+        "colorSpace": "linear"
       },
       "ports": [
         {
@@ -37,7 +46,9 @@
           "label": "Color",
           "type": {
             "flow": "value",
-            "dataKind": "color.rgba"
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
           }
         }
       ]
@@ -48,7 +59,7 @@
       "kindVersion": "0.1.0",
       "params": {
         "language": "wgsl",
-        "source": "// @skenion.uniform speed number.f32 default=0.35\n// @skenion.uniform tint color.rgba default=[0.2,0.6,1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint * skenion_uniforms.speed; }"
+        "source": "// @skenion.uniform speed number.float default=0.35\n// @skenion.uniform tint color default=[0.2,0.6,1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint * skenion_uniforms.speed; }"
       },
       "ports": [
         {
@@ -57,7 +68,8 @@
           "label": "Speed",
           "type": {
             "flow": "value",
-            "dataKind": "number.f32"
+            "dataKind": "number.float",
+            "format": "f32"
           },
           "activation": "latched"
         },
@@ -67,7 +79,9 @@
           "label": "Tint",
           "type": {
             "flow": "value",
-            "dataKind": "color.rgba"
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
           },
           "activation": "latched"
         },

@@ -179,7 +179,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
 
         if !matches!(
             raw_type,
-            "number.f32" | "number.i32" | "boolean" | "color.rgba"
+            "number.float" | "number.int" | "number.uint" | "boolean" | "color"
         ) {
             diagnostics.push(diagnostic(
                 "unsupported-uniform-type",
@@ -344,6 +344,16 @@ fn data_type_for(
         max: number_attribute(attributes, "max"),
         step: number_attribute(attributes, "step").filter(|value| *value > 0.0),
     };
+    let (format, color_space) = match data_kind {
+        "number.float" => (Some(super::StringOrStringsV01::One("f32".to_owned())), None),
+        "number.int" => (Some(super::StringOrStringsV01::One("i32".to_owned())), None),
+        "number.uint" => (Some(super::StringOrStringsV01::One("u32".to_owned())), None),
+        "color" => (
+            Some(super::StringOrStringsV01::One("rgba32f".to_owned())),
+            Some("linear".to_owned()),
+        ),
+        _ => (None, None),
+    };
     DataTypeV01 {
         flow: DataFlowV01::Value,
         data_kind: data_kind.to_owned(),
@@ -353,8 +363,8 @@ fn data_type_for(
         shape: None,
         channels: None,
         sample_rate: None,
-        format: None,
-        color_space: None,
+        format,
+        color_space,
         frame_rate: None,
         alpha_policy: None,
         values: None,
@@ -419,23 +429,27 @@ fn attribute_column(line: &str, key: &str) -> Option<usize> {
 
 fn parse_default(data_kind: &str, value: &str) -> Result<Value, String> {
     match data_kind {
-        "number.f32" => value
+        "number.float" => value
             .parse::<f64>()
             .ok()
             .filter(|value| value.is_finite())
             .and_then(Number::from_f64)
             .map(Value::Number)
-            .ok_or_else(|| format!("invalid number.f32 default: {value}")),
-        "number.i32" => value
+            .ok_or_else(|| format!("invalid number.float default: {value}")),
+        "number.int" => value
             .parse::<i64>()
             .map(|value| Value::Number(Number::from(value)))
-            .map_err(|_| format!("invalid number.i32 default: {value}")),
+            .map_err(|_| format!("invalid number.int default: {value}")),
+        "number.uint" => value
+            .parse::<u64>()
+            .map(|value| Value::Number(Number::from(value)))
+            .map_err(|_| format!("invalid number.uint default: {value}")),
         "boolean" => match value {
             "true" => Ok(Value::Bool(true)),
             "false" => Ok(Value::Bool(false)),
             _ => Err(format!("invalid boolean default: {value}")),
         },
-        "color.rgba" => serde_json::from_str::<Value>(value)
+        "color" => serde_json::from_str::<Value>(value)
             .ok()
             .filter(|parsed| {
                 parsed.as_array().is_some_and(|items| {
@@ -445,7 +459,7 @@ fn parse_default(data_kind: &str, value: &str) -> Result<Value, String> {
                             .all(|item| item.as_f64().is_some_and(f64::is_finite))
                 })
             })
-            .ok_or_else(|| format!("invalid color.rgba default: {value}")),
+            .ok_or_else(|| format!("invalid color default: {value}")),
         _ => Err(format!("unsupported uniform type: {data_kind}")),
     }
 }
@@ -507,10 +521,10 @@ mod tests {
     #[test]
     fn analyzes_annotations_and_generates_ports() {
         let source = r#"
-// @skenion.uniform speed number.f32 default=0.5 min=0 max=2 step=0.01 label="Speed Amount"
+// @skenion.uniform speed number.float default=0.5 min=0 max=2 step=0.01 label="Speed Amount"
 // @skenion.uniform enabled boolean default=false
-// @skenion.uniform iterations number.i32 default=8
-// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1]
+// @skenion.uniform iterations number.int default=8
+// @skenion.uniform tint color default=[1,0.2,0.1,1]
 "#;
         let analysis = analyze_shader_interface_v01(source);
 
@@ -520,7 +534,7 @@ mod tests {
         assert_eq!(analysis.shader_interface.uniforms[0].label, "Speed Amount");
         assert_eq!(
             analysis.shader_interface.uniforms[0].data_type.data_kind,
-            "number.f32"
+            "number.float"
         );
         assert_eq!(
             analysis.shader_interface.uniforms[0].default,
@@ -547,8 +561,8 @@ mod tests {
     #[test]
     fn handles_annotation_attribute_grammar() {
         let source = r#"
-// @skenion.uniform shaderSpeed_value number.f32 label="Shader \"Speed\"" junk default=0.25 min=-1 max=1 step=0.5
-// @skenion.uniform phase number.f32 label=Phase stray
+// @skenion.uniform shaderSpeed_value number.float label="Shader \"Speed\"" junk default=0.25 min=-1 max=1 step=0.5
+// @skenion.uniform phase number.float label=Phase stray
 // @skenion.uniform ready boolean default=true
 "#;
         let analysis = analyze_shader_interface_v01(source);
@@ -606,16 +620,16 @@ mod tests {
 // malformed @skenion.uniform marker
 // @skenion.uniform
 // @skenion.uniform only_id
-// @skenion.uniform 1bad number.f32
-// @skenion.uniform out number.f32
+// @skenion.uniform 1bad number.float
+// @skenion.uniform out number.float
 // @skenion.uniform speed vec3
-// @skenion.uniform speed number.f32
-// @skenion.uniform broken number.f32 default=nope
+// @skenion.uniform speed number.float
+// @skenion.uniform broken number.float default=nope
 // @skenion.uniform flag boolean default=maybe
-// @skenion.uniform count number.i32 default=1.2
-// @skenion.uniform tint color.rgba default=nope
-// @skenion.uniform bad_tint color.rgba default=[1,2,3,"x"]
-// @skenion.uniform ranged number.f32 min=nope max=Infinity step=-1
+// @skenion.uniform count number.int default=1.2
+// @skenion.uniform tint color default=nope
+// @skenion.uniform bad_tint color default=[1,2,3,"x"]
+// @skenion.uniform ranged number.float min=nope max=Infinity step=-1
 "#;
         let analysis = analyze_shader_interface_v01(source);
 

@@ -13,7 +13,7 @@
   ],
   "runtimeBehavior": "in updates and emits, set updates silently, and bang flips the stored boolean before emitting it.",
   "relatedNodes": [
-    "core.value-bool",
+    "core.bool",
     "core.bang-button",
     "core.message"
   ],

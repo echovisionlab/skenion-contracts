@@ -6,10 +6,11 @@
   "nodes": [
     {
       "id": "value_1",
-      "kind": "core.value-f32",
+      "kind": "core.float",
       "kindVersion": "0.1.0",
       "params": {
-        "value": 0.75
+        "value": 0.75,
+        "representation": "f32"
       },
       "ports": [
         {
@@ -18,7 +19,8 @@
           "label": "Value",
           "type": {
             "flow": "value",
-            "dataKind": "number.f32"
+            "dataKind": "number.float",
+            "format": "f32"
           }
         }
       ]
@@ -35,7 +37,8 @@
           "label": "Value",
           "type": {
             "flow": "value",
-            "dataKind": "number.f32"
+            "dataKind": "number.float",
+            "format": "f32"
           },
           "activation": "latched"
         }

@@ -5,9 +5,14 @@
   "summary": "Documents a patch without participating in execution.",
   "description": "Comment nodes are persisted graph annotations. They render as canvas text and do not participate in runtime control dispatch.",
   "helpGraph": "help/v0.1/nodes/core.comment.help.graph.json",
-  "tags": ["documentation", "annotation"],
+  "tags": [
+    "documentation",
+    "annotation"
+  ],
   "runtimeBehavior": "Comment has no runtime state, no ports, and no output. Inspector edits are graph patches.",
-  "relatedNodes": ["core.message"],
+  "relatedNodes": [
+    "core.message"
+  ],
   "ports": [],
   "params": [
     {

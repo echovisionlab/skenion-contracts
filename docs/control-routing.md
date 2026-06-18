@@ -16,10 +16,10 @@ The v0.1 channel key is:
 Examples:
 
 ```text
-number.f32:speed
-number.i32:iterations
+number.float:speed
+number.int:iterations
 boolean:enabled
-color.rgba:tint
+color:tint
 string:status
 event.bang:reset
 ```
@@ -49,10 +49,10 @@ shader or render reads from channel names are not part of v0.1.
 
 Primary routing-capable objects include:
 
-- `core.value-f32`, `core.value-i32`, `core.value-bool`
-- `core.color-rgba`, `core.string`, `core.message`
+- `core.float`, `core.int`, `core.bool`
+- `core.color`, `core.string`, `core.message`
 - `core.comment`, `core.panel`
-- `ui.button`, `ui.slider-f32`, `ui.toggle`
+- `ui.button`, `ui.slider-float`, `ui.toggle`
 
 ## Panel Controls
 
@@ -60,7 +60,7 @@ Panel control nodes emit runtime control events. These interactions are
 performance-time state changes, not graph edits:
 
 - `ui.button` accepts any incoming message and emits `event.bang`
-- `ui.slider-f32` accepts `in`, `set`, and `bang` and emits `value<number.f32>`
+- `ui.slider-float` accepts `in`, `set`, and `bang` and emits `value<number.float>`
 - `ui.toggle` accepts `bang`, `0/1`, `off/on`, `false/true`, and `set` forms
 
 Changing graph parameters such as `label`, `min`, `max`, `step`, `sendName`, or

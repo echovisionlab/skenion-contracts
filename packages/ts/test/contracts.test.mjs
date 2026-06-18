@@ -21,7 +21,10 @@ import {
   invertGraphPatch,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  planConversion,
   projectV01Schema,
+  representationForDataType,
+  representationRegistryV01,
   shaderDiagnosticV01Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema,
@@ -75,11 +78,27 @@ test("validates control messages as selector and atoms", () => {
     selector: "set",
     atoms: [
       { type: "f32", value: 0.75 },
+      { type: "float", representation: "f32", value: 0.75 },
+      { type: "int", representation: "i32", value: 3 },
+      { type: "uint", representation: "u8", value: 255 },
       { type: "string", value: "speed" },
-      { type: "rgba", value: [1, 0.25, 0, 1] }
+      { type: "color", representation: "rgba32f", value: [1, 0.25, 0, 1] }
     ]
   });
-  assert.equal(set.ok, true);
+  assert.equal(set.ok, false);
+  assert.match(set.errors.join("\n"), /must be equal to constant/);
+
+  const canonicalSet = validateControlMessage({
+    selector: "set",
+    atoms: [
+      { type: "float", representation: "f32", value: 0.75 },
+      { type: "int", representation: "i32", value: 3 },
+      { type: "uint", representation: "u8", value: 255 },
+      { type: "string", value: "speed" },
+      { type: "color", representation: "rgba32f", value: [1, 0.25, 0, 1] }
+    ]
+  });
+  assert.equal(canonicalSet.ok, true);
 
   const invalidLegacyBang = validateControlMessage({ type: "bang" });
   assert.equal(invalidLegacyBang.ok, false);
@@ -259,21 +278,20 @@ test("rejects edges with missing source ports and non-input targets", async () =
   assert.match(result.errors.join("\n"), /edge target slider_1:out is not an input port/);
 });
 
-test("rejects source formats not accepted by a target port", async () => {
+test("accepts numeric representation mismatches as implicit conversion", async () => {
   const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.nodes[0].ports[0].type.format = "float32";
-  graph.nodes[1].ports[0].type.format = ["float64"];
+  graph.nodes[0].ports[0].type.format = "f32";
+  graph.nodes[1].ports[0].type.format = "f16";
 
   const result = validateGraphDocument(graph);
 
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /incompatible edge/);
+  assert.equal(result.ok, true);
 });
 
 test("accepts source formats included by a target port", async () => {
   const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.nodes[0].ports[0].type.format = "float32";
-  graph.nodes[1].ports[0].type.format = ["float16", "float32"];
+  graph.nodes[0].ports[0].type.format = "f32";
+  graph.nodes[1].ports[0].type.format = ["f16", "f32"];
 
   const result = validateGraphDocument(graph);
 
@@ -282,18 +300,18 @@ test("accepts source formats included by a target port", async () => {
 
 test("accepts absent source or target format constraints", async () => {
   const graphWithOnlyTargetFormat = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graphWithOnlyTargetFormat.nodes[1].ports[0].type.format = "float32";
+  graphWithOnlyTargetFormat.nodes[1].ports[0].type.format = "f32";
   assert.equal(validateGraphDocument(graphWithOnlyTargetFormat).ok, true);
 
   const graphWithOnlySourceFormat = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graphWithOnlySourceFormat.nodes[0].ports[0].type.format = "float32";
+  graphWithOnlySourceFormat.nodes[0].ports[0].type.format = "f32";
   assert.equal(validateGraphDocument(graphWithOnlySourceFormat).ok, true);
 });
 
 test("accepts target scalar formats that include every source format", async () => {
   const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.nodes[0].ports[0].type.format = ["float32"];
-  graph.nodes[1].ports[0].type.format = "float32";
+  graph.nodes[0].ports[0].type.format = ["f32"];
+  graph.nodes[1].ports[0].type.format = "f32";
 
   const result = validateGraphDocument(graph);
 
@@ -312,26 +330,33 @@ test("exports canonical v0.1 builtin node definitions", () => {
 
   assert.deepEqual([...ids].sort(), [...builtinManifestV01.nodes].sort());
 
-  const valueDefinition = getBuiltinNodeDefinition("core.value-f32");
+  const valueDefinition = getBuiltinNodeDefinition("core.float");
   assert.deepEqual(valueDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
   assert.equal(valueDefinition?.ports.find((port) => port.id === "in")?.activation, "trigger");
   assert.equal(valueDefinition?.ports.find((port) => port.id === "set")?.activation, "latched");
   assert.equal(valueDefinition?.ports.find((port) => port.id === "bang")?.type.dataKind, "event.bang");
   const valueOutputType = valueDefinition?.ports.find((port) => port.id === "value")?.type;
-  assert.equal(valueOutputType?.dataKind, "number.f32");
+  assert.equal(valueOutputType?.dataKind, "number.float");
   assert.equal(Boolean(valueOutputType && "range" in valueOutputType), false);
 
-  const i32Definition = getBuiltinNodeDefinition("core.value-i32");
+  const i32Definition = getBuiltinNodeDefinition("core.int");
   assert.deepEqual(i32Definition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
-  assert.equal(i32Definition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.i32");
+  assert.equal(i32Definition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.int");
+  assert.equal(i32Definition?.ports.find((port) => port.id === "value")?.type.format, "i32");
 
-  const boolDefinition = getBuiltinNodeDefinition("core.value-bool");
+  const uintDefinition = getBuiltinNodeDefinition("core.uint");
+  assert.deepEqual(uintDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.equal(uintDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.uint");
+  assert.equal(uintDefinition?.ports.find((port) => port.id === "value")?.type.format, "u32");
+
+  const boolDefinition = getBuiltinNodeDefinition("core.bool");
   assert.deepEqual(boolDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
   assert.equal(boolDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "boolean");
 
-  const colorDefinition = getBuiltinNodeDefinition("core.color-rgba");
+  const colorDefinition = getBuiltinNodeDefinition("core.color");
   assert.deepEqual(colorDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
-  assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "color.rgba");
+  assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "color");
+  assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.format, "rgba32f");
 
   const stringDefinition = getBuiltinNodeDefinition("core.string");
   assert.deepEqual(stringDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
@@ -354,9 +379,9 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.equal(messageDefinition?.ports.find((port) => port.id === "set")?.type.dataKind, "message.any");
   assert.equal(messageDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "message.any");
 
-  const sliderDefinition = getBuiltinNodeDefinition("ui.slider-f32");
+  const sliderDefinition = getBuiltinNodeDefinition("ui.slider-float");
   assert.deepEqual(sliderDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
-  assert.equal(sliderDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.f32");
+  assert.equal(sliderDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.float");
 
   const buttonDefinition = getBuiltinNodeDefinition("ui.button");
   assert.deepEqual(buttonDefinition?.ports.map((port) => port.id), ["in", "bang"]);
@@ -384,23 +409,133 @@ test("exports the canonical v0.1 builtin manifest", () => {
     [...builtinManifestV01.nodes].sort(),
     builtinNodeDefinitionsV01.map((definition) => definition.id).sort()
   );
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.f32"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.i32"), true);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.float"), true);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.int"), true);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.uint"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("boolean"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("string"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("message.any"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("event.bang"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("f32"), false);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.f32"), false);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
+  assert.deepEqual(builtinManifestV01.representations["number.float"].includes("f8.e4m3"), true);
+  assert.deepEqual(builtinManifestV01.representations.color.includes("rgba8unorm"), true);
+});
+
+test("plans implicit numeric and color representation conversions", () => {
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "f8.e4m3"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "rgba8unorm"), true);
+
+  const floatToByte = planConversion(
+    { flow: "value", dataKind: "number.float", format: "f32" },
+    { flow: "value", dataKind: "number.uint", format: "u8" }
+  );
+  assert.equal(floatToByte.ok, true);
+  assert.equal(floatToByte.lossy, true);
+  assert.equal(floatToByte.steps[0].policy, "float-to-integer");
+  assert.equal(floatToByte.steps[0].clamp, "saturating");
+  assert.equal(floatToByte.steps[0].trunc, "toward-zero");
+
+  const messageSink = planConversion(
+    { flow: "value", dataKind: "string" },
+    { flow: "event", dataKind: "message.any" }
+  );
+  assert.equal(messageSink.ok, true);
+  assert.equal(messageSink.lossy, false);
+
+  assert.equal(representationForDataType({ flow: "value", dataKind: "number.float", format: ["f16", "f32"] }), "f16");
+  assert.equal(representationForDataType({ flow: "value", dataKind: "number.uint" }), "u32");
+  assert.equal(representationForDataType({ flow: "value", dataKind: "string" }), undefined);
+
+  const intNarrow = planConversion(
+    { flow: "value", dataKind: "number.int", format: "i32" },
+    { flow: "value", dataKind: "number.int", format: "i8" }
+  );
+  assert.equal(intNarrow.ok, true);
+  assert.equal(intNarrow.lossy, true);
+  assert.equal(intNarrow.steps[0].policy, "numeric-cast");
+
+  const colorToUnorm = planConversion(
+    { flow: "value", dataKind: "color", format: "rgba32f" },
+    { flow: "value", dataKind: "color", format: "rgba8unorm" }
+  );
+  assert.equal(colorToUnorm.ok, true);
+  assert.equal(colorToUnorm.lossy, true);
+  assert.equal(colorToUnorm.steps[0].policy, "color-cast");
+  assert.equal(colorToUnorm.steps[0].clamp, "unit");
+
+  const intToFloat = planConversion(
+    { flow: "value", dataKind: "number.int", format: "i32" },
+    { flow: "value", dataKind: "number.float", format: "f32" }
+  );
+  assert.equal(intToFloat.ok, true);
+  assert.equal(intToFloat.steps[0].policy, "integer-to-float");
+
+  const uintToInt = planConversion(
+    { flow: "value", dataKind: "number.uint", format: "u32" },
+    { flow: "value", dataKind: "number.int", format: "i16" }
+  );
+  assert.equal(uintToInt.ok, true);
+  assert.equal(uintToInt.steps[0].policy, "integer-signedness");
+
+  const colorIdentity = planConversion(
+    { flow: "value", dataKind: "color", format: "rgba32f" },
+    { flow: "value", dataKind: "color", format: "rgba32f" }
+  );
+  assert.equal(colorIdentity.ok, true);
+  assert.equal(colorIdentity.lossy, false);
+  assert.equal(colorIdentity.diagnostics.length, 0);
+
+  const incompatible = planConversion(
+    { flow: "value", dataKind: "boolean" },
+    { flow: "event", dataKind: "event.bang" }
+  );
+  assert.equal(incompatible.ok, false);
+
+  const sameFlowIncompatible = planConversion(
+    { flow: "value", dataKind: "boolean" },
+    { flow: "value", dataKind: "color", format: "rgba32f" }
+  );
+  assert.equal(sameFlowIncompatible.ok, false);
+
+  const numericToBoolean = planConversion(
+    { flow: "value", dataKind: "number.float", format: "f32" },
+    { flow: "value", dataKind: "boolean" }
+  );
+  assert.equal(numericToBoolean.ok, false);
+
+  const booleanToNumeric = planConversion(
+    { flow: "value", dataKind: "boolean" },
+    { flow: "value", dataKind: "number.float", format: "f32" }
+  );
+  assert.equal(booleanToNumeric.ok, false);
+
+  const unknownRepresentation = planConversion(
+    { flow: "value", dataKind: "number.float", format: "float.custom" },
+    { flow: "value", dataKind: "number.float", format: "float.other" }
+  );
+  assert.equal(unknownRepresentation.ok, true);
+  assert.equal(unknownRepresentation.lossy, true);
+
+  assert.equal(planConversion(
+    { flow: "value", dataKind: "number.float", format: "f32" },
+    { flow: "value", dataKind: "number.float", format: "float.other" }
+  ).ok, true);
+  assert.equal(planConversion(
+    { flow: "value", dataKind: "number.float", format: "float.custom" },
+    { flow: "value", dataKind: "number.float", format: "f32" }
+  ).ok, true);
 });
 
 test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
   const source = [
-    "// @skenion.uniform speed number.f32 default=0.5 min=0 max=2 step=0.01 label=\"Speed Amount\"",
+    "// @skenion.uniform speed number.float default=0.5 min=0 max=2 step=0.01 label=\"Speed Amount\"",
     "// @skenion.uniform enabled boolean default=true",
     "// @skenion.uniform disabled boolean default=false",
-    "// @skenion.uniform iterations number.i32 default=8",
-    "// @skenion.uniform tint color.rgba default=[1,0.2,0.1,1]",
+    "// @skenion.uniform iterations number.int default=8",
+    "// @skenion.uniform seed number.uint default=4",
+    "// @skenion.uniform tint color default=[1,0.2,0.1,1]",
     "fn fs_main() -> @location(0) vec4<f32> { return vec4<f32>(1.0); }"
   ].join("\n");
 
@@ -412,38 +547,44 @@ test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
   assert.deepEqual(
     result.shaderInterface.uniforms.map((uniform) => [uniform.id, uniform.type.dataKind, uniform.default]),
     [
-      ["speed", "number.f32", 0.5],
+      ["speed", "number.float", 0.5],
       ["enabled", "boolean", true],
       ["disabled", "boolean", false],
-      ["iterations", "number.i32", 8],
-      ["tint", "color.rgba", [1, 0.2, 0.1, 1]]
+      ["iterations", "number.int", 8],
+      ["seed", "number.uint", 4],
+      ["tint", "color", [1, 0.2, 0.1, 1]]
     ]
   );
   assert.equal(result.shaderInterface.uniforms[0].label, "Speed Amount");
   assert.deepEqual(result.shaderInterface.uniforms[0].type.range, { min: 0, max: 2, step: 0.01 });
+  assert.equal(result.shaderInterface.uniforms[0].type.format, "f32");
+  assert.equal(result.shaderInterface.uniforms[3].type.format, "i32");
+  assert.equal(result.shaderInterface.uniforms[4].type.format, "u32");
+  assert.equal(result.shaderInterface.uniforms[5].type.format, "rgba32f");
 
   const ports = shaderInterfaceToPortsV01(result.shaderInterface);
-  assert.deepEqual(ports.map((port) => port.id), ["speed", "enabled", "disabled", "iterations", "tint", "out"]);
+  assert.deepEqual(ports.map((port) => port.id), ["speed", "enabled", "disabled", "iterations", "seed", "tint", "out"]);
   assert.equal(ports[0].activation, "latched");
-  assert.equal(ports[5].direction, "output");
-  assert.equal(ports[5].type.dataKind, "gpu.texture2d");
+  assert.equal(ports[6].direction, "output");
+  assert.equal(ports[6].type.dataKind, "gpu.texture2d");
 });
 
 test("reports shader uniform annotation diagnostics", () => {
   const source = [
     "// @skenion.uniform",
     "const note = \"@skenion.uniform\";",
-    "// @skenion.uniform 1bad number.f32 default=nope min=nope step=-1",
-    "// @skenion.uniform out number.f32",
+    "// @skenion.uniform 1bad number.float default=nope min=nope step=-1",
+    "// @skenion.uniform out number.float",
     "// @skenion.uniform speed vec3 default=0",
-    "// @skenion.uniform speed number.f32 default=0.2",
-    "// @skenion.uniform badFloat number.f32 default=nope",
+    "// @skenion.uniform speed number.float default=0.2",
+    "// @skenion.uniform badFloat number.float default=nope",
     "// @skenion.uniform flag boolean default=maybe",
-    "// @skenion.uniform count number.i32 default=1.5",
-    "// @skenion.uniform color color.rgba default=nope",
-    "// @skenion.uniform color2 color.rgba default=[1,2,3]",
-    "// @skenion.uniform ranged number.f32 min=nope max=Infinity step=-1",
-    "// @skenion.uniform plain number.f32 label=Plain"
+    "// @skenion.uniform count number.int default=1.5",
+    "// @skenion.uniform badSeed number.uint default=-1",
+    "// @skenion.uniform color color default=nope",
+    "// @skenion.uniform color2 color default=[1,2,3]",
+    "// @skenion.uniform ranged number.float min=nope max=Infinity step=-1",
+    "// @skenion.uniform plain number.float label=Plain"
   ].join("\n");
 
   const result = analyzeShaderInterfaceV01(source, { language: "glsl" });
@@ -463,6 +604,7 @@ test("reports shader uniform annotation diagnostics", () => {
       "invalid-default",
       "invalid-default",
       "invalid-default",
+      "invalid-default",
       "invalid-number-range",
       "invalid-number-range",
       "invalid-number-range"
@@ -474,7 +616,7 @@ test("reports shader uniform annotation diagnostics", () => {
   );
   assert.equal(result.diagnostics[1]?.line, 1);
   assert.equal(result.diagnostics[1]?.column, 4);
-  assert.equal(result.diagnostics.find((diagnostic) => diagnostic.code === "invalid-default")?.column, 41);
+  assert.equal(result.diagnostics.find((diagnostic) => diagnostic.code === "invalid-default")?.column, 43);
   assert.equal(result.shaderInterface.uniforms.at(-1)?.label, "Plain");
 });
 
@@ -487,7 +629,7 @@ test("rejects schema-invalid shader interfaces", () => {
       {
         id: "out",
         label: "Out",
-        type: { flow: "value", dataKind: "number.f32" },
+        type: { flow: "value", dataKind: "number.float" },
         required: false
       }
     ]
@@ -506,11 +648,11 @@ test("exports builtin node help", () => {
     [...builtinManifestV01.nodes].sort()
   );
 
-  const valueHelp = getBuiltinNodeHelp("core.value-f32");
+  const valueHelp = getBuiltinNodeHelp("core.float");
   assert.match(valueHelp?.summary ?? "", /floating-point/);
   assert.deepEqual(valueHelp?.ports?.map((port) => port.id), ["in", "set", "bang", "value"]);
-  assert.equal(valueHelp?.docsPath, "docs/nodes/core.value-f32.md");
-  assert.equal(valueHelp?.helpGraph, "help/v0.1/nodes/core.value-f32.help.graph.json");
+  assert.equal(valueHelp?.docsPath, "docs/nodes/core.float.md");
+  assert.equal(valueHelp?.helpGraph, "help/v0.1/nodes/core.float.help.graph.json");
   assert.equal(valueHelp?.tags.includes("control"), true);
 
   const toggleHelp = getBuiltinNodeHelp("core.toggle");
@@ -520,8 +662,8 @@ test("exports builtin node help", () => {
   assert.match(shaderHelp?.runtimeBehavior ?? "", /dynamic uniform layout/);
   assert.equal(shaderHelp?.relatedNodes?.includes("render.output"), true);
 
-  const valueHelpGraph = getBuiltinNodeHelpGraph("core.value-f32");
-  assert.equal(valueHelpGraph?.id, "help-core-value-f32");
+  const valueHelpGraph = getBuiltinNodeHelpGraph("core.float");
+  assert.equal(valueHelpGraph?.id, "help-core-float");
   assert.equal(validateGraphDocument(valueHelpGraph).ok, true);
   assert.deepEqual(valueHelpGraph?.edges[0], {
     from: { node: "bang_1", port: "bang" },
@@ -858,7 +1000,7 @@ test("setNodeParams addNode and removeNode apply in order", async () => {
         op: "addNode",
         node: {
           id: "value_2",
-          kind: "core.value-f32",
+          kind: "core.float",
           kindVersion: "0.1.0",
           params: {},
           ports: []
@@ -1011,14 +1153,14 @@ test("replaceNodeInterface updates ports and removes invalid incident edges", as
   graph.nodes.push(
     {
       id: "source_2",
-      kind: "core.value-f32",
+      kind: "core.float",
       kindVersion: "0.1.0",
       params: {},
       ports: [
         {
           id: "value",
           direction: "output",
-          type: { flow: "value", dataKind: "number.f32" }
+          type: { flow: "value", dataKind: "number.float" }
         }
       ]
     },
@@ -1031,7 +1173,7 @@ test("replaceNodeInterface updates ports and removes invalid incident edges", as
         {
           id: "value",
           direction: "input",
-          type: { flow: "value", dataKind: "number.f32" },
+          type: { flow: "value", dataKind: "number.float" },
           required: false,
           activation: "latched"
         }
@@ -1091,7 +1233,7 @@ test("replaceNodeInterface keeps compatible edges and inverts removed edges", as
             id: "radius",
             direction: "input",
             label: "Radius",
-            type: { flow: "value", dataKind: "number.f32" },
+            type: { flow: "value", dataKind: "number.float" },
             required: false,
             activation: "latched"
           }
@@ -1104,7 +1246,7 @@ test("replaceNodeInterface keeps compatible edges and inverts removed edges", as
 
   const scalarSourceFormatGraph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
   scalarSourceFormatGraph.revision = "1";
-  scalarSourceFormatGraph.nodes[0].ports[0].type.format = "float32";
+  scalarSourceFormatGraph.nodes[0].ports[0].type.format = "f32";
   const scalarSourceFormatResult = applyGraphPatch(scalarSourceFormatGraph, {
     schema: "skenion.graph.patch",
     schemaVersion: "0.1.0",
@@ -1120,7 +1262,7 @@ test("replaceNodeInterface keeps compatible edges and inverts removed edges", as
             id: "radius",
             direction: "input",
             label: "Radius",
-            type: { flow: "value", dataKind: "number.f32", format: ["float32"] },
+            type: { flow: "value", dataKind: "number.float", format: ["f32"] },
             required: false,
             activation: "latched"
           }
@@ -1133,7 +1275,7 @@ test("replaceNodeInterface keeps compatible edges and inverts removed edges", as
 
   const formatMismatchGraph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
   formatMismatchGraph.revision = "1";
-  formatMismatchGraph.nodes[0].ports[0].type.format = ["float16"];
+  formatMismatchGraph.nodes[0].ports[0].type.format = ["f16"];
   const formatMismatchResult = applyGraphPatch(formatMismatchGraph, {
     schema: "skenion.graph.patch",
     schemaVersion: "0.1.0",
@@ -1149,7 +1291,7 @@ test("replaceNodeInterface keeps compatible edges and inverts removed edges", as
             id: "radius",
             direction: "input",
             label: "Radius",
-            type: { flow: "value", dataKind: "number.f32", format: "float32" },
+            type: { flow: "value", dataKind: "number.float", format: "f32" },
             required: false,
             activation: "latched"
           }
@@ -1158,15 +1300,15 @@ test("replaceNodeInterface keeps compatible edges and inverts removed edges", as
     ]
   }, { nextRevision: "2" });
   assert.equal(formatMismatchResult.ok, true);
-  assert.equal(formatMismatchResult.graph.edges.length, 0);
+  assert.equal(formatMismatchResult.graph.edges.length, 1);
 
-  graph.nodes[0].ports[0].type.format = ["float32"];
+  graph.nodes[0].ports[0].type.format = ["f32"];
   const replacementPorts = [
     {
       id: "radius",
       direction: "input",
       label: "Radius",
-      type: { flow: "value", dataKind: "number.f32", format: ["float32"] },
+      type: { flow: "value", dataKind: "number.float", format: ["f32"] },
       required: false,
       activation: "latched"
     },
@@ -1266,7 +1408,7 @@ test("inverts add node and add edge patches in reverse order", async () => {
       {
         id: "value",
         direction: "input",
-        type: { flow: "value", dataKind: "number.f32" },
+        type: { flow: "value", dataKind: "number.float" },
         activation: "latched"
       }
     ]

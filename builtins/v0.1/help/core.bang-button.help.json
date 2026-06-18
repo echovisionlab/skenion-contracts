@@ -5,9 +5,17 @@
   "summary": "Emits a discrete bang event.",
   "description": "Bang Button is the simplest manual trigger. It emits event.bang and does not carry a continuous value.",
   "helpGraph": "help/v0.1/nodes/core.bang-button.help.graph.json",
-  "tags": ["event", "trigger", "control"],
+  "tags": [
+    "event",
+    "trigger",
+    "control"
+  ],
   "runtimeBehavior": "When activated, the node emits one event.bang from its bang output.",
-  "relatedNodes": ["core.value-f32", "core.toggle", "core.message"],
+  "relatedNodes": [
+    "core.float",
+    "core.toggle",
+    "core.message"
+  ],
   "ports": [
     {
       "id": "bang",

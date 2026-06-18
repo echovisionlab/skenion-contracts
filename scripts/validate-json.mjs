@@ -50,14 +50,7 @@ function typeLabel(type) {
   return `${type.flow}<${type.kind}>`;
 }
 
-function formatAccepts(targetFormat, sourceFormat) {
-  if (targetFormat === undefined || sourceFormat === undefined) {
-    return true;
-  }
-  const targetFormats = Array.isArray(targetFormat) ? targetFormat : [targetFormat];
-  const sourceFormats = Array.isArray(sourceFormat) ? sourceFormat : [sourceFormat];
-  return sourceFormats.every((format) => targetFormats.includes(format));
-}
+const numericDataKinds = new Set(["number.float", "number.int", "number.uint"]);
 
 function compatibleTypes(sourceType, targetType) {
   if (targetType.dataKind === "message.any") {
@@ -66,13 +59,10 @@ function compatibleTypes(sourceType, targetType) {
   if (sourceType.flow !== targetType.flow) {
     return false;
   }
-  if (sourceType.dataKind !== targetType.dataKind) {
-    return false;
+  if (sourceType.dataKind === targetType.dataKind) {
+    return true;
   }
-  if (!formatAccepts(targetType.format, sourceType.format)) {
-    return false;
-  }
-  return true;
+  return numericDataKinds.has(sourceType.dataKind) && numericDataKinds.has(targetType.dataKind);
 }
 
 function validatePorts(file, nodeId, ports) {
@@ -153,11 +143,35 @@ function dataKindsInDefinition(definition) {
   return definition.ports.map((port) => port.type.dataKind);
 }
 
+function validateRepresentationManifest(manifestFile, manifest) {
+  const required = {
+    "number.float": ["f32"],
+    "number.int": ["i32"],
+    "number.uint": ["u32"],
+    color: ["rgba32f"]
+  };
+  if (!manifest.representations || typeof manifest.representations !== "object") {
+    fail(manifestFile, "manifest must declare representations");
+  }
+  for (const [dataKind, representations] of Object.entries(required)) {
+    const actual = manifest.representations[dataKind];
+    if (!Array.isArray(actual)) {
+      fail(manifestFile, `representations.${dataKind} must be an array`);
+    }
+    for (const representation of representations) {
+      if (!actual.includes(representation)) {
+        fail(manifestFile, `representations.${dataKind} must include ${representation}`);
+      }
+    }
+  }
+}
+
 function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
   const manifest = builtinFileDocuments.get(manifestFile);
   validateBuiltinsManifest(manifestFile, manifest);
   const requiredBuiltinIds = manifest.nodes;
   const canonicalDataKinds = new Set(manifest.canonicalDataKinds);
+  validateRepresentationManifest(manifestFile, manifest);
   const definitions = [];
 
   for (const file of builtinNodeFiles) {
@@ -196,16 +210,17 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
     }
   }
 
-  validateTypedValueBuiltin(definitions, "core.value-f32", "number.f32", "Value");
-  validateTypedValueBuiltin(definitions, "core.value-i32", "number.i32", "Value");
-  validateTypedValueBuiltin(definitions, "core.value-bool", "boolean", "Value");
-  validateTypedValueBuiltin(definitions, "core.color-rgba", "color.rgba", "Color");
+  validateTypedValueBuiltin(definitions, "core.float", "number.float", "Value");
+  validateTypedValueBuiltin(definitions, "core.int", "number.int", "Value");
+  validateTypedValueBuiltin(definitions, "core.uint", "number.uint", "Value");
+  validateTypedValueBuiltin(definitions, "core.bool", "boolean", "Value");
+  validateTypedValueBuiltin(definitions, "core.color", "color", "Color");
   validateTypedValueBuiltin(definitions, "core.string", "string", "Value");
   validateTypedValueBuiltin(definitions, "core.toggle", "boolean", "Value");
   validateCommentBuiltin(definitions);
   validateMessageBuiltin(definitions);
   validateUiButtonBuiltin(definitions);
-  validateUiPanelValueBuiltin(definitions, "ui.slider-f32", "number.f32");
+  validateUiPanelValueBuiltin(definitions, "ui.slider-float", "number.float");
   validateUiToggleBuiltin(definitions);
 
   const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
@@ -510,8 +525,10 @@ function validateBuiltinsManifest(file, manifest) {
   }
   duplicateCheck(file, manifest.nodes, "manifest node id");
   duplicateCheck(file, manifest.canonicalDataKinds, "canonical dataKind");
-  if (manifest.canonicalDataKinds.includes("f32")) {
-    fail(file, "legacy dataKind f32 must not be canonical");
+  for (const forbidden of ["f32", "i32", "rgba", "number.f32", "number.i32", "color.rgba"]) {
+    if (manifest.canonicalDataKinds.includes(forbidden)) {
+      fail(file, `representation-specific dataKind ${forbidden} must not be canonical`);
+    }
   }
   if (manifest.canonicalDataKinds.includes("bang")) {
     fail(file, "legacy dataKind bang must not be canonical");

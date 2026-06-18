@@ -8,12 +8,13 @@
     "core.message",
     "core.string",
     "core.toggle",
-    "core.value-f32",
-    "core.value-i32",
-    "core.value-bool",
-    "core.color-rgba",
+    "core.float",
+    "core.int",
+    "core.uint",
+    "core.bool",
+    "core.color",
     "ui.button",
-    "ui.slider-f32",
+    "ui.slider-float",
     "ui.toggle",
     "core.target",
     "core.bang-button",
@@ -27,8 +28,9 @@
     "render.output"
   ],
   "canonicalDataKinds": [
-    "number.f32",
-    "number.i32",
+    "number.float",
+    "number.int",
+    "number.uint",
     "boolean",
     "string",
     "message.any",
@@ -36,6 +38,33 @@
     "asset.video",
     "video.frame",
     "gpu.texture2d",
-    "color.rgba"
-  ]
+    "color"
+  ],
+  "representations": {
+    "number.float": [
+      "f64",
+      "f32",
+      "f16",
+      "f8.e4m3",
+      "f8.e5m2"
+    ],
+    "number.int": [
+      "i64",
+      "i32",
+      "i16",
+      "i8"
+    ],
+    "number.uint": [
+      "u64",
+      "u32",
+      "u16",
+      "u8"
+    ],
+    "color": [
+      "rgba32f",
+      "rgba16f",
+      "rgba8unorm",
+      "rgb8unorm"
+    ]
+  }
 }

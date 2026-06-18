@@ -38,10 +38,10 @@ process:
   "sessionRevision": 12,
   "controlRevision": 5,
   "values": {
-    "slider_1": { "type": "f32", "value": 0.75 }
+    "slider_1": { "type": "float", "representation": "f32", "value": 0.75 }
   },
   "channels": {
-    "number.f32:speed": { "type": "f32", "value": 0.75 },
+    "number.float:speed": { "type": "float", "representation": "f32", "value": 0.75 },
     "boolean:enabled": { "type": "bool", "value": true }
   },
   "writtenAt": "unix-ms:1710000000000"

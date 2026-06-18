@@ -25,7 +25,7 @@ fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
 
 #[test]
 fn serializes_optional_contract_fields_as_absent() {
-    let mut number = data_type(DataFlowV01::Value, "number.f32");
+    let mut number = data_type(DataFlowV01::Value, "number.float");
     number.range = Some(NumberRangeV01 {
         min: Some(0.0),
         max: None,
@@ -37,7 +37,7 @@ fn serializes_optional_contract_fields_as_absent() {
         serialized_type,
         serde_json::json!({
             "flow": "value",
-            "dataKind": "number.f32",
+            "dataKind": "number.float",
             "range": { "min": 0.0 }
         })
     );
@@ -55,7 +55,7 @@ fn serializes_optional_contract_fields_as_absent() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
               ]
             }
           ],
@@ -66,7 +66,7 @@ fn serializes_optional_contract_fields_as_absent() {
     let serialized_graph = serde_json::to_string(&graph).expect("graph should serialize");
 
     assert!(!serialized_graph.contains("null"));
-    assert!(serialized_graph.contains(r#""dataKind":"number.f32""#));
+    assert!(serialized_graph.contains(r#""dataKind":"number.float""#));
     assert!(validate_graph_document_v01(&graph).is_ok());
 }
 
@@ -98,13 +98,15 @@ fn reports_public_validation_errors() {
 
 #[test]
 fn validates_public_type_helpers() {
-    let mut source = data_type(DataFlowV01::Signal, "number.f32");
-    let mut target = data_type(DataFlowV01::Signal, "number.f32");
+    let mut source = data_type(DataFlowV01::Signal, "number.float");
+    let mut target = data_type(DataFlowV01::Signal, "number.float");
 
-    assert_eq!(type_label_v01(&source), "signal<number.f32>");
+    assert_eq!(type_label_v01(&source), "signal<number.float>");
     target.format = Some(StringOrStringsV01::One("f32".to_owned()));
     assert!(compatible_data_types_v01(&source, &target));
     source.format = Some(StringOrStringsV01::One("f64".to_owned()));
+    assert!(compatible_data_types_v01(&source, &target));
+    target.data_kind = "boolean".to_owned();
     assert!(!compatible_data_types_v01(&source, &target));
 }
 
@@ -123,7 +125,7 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" }, "activation": "trigger" }
+                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" }, "activation": "trigger" }
               ]
             },
             {
@@ -168,7 +170,7 @@ fn applies_public_graph_patch() {
               "kindVersion": "0.1.0",
               "params": { "value": 0.5 },
               "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
               ]
             }
           ],
@@ -222,7 +224,7 @@ fn inverts_public_graph_patch() {
               "kindVersion": "0.1.0",
               "params": { "value": 0.5 },
               "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
               ]
             }
           ],

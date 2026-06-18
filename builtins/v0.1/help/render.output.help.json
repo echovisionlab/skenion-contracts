@@ -5,9 +5,16 @@
   "summary": "Selects the GPU texture rendered by the preview window.",
   "description": "Render Output makes the final render source explicit. Runtime preview selection follows the node connected to this input instead of guessing the first render node.",
   "helpGraph": "help/v0.1/nodes/render.output.help.graph.json",
-  "tags": ["render", "output", "preview"],
+  "tags": [
+    "render",
+    "output",
+    "preview"
+  ],
   "runtimeBehavior": "Consumes one gpu.texture2d resource and marks it as the session preview/render output.",
-  "relatedNodes": ["render.clear-color", "render.fullscreen-shader"],
+  "relatedNodes": [
+    "render.clear-color",
+    "render.fullscreen-shader"
+  ],
   "ports": [
     {
       "id": "in",

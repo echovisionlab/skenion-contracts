@@ -22,6 +22,87 @@ export interface DataTypeV01 {
   values?: Array<string | number | boolean>;
 }
 
+export type SemanticDataKindV01 =
+  | "number.float"
+  | "number.int"
+  | "number.uint"
+  | "boolean"
+  | "string"
+  | "message.any"
+  | "event.bang"
+  | "asset.video"
+  | "video.frame"
+  | "gpu.texture2d"
+  | "color";
+
+export type NumericRepresentationV01 =
+  | "f64"
+  | "f32"
+  | "f16"
+  | "f8.e4m3"
+  | "f8.e5m2"
+  | "i64"
+  | "i32"
+  | "i16"
+  | "i8"
+  | "u64"
+  | "u32"
+  | "u16"
+  | "u8";
+
+export type ColorRepresentationV01 =
+  | "rgba32f"
+  | "rgba16f"
+  | "rgba8unorm"
+  | "rgb8unorm";
+
+export type RepresentationV01 = NumericRepresentationV01 | ColorRepresentationV01;
+
+export interface RepresentationSpecV01 {
+  id: RepresentationV01;
+  semanticDataKind: "number.float" | "number.int" | "number.uint" | "color";
+  bitsPerComponent: number;
+  signed?: boolean;
+  integer?: boolean;
+  normalized?: boolean;
+  channels?: number;
+}
+
+export interface TypeDescriptorV01 {
+  dataKind: SemanticDataKindV01 | string;
+  representation?: RepresentationV01 | string;
+}
+
+export interface ConversionStepV01 {
+  policy:
+    | "identity"
+    | "numeric-cast"
+    | "float-to-integer"
+    | "integer-to-float"
+    | "integer-signedness"
+    | "color-cast";
+  clamp?: "saturating" | "unit";
+  quantize?: boolean;
+  trunc?: "toward-zero";
+  sanitize?: "nan-inf-to-finite";
+}
+
+export interface ConversionDiagnosticV01 {
+  severity: "info" | "warning" | "error";
+  code: string;
+  message: string;
+}
+
+export interface ConversionPlanV01 {
+  ok: boolean;
+  source: TypeDescriptorV01;
+  target: TypeDescriptorV01;
+  implicit: boolean;
+  lossy: boolean;
+  steps: ConversionStepV01[];
+  diagnostics: ConversionDiagnosticV01[];
+}
+
 export interface PortV01 {
   id: string;
   direction: PortDirection;
@@ -386,7 +467,7 @@ export interface NodeDefinitionManifestV02 {
 }
 
 export type ShaderLanguageV01 = "wgsl";
-export type ShaderUniformDataKindV01 = "number.f32" | "number.i32" | "boolean" | "color.rgba";
+export type ShaderUniformDataKindV01 = "number.float" | "number.int" | "number.uint" | "boolean" | "color";
 
 export interface ShaderUniformV01 {
   id: string;
@@ -443,11 +524,17 @@ export interface ShaderInterfaceAnalysisV01 {
 }
 
 export type ControlAtomV01 =
-  | { type: "f32"; value: number }
-  | { type: "i32"; value: number }
+  | { type: "float"; representation: NumericRepresentationV01; value: number }
+  | { type: "int"; representation: NumericRepresentationV01; value: number }
+  | { type: "uint"; representation: NumericRepresentationV01; value: number }
   | { type: "bool"; value: boolean }
   | { type: "string"; value: string }
-  | { type: "rgba"; value: [number, number, number, number] };
+  | {
+      type: "color";
+      representation: ColorRepresentationV01;
+      colorSpace?: "linear" | "srgb";
+      value: [number, number, number, number];
+    };
 
 export interface ControlMessageV01 {
   selector: string;

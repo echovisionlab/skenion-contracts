@@ -50,6 +50,7 @@ await writeFile(
     "  version: \"0.1\";",
     "  nodes: string[];",
     "  canonicalDataKinds: string[];",
+    "  representations: Record<string, string[]>;",
     "}",
     "",
     "export interface BuiltinNodeHelpItemV01 {",

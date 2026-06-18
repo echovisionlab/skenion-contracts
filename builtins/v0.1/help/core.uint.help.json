@@ -1,0 +1,56 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.uint",
+  "summary": "Stores and emits an unsigned integer control value.",
+  "description": "UInt is a Max-style unsigned integer value object. in updates and emits, set updates silently, and bang emits the current value.",
+  "helpGraph": "help/v0.1/nodes/core.uint.help.graph.json",
+  "tags": [
+    "value",
+    "control",
+    "integer",
+    "uint"
+  ],
+  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored unsigned integer value without changing it.",
+  "relatedNodes": [
+    "core.bang-button",
+    "render.fullscreen-shader"
+  ],
+  "ports": [
+    {
+      "id": "in",
+      "description": "Updates the stored value and emits it."
+    },
+    {
+      "id": "set",
+      "description": "Updates the stored value without emitting."
+    },
+    {
+      "id": "bang",
+      "description": "Emits the current stored value without changing it."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current value."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default unsigned integer value."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional typed channel name updated whenever this object emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional typed channel name used to receive routed updates."
+    }
+  ],
+  "example": {
+    "title": "Trigger an integer value",
+    "description": "Use bang to re-emit the current integer after a set event updates it silently.",
+    "graph": "help/v0.1/nodes/core.uint.help.graph.json"
+  }
+}

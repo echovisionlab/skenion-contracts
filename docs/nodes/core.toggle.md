@@ -15,7 +15,7 @@ Output:
 
 - `value`: the current boolean value.
 
-Use `core.value-bool` when a bang should only re-emit the current boolean. Use `core.toggle` when a bang should flip state.
+Use `core.bool` when a bang should only re-emit the current boolean. Use `core.toggle` when a bang should flip state.
 
 Params:
 

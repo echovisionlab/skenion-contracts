@@ -511,7 +511,7 @@ mod tests {
                   "kindVersion": "0.1.0",
                   "params": { "value": 0.5 },
                   "ports": [
-                    { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.f32" } }
+                    { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
                   ]
                 },
                 {
@@ -520,7 +520,7 @@ mod tests {
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "value", "direction": "input", "type": { "flow": "value", "dataKind": "number.f32" }, "activation": "latched" }
+                    { "id": "value", "direction": "input", "type": { "flow": "value", "dataKind": "number.float" }, "activation": "latched" }
                   ]
                 }
               ],
@@ -573,7 +573,7 @@ mod tests {
             r#"{{
               "id": "{id}",
               "direction": "input",
-              "type": {{ "flow": "value", "dataKind": "number.f32" }},
+              "type": {{ "flow": "value", "dataKind": "number.float" }},
               "required": false,
               "activation": "latched"
             }}"#
@@ -872,7 +872,7 @@ mod tests {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "value", "direction": "input", "type": { "flow": "value", "dataKind": "number.f32" }, "activation": "latched" }
+                { "id": "value", "direction": "input", "type": { "flow": "value", "dataKind": "number.float" }, "activation": "latched" }
               ]
             }"#,
         )
