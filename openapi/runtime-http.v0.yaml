@@ -522,14 +522,6 @@ components:
         - type: object
           required:
             - type
-          properties:
-            type:
-              type: string
-              const: bang
-          additionalProperties: false
-        - type: object
-          required:
-            - type
             - value
           properties:
             type:
@@ -589,12 +581,30 @@ components:
               minItems: 4
               maxItems: 4
           additionalProperties: false
+    RuntimeControlAtom:
+      oneOf:
+        - $ref: "#/components/schemas/RuntimeControlValue"
+    RuntimeControlMessage:
+      type: object
+      required:
+        - selector
+        - atoms
+      properties:
+        selector:
+          type: string
+          minLength: 1
+          description: Message selector, such as bang, set, float, int, symbol, list, or any object-specific selector.
+        atoms:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeControlAtom"
+      additionalProperties: false
     RuntimeControlEventRequest:
       type: object
       required:
         - nodeId
         - portId
-        - value
+        - message
       properties:
         nodeId:
           type: string
@@ -605,22 +615,22 @@ components:
             - set
             - bang
             - value
-        value:
-          $ref: "#/components/schemas/RuntimeControlValue"
+        message:
+          $ref: "#/components/schemas/RuntimeControlMessage"
       additionalProperties: false
     RuntimeControlEmission:
       type: object
       required:
         - nodeId
         - portId
-        - value
+        - message
       properties:
         nodeId:
           type: string
         portId:
           type: string
-        value:
-          $ref: "#/components/schemas/RuntimeControlValue"
+        message:
+          $ref: "#/components/schemas/RuntimeControlMessage"
       additionalProperties: false
     RuntimeControlEventResponse:
       type: object
@@ -671,9 +681,9 @@ components:
             $ref: "#/components/schemas/RuntimeControlValue"
         channels:
           type: object
-          description: Latest values for object-owned named channels keyed as dataKind:name.
+          description: Latest messages for object-owned named channels keyed as dataKind:name.
           additionalProperties:
-            $ref: "#/components/schemas/RuntimeControlValue"
+            $ref: "#/components/schemas/RuntimeControlMessage"
         diagnostics:
           type: array
           items:
@@ -710,7 +720,7 @@ components:
         channels:
           type: object
           additionalProperties:
-            $ref: "#/components/schemas/RuntimeControlValue"
+            $ref: "#/components/schemas/RuntimeControlMessage"
         writtenAt:
           type: string
           examples:

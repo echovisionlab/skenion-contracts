@@ -178,21 +178,9 @@ export const builtinNodeDefinitionsV01 = [
     "version": "0.1.0",
     "displayName": "Comment",
     "category": "Control",
-    "ports": [
-      {
-        "id": "set",
-        "direction": "input",
-        "label": "Set",
-        "type": {
-          "flow": "value",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "latched"
-      }
-    ],
+    "ports": [],
     "execution": {
-      "model": "value"
+      "model": "event"
     },
     "state": {
       "persistent": false
@@ -285,7 +273,7 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
+          "flow": "event",
           "dataKind": "message.any"
         },
         "required": false,
@@ -296,7 +284,7 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "Set",
         "type": {
-          "flow": "value",
+          "flow": "event",
           "dataKind": "message.any"
         },
         "required": false,
@@ -316,10 +304,10 @@ export const builtinNodeDefinitionsV01 = [
       {
         "id": "value",
         "direction": "output",
-        "label": "Value",
+        "label": "Message",
         "type": {
-          "flow": "value",
-          "dataKind": "string"
+          "flow": "event",
+          "dataKind": "message.any"
         }
       }
     ],
@@ -905,7 +893,7 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
+          "flow": "event",
           "dataKind": "message.any"
         },
         "required": false,
@@ -1003,7 +991,7 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
+          "flow": "event",
           "dataKind": "message.any"
         },
         "required": false,
@@ -1014,7 +1002,7 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "Set",
         "type": {
-          "flow": "value",
+          "flow": "event",
           "dataKind": "message.any"
         },
         "required": false,
@@ -1132,30 +1120,21 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "core.comment",
     "summary": "Documents a patch without participating in execution.",
-    "description": "Comment nodes are persisted graph annotations. They render as canvas text and expose a set inlet for Max/Pd-style text updates without output.",
+    "description": "Comment nodes are persisted graph annotations. They render as canvas text and do not participate in runtime control dispatch.",
     "helpGraph": "help/v0.1/nodes/core.comment.help.graph.json",
     "tags": [
       "documentation",
       "annotation"
     ],
-    "runtimeBehavior": "set <text> updates runtime comment text state silently. Inspector edits remain graph patches. Comment has no output.",
+    "runtimeBehavior": "Comment has no runtime state, no ports, and no output. Inspector edits are graph patches.",
     "relatedNodes": [
       "core.message"
     ],
-    "ports": [
-      {
-        "id": "set",
-        "description": "Updates comment text from a set <text> message without output."
-      }
-    ],
+    "ports": [],
     "params": [
       {
         "id": "text",
         "description": "Saved annotation text."
-      },
-      {
-        "id": "receiveName",
-        "description": "Optional string channel name used to receive routed text updates."
       }
     ],
     "example": {
@@ -1260,21 +1239,21 @@ export const builtinNodeHelpV01 = [
       },
       {
         "id": "value",
-        "description": "Outputs the saved message text."
+        "description": "Outputs the saved selector plus typed atoms as a message payload."
       }
     ],
     "params": [
       {
         "id": "value",
-        "description": "Saved message text."
+        "description": "Saved message box text parsed into selector plus atoms at runtime."
       },
       {
         "id": "sendName",
-        "description": "Optional string channel name updated whenever the message emits."
+        "description": "Optional message channel name updated whenever the message emits."
       },
       {
         "id": "receiveName",
-        "description": "Optional string channel name used to receive routed message updates."
+        "description": "Optional message channel name used to receive routed message updates."
       }
     ],
     "example": {
@@ -2246,21 +2225,9 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Comments annotate a patch. set <text> updates comment text state without output."
+            "text": "Comments annotate a patch. They have no runtime ports."
           },
-          "ports": [
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "latched"
-            }
-          ]
+          "ports": []
         },
         {
           "id": "note_2",
@@ -2269,19 +2236,7 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {
             "text": "Use comments near important control or render decisions."
           },
-          "ports": [
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "latched"
-            }
-          ]
+          "ports": []
         }
       ],
       "edges": []

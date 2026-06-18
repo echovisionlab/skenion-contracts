@@ -442,6 +442,18 @@ export interface ShaderInterfaceAnalysisV01 {
   diagnostics: ShaderInterfaceDiagnosticV01[];
 }
 
+export type ControlAtomV01 =
+  | { type: "f32"; value: number }
+  | { type: "i32"; value: number }
+  | { type: "bool"; value: boolean }
+  | { type: "string"; value: string }
+  | { type: "rgba"; value: [number, number, number, number] };
+
+export interface ControlMessageV01 {
+  selector: string;
+  atoms: ControlAtomV01[];
+}
+
 export interface ValidationSuccess<T> {
   ok: true;
   value: T;

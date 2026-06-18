@@ -61,9 +61,13 @@ builtin itself stays unconstrained.
 `core.comment` is a persisted graph annotation. It has no ports and does not
 participate in runtime execution.
 
-`core.message` is the first simple message-box form. In v0.1 it stores a string
-payload and emits that payload when banged. Typed multi-message payloads and
-`pack`/`unpack` are deferred until the typed control graph is stable.
+`core.message` is the first simple message-box form. It stores message box text
+in graph params and emits a `ControlMessage` selector plus typed atoms when
+banged or clicked. `set ...` updates the runtime message text silently.
+`pack`/`unpack` and richer message transforms are deferred until the typed
+control graph is stable.
+
+Bang is a message selector/event. It is not a stored runtime value.
 
 Typed `send`/`receive` nodes and basic panel controls are part of v0.1. They are
 documented in `docs/control-routing.md`.
