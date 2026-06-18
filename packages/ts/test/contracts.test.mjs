@@ -9,6 +9,7 @@ import {
   builtinNodeHelpV01,
   builtinNodeDefinitionsV01,
   createDefaultViewStateForGraph,
+  controlMessageV01Schema,
   getBuiltinNodeDefinition,
   getBuiltinNodeHelp,
   getBuiltinNodeHelpGraph,
@@ -30,6 +31,7 @@ import {
   validateGraphPatchEvent,
   validateGraphPatchHistory,
   validateGraphPatch,
+  validateControlMessage,
   validateGraphDocument,
   validateGraphDocumentV02,
   validateNodeDefinition,
@@ -54,6 +56,7 @@ test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
   assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
+  assert.equal(controlMessageV01Schema.properties.selector.type, "string");
   assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
     "interface-analysis",
     "source-sync",
@@ -62,6 +65,25 @@ test("exports v0.1 graph and node definition schemas", () => {
     "render-pipeline",
     "render-frame"
   ]);
+});
+
+test("validates control messages as selector and atoms", () => {
+  const bang = validateControlMessage({ selector: "bang", atoms: [] });
+  assert.equal(bang.ok, true);
+
+  const set = validateControlMessage({
+    selector: "set",
+    atoms: [
+      { type: "f32", value: 0.75 },
+      { type: "string", value: "speed" },
+      { type: "rgba", value: [1, 0.25, 0, 1] }
+    ]
+  });
+  assert.equal(set.ok, true);
+
+  const invalidLegacyBang = validateControlMessage({ type: "bang" });
+  assert.equal(invalidLegacyBang.ok, false);
+  assert.match(invalidLegacyBang.errors.join("\n"), /must have required property 'selector'/);
 });
 
 test("validates project documents and view state fixtures", async () => {
@@ -127,6 +149,55 @@ test("rejects incompatible bool to bang graph wiring", async () => {
 
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /incompatible edge/);
+});
+
+test("accepts message.any targets across control message flows", () => {
+  const graph = {
+    schema: "skenion.graph",
+    schemaVersion: "0.1.0",
+    id: "message-any-control",
+    revision: "1",
+    nodes: [
+      {
+        id: "string_1",
+        kind: "core.string",
+        kindVersion: "0.1.0",
+        params: { value: "ready" },
+        ports: [
+          {
+            id: "value",
+            direction: "output",
+            label: "Value",
+            type: { flow: "value", dataKind: "string" }
+          }
+        ]
+      },
+      {
+        id: "message_1",
+        kind: "core.message",
+        kindVersion: "0.1.0",
+        params: { value: "perform" },
+        ports: [
+          {
+            id: "in",
+            direction: "input",
+            label: "In",
+            type: { flow: "event", dataKind: "message.any" },
+            required: false,
+            activation: "trigger"
+          }
+        ]
+      }
+    ],
+    edges: [
+      {
+        from: { node: "string_1", port: "value" },
+        to: { node: "message_1", port: "in" }
+      }
+    ]
+  };
+
+  assert.equal(validateGraphDocument(graph).ok, true);
 });
 
 test("rejects schema-invalid graph documents", () => {
@@ -271,8 +342,7 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.equal(toggleDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "boolean");
 
   const commentDefinition = getBuiltinNodeDefinition("core.comment");
-  assert.deepEqual(commentDefinition?.ports.map((port) => port.id), ["set"]);
-  assert.equal(commentDefinition?.ports.find((port) => port.id === "set")?.type.dataKind, "message.any");
+  assert.deepEqual(commentDefinition?.ports.map((port) => port.id), []);
 
   const panelDefinition = getBuiltinNodeDefinition("core.panel");
   assert.deepEqual(panelDefinition?.ports.map((port) => port.id), ["set"]);
@@ -282,7 +352,7 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.deepEqual(messageDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
   assert.equal(messageDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
   assert.equal(messageDefinition?.ports.find((port) => port.id === "set")?.type.dataKind, "message.any");
-  assert.equal(messageDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
+  assert.equal(messageDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "message.any");
 
   const sliderDefinition = getBuiltinNodeDefinition("ui.slider-f32");
   assert.deepEqual(sliderDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);

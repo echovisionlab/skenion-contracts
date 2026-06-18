@@ -24,21 +24,21 @@
     },
     {
       "id": "value",
-      "description": "Outputs the saved message text."
+      "description": "Outputs the saved selector plus typed atoms as a message payload."
     }
   ],
   "params": [
     {
       "id": "value",
-      "description": "Saved message text."
+      "description": "Saved message box text parsed into selector plus atoms at runtime."
     },
     {
       "id": "sendName",
-      "description": "Optional string channel name updated whenever the message emits."
+      "description": "Optional message channel name updated whenever the message emits."
     },
     {
       "id": "receiveName",
-      "description": "Optional string channel name used to receive routed message updates."
+      "description": "Optional message channel name used to receive routed message updates."
     }
   ],
   "example": {

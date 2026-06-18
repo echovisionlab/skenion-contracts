@@ -5,6 +5,7 @@ import type {
   ValidateFunction
 } from "ajv/dist/2020.js";
 import {
+  controlMessageV01Schema,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -17,6 +18,7 @@ import {
   viewStateV01Schema
 } from "./generated/schemas.js";
 import type {
+  ControlMessageV01,
   DataTypeV01,
   EdgeSpecV02,
   GraphCycleValidationV02,
@@ -51,6 +53,7 @@ const graphV02Validator = ajv.compile(graphV02Schema);
 const graphPatchV01Validator = ajv.compile(graphPatchV01Schema);
 const graphPatchEventV01Validator = ajv.compile(graphPatchEventV01Schema);
 const graphPatchHistoryV01Validator = ajv.compile(graphPatchHistoryV01Schema);
+const controlMessageV01Validator = ajv.compile(controlMessageV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 const nodeDefinitionV02Validator = ajv.compile(nodeDefinitionV02Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
@@ -97,6 +100,9 @@ function formatAccepts(targetFormat: DataTypeV01["format"], sourceFormat: DataTy
 }
 
 function compatibleTypes(sourceType: DataTypeV01, targetType: DataTypeV01): boolean {
+  if (targetType.dataKind === "message.any") {
+    return true;
+  }
   return (
     sourceType.flow === targetType.flow &&
     sourceType.dataKind === targetType.dataKind &&
@@ -557,6 +563,14 @@ export function validateGraphPatchHistory(
   }
 
   return { ok: true, value: document as GraphPatchHistoryV01 };
+}
+
+export function validateControlMessage(document: unknown): ValidationResult<ControlMessageV01> {
+  if (!controlMessageV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(controlMessageV01Validator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as ControlMessageV01 };
 }
 
 export function validateNodeDefinition(

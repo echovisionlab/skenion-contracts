@@ -1,3 +1,4 @@
+mod control_message;
 mod graph;
 mod node_definition;
 mod patch;
@@ -6,6 +7,7 @@ mod shader_interface;
 mod types;
 mod validation;
 
+pub use control_message::{ControlAtomV01, ControlMessageV01};
 pub use graph::{EdgeV01, GraphDocumentV01, GraphNodeV01, PortRefV01};
 pub use node_definition::{NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01};
 pub use patch::{

@@ -347,10 +347,8 @@ function validateCommentBuiltin(definitions) {
   if (!definition) {
     fail(file, "core.comment must exist");
   }
-  const ports = new Map(definition.ports.map((port) => [port.id, port]));
-  const set = ports.get("set");
-  if (set?.direction !== "input" || set?.type.dataKind !== "message.any" || set.activation !== "latched") {
-    fail(file, "core.comment.set must be latched input message.any");
+  if (definition.ports.length !== 0) {
+    fail(file, "core.comment must not declare runtime ports");
   }
 }
 
@@ -383,8 +381,8 @@ function validateMessageBuiltin(definitions) {
     fail(file, "core.message.bang activation must be trigger");
   }
   const value = ports.get("value");
-  if (value?.direction !== "output" || value?.type.flow !== "value" || value?.type.dataKind !== "string") {
-    fail(file, "core.message.value must be output value<string>");
+  if (value?.direction !== "output" || value?.type.flow !== "event" || value?.type.dataKind !== "message.any") {
+    fail(file, "core.message.value must be output event<message.any>");
   }
 }
 

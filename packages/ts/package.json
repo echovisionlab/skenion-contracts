@@ -55,6 +55,10 @@
     "./view/v0.1/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
+    },
+    "./control/v0.1/message-schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
     }
   },
   "files": [

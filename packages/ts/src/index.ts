@@ -1,4 +1,5 @@
 export {
+  controlMessageV01Schema,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -30,6 +31,8 @@ export type {
   CableStyleV02,
   CanvasNodeViewV01,
   CanvasViewportV01,
+  ControlAtomV01,
+  ControlMessageV01,
   CycleValidationV02,
   DataFlow,
   DataTypeV01,
@@ -98,6 +101,7 @@ export {
   validateGraphPatchEvent,
   validateGraphPatchHistory,
   validateGraphPatch,
+  validateControlMessage,
   validateNodeDefinition,
   validateNodeDefinitionV02,
   validateProjectDocument,
