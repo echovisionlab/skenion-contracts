@@ -1,9 +1,10 @@
 use skenion_contracts::{
     ApplyPatchErrorV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphDocumentV02,
     GraphPatchOperationV01, GraphPatchV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02,
-    NumberRangeV01, StringOrStringsV01, analyze_graph_document_v02, apply_graph_patch_v01,
-    compatible_data_types_v01, invert_graph_patch_v01, type_label_v01, validate_graph_document_v01,
-    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
+    NumberRangeV01, ObjectTextParseResultV01, StringOrStringsV01, analyze_graph_document_v02,
+    apply_graph_patch_v01, compatible_data_types_v01, invert_graph_patch_v01, type_label_v01,
+    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
+    validate_node_definition_v02, validate_object_text_parse_result_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -94,6 +95,46 @@ fn reports_public_validation_errors() {
     let error = validate_node_definition_v01(&definition).expect_err("definition should fail");
     assert!(error.errors().len() >= 4);
     assert!(error.to_string().contains("wrong.node.definition"));
+}
+
+#[test]
+fn validates_public_object_text_parse_results() {
+    let result: ObjectTextParseResultV01 = serde_json::from_str(
+        r#"{
+          "schema": "skenion.object-text.parse-result",
+          "schemaVersion": "0.1.0",
+          "input": "[*~ 0.5]",
+          "ok": true,
+          "classSymbol": "*~",
+          "creationArgs": [{ "type": "float", "value": 0.5, "representation": "f32" }],
+          "resolvedKind": "audio.operator.mul",
+          "resolvedKindVersion": "0.1.0",
+          "params": { "right": 0.5 },
+          "instancePorts": [
+            { "id": "in", "direction": "input", "type": "signal.audio", "rate": "audio", "activation": "latched" },
+            { "id": "right", "direction": "input", "type": "number.float", "rate": "control", "activation": "latched", "defaultValue": 0.5 },
+            { "id": "out", "direction": "output", "type": "signal.audio", "rate": "audio" }
+          ],
+          "displayText": "*~ 0.5",
+          "diagnostics": []
+        }"#,
+    )
+    .expect("object text result should parse");
+
+    validate_object_text_parse_result_v01(&result).expect("object text result should validate");
+    assert_eq!(result.resolved_kind.as_deref(), Some("audio.operator.mul"));
+
+    let mut wrong_schema = result.clone();
+    wrong_schema.schema = "wrong.object-text".to_owned();
+    let schema_error = validate_object_text_parse_result_v01(&wrong_schema)
+        .expect_err("schema mismatch should fail");
+    assert!(schema_error.to_string().contains("wrong.object-text"));
+
+    let mut wrong_version = result;
+    wrong_version.schema_version = "9.9.9".to_owned();
+    let version_error = validate_object_text_parse_result_v01(&wrong_version)
+        .expect_err("schema version mismatch should fail");
+    assert!(version_error.to_string().contains("9.9.9"));
 }
 
 #[test]

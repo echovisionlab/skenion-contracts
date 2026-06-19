@@ -1,0 +1,53 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "audio.snapshot",
+  "version": "0.1.0",
+  "displayName": "Snapshot",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "signal",
+      "direction": "input",
+      "label": "Signal",
+      "type": {
+        "flow": "signal",
+        "dataKind": "signal.audio"
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
+      "id": "trigger",
+      "direction": "input",
+      "label": "Trigger",
+      "type": {
+        "flow": "event",
+        "dataKind": "message.any"
+      },
+      "required": false,
+      "activation": "trigger"
+    },
+    {
+      "id": "value",
+      "direction": "output",
+      "label": "Value",
+      "type": {
+        "flow": "value",
+        "dataKind": "number.float",
+        "format": "f32"
+      }
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "pd.audio.v0.1"
+  ]
+}

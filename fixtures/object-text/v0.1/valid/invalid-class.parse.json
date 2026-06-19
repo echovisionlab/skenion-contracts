@@ -1,0 +1,20 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[frobnicate]",
+  "ok": false,
+  "classSymbol": "frobnicate",
+  "creationArgs": [],
+  "resolvedKind": null,
+  "resolvedKindVersion": null,
+  "params": {},
+  "instancePorts": [],
+  "displayText": "frobnicate",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "unsupported-class",
+      "message": "unsupported object class: frobnicate"
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import {
   invertGraphPatch,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  objectTextParseResultV01Schema,
   planConversion,
   projectV01Schema,
   representationForDataType,
@@ -35,6 +36,7 @@ import {
   validateGraphPatchHistory,
   validateGraphPatch,
   validateControlMessage,
+  validateObjectTextParseResult,
   validateGraphDocument,
   validateGraphDocumentV02,
   validateNodeDefinition,
@@ -58,6 +60,7 @@ test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphPatchEventV01Schema.properties.schema.const, "skenion.graph.patch.event");
   assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
   assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
+  assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(controlMessageV01Schema.properties.selector.type, "string");
   assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
@@ -68,6 +71,39 @@ test("exports v0.1 graph and node definition schemas", () => {
     "render-pipeline",
     "render-frame"
   ]);
+});
+
+test("validates object text parse result fixtures", async () => {
+  const add = await readJson("fixtures/object-text/v0.1/valid/add-int.parse.json");
+  const addResult = validateObjectTextParseResult(add);
+
+  assert.equal(addResult.ok, true);
+  assert.equal(add.resolvedKind, "core.operator.add");
+  assert.deepEqual(add.instancePorts.map((port) => port.id), ["in", "right", "out"]);
+
+  const scalarAudio = await readJson("fixtures/object-text/v0.1/valid/audio-mul-scalar.parse.json");
+  const scalarResult = validateObjectTextParseResult(scalarAudio);
+
+  assert.equal(scalarResult.ok, true);
+  assert.equal(scalarAudio.resolvedKind, "audio.operator.mul");
+  assert.deepEqual(scalarAudio.instancePorts.map((port) => `${port.id}:${port.type}:${port.rate}`), [
+    "in:signal.audio:audio",
+    "right:number.float:control",
+    "out:signal.audio:audio"
+  ]);
+
+  const unsupported = await readJson("fixtures/object-text/v0.1/valid/unsupported-vanilla-object.parse.json");
+  const unsupportedResult = validateObjectTextParseResult(unsupported);
+
+  assert.equal(unsupportedResult.ok, true);
+  assert.equal(unsupported.ok, false);
+  assert.equal(unsupported.diagnostics[0].code, "deferred-object");
+
+  const invalid = await readJson("fixtures/object-text/v0.1/invalid/missing-class-symbol.parse.json");
+  const invalidResult = validateObjectTextParseResult(invalid);
+
+  assert.equal(invalidResult.ok, false);
+  assert.match(invalidResult.errors.join("\n"), /classSymbol/);
 });
 
 test("validates control messages as selector and atoms", () => {

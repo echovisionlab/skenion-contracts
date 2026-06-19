@@ -63,7 +63,26 @@ export const builtinManifestV01 = {
     "core.preview",
     "render.clear-color",
     "render.fullscreen-shader",
-    "render.output"
+    "render.output",
+    "core.operator.add",
+    "core.operator.sub",
+    "core.operator.mul",
+    "core.operator.div",
+    "core.operator.pow",
+    "core.operator.min",
+    "core.operator.max",
+    "core.operator.sqrt",
+    "audio.operator.add",
+    "audio.operator.sub",
+    "audio.operator.mul",
+    "audio.operator.div",
+    "audio.operator.sqrt",
+    "audio.osc",
+    "audio.phasor",
+    "audio.cos",
+    "audio.noise",
+    "audio.sig",
+    "audio.snapshot"
   ],
   "canonicalDataKinds": [
     "number.float",
@@ -76,7 +95,8 @@ export const builtinManifestV01 = {
     "asset.video",
     "video.frame",
     "gpu.texture2d",
-    "color"
+    "color",
+    "signal.audio"
   ],
   "representations": {
     "number.float": [
@@ -110,6 +130,515 @@ export const builtinManifestV01 = {
 } satisfies BuiltinManifestV01;
 
 export const builtinNodeDefinitionsV01 = [
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.cos",
+    "version": "0.1.0",
+    "displayName": "Cosine",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "phase",
+        "direction": "input",
+        "label": "Phase",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.noise",
+    "version": "0.1.0",
+    "displayName": "Noise",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "seed",
+        "direction": "input",
+        "label": "Seed",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.add",
+    "version": "0.1.0",
+    "displayName": "Audio Add",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "left",
+        "direction": "input",
+        "label": "Left",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.div",
+    "version": "0.1.0",
+    "displayName": "Audio Divide",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "left",
+        "direction": "input",
+        "label": "Left",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.mul",
+    "version": "0.1.0",
+    "displayName": "Audio Multiply",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "left",
+        "direction": "input",
+        "label": "Left",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.sqrt",
+    "version": "0.1.0",
+    "displayName": "Audio Square Root",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.sub",
+    "version": "0.1.0",
+    "displayName": "Audio Subtract",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "left",
+        "direction": "input",
+        "label": "Left",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.osc",
+    "version": "0.1.0",
+    "displayName": "Oscillator",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "frequency",
+        "direction": "input",
+        "label": "Frequency",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.phasor",
+    "version": "0.1.0",
+    "displayName": "Phasor",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "frequency",
+        "direction": "input",
+        "label": "Frequency",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.sig",
+    "version": "0.1.0",
+    "displayName": "Signal Value",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.snapshot",
+    "version": "0.1.0",
+    "displayName": "Snapshot",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "signal",
+        "direction": "input",
+        "label": "Signal",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "trigger",
+        "direction": "input",
+        "label": "Trigger",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "value",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
@@ -465,6 +994,425 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
+    "id": "core.operator.add",
+    "version": "0.1.0",
+    "displayName": "Add",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched",
+        "default": 0
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.div",
+    "version": "0.1.0",
+    "displayName": "Divide",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched",
+        "default": 1
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.max",
+    "version": "0.1.0",
+    "displayName": "Maximum",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched",
+        "default": 0
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.min",
+    "version": "0.1.0",
+    "displayName": "Minimum",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched",
+        "default": 0
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.mul",
+    "version": "0.1.0",
+    "displayName": "Multiply",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched",
+        "default": 1
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.pow",
+    "version": "0.1.0",
+    "displayName": "Power",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched",
+        "default": 1
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.sqrt",
+    "version": "0.1.0",
+    "displayName": "Square Root",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.sub",
+    "version": "0.1.0",
+    "displayName": "Subtract",
+    "category": "Operators",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        },
+        "required": false,
+        "activation": "latched",
+        "default": 0
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Value",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "pd.control.operator.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
     "id": "core.panel",
     "version": "0.1.0",
     "displayName": "Panel",
@@ -791,6 +1739,154 @@ export const builtinNodeDefinitionsV01 = [
 ] satisfies NodeDefinitionManifestV01[];
 
 export const builtinNodeHelpV01 = [
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.cos",
+    "summary": "Pd-style cos~ phase-domain cosine lookup.",
+    "description": "Cosine maps an audio phase signal to cosine output. It is not a frequency oscillator by itself.",
+    "helpGraph": "help/v0.1/nodes/audio.cos.help.graph.json",
+    "tags": [
+      "audio",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.noise",
+    "summary": "Pd-style noise~ source.",
+    "description": "Noise is a stateful pseudo-random audio source. Seed updates are control messages to runtime state.",
+    "helpGraph": "help/v0.1/nodes/audio.noise.help.graph.json",
+    "tags": [
+      "audio",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.add",
+    "summary": "Pd-style +~ signal operator.",
+    "description": "Audio Add is a block/vector DSP operator. Object text with a numeric creation argument may specialize the right inlet to a latched scalar operand.",
+    "helpGraph": "help/v0.1/nodes/audio.operator.add.help.graph.json",
+    "tags": [
+      "audio",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in an audio_block DSP context. No UI, HTTP, or graph mutation work is allowed in the audio callback."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.div",
+    "summary": "Pd-style /~ signal operator.",
+    "description": "Audio Divide is a block/vector DSP operator. Object text with a numeric creation argument may specialize the right inlet to a latched scalar operand.",
+    "helpGraph": "help/v0.1/nodes/audio.operator.div.help.graph.json",
+    "tags": [
+      "audio",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in an audio_block DSP context. No UI, HTTP, or graph mutation work is allowed in the audio callback."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.mul",
+    "summary": "Pd-style *~ signal operator.",
+    "description": "Audio Multiply is a block/vector DSP operator. Object text with a numeric creation argument may specialize the right inlet to a latched scalar operand.",
+    "helpGraph": "help/v0.1/nodes/audio.operator.mul.help.graph.json",
+    "tags": [
+      "audio",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in an audio_block DSP context. No UI, HTTP, or graph mutation work is allowed in the audio callback."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.sqrt",
+    "summary": "Pd-style sqrt~ signal operator.",
+    "description": "Audio Square Root runs per block and outputs zero for negative samples in the Pd-compatible baseline.",
+    "helpGraph": "help/v0.1/nodes/audio.operator.sqrt.help.graph.json",
+    "tags": [
+      "audio",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in an audio_block DSP context with deterministic negative-input behavior."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.operator.sub",
+    "summary": "Pd-style -~ signal operator.",
+    "description": "Audio Subtract is a block/vector DSP operator. Object text with a numeric creation argument may specialize the right inlet to a latched scalar operand.",
+    "helpGraph": "help/v0.1/nodes/audio.operator.sub.help.graph.json",
+    "tags": [
+      "audio",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in an audio_block DSP context. No UI, HTTP, or graph mutation work is allowed in the audio callback."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.osc",
+    "summary": "Pd-style osc~ sine oscillator.",
+    "description": "Oscillator is a stateful sine oscillator. Frequency may come from params or a control-rate inlet; phase is runtime state.",
+    "helpGraph": "help/v0.1/nodes/audio.osc.help.graph.json",
+    "tags": [
+      "audio",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.phasor",
+    "summary": "Pd-style phasor~ ramp generator.",
+    "description": "Phasor is a stateful phase ramp generator used to build saw-like shapes and phase-domain patches.",
+    "helpGraph": "help/v0.1/nodes/audio.phasor.help.graph.json",
+    "tags": [
+      "audio",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.sig",
+    "summary": "Pd-style sig~ control-to-signal crossing.",
+    "description": "Signal Value copies the current control value into each audio block. It is a block-aligned crossing from control to audio.",
+    "helpGraph": "help/v0.1/nodes/audio.sig.help.graph.json",
+    "tags": [
+      "audio",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.snapshot",
+    "summary": "Pd-style snapshot~ signal-to-control crossing.",
+    "description": "Snapshot samples an audio signal into a control value when triggered. It makes signal-to-control latency explicit.",
+    "helpGraph": "help/v0.1/nodes/audio.snapshot.help.graph.json",
+    "tags": [
+      "audio",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
@@ -1155,6 +2251,118 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
+    "id": "core.operator.add",
+    "summary": "Pd-style + control operator.",
+    "description": "Add is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+    "helpGraph": "help/v0.1/nodes/core.operator.add.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.div",
+    "summary": "Pd-style / control operator.",
+    "description": "Divide is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+    "helpGraph": "help/v0.1/nodes/core.operator.div.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.max",
+    "summary": "Pd-style max control operator.",
+    "description": "Maximum is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+    "helpGraph": "help/v0.1/nodes/core.operator.max.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.min",
+    "summary": "Pd-style min control operator.",
+    "description": "Minimum is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+    "helpGraph": "help/v0.1/nodes/core.operator.min.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.mul",
+    "summary": "Pd-style * control operator.",
+    "description": "Multiply is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+    "helpGraph": "help/v0.1/nodes/core.operator.mul.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.pow",
+    "summary": "Pd-style pow control operator.",
+    "description": "Power is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+    "helpGraph": "help/v0.1/nodes/core.operator.pow.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.sqrt",
+    "summary": "Pd-style sqrt control operator.",
+    "description": "Square Root is a unary control-rate operator. It outputs 0 for nonpositive input in the Pd-compatible baseline.",
+    "helpGraph": "help/v0.1/nodes/core.operator.sqrt.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Hot numeric input stores and emits sqrt; bang re-emits the stored result."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.operator.sub",
+    "summary": "Pd-style - control operator.",
+    "description": "Subtract is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+    "helpGraph": "help/v0.1/nodes/core.operator.sub.help.graph.json",
+    "tags": [
+      "control",
+      "operator",
+      "pd"
+    ],
+    "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
     "id": "core.panel",
     "summary": "Draws a colored background panel on the patch canvas.",
     "description": "Panel is a visual patch annotation object. Its saved default is transparent unless a color param is set. It receives message events on its inlet; set <hex> updates its runtime color state silently, but it does not output values.",
@@ -1512,6 +2720,127 @@ export const builtinNodeHelpV01 = [
 ] satisfies BuiltinNodeHelpV01[];
 
 export const builtinNodeHelpGraphsV01 = [
+  {
+    "id": "audio.cos",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-cos",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.noise",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-noise",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.operator.add",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-operator-add",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.operator.div",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-operator-div",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.operator.mul",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-operator-mul",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.operator.sqrt",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-operator-sqrt",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.operator.sub",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-operator-sub",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.osc",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-osc",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.phasor",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-phasor",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.sig",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-sig",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "audio.snapshot",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-snapshot",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
   {
     "id": "core.bang",
     "graph": {
@@ -2454,6 +3783,94 @@ export const builtinNodeHelpGraphsV01 = [
           }
         }
       ]
+    }
+  },
+  {
+    "id": "core.operator.add",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-add",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "core.operator.div",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-div",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "core.operator.max",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-max",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "core.operator.min",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-min",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "core.operator.mul",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-mul",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "core.operator.pow",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-pow",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "core.operator.sqrt",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-sqrt",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    }
+  },
+  {
+    "id": "core.operator.sub",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-operator-sub",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
     }
   },
   {

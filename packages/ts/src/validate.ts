@@ -13,6 +13,7 @@ import {
   graphV02Schema,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
+  objectTextParseResultV01Schema,
   projectV01Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
@@ -32,6 +33,7 @@ import type {
   GraphValidationResultV02,
   NodeDefinitionManifestV01,
   NodeDefinitionManifestV02,
+  ObjectTextParseResultV01,
   PortV01,
   PortSpecV02,
   ProjectDocumentV01,
@@ -55,6 +57,7 @@ const graphPatchV01Validator = ajv.compile(graphPatchV01Schema);
 const graphPatchEventV01Validator = ajv.compile(graphPatchEventV01Schema);
 const graphPatchHistoryV01Validator = ajv.compile(graphPatchHistoryV01Schema);
 const controlMessageV01Validator = ajv.compile(controlMessageV01Schema);
+const objectTextParseResultV01Validator = ajv.compile(objectTextParseResultV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 const nodeDefinitionV02Validator = ajv.compile(nodeDefinitionV02Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
@@ -571,6 +574,19 @@ export function validateControlMessage(document: unknown): ValidationResult<Cont
   }
 
   return { ok: true, value: document as ControlMessageV01 };
+}
+
+export function validateObjectTextParseResult(
+  document: unknown
+): ValidationResult<ObjectTextParseResultV01> {
+  if (!objectTextParseResultV01Validator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(objectTextParseResultV01Validator.errors as ErrorObject[])
+    };
+  }
+
+  return { ok: true, value: document as ObjectTextParseResultV01 };
 }
 
 export function validateNodeDefinition(

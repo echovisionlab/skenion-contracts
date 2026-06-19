@@ -1,0 +1,44 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[+ 1]",
+  "ok": true,
+  "classSymbol": "+",
+  "creationArgs": [
+    {
+      "type": "int",
+      "value": 1,
+      "representation": "i32"
+    }
+  ],
+  "resolvedKind": "core.operator.add",
+  "resolvedKindVersion": "0.1.0",
+  "params": {
+    "right": 1
+  },
+  "instancePorts": [
+    {
+      "id": "in",
+      "direction": "input",
+      "type": "message.any",
+      "rate": "control",
+      "activation": "trigger"
+    },
+    {
+      "id": "right",
+      "direction": "input",
+      "type": "number.float",
+      "rate": "control",
+      "activation": "latched",
+      "defaultValue": 1
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "type": "number.float",
+      "rate": "control"
+    }
+  ],
+  "displayText": "+ 1",
+  "diagnostics": []
+}

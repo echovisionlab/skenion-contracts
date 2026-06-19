@@ -1,0 +1,13 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[+ 1]",
+  "ok": true,
+  "creationArgs": [],
+  "resolvedKind": "core.operator.add",
+  "resolvedKindVersion": "0.1.0",
+  "params": {},
+  "instancePorts": [],
+  "displayText": "+ 1",
+  "diagnostics": []
+}

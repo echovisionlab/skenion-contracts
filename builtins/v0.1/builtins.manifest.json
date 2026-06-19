@@ -19,7 +19,26 @@
     "core.preview",
     "render.clear-color",
     "render.fullscreen-shader",
-    "render.output"
+    "render.output",
+    "core.operator.add",
+    "core.operator.sub",
+    "core.operator.mul",
+    "core.operator.div",
+    "core.operator.pow",
+    "core.operator.min",
+    "core.operator.max",
+    "core.operator.sqrt",
+    "audio.operator.add",
+    "audio.operator.sub",
+    "audio.operator.mul",
+    "audio.operator.div",
+    "audio.operator.sqrt",
+    "audio.osc",
+    "audio.phasor",
+    "audio.cos",
+    "audio.noise",
+    "audio.sig",
+    "audio.snapshot"
   ],
   "canonicalDataKinds": [
     "number.float",
@@ -32,7 +51,8 @@
     "asset.video",
     "video.frame",
     "gpu.texture2d",
-    "color"
+    "color",
+    "signal.audio"
   ],
   "representations": {
     "number.float": [

@@ -1,0 +1,42 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "audio.phasor",
+  "version": "0.1.0",
+  "displayName": "Phasor",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "frequency",
+      "direction": "input",
+      "label": "Frequency",
+      "type": {
+        "flow": "value",
+        "dataKind": "number.float",
+        "format": "f32"
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Signal",
+      "type": {
+        "flow": "signal",
+        "dataKind": "signal.audio"
+      }
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "pd.audio.v0.1"
+  ]
+}
