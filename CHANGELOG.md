@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.24.0...skenion-contracts-v0.25.0) (2026-06-19)
+
+
+### Features
+
+* **contracts:** align control objects with Pd-style inlets ([#62](https://github.com/echovisionlab/skenion-contracts/issues/62)) ([08c7aad](https://github.com/echovisionlab/skenion-contracts/commit/08c7aad73e83e5ef429be43f2dd6395b90c527a9))
+
 ## [0.24.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.23.0...skenion-contracts-v0.24.0) (2026-06-19)
 
 
