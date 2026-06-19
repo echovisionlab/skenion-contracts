@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.25.0...skenion-contracts-v0.25.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **control:** route comment and panel set messages through inlets ([#66](https://github.com/echovisionlab/skenion-contracts/issues/66)) ([09be948](https://github.com/echovisionlab/skenion-contracts/commit/09be94840b58e183747475d3a5d805d2ca7e959a))
+
 ## [0.25.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.24.0...skenion-contracts-v0.25.0) (2026-06-19)
 
 
