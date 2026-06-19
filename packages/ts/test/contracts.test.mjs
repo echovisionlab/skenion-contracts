@@ -331,35 +331,34 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.deepEqual([...ids].sort(), [...builtinManifestV01.nodes].sort());
 
   const valueDefinition = getBuiltinNodeDefinition("core.float");
-  assert.deepEqual(valueDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(valueDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(valueDefinition?.ports.find((port) => port.id === "in")?.activation, "trigger");
-  assert.equal(valueDefinition?.ports.find((port) => port.id === "set")?.activation, "latched");
-  assert.equal(valueDefinition?.ports.find((port) => port.id === "bang")?.type.dataKind, "event.bang");
+  assert.equal(valueDefinition?.ports.find((port) => port.id === "cold")?.activation, "latched");
   const valueOutputType = valueDefinition?.ports.find((port) => port.id === "value")?.type;
   assert.equal(valueOutputType?.dataKind, "number.float");
   assert.equal(Boolean(valueOutputType && "range" in valueOutputType), false);
 
   const i32Definition = getBuiltinNodeDefinition("core.int");
-  assert.deepEqual(i32Definition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(i32Definition?.ports.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(i32Definition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.int");
   assert.equal(i32Definition?.ports.find((port) => port.id === "value")?.type.format, "i32");
 
   const uintDefinition = getBuiltinNodeDefinition("core.uint");
-  assert.deepEqual(uintDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(uintDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(uintDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.uint");
   assert.equal(uintDefinition?.ports.find((port) => port.id === "value")?.type.format, "u32");
 
   const boolDefinition = getBuiltinNodeDefinition("core.bool");
-  assert.deepEqual(boolDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(boolDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(boolDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "boolean");
 
   const colorDefinition = getBuiltinNodeDefinition("core.color");
-  assert.deepEqual(colorDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(colorDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "color");
   assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.format, "rgba32f");
 
   const stringDefinition = getBuiltinNodeDefinition("core.string");
-  assert.deepEqual(stringDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(stringDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(stringDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
 
   const commentDefinition = getBuiltinNodeDefinition("core.comment");
@@ -370,15 +369,14 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.equal(panelDefinition?.ports.find((port) => port.id === "set")?.type.dataKind, "message.any");
 
   const messageDefinition = getBuiltinNodeDefinition("core.message");
-  assert.deepEqual(messageDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(messageDefinition?.ports.map((port) => port.id), ["in", "out"]);
   assert.equal(messageDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
-  assert.equal(messageDefinition?.ports.find((port) => port.id === "set")?.type.dataKind, "message.any");
-  assert.equal(messageDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "message.any");
+  assert.equal(messageDefinition?.ports.find((port) => port.id === "out")?.type.dataKind, "message.any");
 
   const bangDefinition = getBuiltinNodeDefinition("core.bang");
-  assert.deepEqual(bangDefinition?.ports.map((port) => port.id), ["in", "bang"]);
+  assert.deepEqual(bangDefinition?.ports.map((port) => port.id), ["in", "out"]);
   assert.equal(bangDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
-  assert.equal(bangDefinition?.ports.find((port) => port.id === "bang")?.type.dataKind, "event.bang");
+  assert.equal(bangDefinition?.ports.find((port) => port.id === "out")?.type.dataKind, "event.bang");
 
   for (const removedId of [
     ["core", "target"],
@@ -495,6 +493,42 @@ test("plans implicit numeric and color representation conversions", () => {
   assert.equal(messageSink.ok, true);
   assert.equal(messageSink.lossy, false);
 
+  const panelMessageSink = planConversion(
+    { flow: "value", dataKind: "string" },
+    { flow: "value", dataKind: "message.any" }
+  );
+  assert.equal(panelMessageSink.ok, true);
+
+  const bangToAnyMessage = planConversion(
+    { flow: "event", dataKind: "event.bang" },
+    { flow: "event", dataKind: "message.any" }
+  );
+  assert.equal(bangToAnyMessage.ok, true);
+
+  const anyMessageToAnyMessage = planConversion(
+    { flow: "event", dataKind: "message.any" },
+    { flow: "event", dataKind: "message.any" }
+  );
+  assert.equal(anyMessageToAnyMessage.ok, true);
+
+  const resourceToMessage = planConversion(
+    { flow: "resource", dataKind: "gpu.texture2d" },
+    { flow: "event", dataKind: "message.any" }
+  );
+  assert.equal(resourceToMessage.ok, false);
+
+  const eventToValueMessage = planConversion(
+    { flow: "event", dataKind: "event.bang" },
+    { flow: "value", dataKind: "message.any" }
+  );
+  assert.equal(eventToValueMessage.ok, false);
+
+  const invalidMessageAnyFlow = planConversion(
+    { flow: "value", dataKind: "string" },
+    { flow: "resource", dataKind: "message.any" }
+  );
+  assert.equal(invalidMessageAnyFlow.ok, false);
+
   assert.equal(representationForDataType({ flow: "value", dataKind: "number.float", format: ["f16", "f32"] }), "f16");
   assert.equal(representationForDataType({ flow: "value", dataKind: "number.uint" }), "u32");
   assert.equal(representationForDataType({ flow: "value", dataKind: "string" }), undefined);
@@ -585,8 +619,16 @@ test("plans implicit numeric and color representation conversions", () => {
     { flow: "value", dataKind: "color", format: "rgba32f" }
   ).ok, false);
   assert.equal(planConversion(
+    { flow: "value", dataKind: "color", format: "color.custom" },
+    { flow: "value", dataKind: "color", format: "rgba32f" }
+  ).ok, false);
+  assert.equal(planConversion(
     { flow: "value", dataKind: "color", format: "rgba32f" },
     { flow: "value", dataKind: "color", format: "color.custom" }
+  ).ok, false);
+  assert.equal(planConversion(
+    { flow: "value", dataKind: "color", format: "rgba32f" },
+    { flow: "value", dataKind: "color", format: "f32" }
   ).ok, false);
 });
 
@@ -712,14 +754,14 @@ test("exports builtin node help", () => {
 
   const valueHelp = getBuiltinNodeHelp("core.float");
   assert.match(valueHelp?.summary ?? "", /floating-point/);
-  assert.deepEqual(valueHelp?.ports?.map((port) => port.id), ["in", "set", "bang", "value"]);
+  assert.deepEqual(valueHelp?.ports?.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(valueHelp?.docsPath, "docs/nodes/core.float.md");
   assert.equal(valueHelp?.helpGraph, "help/v0.1/nodes/core.float.help.graph.json");
   assert.equal(valueHelp?.tags.includes("control"), true);
 
   const bangHelp = getBuiltinNodeHelp("core.bang");
   assert.match(bangHelp?.description ?? "", /event\.bang.*selector/);
-  assert.deepEqual(bangHelp?.ports?.map((port) => port.id), ["in", "bang"]);
+  assert.deepEqual(bangHelp?.ports?.map((port) => port.id), ["in", "out"]);
 
   const shaderHelp = getBuiltinNodeHelp("render.fullscreen-shader");
   assert.match(shaderHelp?.runtimeBehavior ?? "", /dynamic uniform layout/);
@@ -729,8 +771,8 @@ test("exports builtin node help", () => {
   assert.equal(valueHelpGraph?.id, "help-core-float");
   assert.equal(validateGraphDocument(valueHelpGraph).ok, true);
   assert.deepEqual(valueHelpGraph?.edges[0], {
-    from: { node: "bang_1", port: "bang" },
-    to: { node: "value_1", port: "bang" }
+    from: { node: "bang_1", port: "out" },
+    to: { node: "value_1", port: "in" }
   });
 
   const shaderHelpGraph = getBuiltinNodeHelpGraph("render.fullscreen-shader");

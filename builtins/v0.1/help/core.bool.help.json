@@ -10,22 +10,18 @@
     "control",
     "boolean"
   ],
-  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean. Toggle/checkbox widgets treat bang as flip-and-emit.",
+  "runtimeBehavior": "in is the hot inlet. Value-box widgets emit stored value on bang; toggle/checkbox widgets flip and emit on bang. cold updates silently.",
   "relatedNodes": [
     "render.fullscreen-shader"
   ],
   "ports": [
     {
       "id": "in",
-      "description": "Updates the stored value and emits it."
+      "description": "Hot inlet: values update and emit; bang emits or toggles depending on widget; set ... updates silently."
     },
     {
-      "id": "set",
-      "description": "Updates the stored value without emitting."
-    },
-    {
-      "id": "bang",
-      "description": "Emits the current stored value without changing it."
+      "id": "cold",
+      "description": "Cold inlet: compatible boolean values or set ... update without emitting."
     },
     {
       "id": "value",

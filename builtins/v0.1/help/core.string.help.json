@@ -10,22 +10,18 @@
     "control",
     "text"
   ],
-  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored string without changing it.",
+  "runtimeBehavior": "in is the hot inlet: string values update and emit, bang emits the stored string, and set ... updates silently. cold updates silently.",
   "relatedNodes": [
     "core.message"
   ],
   "ports": [
     {
       "id": "in",
-      "description": "Updates the stored text and emits it."
+      "description": "Hot inlet: string values update and emit; bang emits the stored text; set ... updates silently."
     },
     {
-      "id": "set",
-      "description": "Updates the stored text without emitting."
-    },
-    {
-      "id": "bang",
-      "description": "Emits the current stored text without changing it."
+      "id": "cold",
+      "description": "Cold inlet: compatible string values or set ... update without emitting."
     },
     {
       "id": "value",

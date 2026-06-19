@@ -41,6 +41,16 @@ const defaultRepresentationByDataKind = new Map<string, RepresentationV01>([
 ]);
 
 const numericKinds = new Set(["number.float", "number.int", "number.uint"]);
+const controlMessageDataKinds = new Set([
+  "boolean",
+  "color",
+  "event.bang",
+  "message.any",
+  "number.float",
+  "number.int",
+  "number.uint",
+  "string"
+]);
 
 export function representationForDataType(type: DataTypeV01): string | undefined {
   const format = Array.isArray(type.format) ? type.format[0] : type.format;
@@ -63,7 +73,7 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
     implicit: true
   };
 
-  if (targetType.dataKind === "message.any") {
+  if (targetType.dataKind === "message.any" && isMessageAnyCompatible(sourceType, targetType)) {
     return {
       ...base,
       ok: true,
@@ -122,6 +132,19 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
   }
 
   return failedPlan(base, `${source.dataKind} is not compatible with ${target.dataKind}`);
+}
+
+function isMessageAnyCompatible(sourceType: DataTypeV01, targetType: DataTypeV01): boolean {
+  if (targetType.flow === "event") {
+    return (
+      sourceType.flow === "event" ||
+      (sourceType.flow === "value" && controlMessageDataKinds.has(sourceType.dataKind))
+    );
+  }
+  if (targetType.flow === "value") {
+    return sourceType.flow === "value" && controlMessageDataKinds.has(sourceType.dataKind);
+  }
+  return false;
 }
 
 function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target" | "implicit">): ConversionPlanV01 {

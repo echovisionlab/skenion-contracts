@@ -4,9 +4,9 @@
 
 Inputs:
 
-- `in`: update the stored value and emit it.
-- `set`: update the stored value without emitting.
-- `bang`: emit the current stored value without changing it.
+- `in`: hot `message.any` inlet. A `number.float` message updates and emits;
+  `bang` emits the current stored value; `set ...` updates silently.
+- `cold`: cold inlet. A compatible value or `set ...` updates silently.
 
 Output:
 

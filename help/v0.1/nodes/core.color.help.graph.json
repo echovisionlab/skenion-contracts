@@ -33,34 +33,24 @@
           "direction": "input",
           "label": "In",
           "type": {
-            "flow": "value",
-            "dataKind": "color",
-            "format": "rgba32f",
-            "colorSpace": "linear"
-          },
-          "activation": "trigger"
-        },
-        {
-          "id": "set",
-          "direction": "input",
-          "label": "Set",
-          "type": {
-            "flow": "value",
-            "dataKind": "color",
-            "format": "rgba32f",
-            "colorSpace": "linear"
-          },
-          "activation": "latched"
-        },
-        {
-          "id": "bang",
-          "direction": "input",
-          "label": "Bang",
-          "type": {
             "flow": "event",
-            "dataKind": "event.bang"
+            "dataKind": "message.any"
           },
+          "required": false,
           "activation": "trigger"
+        },
+        {
+          "id": "cold",
+          "direction": "input",
+          "label": "Cold",
+          "type": {
+            "flow": "value",
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
+          },
+          "required": false,
+          "activation": "latched"
         },
         {
           "id": "value",

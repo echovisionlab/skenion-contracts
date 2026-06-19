@@ -14,6 +14,29 @@
       },
       "ports": [
         {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "event",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        },
+        {
+          "id": "cold",
+          "direction": "input",
+          "label": "Cold",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.float",
+            "format": "f32"
+          },
+          "required": false,
+          "activation": "latched"
+        },
+        {
           "id": "value",
           "direction": "output",
           "label": "Value",
@@ -40,6 +63,30 @@
         "colorSpace": "linear"
       },
       "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "event",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        },
+        {
+          "id": "cold",
+          "direction": "input",
+          "label": "Cold",
+          "type": {
+            "flow": "value",
+            "dataKind": "color",
+            "format": "rgba32f",
+            "colorSpace": "linear"
+          },
+          "required": false,
+          "activation": "latched"
+        },
         {
           "id": "value",
           "direction": "output",

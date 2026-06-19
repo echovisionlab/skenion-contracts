@@ -11,9 +11,20 @@
       "params": {},
       "ports": [
         {
-          "id": "bang",
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "event",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        },
+        {
+          "id": "out",
           "direction": "output",
-          "label": "Pressed",
+          "label": "Bang",
           "type": {
             "flow": "event",
             "dataKind": "event.bang"
@@ -44,7 +55,7 @@
     {
       "from": {
         "node": "button_1",
-        "port": "bang"
+        "port": "out"
       },
       "to": {
         "node": "burst_1",

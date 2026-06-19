@@ -15,9 +15,11 @@ The canonical v0.1 typed value nodes are:
 
 Each typed value node has the same control surface:
 
-- `in` updates the stored value and emits the new value.
-- `set` updates the stored value without emitting.
-- `bang` emits the current stored value without changing it.
+- `in` is the hot `message.any` inlet. A typed value message updates the stored
+  value and emits it; `bang` emits the current stored value; `set ...` updates
+  silently.
+- `cold` is the cold inlet. A compatible typed value or `set ...` updates the
+  stored value without emitting.
 - `value` emits the current stored value.
 
 `core.bool` is also the canonical toggle object when `params.widget` is
@@ -38,6 +40,9 @@ in 12
   -> store 12
   -> emit 12
 ```
+
+`bang` and `set` are selectors carried by `ControlMessage`. They are not
+separate visual inlet ports.
 
 ## Graph Edits Versus Runtime Control
 
@@ -63,7 +68,7 @@ participate in runtime execution.
 
 `core.message` is the first simple message-box form. It stores message box text
 in graph params and emits a `ControlMessage` selector plus typed atoms when
-banged or clicked. `set ...` updates the runtime message text silently.
+banged or clicked. `set ...` on `in` updates the runtime message text silently.
 `pack`/`unpack` and richer message transforms are deferred until the typed
 control graph is stable.
 

@@ -5,13 +5,13 @@ control message: selector plus typed atoms.
 
 Input:
 
-- `in`: emits the current message payload.
-- `set`: updates the runtime message payload without output.
-- `bang`: emits the saved message payload.
+- `in`: hot message inlet. `bang` emits the saved payload, `set ...` updates the
+  runtime payload without output, and other messages evaluate the stored message
+  payload.
 
 Output:
 
-- `value`: the emitted message payload. v0.1 stores message box text as the
+- `out`: the emitted message payload. v0.1 stores message box text as the
   graph param and Runtime parses it into a selector plus atoms.
 
 Params:

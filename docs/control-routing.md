@@ -61,8 +61,10 @@ node kind. These interactions are performance-time state changes, not graph
 edits:
 
 - `core.bang` accepts any incoming message and emits `event.bang`
-- `core.float` with `widget: "slider"` accepts `in`, `set`, and `bang` and emits `value<number.float>`
-- `core.bool` with `widget: "toggle"` accepts `bang`, `0/1`, `off/on`, `false/true`, and `set` forms
+- `core.float` with `widget: "slider"` sends typed values to the hot `in` inlet
+  and emits `value<number.float>`
+- `core.bool` with `widget: "toggle"` handles `bang`, `0/1`, `off/on`,
+  `false/true`, and `set` forms through its hot `in` inlet
 
 Changing graph parameters such as `label`, `min`, `max`, `step`, `sendName`, or
 `receiveName` remains a graph patch. Moving a runtime slider or clicking a

@@ -26,10 +26,11 @@
             "flow": "event",
             "dataKind": "message.any"
           },
+          "required": false,
           "activation": "trigger"
         },
         {
-          "id": "bang",
+          "id": "out",
           "direction": "output",
           "label": "Bang",
           "type": {
@@ -56,30 +57,11 @@
             "flow": "event",
             "dataKind": "message.any"
           },
+          "required": false,
           "activation": "trigger"
         },
         {
-          "id": "set",
-          "direction": "input",
-          "label": "Set",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "activation": "latched"
-        },
-        {
-          "id": "bang",
-          "direction": "input",
-          "label": "Bang",
-          "type": {
-            "flow": "event",
-            "dataKind": "event.bang"
-          },
-          "activation": "trigger"
-        },
-        {
-          "id": "value",
+          "id": "out",
           "direction": "output",
           "label": "Message",
           "type": {
@@ -94,11 +76,11 @@
     {
       "from": {
         "node": "bang_1",
-        "port": "bang"
+        "port": "out"
       },
       "to": {
         "node": "message_1",
-        "port": "bang"
+        "port": "in"
       }
     }
   ]

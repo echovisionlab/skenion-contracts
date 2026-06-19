@@ -11,25 +11,17 @@
     "message",
     "text"
   ],
-  "runtimeBehavior": "click, in, or bang emits the saved message payload. set updates runtime message text without output. Inspector edits are graph patches, not runtime control events.",
+  "runtimeBehavior": "Click or bang on in emits the saved message payload. set ... on in updates runtime message text without output. Inspector edits are graph patches.",
   "relatedNodes": [
     "core.string"
   ],
   "ports": [
     {
       "id": "in",
-      "description": "Accepts any message and emits the current message payload."
+      "description": "Hot message inlet: bang emits saved payload; set ... updates silently; other messages evaluate the stored payload."
     },
     {
-      "id": "set",
-      "description": "Updates the runtime message payload without output."
-    },
-    {
-      "id": "bang",
-      "description": "Emits the saved message payload."
-    },
-    {
-      "id": "value",
+      "id": "out",
       "description": "Outputs the saved selector plus typed atoms as a message payload."
     }
   ],

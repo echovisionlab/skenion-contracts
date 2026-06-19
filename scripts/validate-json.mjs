@@ -51,10 +51,33 @@ function typeLabel(type) {
 }
 
 const numericDataKinds = new Set(["number.float", "number.int", "number.uint"]);
+const controlMessageDataKinds = new Set([
+  "boolean",
+  "color",
+  "event.bang",
+  "message.any",
+  "number.float",
+  "number.int",
+  "number.uint",
+  "string"
+]);
+
+function messageAnyCompatible(sourceType, targetType) {
+  if (targetType.flow === "event") {
+    return (
+      sourceType.flow === "event" ||
+      (sourceType.flow === "value" && controlMessageDataKinds.has(sourceType.dataKind))
+    );
+  }
+  if (targetType.flow === "value") {
+    return sourceType.flow === "value" && controlMessageDataKinds.has(sourceType.dataKind);
+  }
+  return false;
+}
 
 function compatibleTypes(sourceType, targetType) {
   if (targetType.dataKind === "message.any") {
-    return true;
+    return messageAnyCompatible(sourceType, targetType);
   }
   if (sourceType.flow !== targetType.flow) {
     return false;
@@ -378,23 +401,12 @@ function validateMessageBuiltin(definitions) {
   if (input.activation !== "trigger") {
     fail(file, "core.message.in activation must be trigger");
   }
-  const set = ports.get("set");
-  if (set?.direction !== "input" || set?.type.dataKind !== "message.any") {
-    fail(file, "core.message.set must be input message.any");
+  if (ports.has("set") || ports.has("bang") || ports.has("value")) {
+    fail(file, "core.message must expose only in/out ports; set and bang are message selectors");
   }
-  if (set.activation !== "latched") {
-    fail(file, "core.message.set activation must be latched");
-  }
-  const bang = ports.get("bang");
-  if (bang?.direction !== "input" || bang?.type.flow !== "event" || bang?.type.dataKind !== "event.bang") {
-    fail(file, "core.message.bang must be input event<event.bang>");
-  }
-  if (bang.activation !== "trigger") {
-    fail(file, "core.message.bang activation must be trigger");
-  }
-  const value = ports.get("value");
-  if (value?.direction !== "output" || value?.type.flow !== "event" || value?.type.dataKind !== "message.any") {
-    fail(file, "core.message.value must be output event<message.any>");
+  const out = ports.get("out");
+  if (out?.direction !== "output" || out?.type.flow !== "event" || out?.type.dataKind !== "message.any") {
+    fail(file, "core.message.out must be output event<message.any>");
   }
 }
 
@@ -412,9 +424,12 @@ function validateBangBuiltin(definitions) {
   if (input.activation !== "trigger") {
     fail(file, "core.bang.in activation must be trigger");
   }
-  const bang = ports.get("bang");
-  if (bang?.direction !== "output" || bang?.type.flow !== "event" || bang?.type.dataKind !== "event.bang") {
-    fail(file, "core.bang.bang must be output event<event.bang>");
+  if (ports.has("bang")) {
+    fail(file, "core.bang output port id must be out; bang is a message selector");
+  }
+  const out = ports.get("out");
+  if (out?.direction !== "output" || out?.type.flow !== "event" || out?.type.dataKind !== "event.bang") {
+    fail(file, "core.bang.out must be output event<event.bang>");
   }
 }
 
@@ -427,11 +442,13 @@ function validateTypedValueBuiltin(definitions, id, dataKind, outputLabel) {
 
   const ports = new Map(definition.ports.map((port) => [port.id, port]));
   const expected = [
-    ["in", "input", "trigger", dataKind],
-    ["set", "input", "latched", dataKind],
-    ["bang", "input", "trigger", "event.bang"],
+    ["in", "input", "trigger", "message.any"],
+    ["cold", "input", "latched", dataKind],
     ["value", "output", undefined, dataKind]
   ];
+  if (ports.has("set") || ports.has("bang")) {
+    fail(file, `${id} must not expose set or bang input ports; they are message selectors`);
+  }
   for (const [portId, direction, activation, expectedDataKind] of expected) {
     const port = ports.get(portId);
     if (!port) {

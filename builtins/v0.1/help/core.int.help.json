@@ -10,22 +10,18 @@
     "control",
     "integer"
   ],
-  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored integer value without changing it.",
+  "runtimeBehavior": "in is the hot inlet: typed values update and emit, bang emits the stored integer, and set ... updates silently. cold updates silently.",
   "relatedNodes": [
     "render.fullscreen-shader"
   ],
   "ports": [
     {
       "id": "in",
-      "description": "Updates the stored value and emits it."
+      "description": "Hot inlet: typed integer values update and emit; bang emits the stored value; set ... updates silently."
     },
     {
-      "id": "set",
-      "description": "Updates the stored value without emitting."
-    },
-    {
-      "id": "bang",
-      "description": "Emits the current stored value without changing it."
+      "id": "cold",
+      "description": "Cold inlet: compatible integer values or set ... update without emitting."
     },
     {
       "id": "value",

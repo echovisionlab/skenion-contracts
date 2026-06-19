@@ -10,22 +10,18 @@
     "control",
     "color"
   ],
-  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored RGBA color/rgba32f without changing it.",
+  "runtimeBehavior": "in is the hot inlet: color values update and emit, bang emits the stored color, and set ... updates silently. cold updates silently.",
   "relatedNodes": [
     "render.fullscreen-shader"
   ],
   "ports": [
     {
       "id": "in",
-      "description": "Updates the stored color/rgba32f and emits it."
+      "description": "Hot inlet: color values update and emit; bang emits the stored color; set ... updates silently."
     },
     {
-      "id": "set",
-      "description": "Updates the stored color/rgba32f without emitting."
-    },
-    {
-      "id": "bang",
-      "description": "Emits the current stored color/rgba32f without changing it."
+      "id": "cold",
+      "description": "Cold inlet: compatible color values or set ... update without emitting."
     },
     {
       "id": "value",

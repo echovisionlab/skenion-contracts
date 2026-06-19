@@ -10,7 +10,7 @@
     "trigger",
     "control"
   ],
-  "runtimeBehavior": "Clicking the object or receiving any message on in emits one event.bang from bang.",
+  "runtimeBehavior": "Clicking the object or receiving any message on in emits one event.bang from out.",
   "relatedNodes": [
     "core.float",
     "core.bool",
@@ -22,7 +22,7 @@
       "description": "Accepts any control message and converts it to a bang trigger."
     },
     {
-      "id": "bang",
+      "id": "out",
       "description": "Outputs a discrete event.bang trigger."
     }
   ],

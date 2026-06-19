@@ -8,21 +8,21 @@ typed values and simple control annotations.
 `core.float`, `core.int`, `core.bool`, `core.color`, and
 `core.string` share the same stored-value surface:
 
-- `in`: update the stored value and emit it
-- `set`: update the stored value without emitting
-- `bang`: emit the current stored value without changing it
+- `in`: hot `message.any` inlet; typed values update and emit, `bang` emits the
+  stored value, and `set ...` updates silently
+- `cold`: cold inlet; compatible typed values and `set ...` update silently
 - `value`: output the current stored value
 
 `core.bool` is also the canonical toggle object when `params.widget` is
-`"toggle"` or `"checkbox"`. In that widget mode, `bang` flips the stored value
-and emits the new value. Value objects may also use `sendName` and
+`"toggle"` or `"checkbox"`. In that widget mode, `bang` sent to `in` flips the
+stored value and emits the new value. Value objects may also use `sendName` and
 `receiveName` graph params for named typed routing.
 
 ## Message And Comment
 
-`core.message` is a Max/Pd-like message box. Click, `in`, or `bang` emits its
-saved payload. `set <message>` updates runtime message state silently. Inspector
-text edits remain graph patches.
+`core.message` is a Max/Pd-like message box. Click or `bang` on `in` emits its
+saved payload. `set <message>` on `in` updates runtime message state silently.
+Inspector text edits remain graph patches.
 
 `core.comment` documents the patch and has no runtime behavior. It is rendered
 as a text annotation, not as a generic node card.

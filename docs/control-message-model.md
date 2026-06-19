@@ -30,13 +30,20 @@ value.
 
 Objects own their message handlers:
 
-- Button accepts any incoming message and emits `bang`.
-- Toggle handles `bang`, `0`, `1`, `off`, `on`, `false`, `true`, and `set ...`.
-- Message emits its stored message on click or bang, and updates silently on
+- Bang accepts any incoming message on its inlet and emits `bang`.
+- Value objects handle selectors on their hot inlet. A typed value updates and
+  emits, `bang` emits the stored value, and `set ...` updates silently.
+- Value objects also expose a cold inlet for silent typed value storage.
+- Toggle handles `bang`, `0`, `1`, `off`, `on`, `false`, `true`, and `set ...`
+  through the same object-owned inlet handlers.
+- Message emits its stored message on click or `bang`, and updates silently on
   `set ...`.
 - Comment is a canvas annotation. It has no runtime control state and no ports.
 
 `message.any` is a message domain data kind. It is not a string value.
+
+`bang` and `set` are message selectors, not visual inlet names. A node should
+not expose a dedicated `bang` inlet just to receive the `bang` selector.
 
 ## Conversion Boundary
 

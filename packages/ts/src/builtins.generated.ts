@@ -130,7 +130,7 @@ export const builtinNodeDefinitionsV01 = [
         "activation": "trigger"
       },
       {
-        "id": "bang",
+        "id": "out",
         "direction": "output",
         "label": "Bang",
         "type": {
@@ -161,33 +161,22 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
-          "dataKind": "boolean"
+          "flow": "event",
+          "dataKind": "message.any"
         },
         "required": false,
         "activation": "trigger"
       },
       {
-        "id": "set",
+        "id": "cold",
         "direction": "input",
-        "label": "Set",
+        "label": "Cold",
         "type": {
           "flow": "value",
           "dataKind": "boolean"
         },
         "required": false,
         "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
       },
       {
         "id": "value",
@@ -221,18 +210,16 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
-          "dataKind": "color",
-          "format": "rgba32f",
-          "colorSpace": "linear"
+          "flow": "event",
+          "dataKind": "message.any"
         },
         "required": false,
         "activation": "trigger"
       },
       {
-        "id": "set",
+        "id": "cold",
         "direction": "input",
-        "label": "Set",
+        "label": "Cold",
         "type": {
           "flow": "value",
           "dataKind": "color",
@@ -241,17 +228,6 @@ export const builtinNodeDefinitionsV01 = [
         },
         "required": false,
         "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
       },
       {
         "id": "value",
@@ -304,17 +280,16 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
+          "flow": "event",
+          "dataKind": "message.any"
         },
         "required": false,
         "activation": "trigger"
       },
       {
-        "id": "set",
+        "id": "cold",
         "direction": "input",
-        "label": "Set",
+        "label": "Cold",
         "type": {
           "flow": "value",
           "dataKind": "number.float",
@@ -322,17 +297,6 @@ export const builtinNodeDefinitionsV01 = [
         },
         "required": false,
         "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
       },
       {
         "id": "value",
@@ -410,17 +374,16 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
-          "dataKind": "number.int",
-          "format": "i32"
+          "flow": "event",
+          "dataKind": "message.any"
         },
         "required": false,
         "activation": "trigger"
       },
       {
-        "id": "set",
+        "id": "cold",
         "direction": "input",
-        "label": "Set",
+        "label": "Cold",
         "type": {
           "flow": "value",
           "dataKind": "number.int",
@@ -428,17 +391,6 @@ export const builtinNodeDefinitionsV01 = [
         },
         "required": false,
         "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
       },
       {
         "id": "value",
@@ -480,29 +432,7 @@ export const builtinNodeDefinitionsV01 = [
         "activation": "trigger"
       },
       {
-        "id": "set",
-        "direction": "input",
-        "label": "Set",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "value",
+        "id": "out",
         "direction": "output",
         "label": "Message",
         "type": {
@@ -593,33 +523,22 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
-          "dataKind": "string"
+          "flow": "event",
+          "dataKind": "message.any"
         },
         "required": false,
         "activation": "trigger"
       },
       {
-        "id": "set",
+        "id": "cold",
         "direction": "input",
-        "label": "Set",
+        "label": "Cold",
         "type": {
           "flow": "value",
           "dataKind": "string"
         },
         "required": false,
         "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
       },
       {
         "id": "value",
@@ -653,17 +572,16 @@ export const builtinNodeDefinitionsV01 = [
         "direction": "input",
         "label": "In",
         "type": {
-          "flow": "value",
-          "dataKind": "number.uint",
-          "format": "u32"
+          "flow": "event",
+          "dataKind": "message.any"
         },
         "required": false,
         "activation": "trigger"
       },
       {
-        "id": "set",
+        "id": "cold",
         "direction": "input",
-        "label": "Set",
+        "label": "Cold",
         "type": {
           "flow": "value",
           "dataKind": "number.uint",
@@ -671,17 +589,6 @@ export const builtinNodeDefinitionsV01 = [
         },
         "required": false,
         "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
       },
       {
         "id": "value",
@@ -884,7 +791,7 @@ export const builtinNodeHelpV01 = [
       "trigger",
       "control"
     ],
-    "runtimeBehavior": "Clicking the object or receiving any message on in emits one event.bang from bang.",
+    "runtimeBehavior": "Clicking the object or receiving any message on in emits one event.bang from out.",
     "relatedNodes": [
       "core.float",
       "core.bool",
@@ -896,7 +803,7 @@ export const builtinNodeHelpV01 = [
         "description": "Accepts any control message and converts it to a bang trigger."
       },
       {
-        "id": "bang",
+        "id": "out",
         "description": "Outputs a discrete event.bang trigger."
       }
     ],
@@ -918,22 +825,18 @@ export const builtinNodeHelpV01 = [
       "control",
       "boolean"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean. Toggle/checkbox widgets treat bang as flip-and-emit.",
+    "runtimeBehavior": "in is the hot inlet. Value-box widgets emit stored value on bang; toggle/checkbox widgets flip and emit on bang. cold updates silently.",
     "relatedNodes": [
       "render.fullscreen-shader"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Updates the stored value and emits it."
+        "description": "Hot inlet: values update and emit; bang emits or toggles depending on widget; set ... updates silently."
       },
       {
-        "id": "set",
-        "description": "Updates the stored value without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored value without changing it."
+        "id": "cold",
+        "description": "Cold inlet: compatible boolean values or set ... update without emitting."
       },
       {
         "id": "value",
@@ -976,22 +879,18 @@ export const builtinNodeHelpV01 = [
       "control",
       "color"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored RGBA color/rgba32f without changing it.",
+    "runtimeBehavior": "in is the hot inlet: color values update and emit, bang emits the stored color, and set ... updates silently. cold updates silently.",
     "relatedNodes": [
       "render.fullscreen-shader"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Updates the stored color/rgba32f and emits it."
+        "description": "Hot inlet: color values update and emit; bang emits the stored color; set ... updates silently."
       },
       {
-        "id": "set",
-        "description": "Updates the stored color/rgba32f without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored color/rgba32f without changing it."
+        "id": "cold",
+        "description": "Cold inlet: compatible color values or set ... update without emitting."
       },
       {
         "id": "value",
@@ -1059,22 +958,18 @@ export const builtinNodeHelpV01 = [
       "control",
       "number"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored value without changing it.",
+    "runtimeBehavior": "in is the hot inlet: typed values update and emit, bang emits the stored value, and set ... updates silently. cold updates silently.",
     "relatedNodes": [
       "render.fullscreen-shader"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Updates the stored value and emits it."
+        "description": "Hot inlet: typed values update and emit; bang emits the stored value; set ... updates silently."
       },
       {
-        "id": "set",
-        "description": "Updates the stored value without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored value without changing it."
+        "id": "cold",
+        "description": "Cold inlet: compatible values or set ... update the stored value without emitting."
       },
       {
         "id": "value",
@@ -1155,22 +1050,18 @@ export const builtinNodeHelpV01 = [
       "control",
       "integer"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored integer value without changing it.",
+    "runtimeBehavior": "in is the hot inlet: typed values update and emit, bang emits the stored integer, and set ... updates silently. cold updates silently.",
     "relatedNodes": [
       "render.fullscreen-shader"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Updates the stored value and emits it."
+        "description": "Hot inlet: typed integer values update and emit; bang emits the stored value; set ... updates silently."
       },
       {
-        "id": "set",
-        "description": "Updates the stored value without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored value without changing it."
+        "id": "cold",
+        "description": "Cold inlet: compatible integer values or set ... update without emitting."
       },
       {
         "id": "value",
@@ -1210,25 +1101,17 @@ export const builtinNodeHelpV01 = [
       "message",
       "text"
     ],
-    "runtimeBehavior": "click, in, or bang emits the saved message payload. set updates runtime message text without output. Inspector edits are graph patches, not runtime control events.",
+    "runtimeBehavior": "Click or bang on in emits the saved message payload. set ... on in updates runtime message text without output. Inspector edits are graph patches.",
     "relatedNodes": [
       "core.string"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Accepts any message and emits the current message payload."
+        "description": "Hot message inlet: bang emits saved payload; set ... updates silently; other messages evaluate the stored payload."
       },
       {
-        "id": "set",
-        "description": "Updates the runtime message payload without output."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the saved message payload."
-      },
-      {
-        "id": "value",
+        "id": "out",
         "description": "Outputs the saved selector plus typed atoms as a message payload."
       }
     ],
@@ -1337,22 +1220,18 @@ export const builtinNodeHelpV01 = [
       "control",
       "text"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored string without changing it.",
+    "runtimeBehavior": "in is the hot inlet: string values update and emit, bang emits the stored string, and set ... updates silently. cold updates silently.",
     "relatedNodes": [
       "core.message"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Updates the stored text and emits it."
+        "description": "Hot inlet: string values update and emit; bang emits the stored text; set ... updates silently."
       },
       {
-        "id": "set",
-        "description": "Updates the stored text without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored text without changing it."
+        "id": "cold",
+        "description": "Cold inlet: compatible string values or set ... update without emitting."
       },
       {
         "id": "value",
@@ -1392,22 +1271,18 @@ export const builtinNodeHelpV01 = [
       "integer",
       "uint"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored unsigned integer value without changing it.",
+    "runtimeBehavior": "in is the hot inlet: typed values update and emit, bang emits the stored unsigned integer, and set ... updates silently. cold updates silently.",
     "relatedNodes": [
       "render.fullscreen-shader"
     ],
     "ports": [
       {
         "id": "in",
-        "description": "Updates the stored value and emits it."
+        "description": "Hot inlet: typed unsigned integer values update and emit; bang emits the stored value; set ... updates silently."
       },
       {
-        "id": "set",
-        "description": "Updates the stored value without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current stored value without changing it."
+        "id": "cold",
+        "description": "Cold inlet: compatible unsigned integer values or set ... update without emitting."
       },
       {
         "id": "value",
@@ -1646,7 +1521,7 @@ export const builtinNodeHelpGraphsV01 = [
               "activation": "trigger"
             },
             {
-              "id": "bang",
+              "id": "out",
               "direction": "output",
               "label": "Bang",
               "type": {
@@ -1671,17 +1546,16 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
+                "flow": "event",
+                "dataKind": "message.any"
               },
               "required": false,
               "activation": "trigger"
             },
             {
-              "id": "set",
+              "id": "cold",
               "direction": "input",
-              "label": "Set",
+              "label": "Cold",
               "type": {
                 "flow": "value",
                 "dataKind": "number.float",
@@ -1689,17 +1563,6 @@ export const builtinNodeHelpGraphsV01 = [
               },
               "required": false,
               "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "required": false,
-              "activation": "trigger"
             },
             {
               "id": "value",
@@ -1718,11 +1581,11 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "bang_1",
-            "port": "bang"
+            "port": "out"
           },
           "to": {
             "node": "value_1",
-            "port": "bang"
+            "port": "in"
           }
         }
       ]
@@ -1751,7 +1614,18 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {},
           "ports": [
             {
-              "id": "bang",
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "out",
               "direction": "output",
               "label": "Bang",
               "type": {
@@ -1775,30 +1649,22 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
                 "flow": "event",
-                "dataKind": "event.bang"
+                "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              },
+              "required": false,
+              "activation": "latched"
             },
             {
               "id": "value",
@@ -1824,30 +1690,22 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
                 "flow": "event",
-                "dataKind": "event.bang"
+                "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              },
+              "required": false,
+              "activation": "latched"
             },
             {
               "id": "value",
@@ -1866,11 +1724,11 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "bang_1",
-            "port": "bang"
+            "port": "out"
           },
           "to": {
             "node": "value_1",
-            "port": "bang"
+            "port": "in"
           }
         },
         {
@@ -1880,7 +1738,7 @@ export const builtinNodeHelpGraphsV01 = [
           },
           "to": {
             "node": "toggle_1",
-            "port": "set"
+            "port": "cold"
           }
         }
       ]
@@ -1923,34 +1781,24 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
                 "flow": "event",
-                "dataKind": "event.bang"
+                "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
+              },
+              "required": false,
+              "activation": "latched"
             },
             {
               "id": "value",
@@ -2097,7 +1945,18 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {},
           "ports": [
             {
-              "id": "bang",
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "out",
               "direction": "output",
               "label": "Bang",
               "type": {
@@ -2122,32 +1981,23 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
                 "flow": "event",
-                "dataKind": "event.bang"
+                "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "required": false,
+              "activation": "latched"
             },
             {
               "id": "value",
@@ -2171,11 +2021,33 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
                 "flow": "value",
                 "dataKind": "number.float",
                 "format": "f32"
               },
+              "required": false,
               "activation": "latched"
+            },
+            {
+              "id": "value",
+              "direction": "output",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              }
             }
           ],
           "kind": "core.float"
@@ -2185,11 +2057,11 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "bang_1",
-            "port": "bang"
+            "port": "out"
           },
           "to": {
             "node": "value_1",
-            "port": "bang"
+            "port": "in"
           }
         },
         {
@@ -2372,7 +2244,18 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {},
           "ports": [
             {
-              "id": "bang",
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "out",
               "direction": "output",
               "label": "Bang",
               "type": {
@@ -2397,32 +2280,23 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "number.int",
-                "format": "i32"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.int",
-                "format": "i32"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
                 "flow": "event",
-                "dataKind": "event.bang"
+                "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.int",
+                "format": "i32"
+              },
+              "required": false,
+              "activation": "latched"
             },
             {
               "id": "value",
@@ -2441,11 +2315,11 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "bang_1",
-            "port": "bang"
+            "port": "out"
           },
           "to": {
             "node": "value_1",
-            "port": "bang"
+            "port": "in"
           }
         }
       ]
@@ -2481,10 +2355,11 @@ export const builtinNodeHelpGraphsV01 = [
                 "flow": "event",
                 "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
             },
             {
-              "id": "bang",
+              "id": "out",
               "direction": "output",
               "label": "Bang",
               "type": {
@@ -2511,30 +2386,11 @@ export const builtinNodeHelpGraphsV01 = [
                 "flow": "event",
                 "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
             },
             {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "value",
+              "id": "out",
               "direction": "output",
               "label": "Message",
               "type": {
@@ -2549,11 +2405,11 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "bang_1",
-            "port": "bang"
+            "port": "out"
           },
           "to": {
             "node": "message_1",
-            "port": "bang"
+            "port": "in"
           }
         }
       ]
@@ -2694,7 +2550,18 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {},
           "ports": [
             {
-              "id": "bang",
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "out",
               "direction": "output",
               "label": "Bang",
               "type": {
@@ -2718,30 +2585,22 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "string"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "string"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
                 "flow": "event",
-                "dataKind": "event.bang"
+                "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "string"
+              },
+              "required": false,
+              "activation": "latched"
             },
             {
               "id": "value",
@@ -2759,11 +2618,11 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "bang_1",
-            "port": "bang"
+            "port": "out"
           },
           "to": {
             "node": "text_1",
-            "port": "bang"
+            "port": "in"
           }
         }
       ]
@@ -2792,7 +2651,18 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {},
           "ports": [
             {
-              "id": "bang",
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "out",
               "direction": "output",
               "label": "Bang",
               "type": {
@@ -2817,32 +2687,23 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
-                "dataKind": "number.uint",
-                "format": "u32"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.uint",
-                "format": "u32"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
                 "flow": "event",
-                "dataKind": "event.bang"
+                "dataKind": "message.any"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.uint",
+                "format": "u32"
+              },
+              "required": false,
+              "activation": "latched"
             },
             {
               "id": "value",
@@ -2861,11 +2722,11 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "bang_1",
-            "port": "bang"
+            "port": "out"
           },
           "to": {
             "node": "value_1",
-            "port": "bang"
+            "port": "in"
           }
         }
       ]
@@ -3130,6 +2991,29 @@ export const builtinNodeHelpGraphsV01 = [
           },
           "ports": [
             {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "required": false,
+              "activation": "latched"
+            },
+            {
               "id": "value",
               "direction": "output",
               "label": "Value",
@@ -3156,6 +3040,30 @@ export const builtinNodeHelpGraphsV01 = [
             "colorSpace": "linear"
           },
           "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "cold",
+              "direction": "input",
+              "label": "Cold",
+              "type": {
+                "flow": "value",
+                "dataKind": "color",
+                "format": "rgba32f",
+                "colorSpace": "linear"
+              },
+              "required": false,
+              "activation": "latched"
+            },
             {
               "id": "value",
               "direction": "output",

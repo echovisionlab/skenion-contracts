@@ -28,30 +28,23 @@
             "direction": "input",
             "label": "In",
             "type": {
-              "flow": "value",
-              "dataKind": "number.float"
-            },
-            "activation": "trigger"
-          },
-          {
-            "id": "set",
-            "direction": "input",
-            "label": "Set",
-            "type": {
-              "flow": "value",
-              "dataKind": "number.float"
-            },
-            "activation": "latched"
-          },
-          {
-            "id": "bang",
-            "direction": "input",
-            "label": "Bang",
-            "type": {
               "flow": "event",
-              "dataKind": "event.bang"
+              "dataKind": "message.any"
             },
+            "required": false,
             "activation": "trigger"
+          },
+          {
+            "id": "cold",
+            "direction": "input",
+            "label": "Cold",
+            "type": {
+              "flow": "value",
+              "dataKind": "number.float",
+              "format": "f32"
+            },
+            "required": false,
+            "activation": "latched"
           },
           {
             "id": "value",
@@ -59,7 +52,8 @@
             "label": "Value",
             "type": {
               "flow": "value",
-              "dataKind": "number.float"
+              "dataKind": "number.float",
+              "format": "f32"
             }
           }
         ],

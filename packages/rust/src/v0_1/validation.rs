@@ -89,9 +89,36 @@ fn is_numeric_data_kind(data_kind: &str) -> bool {
     matches!(data_kind, "number.float" | "number.int" | "number.uint")
 }
 
+fn is_control_message_data_kind(data_kind: &str) -> bool {
+    matches!(
+        data_kind,
+        "boolean"
+            | "color"
+            | "event.bang"
+            | "message.any"
+            | "number.float"
+            | "number.int"
+            | "number.uint"
+            | "string"
+    )
+}
+
+fn is_message_any_compatible(source_type: &DataTypeV01, target_type: &DataTypeV01) -> bool {
+    if target_type.flow == DataFlowV01::Event {
+        return source_type.flow == DataFlowV01::Event
+            || (source_type.flow == DataFlowV01::Value
+                && is_control_message_data_kind(&source_type.data_kind));
+    }
+    if target_type.flow == DataFlowV01::Value {
+        return source_type.flow == DataFlowV01::Value
+            && is_control_message_data_kind(&source_type.data_kind);
+    }
+    false
+}
+
 pub fn compatible_data_types_v01(source_type: &DataTypeV01, target_type: &DataTypeV01) -> bool {
     if target_type.data_kind == "message.any" {
-        return true;
+        return is_message_any_compatible(source_type, target_type);
     }
     if source_type.flow != target_type.flow {
         return false;
@@ -297,13 +324,34 @@ mod tests {
         assert!(compatible_data_types_v01(&source, &target));
 
         let any_target = value_type("message.any");
-        assert!(compatible_data_types_v01(&source, &any_target));
+        assert!(!compatible_data_types_v01(&source, &any_target));
+        let string_source = value_type("string");
+        assert!(compatible_data_types_v01(&string_source, &any_target));
+        let bool_source = value_type("boolean");
+        assert!(compatible_data_types_v01(&bool_source, &any_target));
+        let mut bang_source = value_type("event.bang");
+        bang_source.flow = DataFlowV01::Event;
+        let mut event_any_target = value_type("message.any");
+        event_any_target.flow = DataFlowV01::Event;
+        assert!(compatible_data_types_v01(&bang_source, &event_any_target));
+        assert!(compatible_data_types_v01(&string_source, &event_any_target));
+        let mut resource_source = value_type("gpu.texture2d");
+        resource_source.flow = DataFlowV01::Resource;
+        assert!(!compatible_data_types_v01(
+            &resource_source,
+            &event_any_target
+        ));
+        let mut signal_any_target = value_type("message.any");
+        signal_any_target.flow = DataFlowV01::Signal;
+        assert!(!compatible_data_types_v01(
+            &string_source,
+            &signal_any_target
+        ));
 
         let int_source = value_type("number.int");
         let uint_target = value_type("number.uint");
         assert!(compatible_data_types_v01(&int_source, &uint_target));
 
-        let bool_source = value_type("boolean");
         assert!(!compatible_data_types_v01(&bool_source, &uint_target));
 
         source.range = Some(NumberRangeV01 {
