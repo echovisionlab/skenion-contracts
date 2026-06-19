@@ -2,8 +2,9 @@ use std::{fs, path::Path};
 
 use skenion_contracts::{
     GraphDocumentV01, GraphDocumentV02, GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01,
-    NodeDefinitionManifestV01, NodeDefinitionManifestV02, validate_graph_document_v01,
-    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
+    NodeDefinitionManifestV01, NodeDefinitionManifestV02, ObjectTextParseResultV01,
+    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
+    validate_node_definition_v02, validate_object_text_parse_result_v01,
 };
 
 fn collect_json_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
@@ -175,5 +176,27 @@ fn parses_graph_patch_event_and_history_fixtures() {
                 .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
         assert_eq!(history.schema, "skenion.graph.patch.history");
         assert_eq!(history.schema_version, "0.1.0");
+    }
+}
+
+#[test]
+fn parses_object_text_parse_result_fixtures() {
+    for file in fixture_files("../../fixtures/object-text/v0.1/valid") {
+        let result: ObjectTextParseResultV01 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+        validate_object_text_parse_result_v01(&result)
+            .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+    }
+
+    for file in fixture_files("../../fixtures/object-text/v0.1/invalid") {
+        let parsed = serde_json::from_slice::<ObjectTextParseResultV01>(
+            &fs::read(&file).expect("fixture should be readable"),
+        );
+        assert!(
+            parsed.is_err(),
+            "{} should be structurally invalid",
+            file.display()
+        );
     }
 }

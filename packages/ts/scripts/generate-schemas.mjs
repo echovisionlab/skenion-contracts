@@ -35,6 +35,9 @@ const shaderDiagnosticV01Schema = await readSchema(
 const controlMessageV01Schema = await readSchema(
   "json-schema/control/v0.1/control-message.schema.json"
 );
+const objectTextParseResultV01Schema = await readSchema(
+  "json-schema/object-text/v0.1/parse-result.schema.json"
+);
 
 await mkdir(generatedDir, { recursive: true });
 await writeFile(
@@ -65,6 +68,8 @@ await writeFile(
     `export const shaderDiagnosticV01Schema = ${JSON.stringify(shaderDiagnosticV01Schema, null, 2)} as const;`,
     "",
     `export const controlMessageV01Schema = ${JSON.stringify(controlMessageV01Schema, null, 2)} as const;`,
+    "",
+    `export const objectTextParseResultV01Schema = ${JSON.stringify(objectTextParseResultV01Schema, null, 2)} as const;`,
     ""
   ].join("\n")
 );

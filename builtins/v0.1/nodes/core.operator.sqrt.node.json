@@ -1,0 +1,41 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "core.operator.sqrt",
+  "version": "0.1.0",
+  "displayName": "Square Root",
+  "category": "Operators",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": {
+        "flow": "event",
+        "dataKind": "message.any"
+      },
+      "required": false,
+      "activation": "trigger"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Value",
+      "type": {
+        "flow": "value",
+        "dataKind": "number.float",
+        "format": "f32"
+      }
+    }
+  ],
+  "execution": {
+    "model": "value"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "pd.control.operator.v0.1"
+  ]
+}

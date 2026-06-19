@@ -1,0 +1,52 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "audio.operator.add",
+  "version": "0.1.0",
+  "displayName": "Audio Add",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "left",
+      "direction": "input",
+      "label": "Left",
+      "type": {
+        "flow": "signal",
+        "dataKind": "signal.audio"
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
+      "id": "right",
+      "direction": "input",
+      "label": "Right",
+      "type": {
+        "flow": "signal",
+        "dataKind": "signal.audio"
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Signal",
+      "type": {
+        "flow": "signal",
+        "dataKind": "signal.audio"
+      }
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "pd.audio.operator.v0.1"
+  ]
+}

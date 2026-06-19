@@ -1,0 +1,37 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[osc~ 440]",
+  "ok": true,
+  "classSymbol": "osc~",
+  "creationArgs": [
+    {
+      "type": "int",
+      "value": 440,
+      "representation": "i32"
+    }
+  ],
+  "resolvedKind": "audio.osc",
+  "resolvedKindVersion": "0.1.0",
+  "params": {
+    "frequency": 440
+  },
+  "instancePorts": [
+    {
+      "id": "frequency",
+      "direction": "input",
+      "type": "number.float",
+      "rate": "control",
+      "activation": "latched",
+      "defaultValue": 440
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "type": "signal.audio",
+      "rate": "audio"
+    }
+  ],
+  "displayText": "osc~ 440",
+  "diagnostics": []
+}

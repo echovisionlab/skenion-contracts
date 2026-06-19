@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.operator.sqrt",
+  "summary": "Pd-style sqrt control operator.",
+  "description": "Square Root is a unary control-rate operator. It outputs 0 for nonpositive input in the Pd-compatible baseline.",
+  "helpGraph": "help/v0.1/nodes/core.operator.sqrt.help.graph.json",
+  "tags": [
+    "control",
+    "operator",
+    "pd"
+  ],
+  "runtimeBehavior": "Hot numeric input stores and emits sqrt; bang re-emits the stored result."
+}

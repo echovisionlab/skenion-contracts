@@ -32,6 +32,7 @@ export type SemanticDataKindV01 =
   | "event.bang"
   | "asset.video"
   | "video.frame"
+  | "signal.audio"
   | "gpu.texture2d"
   | "color";
 
@@ -550,6 +551,45 @@ export type ControlAtomV01 =
 export interface ControlMessageV01 {
   selector: string;
   atoms: ControlAtomV01[];
+}
+
+export type ObjectTextAtomV01 =
+  | { type: "float"; value: number; representation?: string }
+  | { type: "int"; value: number; representation?: string }
+  | { type: "uint"; value: number; representation?: string }
+  | { type: "bool"; value: boolean }
+  | { type: "symbol"; value: string }
+  | { type: "string"; value: string };
+
+export interface ObjectTextPortV01 {
+  id: string;
+  direction: PortDirection;
+  type: string;
+  rate?: PortRateV02;
+  activation?: "trigger" | "latched" | "passive";
+  defaultValue?: unknown;
+  description?: string;
+}
+
+export interface ObjectTextDiagnosticV01 {
+  severity: "error" | "warning" | "info";
+  code: string;
+  message: string;
+}
+
+export interface ObjectTextParseResultV01 {
+  schema: "skenion.object-text.parse-result";
+  schemaVersion: "0.1.0";
+  input: string;
+  ok: boolean;
+  classSymbol: string;
+  creationArgs: ObjectTextAtomV01[];
+  resolvedKind: string | null;
+  resolvedKindVersion: string | null;
+  params: Record<string, unknown>;
+  instancePorts: ObjectTextPortV01[];
+  displayText: string;
+  diagnostics: ObjectTextDiagnosticV01[];
 }
 
 export interface ValidationSuccess<T> {

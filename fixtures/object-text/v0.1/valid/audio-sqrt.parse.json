@@ -1,0 +1,28 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[sqrt~]",
+  "ok": true,
+  "classSymbol": "sqrt~",
+  "creationArgs": [],
+  "resolvedKind": "audio.operator.sqrt",
+  "resolvedKindVersion": "0.1.0",
+  "params": {},
+  "instancePorts": [
+    {
+      "id": "in",
+      "direction": "input",
+      "type": "signal.audio",
+      "rate": "audio",
+      "activation": "latched"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "type": "signal.audio",
+      "rate": "audio"
+    }
+  ],
+  "displayText": "sqrt~",
+  "diagnostics": []
+}

@@ -59,6 +59,10 @@
     "./control/v0.1/message-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
+    },
+    "./object-text/v0.1/parse-result-schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
     }
   },
   "files": [

@@ -1,0 +1,44 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[*~ 0.5]",
+  "ok": true,
+  "classSymbol": "*~",
+  "creationArgs": [
+    {
+      "type": "float",
+      "value": 0.5,
+      "representation": "f32"
+    }
+  ],
+  "resolvedKind": "audio.operator.mul",
+  "resolvedKindVersion": "0.1.0",
+  "params": {
+    "right": 0.5
+  },
+  "instancePorts": [
+    {
+      "id": "in",
+      "direction": "input",
+      "type": "signal.audio",
+      "rate": "audio",
+      "activation": "latched"
+    },
+    {
+      "id": "right",
+      "direction": "input",
+      "type": "number.float",
+      "rate": "control",
+      "activation": "latched",
+      "defaultValue": 0.5
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "type": "signal.audio",
+      "rate": "audio"
+    }
+  ],
+  "displayText": "*~ 0.5",
+  "diagnostics": []
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "audio.operator.sqrt",
+  "summary": "Pd-style sqrt~ signal operator.",
+  "description": "Audio Square Root runs per block and outputs zero for negative samples in the Pd-compatible baseline.",
+  "helpGraph": "help/v0.1/nodes/audio.operator.sqrt.help.graph.json",
+  "tags": [
+    "audio",
+    "operator",
+    "pd"
+  ],
+  "runtimeBehavior": "Runs in an audio_block DSP context with deterministic negative-input behavior."
+}

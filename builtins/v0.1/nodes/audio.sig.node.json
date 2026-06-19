@@ -1,0 +1,41 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "audio.sig",
+  "version": "0.1.0",
+  "displayName": "Signal Value",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": {
+        "flow": "event",
+        "dataKind": "message.any"
+      },
+      "required": false,
+      "activation": "trigger"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Signal",
+      "type": {
+        "flow": "signal",
+        "dataKind": "signal.audio"
+      }
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "pd.audio.v0.1"
+  ]
+}

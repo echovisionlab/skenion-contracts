@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/object-text/v0.1/parse-result.schema.json",
+  "title": "Skenion Object Text Parse Result v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "input",
+    "ok",
+    "classSymbol",
+    "creationArgs",
+    "resolvedKind",
+    "resolvedKindVersion",
+    "params",
+    "instancePorts",
+    "displayText",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.object-text.parse-result"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "input": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "classSymbol": {
+      "type": "string",
+      "minLength": 1
+    },
+    "creationArgs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/atom"
+      }
+    },
+    "resolvedKind": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "resolvedKindVersion": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "params": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "instancePorts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/port"
+      }
+    },
+    "displayText": {
+      "type": "string",
+      "minLength": 1
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "atom": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": {
+          "enum": ["float", "int", "uint", "bool", "symbol", "string"]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "representation": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "port": {
+      "type": "object",
+      "required": ["id", "direction", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "direction": {
+          "enum": ["input", "output"]
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rate": {
+          "enum": ["event", "control", "audio", "render", "gpu", "resource", "io"]
+        },
+        "activation": {
+          "enum": ["trigger", "latched", "passive"]
+        },
+        "defaultValue": true,
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["severity", "code", "message"],
+      "properties": {
+        "severity": {
+          "enum": ["error", "warning", "info"]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

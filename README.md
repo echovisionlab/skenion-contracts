@@ -35,6 +35,10 @@ boundary.
 For design review of how values, messages, audio, video, render frames, and GPU
 resources move through the system, start with the
 [Skenion Docs data delivery model](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/data-delivery-model.md).
+Object text parse outputs are defined in
+[Object Text Parser Contract](docs/object-text-parser.md). The first audio DSP
+contract baseline is documented in
+[Audio DSP Contract Baseline](docs/audio-dsp-contract.md).
 
 ## Initial Validation
 

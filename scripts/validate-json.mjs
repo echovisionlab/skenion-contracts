@@ -802,6 +802,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.shader.interface" && document.schemaVersion === "0.1.0") {
     return validators.shaderInterfaceV01;
   }
+  if (document.schema === "skenion.object-text.parse-result" && document.schemaVersion === "0.1.0") {
+    return validators.objectTextParseResultV01;
+  }
 
   fail(file, `no validator for schema ${document.schema ?? "<missing>"} ${document.schemaVersion ?? "<missing>"}`);
 }
@@ -862,6 +865,9 @@ const validators = {
   ),
   shaderInterfaceV01: ajv.compile(
     await readJson("json-schema/shader/v0.1/shader-interface.schema.json")
+  ),
+  objectTextParseResultV01: ajv.compile(
+    await readJson("json-schema/object-text/v0.1/parse-result.schema.json")
   )
 };
 

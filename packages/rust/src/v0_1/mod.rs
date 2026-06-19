@@ -1,6 +1,7 @@
 mod control_message;
 mod graph;
 mod node_definition;
+mod object_text;
 mod patch;
 mod project;
 mod shader_interface;
@@ -10,6 +11,12 @@ mod validation;
 pub use control_message::{ControlAtomV01, ControlMessageV01};
 pub use graph::{EdgeV01, GraphDocumentV01, GraphNodeV01, PortRefV01};
 pub use node_definition::{NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01};
+pub use object_text::{
+    ObjectTextAtomV01, ObjectTextDiagnosticSeverityV01, ObjectTextDiagnosticV01,
+    ObjectTextParseResultV01, ObjectTextPortActivationV01, ObjectTextPortDirectionV01,
+    ObjectTextPortRateV01, ObjectTextPortV01, ObjectTextValidationErrorV01,
+    validate_object_text_parse_result_v01,
+};
 pub use patch::{
     ApplyPatchErrorV01, GraphPatchEventKindV01, GraphPatchEventV01, GraphPatchHistoryV01,
     GraphPatchOperationV01, GraphPatchV01, InvertPatchErrorV01, ReplaceNodeInterfaceEdgePolicyV01,

@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "audio.operator.sub",
+  "summary": "Pd-style -~ signal operator.",
+  "description": "Audio Subtract is a block/vector DSP operator. Object text with a numeric creation argument may specialize the right inlet to a latched scalar operand.",
+  "helpGraph": "help/v0.1/nodes/audio.operator.sub.help.graph.json",
+  "tags": [
+    "audio",
+    "operator",
+    "pd"
+  ],
+  "runtimeBehavior": "Runs in an audio_block DSP context. No UI, HTTP, or graph mutation work is allowed in the audio callback."
+}
