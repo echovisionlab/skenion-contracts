@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.26.0...skenion-contracts-v0.27.0) (2026-06-19)
+
+
+### Features
+
+* **contracts:** add object text parser v0 ([5c27d46](https://github.com/echovisionlab/skenion-contracts/commit/5c27d467417b035031a8a6132322632bc8fc349b))
+
 ## [0.26.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.25.1...skenion-contracts-v0.26.0) (2026-06-19)
 
 
