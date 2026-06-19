@@ -1,24 +1,26 @@
 {
   "schema": "skenion.graph",
   "schemaVersion": "0.1.0",
-  "id": "help-core-toggle",
+  "id": "help-core-bang",
   "revision": "1",
   "nodes": [
     {
-      "id": "note_1",
-      "kind": "core.comment",
-      "kindVersion": "0.1.0",
-      "params": {
-        "text": "Toggle flips on bang. Bool re-emits on bang."
-      },
-      "ports": []
-    },
-    {
       "id": "bang_1",
-      "kind": "core.bang-button",
+      "kind": "core.bang",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "event",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        },
         {
           "id": "bang",
           "direction": "output",
@@ -31,11 +33,13 @@
       ]
     },
     {
-      "id": "toggle_1",
-      "kind": "core.toggle",
+      "id": "value_1",
+      "kind": "core.float",
       "kindVersion": "0.1.0",
       "params": {
-        "value": false
+        "value": 0.5,
+        "representation": "f32",
+        "widget": "number"
       },
       "ports": [
         {
@@ -44,8 +48,10 @@
           "label": "In",
           "type": {
             "flow": "value",
-            "dataKind": "boolean"
+            "dataKind": "number.float",
+            "format": "f32"
           },
+          "required": false,
           "activation": "trigger"
         },
         {
@@ -54,8 +60,10 @@
           "label": "Set",
           "type": {
             "flow": "value",
-            "dataKind": "boolean"
+            "dataKind": "number.float",
+            "format": "f32"
           },
+          "required": false,
           "activation": "latched"
         },
         {
@@ -66,6 +74,7 @@
             "flow": "event",
             "dataKind": "event.bang"
           },
+          "required": false,
           "activation": "trigger"
         },
         {
@@ -74,7 +83,8 @@
           "label": "Value",
           "type": {
             "flow": "value",
-            "dataKind": "boolean"
+            "dataKind": "number.float",
+            "format": "f32"
           }
         }
       ]
@@ -87,7 +97,7 @@
         "port": "bang"
       },
       "to": {
-        "node": "toggle_1",
+        "node": "value_1",
         "port": "bang"
       }
     }

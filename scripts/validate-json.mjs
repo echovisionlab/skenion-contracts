@@ -216,12 +216,9 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
   validateTypedValueBuiltin(definitions, "core.bool", "boolean", "Value");
   validateTypedValueBuiltin(definitions, "core.color", "color", "Color");
   validateTypedValueBuiltin(definitions, "core.string", "string", "Value");
-  validateTypedValueBuiltin(definitions, "core.toggle", "boolean", "Value");
+  validateBangBuiltin(definitions);
   validateCommentBuiltin(definitions);
   validateMessageBuiltin(definitions);
-  validateUiButtonBuiltin(definitions);
-  validateUiPanelValueBuiltin(definitions, "ui.slider-float", "number.float");
-  validateUiToggleBuiltin(definitions);
 
   const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
   const shaderPorts = new Map(shaderDefinition?.ports.map((port) => [port.id, port]));
@@ -401,69 +398,23 @@ function validateMessageBuiltin(definitions) {
   }
 }
 
-function validateUiButtonBuiltin(definitions) {
-  const definition = definitions.find((candidate) => candidate.id === "ui.button");
-  const file = "builtins/v0.1/nodes/ui.button.node.json";
+function validateBangBuiltin(definitions) {
+  const definition = definitions.find((candidate) => candidate.id === "core.bang");
+  const file = "builtins/v0.1/nodes/core.bang.node.json";
   if (!definition) {
-    fail(file, "ui.button must exist");
+    fail(file, "core.bang must exist");
   }
   const ports = new Map(definition.ports.map((port) => [port.id, port]));
   const input = ports.get("in");
-  if (input?.direction !== "input" || input?.type.dataKind !== "message.any") {
-    fail(file, "ui.button.in must accept message.any input");
+  if (input?.direction !== "input" || input?.type.flow !== "event" || input?.type.dataKind !== "message.any") {
+    fail(file, "core.bang.in must accept event<message.any>");
   }
   if (input.activation !== "trigger") {
-    fail(file, "ui.button.in activation must be trigger");
+    fail(file, "core.bang.in activation must be trigger");
   }
   const bang = ports.get("bang");
   if (bang?.direction !== "output" || bang?.type.flow !== "event" || bang?.type.dataKind !== "event.bang") {
-    fail(file, "ui.button.bang must be output event<event.bang>");
-  }
-}
-
-function validateUiPanelValueBuiltin(definitions, id, dataKind) {
-  const definition = definitions.find((candidate) => candidate.id === id);
-  const file = `builtins/v0.1/nodes/${id}.node.json`;
-  if (!definition) {
-    fail(file, `${id} must exist`);
-  }
-  const ports = new Map(definition.ports.map((port) => [port.id, port]));
-  const input = ports.get("in");
-  if (input?.direction !== "input" || input?.type.dataKind !== dataKind || input.activation !== "trigger") {
-    fail(file, `${id}.in must be trigger input ${dataKind}`);
-  }
-  const set = ports.get("set");
-  if (set?.direction !== "input" || set?.type.dataKind !== dataKind || set.activation !== "latched") {
-    fail(file, `${id}.set must be latched input ${dataKind}`);
-  }
-  const bang = ports.get("bang");
-  if (bang?.direction !== "input" || bang?.type.dataKind !== "event.bang" || bang.activation !== "trigger") {
-    fail(file, `${id}.bang must be trigger input event.bang`);
-  }
-  const value = ports.get("value");
-  if (value?.direction !== "output" || value?.type.dataKind !== dataKind) {
-    fail(file, `${id}.value must be output ${dataKind}`);
-  }
-}
-
-function validateUiToggleBuiltin(definitions) {
-  const definition = definitions.find((candidate) => candidate.id === "ui.toggle");
-  const file = "builtins/v0.1/nodes/ui.toggle.node.json";
-  if (!definition) {
-    fail(file, "ui.toggle must exist");
-  }
-  const ports = new Map(definition.ports.map((port) => [port.id, port]));
-  const input = ports.get("in");
-  if (input?.direction !== "input" || input?.type.dataKind !== "message.any" || input.activation !== "trigger") {
-    fail(file, "ui.toggle.in must be trigger input message.any");
-  }
-  const set = ports.get("set");
-  if (set?.direction !== "input" || set?.type.dataKind !== "message.any" || set.activation !== "latched") {
-    fail(file, "ui.toggle.set must be latched input message.any");
-  }
-  const value = ports.get("value");
-  if (value?.direction !== "output" || value?.type.dataKind !== "boolean") {
-    fail(file, "ui.toggle.value must be output boolean");
+    fail(file, "core.bang.bang must be output event<event.bang>");
   }
 }
 

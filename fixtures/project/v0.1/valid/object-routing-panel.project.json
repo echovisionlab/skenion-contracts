@@ -15,12 +15,12 @@
     "nodes": [
       {
         "id": "slider_speed",
-        "kind": "ui.slider-float",
         "kindVersion": "0.1.0",
         "params": {
           "label": "Speed",
           "value": 0.25,
-          "sendName": "speed"
+          "sendName": "speed",
+          "widget": "slider"
         },
         "ports": [
           {
@@ -62,7 +62,8 @@
               "dataKind": "number.float"
             }
           }
-        ]
+        ],
+        "kind": "core.float"
       }
     ],
     "edges": []

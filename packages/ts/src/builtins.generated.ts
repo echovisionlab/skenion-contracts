@@ -51,18 +51,12 @@ export const builtinManifestV01 = {
     "core.panel",
     "core.message",
     "core.string",
-    "core.toggle",
+    "core.bang",
     "core.float",
     "core.int",
     "core.uint",
     "core.bool",
     "core.color",
-    "ui.button",
-    "ui.slider-float",
-    "ui.toggle",
-    "core.target",
-    "core.bang-button",
-    "core.event-log",
     "core.video-asset",
     "core.video-decode",
     "core.gpu-upload",
@@ -119,11 +113,22 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
-    "id": "core.bang-button",
+    "id": "core.bang",
     "version": "0.1.0",
-    "displayName": "Bang Button",
+    "displayName": "Bang",
     "category": "Events",
     "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
       {
         "id": "bang",
         "direction": "output",
@@ -277,35 +282,6 @@ export const builtinNodeDefinitionsV01 = [
     "displayName": "Comment",
     "category": "Control",
     "ports": [],
-    "execution": {
-      "model": "event"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
-    "id": "core.event-log",
-    "version": "0.1.0",
-    "displayName": "Event Log",
-    "category": "Events",
-    "ports": [
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": true,
-        "activation": "trigger"
-      }
-    ],
     "execution": {
       "model": "event"
     },
@@ -667,101 +643,6 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
-    "id": "core.target",
-    "version": "0.1.0",
-    "displayName": "Value Target",
-    "category": "Values",
-    "ports": [
-      {
-        "id": "value",
-        "direction": "input",
-        "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "range": {
-            "min": 0,
-            "max": 1,
-            "step": 0.01
-          },
-          "format": "f32"
-        },
-        "required": true,
-        "activation": "latched"
-      }
-    ],
-    "execution": {
-      "model": "value"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
-    "id": "core.toggle",
-    "version": "0.1.0",
-    "displayName": "Toggle",
-    "category": "Values",
-    "ports": [
-      {
-        "id": "in",
-        "direction": "input",
-        "label": "In",
-        "type": {
-          "flow": "value",
-          "dataKind": "boolean"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "set",
-        "direction": "input",
-        "label": "Set",
-        "type": {
-          "flow": "value",
-          "dataKind": "boolean"
-        },
-        "required": false,
-        "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "value",
-        "direction": "output",
-        "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "boolean"
-        }
-      }
-    ],
-    "execution": {
-      "model": "value"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
     "id": "core.uint",
     "version": "0.1.0",
     "displayName": "UInt",
@@ -987,156 +868,6 @@ export const builtinNodeDefinitionsV01 = [
     "capabilities": [
       "render.output.surface"
     ]
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
-    "id": "ui.button",
-    "version": "0.1.0",
-    "displayName": "Button",
-    "category": "UI Controls",
-    "ports": [
-      {
-        "id": "in",
-        "direction": "input",
-        "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "bang",
-        "direction": "output",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        }
-      }
-    ],
-    "execution": {
-      "model": "event"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
-    "id": "ui.slider-float",
-    "version": "0.1.0",
-    "displayName": "Slider",
-    "category": "UI Controls",
-    "ports": [
-      {
-        "id": "in",
-        "direction": "input",
-        "label": "In",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "set",
-        "direction": "input",
-        "label": "Set",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched"
-      },
-      {
-        "id": "bang",
-        "direction": "input",
-        "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "value",
-        "direction": "output",
-        "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
-      }
-    ],
-    "execution": {
-      "model": "value"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
-  },
-  {
-    "schema": "skenion.node.definition",
-    "schemaVersion": "0.1.0",
-    "id": "ui.toggle",
-    "version": "0.1.0",
-    "displayName": "Toggle Control",
-    "category": "UI Controls",
-    "ports": [
-      {
-        "id": "in",
-        "direction": "input",
-        "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
-      },
-      {
-        "id": "set",
-        "direction": "input",
-        "label": "Set",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "latched"
-      },
-      {
-        "id": "value",
-        "direction": "output",
-        "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "boolean"
-        }
-      }
-    ],
-    "execution": {
-      "model": "value"
-    },
-    "state": {
-      "persistent": false
-    },
-    "permissions": [],
-    "capabilities": []
   }
 ] satisfies NodeDefinitionManifestV01[];
 
@@ -1144,22 +875,26 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
-    "id": "core.bang-button",
+    "id": "core.bang",
     "summary": "Emits a discrete bang event.",
-    "description": "Bang Button is the simplest manual trigger. It emits event.bang and does not carry a continuous value.",
-    "helpGraph": "help/v0.1/nodes/core.bang-button.help.graph.json",
+    "description": "Bang is the simplest manual trigger object. It emits event.bang and does not store a value; event.bang itself remains a data kind/message selector, not an object.",
+    "helpGraph": "help/v0.1/nodes/core.bang.help.graph.json",
     "tags": [
       "event",
       "trigger",
       "control"
     ],
-    "runtimeBehavior": "When activated, the node emits one event.bang from its bang output.",
+    "runtimeBehavior": "Clicking the object or receiving any message on in emits one event.bang from bang.",
     "relatedNodes": [
       "core.float",
-      "core.toggle",
+      "core.bool",
       "core.message"
     ],
     "ports": [
+      {
+        "id": "in",
+        "description": "Accepts any control message and converts it to a bang trigger."
+      },
       {
         "id": "bang",
         "description": "Outputs a discrete event.bang trigger."
@@ -1167,8 +902,8 @@ export const builtinNodeHelpV01 = [
     ],
     "example": {
       "title": "Trigger stored values",
-      "description": "Connect Bang Button to value nodes, toggles, or messages to emit their stored payloads.",
-      "graph": "help/v0.1/nodes/core.bang-button.help.graph.json"
+      "description": "Connect Bang to value nodes or messages to emit their stored payloads.",
+      "graph": "help/v0.1/nodes/core.bang.help.graph.json"
     }
   },
   {
@@ -1176,17 +911,15 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "core.bool",
     "summary": "Stores and emits a boolean control value.",
-    "description": "Use Bool for an explicit true/false value. Bang emits the current value; it does not toggle.",
+    "description": "Use Bool for an explicit true/false value. With the default value-box widget, bang emits the current value. With widget=toggle or widget=checkbox, bang flips the stored value and emits the new value.",
     "helpGraph": "help/v0.1/nodes/core.bool.help.graph.json",
     "tags": [
       "value",
       "control",
       "boolean"
     ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean without toggling.",
+    "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean. Toggle/checkbox widgets treat bang as flip-and-emit.",
     "relatedNodes": [
-      "core.toggle",
-      "core.bang-button",
       "render.fullscreen-shader"
     ],
     "ports": [
@@ -1219,6 +952,10 @@ export const builtinNodeHelpV01 = [
       {
         "id": "receiveName",
         "description": "Optional typed channel name used to receive routed updates."
+      },
+      {
+        "id": "widget",
+        "description": "Optional display widget. Use toggle or checkbox for Max/Pd-style boolean toggling."
       }
     ],
     "example": {
@@ -1241,7 +978,6 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored RGBA color/rgba32f without changing it.",
     "relatedNodes": [
-      "core.bang-button",
       "render.fullscreen-shader"
     ],
     "ports": [
@@ -1313,37 +1049,9 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
-    "id": "core.event-log",
-    "summary": "Receives bang events for diagnostics.",
-    "description": "Event Log is a small inspection target for event patches. It helps examples show when a bang path fires.",
-    "helpGraph": "help/v0.1/nodes/core.event-log.help.graph.json",
-    "tags": [
-      "event",
-      "diagnostics"
-    ],
-    "runtimeBehavior": "The node records or reports incoming bang events in diagnostic contexts.",
-    "relatedNodes": [
-      "core.bang-button",
-      "core.message"
-    ],
-    "ports": [
-      {
-        "id": "bang",
-        "description": "Receives event.bang triggers."
-      }
-    ],
-    "example": {
-      "title": "See event flow",
-      "description": "Connect a Bang Button to Event Log when a help graph needs visible event intent.",
-      "graph": "help/v0.1/nodes/core.event-log.help.graph.json"
-    }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
     "id": "core.float",
-    "summary": "Stores and emits a 32-bit floating-point control value.",
-    "description": "Use Float when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
+    "summary": "Stores and emits a floating-point control value.",
+    "description": "Use Float when a patch needs a generic numeric control value. Representation such as f32 or f8 is selected separately from the semantic number.float type.",
     "docsPath": "docs/nodes/core.float.md",
     "helpGraph": "help/v0.1/nodes/core.float.help.graph.json",
     "tags": [
@@ -1353,8 +1061,6 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored value without changing it.",
     "relatedNodes": [
-      "core.bang-button",
-      "core.target",
       "render.fullscreen-shader"
     ],
     "ports": [
@@ -1387,6 +1093,14 @@ export const builtinNodeHelpV01 = [
       {
         "id": "receiveName",
         "description": "Optional typed channel name used to receive routed updates."
+      },
+      {
+        "id": "widget",
+        "description": "Optional display widget. Use slider for a compact runtime slider object."
+      },
+      {
+        "id": "representation",
+        "description": "Numeric storage/transport representation such as f32, f16, or f8.e4m3."
       }
     ],
     "example": {
@@ -1443,7 +1157,6 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored integer value without changing it.",
     "relatedNodes": [
-      "core.bang-button",
       "render.fullscreen-shader"
     ],
     "ports": [
@@ -1499,9 +1212,7 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "click, in, or bang emits the saved message payload. set updates runtime message text without output. Inspector edits are graph patches, not runtime control events.",
     "relatedNodes": [
-      "core.bang-button",
-      "core.string",
-      "core.event-log"
+      "core.string"
     ],
     "ports": [
       {
@@ -1537,7 +1248,7 @@ export const builtinNodeHelpV01 = [
     ],
     "example": {
       "title": "Trigger a string message",
-      "description": "Use Bang Button to emit the saved message text on demand.",
+      "description": "Use Bang to emit the saved message text on demand.",
       "graph": "help/v0.1/nodes/core.message.help.graph.json"
     }
   },
@@ -1546,7 +1257,7 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "core.panel",
     "summary": "Draws a colored background panel on the patch canvas.",
-    "description": "Panel is a visual patch annotation object. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
+    "description": "Panel is a visual patch annotation object. Its saved default is transparent unless a color param is set. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
     "helpGraph": "help/v0.1/nodes/core.panel.help.graph.json",
     "tags": [
       "annotation",
@@ -1567,7 +1278,7 @@ export const builtinNodeHelpV01 = [
     "params": [
       {
         "id": "color",
-        "description": "Saved panel color/rgba32f as a CSS hex string."
+        "description": "Optional saved panel color as a CSS hex string. Omit for transparent."
       },
       {
         "id": "label",
@@ -1628,8 +1339,7 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored string without changing it.",
     "relatedNodes": [
-      "core.message",
-      "core.bang-button"
+      "core.message"
     ],
     "ports": [
       {
@@ -1672,91 +1382,6 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
-    "id": "core.target",
-    "summary": "Receives a normalized floating-point control value.",
-    "description": "Value Target is a minimal sink for tutorials and validator examples. It demonstrates value<number.float> wiring without creating a render output.",
-    "helpGraph": "help/v0.1/nodes/core.target.help.graph.json",
-    "tags": [
-      "value",
-      "sink",
-      "tutorial"
-    ],
-    "runtimeBehavior": "Consumes the latest latched number.float/f32 value.",
-    "relatedNodes": [
-      "core.float"
-    ],
-    "ports": [
-      {
-        "id": "value",
-        "description": "Receives a number.float/f32 value. This tutorial sink constrains the preferred range to 0..1."
-      }
-    ],
-    "example": {
-      "title": "Minimal value wiring",
-      "description": "Connect F32.value to Value Target.value to test basic type-compatible value flow.",
-      "graph": "help/v0.1/nodes/core.target.help.graph.json"
-    }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
-    "id": "core.toggle",
-    "summary": "Stores a boolean value and flips it when banged.",
-    "description": "Toggle is the performer-facing boolean control. Use Bool when bang should only re-emit the current value; use Toggle when bang should flip the stored state.",
-    "docsPath": "docs/nodes/core.toggle.md",
-    "helpGraph": "help/v0.1/nodes/core.toggle.help.graph.json",
-    "tags": [
-      "value",
-      "control",
-      "boolean"
-    ],
-    "runtimeBehavior": "in updates and emits, set updates silently, and bang flips the stored boolean before emitting it.",
-    "relatedNodes": [
-      "core.bool",
-      "core.bang-button",
-      "core.message"
-    ],
-    "ports": [
-      {
-        "id": "in",
-        "description": "Updates the stored boolean and emits it."
-      },
-      {
-        "id": "set",
-        "description": "Updates the stored boolean without emitting."
-      },
-      {
-        "id": "bang",
-        "description": "Flips the stored boolean and emits the new value."
-      },
-      {
-        "id": "value",
-        "description": "Outputs the current boolean."
-      }
-    ],
-    "params": [
-      {
-        "id": "value",
-        "description": "Saved default boolean value."
-      },
-      {
-        "id": "sendName",
-        "description": "Optional typed channel name updated whenever this object emits."
-      },
-      {
-        "id": "receiveName",
-        "description": "Optional typed channel name used to receive routed updates."
-      }
-    ],
-    "example": {
-      "title": "Bang to flip",
-      "description": "Connect Bang Button to Toggle to see event-triggered state changes.",
-      "graph": "help/v0.1/nodes/core.toggle.help.graph.json"
-    }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
     "id": "core.uint",
     "summary": "Stores and emits an unsigned integer control value.",
     "description": "UInt is a Max-style unsigned integer value object. in updates and emits, set updates silently, and bang emits the current value.",
@@ -1769,7 +1394,6 @@ export const builtinNodeHelpV01 = [
     ],
     "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored unsigned integer value without changing it.",
     "relatedNodes": [
-      "core.bang-button",
       "render.fullscreen-shader"
     ],
     "ports": [
@@ -1992,201 +1616,35 @@ export const builtinNodeHelpV01 = [
       "description": "Connect a render producer into Render Output so Runtime knows which scene to preview.",
       "graph": "help/v0.1/nodes/render.output.help.graph.json"
     }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
-    "id": "ui.button",
-    "summary": "Emits a bang event when clicked or when any input arrives.",
-    "description": "Button is the Max/Pd-like bang control. Runtime clicks and incoming messages both emit event.bang without mutating the graph.",
-    "helpGraph": "help/v0.1/nodes/ui.button.help.graph.json",
-    "tags": [
-      "ui",
-      "panel",
-      "event",
-      "bang"
-    ],
-    "runtimeBehavior": "Runtime click or any input on in emits event.bang from bang. If sendName is set, the bang is also published to the named event.bang channel.",
-    "relatedNodes": [
-      "core.message",
-      "core.event-log",
-      "core.message"
-    ],
-    "ports": [
-      {
-        "id": "in",
-        "description": "Accepts any incoming message or value and converts it to bang."
-      },
-      {
-        "id": "bang",
-        "description": "Emits an event.bang when the control is clicked."
-      }
-    ],
-    "params": [
-      {
-        "id": "label",
-        "description": "Text shown on the runtime control."
-      },
-      {
-        "id": "sendName",
-        "description": "Optional event.bang channel name updated whenever the button emits."
-      },
-      {
-        "id": "receiveName",
-        "description": "Optional event.bang channel name that can trigger this button."
-      }
-    ],
-    "example": {
-      "title": "Trigger a message",
-      "description": "Use Button to trigger event-oriented nodes without changing the graph.",
-      "graph": "help/v0.1/nodes/ui.button.help.graph.json"
-    }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
-    "id": "ui.slider-float",
-    "summary": "Emits floating-point values from a runtime slider control.",
-    "description": "Slider Float is a panel control node for performer-facing numeric input. Incoming values can update it, and moving the runtime slider emits a typed value event without creating a graph patch.",
-    "helpGraph": "help/v0.1/nodes/ui.slider-float.help.graph.json",
-    "tags": [
-      "ui",
-      "panel",
-      "value",
-      "f32"
-    ],
-    "runtimeBehavior": "Runtime slider changes update the control state and emit number.float/f32 from value. in updates and emits, set updates silently, and bang emits the current value.",
-    "relatedNodes": [
-      "core.float"
-    ],
-    "ports": [
-      {
-        "id": "in",
-        "description": "Updates the slider value and emits number.float/f32."
-      },
-      {
-        "id": "set",
-        "description": "Updates the slider value without output."
-      },
-      {
-        "id": "bang",
-        "description": "Emits the current slider value."
-      },
-      {
-        "id": "value",
-        "description": "Emits the current slider value as number.float/f32."
-      }
-    ],
-    "params": [
-      {
-        "id": "label",
-        "description": "Text shown on the runtime control."
-      },
-      {
-        "id": "value",
-        "description": "Initial slider value saved in the graph."
-      },
-      {
-        "id": "min",
-        "description": "Minimum slider value."
-      },
-      {
-        "id": "max",
-        "description": "Maximum slider value."
-      },
-      {
-        "id": "step",
-        "description": "Slider increment."
-      },
-      {
-        "id": "sendName",
-        "description": "Optional number.float/f32 channel name updated whenever the slider emits."
-      },
-      {
-        "id": "receiveName",
-        "description": "Optional number.float/f32 channel name used to receive routed slider updates."
-      }
-    ],
-    "example": {
-      "title": "Drive a shader uniform",
-      "description": "Connect Slider F32 directly to a shader input or give it sendName for named routing.",
-      "graph": "help/v0.1/nodes/ui.slider-float.help.graph.json"
-    }
-  },
-  {
-    "schema": "skenion.node.help",
-    "schemaVersion": "0.1.0",
-    "id": "ui.toggle",
-    "summary": "Emits boolean values from a Max/Pd-like toggle control.",
-    "description": "UI Toggle is a panel control node. Click or bang flips runtime state, 0/1/off/on set and emit, and set messages update silently without patching the graph.",
-    "helpGraph": "help/v0.1/nodes/ui.toggle.help.graph.json",
-    "tags": [
-      "ui",
-      "panel",
-      "value",
-      "boolean"
-    ],
-    "runtimeBehavior": "bang flips and emits. 0/1/off/on/false/true update and emit. set 0, set 1, set off, and set on update the runtime state without output.",
-    "relatedNodes": [
-      "core.bool",
-      "ui.button",
-      "core.message"
-    ],
-    "ports": [
-      {
-        "id": "in",
-        "description": "Accepts bang, boolean, 0/1, or off/on style messages and emits the resulting boolean."
-      },
-      {
-        "id": "set",
-        "description": "Updates the stored toggle state without output."
-      },
-      {
-        "id": "value",
-        "description": "Emits the current toggle value as boolean."
-      }
-    ],
-    "params": [
-      {
-        "id": "label",
-        "description": "Text shown on the runtime control."
-      },
-      {
-        "id": "value",
-        "description": "Initial boolean value saved in the graph."
-      },
-      {
-        "id": "sendName",
-        "description": "Optional boolean channel name updated whenever the toggle emits."
-      },
-      {
-        "id": "receiveName",
-        "description": "Optional boolean channel name used to receive routed toggle updates."
-      }
-    ],
-    "example": {
-      "title": "Drive a boolean value",
-      "description": "Connect UI Toggle directly to a boolean input or give it sendName for named routing.",
-      "graph": "help/v0.1/nodes/ui.toggle.help.graph.json"
-    }
   }
 ] satisfies BuiltinNodeHelpV01[];
 
 export const builtinNodeHelpGraphsV01 = [
   {
-    "id": "core.bang-button",
+    "id": "core.bang",
     "graph": {
       "schema": "skenion.graph",
       "schemaVersion": "0.1.0",
-      "id": "help-core-bang-button",
+      "id": "help-core-bang",
       "revision": "1",
       "nodes": [
         {
           "id": "bang_1",
-          "kind": "core.bang-button",
+          "kind": "core.bang",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
             {
               "id": "bang",
               "direction": "output",
@@ -2199,11 +1657,39 @@ export const builtinNodeHelpGraphsV01 = [
           ]
         },
         {
-          "id": "log_1",
-          "kind": "core.event-log",
+          "id": "value_1",
+          "kind": "core.float",
           "kindVersion": "0.1.0",
-          "params": {},
+          "params": {
+            "value": 0.5,
+            "representation": "f32",
+            "widget": "number"
+          },
           "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "required": false,
+              "activation": "latched"
+            },
             {
               "id": "bang",
               "direction": "input",
@@ -2212,7 +1698,18 @@ export const builtinNodeHelpGraphsV01 = [
                 "flow": "event",
                 "dataKind": "event.bang"
               },
+              "required": false,
               "activation": "trigger"
+            },
+            {
+              "id": "value",
+              "direction": "output",
+              "label": "Value",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              }
             }
           ]
         }
@@ -2224,7 +1721,7 @@ export const builtinNodeHelpGraphsV01 = [
             "port": "bang"
           },
           "to": {
-            "node": "log_1",
+            "node": "value_1",
             "port": "bang"
           }
         }
@@ -2250,7 +1747,6 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "bang_1",
-          "kind": "core.bang-button",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
@@ -2263,7 +1759,8 @@ export const builtinNodeHelpGraphsV01 = [
                 "dataKind": "event.bang"
               }
             }
-          ]
+          ],
+          "kind": "core.bang"
         },
         {
           "id": "value_1",
@@ -2316,10 +1813,10 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "toggle_1",
-          "kind": "core.toggle",
           "kindVersion": "0.1.0",
           "params": {
-            "value": false
+            "value": false,
+            "widget": "toggle"
           },
           "ports": [
             {
@@ -2361,7 +1858,8 @@ export const builtinNodeHelpGraphsV01 = [
                 "dataKind": "boolean"
               }
             }
-          ]
+          ],
+          "kind": "core.bool"
         }
       ],
       "edges": [
@@ -2577,73 +2075,6 @@ export const builtinNodeHelpGraphsV01 = [
     }
   },
   {
-    "id": "core.event-log",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-core-event-log",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "note_1",
-          "kind": "core.comment",
-          "kindVersion": "0.1.0",
-          "params": {
-            "text": "Event Log is a diagnostic sink for bang events."
-          },
-          "ports": []
-        },
-        {
-          "id": "bang_1",
-          "kind": "core.bang-button",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "bang",
-              "direction": "output",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
-            }
-          ]
-        },
-        {
-          "id": "log_1",
-          "kind": "core.event-log",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "activation": "trigger"
-            }
-          ]
-        }
-      ],
-      "edges": [
-        {
-          "from": {
-            "node": "bang_1",
-            "port": "bang"
-          },
-          "to": {
-            "node": "log_1",
-            "port": "bang"
-          }
-        }
-      ]
-    }
-  },
-  {
     "id": "core.float",
     "graph": {
       "schema": "skenion.graph",
@@ -2662,7 +2093,6 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "bang_1",
-          "kind": "core.bang-button",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
@@ -2675,7 +2105,8 @@ export const builtinNodeHelpGraphsV01 = [
                 "dataKind": "event.bang"
               }
             }
-          ]
+          ],
+          "kind": "core.bang"
         },
         {
           "id": "value_1",
@@ -2732,14 +2163,13 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "target_1",
-          "kind": "core.target",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
             {
-              "id": "value",
+              "id": "in",
               "direction": "input",
-              "label": "Value",
+              "label": "In",
               "type": {
                 "flow": "value",
                 "dataKind": "number.float",
@@ -2747,7 +2177,8 @@ export const builtinNodeHelpGraphsV01 = [
               },
               "activation": "latched"
             }
-          ]
+          ],
+          "kind": "core.float"
         }
       ],
       "edges": [
@@ -2768,7 +2199,7 @@ export const builtinNodeHelpGraphsV01 = [
           },
           "to": {
             "node": "target_1",
-            "port": "value"
+            "port": "in"
           }
         }
       ]
@@ -2937,7 +2368,6 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "bang_1",
-          "kind": "core.bang-button",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
@@ -2950,7 +2380,8 @@ export const builtinNodeHelpGraphsV01 = [
                 "dataKind": "event.bang"
               }
             }
-          ]
+          ],
+          "kind": "core.bang"
         },
         {
           "id": "value_1",
@@ -3039,7 +2470,6 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "bang_1",
-          "kind": "core.bang-button",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
@@ -3048,20 +2478,10 @@ export const builtinNodeHelpGraphsV01 = [
               "direction": "input",
               "label": "In",
               "type": {
-                "flow": "value",
+                "flow": "event",
                 "dataKind": "message.any"
               },
               "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "message.any"
-              },
-              "activation": "latched"
             },
             {
               "id": "bang",
@@ -3072,7 +2492,8 @@ export const builtinNodeHelpGraphsV01 = [
                 "dataKind": "event.bang"
               }
             }
-          ]
+          ],
+          "kind": "core.bang"
         },
         {
           "id": "message_1",
@@ -3082,6 +2503,26 @@ export const builtinNodeHelpGraphsV01 = [
             "value": "render now"
           },
           "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "activation": "trigger"
+            },
+            {
+              "id": "set",
+              "direction": "input",
+              "label": "Set",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "activation": "latched"
+            },
             {
               "id": "bang",
               "direction": "input",
@@ -3095,10 +2536,10 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "value",
               "direction": "output",
-              "label": "Value",
+              "label": "Message",
               "type": {
-                "flow": "value",
-                "dataKind": "string"
+                "flow": "event",
+                "dataKind": "message.any"
               }
             }
           ]
@@ -3249,7 +2690,6 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "bang_1",
-          "kind": "core.bang-button",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
@@ -3262,7 +2702,8 @@ export const builtinNodeHelpGraphsV01 = [
                 "dataKind": "event.bang"
               }
             }
-          ]
+          ],
+          "kind": "core.bang"
         },
         {
           "id": "text_1",
@@ -3329,167 +2770,6 @@ export const builtinNodeHelpGraphsV01 = [
     }
   },
   {
-    "id": "core.target",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-core-target",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "value_1",
-          "kind": "core.float",
-          "kindVersion": "0.1.0",
-          "params": {
-            "value": 0.75,
-            "representation": "f32"
-          },
-          "ports": [
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              }
-            }
-          ]
-        },
-        {
-          "id": "target_1",
-          "kind": "core.target",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "value",
-              "direction": "input",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "activation": "latched"
-            }
-          ]
-        }
-      ],
-      "edges": [
-        {
-          "from": {
-            "node": "value_1",
-            "port": "value"
-          },
-          "to": {
-            "node": "target_1",
-            "port": "value"
-          }
-        }
-      ]
-    }
-  },
-  {
-    "id": "core.toggle",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-core-toggle",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "note_1",
-          "kind": "core.comment",
-          "kindVersion": "0.1.0",
-          "params": {
-            "text": "Toggle flips on bang. Bool re-emits on bang."
-          },
-          "ports": []
-        },
-        {
-          "id": "bang_1",
-          "kind": "core.bang-button",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "bang",
-              "direction": "output",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
-            }
-          ]
-        },
-        {
-          "id": "toggle_1",
-          "kind": "core.toggle",
-          "kindVersion": "0.1.0",
-          "params": {
-            "value": false
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "activation": "trigger"
-            },
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              }
-            }
-          ]
-        }
-      ],
-      "edges": [
-        {
-          "from": {
-            "node": "bang_1",
-            "port": "bang"
-          },
-          "to": {
-            "node": "toggle_1",
-            "port": "bang"
-          }
-        }
-      ]
-    }
-  },
-  {
     "id": "core.uint",
     "graph": {
       "schema": "skenion.graph",
@@ -3508,7 +2788,6 @@ export const builtinNodeHelpGraphsV01 = [
         },
         {
           "id": "bang_1",
-          "kind": "core.bang-button",
           "kindVersion": "0.1.0",
           "params": {},
           "ports": [
@@ -3521,7 +2800,8 @@ export const builtinNodeHelpGraphsV01 = [
                 "dataKind": "event.bang"
               }
             }
-          ]
+          ],
+          "kind": "core.bang"
         },
         {
           "id": "value_1",
@@ -4056,234 +3336,6 @@ export const builtinNodeHelpGraphsV01 = [
           }
         }
       ]
-    }
-  },
-  {
-    "id": "ui.button",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-ui-button",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "note_1",
-          "kind": "core.comment",
-          "kindVersion": "0.1.0",
-          "params": {
-            "text": "Button accepts any input or runtime click and emits a bang. sendName can publish the bang to a named event channel."
-          },
-          "ports": []
-        },
-        {
-          "id": "button_1",
-          "kind": "ui.button",
-          "kindVersion": "0.1.0",
-          "params": {
-            "label": "Bang",
-            "sendName": "reset"
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
-            },
-            {
-              "id": "bang",
-              "direction": "output",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
-            }
-          ]
-        },
-        {
-          "id": "log_1",
-          "kind": "core.event-log",
-          "kindVersion": "0.1.0",
-          "params": {},
-          "ports": [
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "required": true,
-              "activation": "trigger"
-            }
-          ]
-        }
-      ],
-      "edges": [
-        {
-          "from": {
-            "node": "button_1",
-            "port": "bang"
-          },
-          "to": {
-            "node": "log_1",
-            "port": "bang"
-          }
-        }
-      ]
-    }
-  },
-  {
-    "id": "ui.slider-float",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-ui-slider-float",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "note_1",
-          "kind": "core.comment",
-          "kindVersion": "0.1.0",
-          "params": {
-            "text": "Slider F32 emits typed runtime control values. Use sendName for named routing, or connect value directly."
-          },
-          "ports": []
-        },
-        {
-          "id": "slider_1",
-          "kind": "ui.slider-float",
-          "kindVersion": "0.1.0",
-          "params": {
-            "label": "Speed",
-            "value": 0.5,
-            "min": 0,
-            "max": 2,
-            "step": 0.01,
-            "sendName": "speed",
-            "representation": "f32"
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "required": false,
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "required": false,
-              "activation": "latched"
-            },
-            {
-              "id": "bang",
-              "direction": "input",
-              "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "required": false,
-              "activation": "trigger"
-            },
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              }
-            }
-          ]
-        }
-      ],
-      "edges": []
-    }
-  },
-  {
-    "id": "ui.toggle",
-    "graph": {
-      "schema": "skenion.graph",
-      "schemaVersion": "0.1.0",
-      "id": "help-ui-toggle",
-      "revision": "1",
-      "nodes": [
-        {
-          "id": "note_1",
-          "kind": "core.comment",
-          "kindVersion": "0.1.0",
-          "params": {
-            "text": "UI Toggle flips on bang/click and emits boolean values. Use sendName for named routing."
-          },
-          "ports": []
-        },
-        {
-          "id": "toggle_1",
-          "kind": "ui.toggle",
-          "kindVersion": "0.1.0",
-          "params": {
-            "label": "Enabled",
-            "value": true,
-            "sendName": "enabled"
-          },
-          "ports": [
-            {
-              "id": "in",
-              "direction": "input",
-              "label": "In",
-              "type": {
-                "flow": "value",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
-            },
-            {
-              "id": "set",
-              "direction": "input",
-              "label": "Set",
-              "type": {
-                "flow": "value",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "latched"
-            },
-            {
-              "id": "value",
-              "direction": "output",
-              "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              }
-            }
-          ]
-        }
-      ],
-      "edges": []
     }
   }
 ] satisfies BuiltinNodeHelpGraphV01[];

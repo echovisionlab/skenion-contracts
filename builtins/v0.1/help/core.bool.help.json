@@ -3,17 +3,15 @@
   "schemaVersion": "0.1.0",
   "id": "core.bool",
   "summary": "Stores and emits a boolean control value.",
-  "description": "Use Bool for an explicit true/false value. Bang emits the current value; it does not toggle.",
+  "description": "Use Bool for an explicit true/false value. With the default value-box widget, bang emits the current value. With widget=toggle or widget=checkbox, bang flips the stored value and emits the new value.",
   "helpGraph": "help/v0.1/nodes/core.bool.help.graph.json",
   "tags": [
     "value",
     "control",
     "boolean"
   ],
-  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean without toggling.",
+  "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored boolean. Toggle/checkbox widgets treat bang as flip-and-emit.",
   "relatedNodes": [
-    "core.toggle",
-    "core.bang-button",
     "render.fullscreen-shader"
   ],
   "ports": [
@@ -46,6 +44,10 @@
     {
       "id": "receiveName",
       "description": "Optional typed channel name used to receive routed updates."
+    },
+    {
+      "id": "widget",
+      "description": "Optional display widget. Use toggle or checkbox for Max/Pd-style boolean toggling."
     }
   ],
   "example": {

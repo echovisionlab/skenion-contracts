@@ -15,7 +15,6 @@
     },
     {
       "id": "bang_1",
-      "kind": "core.bang-button",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
@@ -28,7 +27,8 @@
             "dataKind": "event.bang"
           }
         }
-      ]
+      ],
+      "kind": "core.bang"
     },
     {
       "id": "value_1",
@@ -85,14 +85,13 @@
     },
     {
       "id": "target_1",
-      "kind": "core.target",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
-          "id": "value",
+          "id": "in",
           "direction": "input",
-          "label": "Value",
+          "label": "In",
           "type": {
             "flow": "value",
             "dataKind": "number.float",
@@ -100,7 +99,8 @@
           },
           "activation": "latched"
         }
-      ]
+      ],
+      "kind": "core.float"
     }
   ],
   "edges": [
@@ -121,7 +121,7 @@
       },
       "to": {
         "node": "target_1",
-        "port": "value"
+        "port": "in"
       }
     }
   ]

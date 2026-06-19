@@ -340,7 +340,7 @@ mod tests {
                 {
                   "id": "pulse",
                   "direction": "output",
-                  "type": { "flow": "event", "dataKind": "bang" }
+                  "type": { "flow": "event", "dataKind": "event.bang" }
                 }
               ],
               "execution": { "model": "script_control" },
@@ -393,7 +393,7 @@ mod tests {
                 {
                   "id": "pulse",
                   "direction": "output",
-                  "type": { "flow": "event", "dataKind": "bang" },
+                  "type": { "flow": "event", "dataKind": "event.bang" },
                   "activation": "trigger"
                 }
               ],
@@ -467,25 +467,25 @@ mod tests {
               "nodes": [
                 {
                   "id": "button",
-                  "kind": "core.button",
+                  "kind": "core.bang",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "out", "direction": "output", "type": { "flow": "event", "dataKind": "bang" } }
+                    { "id": "bang", "direction": "output", "type": { "flow": "event", "dataKind": "event.bang" } }
                   ]
                 },
                 {
                   "id": "target",
-                  "kind": "core.target",
+                  "kind": "core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "in", "direction": "input", "type": { "flow": "event", "dataKind": "bang" }, "activation": "trigger" }
+                    { "id": "in", "direction": "input", "type": { "flow": "event", "dataKind": "event.bang" }, "activation": "trigger" }
                   ]
                 }
               ],
               "edges": [
-                { "from": { "node": "button", "port": "out" }, "to": { "node": "target", "port": "in" } }
+                { "from": { "node": "button", "port": "bang" }, "to": { "node": "target", "port": "in" } }
               ]
             }"#,
         );
@@ -553,7 +553,7 @@ mod tests {
               "nodes": [
                 {
                   "id": "toggle",
-                  "kind": "core.toggle",
+                  "kind": "core.bool",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
@@ -562,11 +562,11 @@ mod tests {
                 },
                 {
                   "id": "target",
-                  "kind": "core.target",
+                  "kind": "core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "in", "direction": "input", "type": { "flow": "event", "dataKind": "bang" }, "activation": "trigger" }
+                    { "id": "in", "direction": "input", "type": { "flow": "event", "dataKind": "event.bang" }, "activation": "trigger" }
                   ]
                 }
               ],
@@ -578,6 +578,6 @@ mod tests {
 
         let error = validate_graph_document_v01(&graph).expect_err("bool to bang should fail");
         assert!(error_text(&error).contains("value<boolean>"));
-        assert!(error_text(&error).contains("event<bang>"));
+        assert!(error_text(&error).contains("event<event.bang>"));
     }
 }

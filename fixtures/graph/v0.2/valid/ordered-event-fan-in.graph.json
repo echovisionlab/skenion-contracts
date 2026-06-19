@@ -6,7 +6,6 @@
   "nodes": [
     {
       "id": "button_a",
-      "kind": "core.bang-button",
       "kindVersion": "0.2.0",
       "params": {},
       "ports": [
@@ -16,11 +15,11 @@
           "type": "event.bang",
           "rate": "event"
         }
-      ]
+      ],
+      "kind": "core.bang"
     },
     {
       "id": "button_b",
-      "kind": "core.bang-button",
       "kindVersion": "0.2.0",
       "params": {},
       "ports": [
@@ -30,11 +29,11 @@
           "type": "event.bang",
           "rate": "event"
         }
-      ]
+      ],
+      "kind": "core.bang"
     },
     {
       "id": "event_log",
-      "kind": "core.event-log",
       "kindVersion": "0.2.0",
       "params": {},
       "ports": [
@@ -47,7 +46,8 @@
           "mergePolicy": "ordered-events",
           "triggerMode": "trigger"
         }
-      ]
+      ],
+      "kind": "core.message"
     }
   ],
   "edges": [

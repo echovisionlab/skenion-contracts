@@ -1,0 +1,34 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "core.bang",
+  "summary": "Emits a discrete bang event.",
+  "description": "Bang is the simplest manual trigger object. It emits event.bang and does not store a value; event.bang itself remains a data kind/message selector, not an object.",
+  "helpGraph": "help/v0.1/nodes/core.bang.help.graph.json",
+  "tags": [
+    "event",
+    "trigger",
+    "control"
+  ],
+  "runtimeBehavior": "Clicking the object or receiving any message on in emits one event.bang from bang.",
+  "relatedNodes": [
+    "core.float",
+    "core.bool",
+    "core.message"
+  ],
+  "ports": [
+    {
+      "id": "in",
+      "description": "Accepts any control message and converts it to a bang trigger."
+    },
+    {
+      "id": "bang",
+      "description": "Outputs a discrete event.bang trigger."
+    }
+  ],
+  "example": {
+    "title": "Trigger stored values",
+    "description": "Connect Bang to value nodes or messages to emit their stored payloads.",
+    "graph": "help/v0.1/nodes/core.bang.help.graph.json"
+  }
+}

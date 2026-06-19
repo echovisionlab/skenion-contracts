@@ -516,7 +516,7 @@ mod tests {
                 },
                 {
                   "id": "target",
-                  "kind": "core.target",
+                  "kind": "core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [

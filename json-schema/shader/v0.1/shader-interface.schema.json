@@ -3,7 +3,12 @@
   "$id": "https://skenion.dev/schemas/shader/v0.1/shader-interface.schema.json",
   "title": "Skenion Shader Interface v0.1",
   "type": "object",
-  "required": ["schema", "schemaVersion", "language", "uniforms"],
+  "required": [
+    "schema",
+    "schemaVersion",
+    "language",
+    "uniforms"
+  ],
   "properties": {
     "schema": {
       "const": "skenion.shader.interface"
@@ -25,13 +30,24 @@
   "$defs": {
     "uniform": {
       "type": "object",
-      "required": ["id", "label", "type", "required"],
+      "required": [
+        "id",
+        "label",
+        "type",
+        "required"
+      ],
       "properties": {
         "id": {
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
           "not": {
-            "enum": ["out", "in", "set", "bang", "value"]
+            "enum": [
+              "out",
+              "in",
+              "set",
+              "bang",
+              "value"
+            ]
           }
         },
         "label": {
@@ -50,13 +66,22 @@
     },
     "dataType": {
       "type": "object",
-      "required": ["flow", "dataKind"],
+      "required": [
+        "flow",
+        "dataKind"
+      ],
       "properties": {
         "flow": {
           "const": "value"
         },
         "dataKind": {
-          "enum": ["number.float", "number.int", "number.uint", "boolean", "color"]
+          "enum": [
+            "number.float",
+            "number.int",
+            "number.uint",
+            "boolean",
+            "color"
+          ]
         },
         "format": {
           "type": "string"

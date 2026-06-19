@@ -13,16 +13,16 @@ The canonical v0.1 typed value nodes are:
 - `core.color` for `value<color>`
 - `core.string` for `value<string>`
 
-`core.toggle` also uses `value<boolean>`, but its `bang` input flips the stored
-boolean before emitting. `core.bool` keeps the generic value-box behavior:
-`bang` only emits the current value.
-
 Each typed value node has the same control surface:
 
 - `in` updates the stored value and emits the new value.
 - `set` updates the stored value without emitting.
 - `bang` emits the current stored value without changing it.
 - `value` emits the current stored value.
+
+`core.bool` is also the canonical toggle object when `params.widget` is
+`"toggle"` or `"checkbox"`. In that widget mode, a `bang` interaction flips the
+stored boolean and emits the new value. There is no separate toggle node.
 
 This is the Max/MSP-style value-box model:
 
@@ -69,8 +69,8 @@ control graph is stable.
 
 Bang is a message selector/event. It is not a stored runtime value.
 
-Typed `send`/`receive` nodes and basic panel controls are part of v0.1. They are
-documented in `docs/control-routing.md`.
+Object-owned `sendName`/`receiveName` routing and widget controls are documented
+in `docs/control-routing.md`.
 
 ## Pre-v1 Compatibility
 

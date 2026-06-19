@@ -13,9 +13,7 @@
   ],
   "runtimeBehavior": "click, in, or bang emits the saved message payload. set updates runtime message text without output. Inspector edits are graph patches, not runtime control events.",
   "relatedNodes": [
-    "core.bang-button",
-    "core.string",
-    "core.event-log"
+    "core.string"
   ],
   "ports": [
     {
@@ -51,7 +49,7 @@
   ],
   "example": {
     "title": "Trigger a string message",
-    "description": "Use Bang Button to emit the saved message text on demand.",
+    "description": "Use Bang to emit the saved message text on demand.",
     "graph": "help/v0.1/nodes/core.message.help.graph.json"
   }
 }

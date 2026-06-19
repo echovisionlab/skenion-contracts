@@ -12,8 +12,7 @@
   ],
   "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored string without changing it.",
   "relatedNodes": [
-    "core.message",
-    "core.bang-button"
+    "core.message"
   ],
   "ports": [
     {

@@ -15,7 +15,6 @@
     },
     {
       "id": "bang_1",
-      "kind": "core.bang-button",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
@@ -28,7 +27,8 @@
             "dataKind": "event.bang"
           }
         }
-      ]
+      ],
+      "kind": "core.bang"
     },
     {
       "id": "value_1",
@@ -81,10 +81,10 @@
     },
     {
       "id": "toggle_1",
-      "kind": "core.toggle",
       "kindVersion": "0.1.0",
       "params": {
-        "value": false
+        "value": false,
+        "widget": "toggle"
       },
       "ports": [
         {
@@ -126,7 +126,8 @@
             "dataKind": "boolean"
           }
         }
-      ]
+      ],
+      "kind": "core.bool"
     }
   ],
   "edges": [

@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "id": "core.panel",
   "summary": "Draws a colored background panel on the patch canvas.",
-  "description": "Panel is a visual patch annotation object. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
+  "description": "Panel is a visual patch annotation object. Its saved default is transparent unless a color param is set. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
   "helpGraph": "help/v0.1/nodes/core.panel.help.graph.json",
   "tags": [
     "annotation",
@@ -24,7 +24,7 @@
   "params": [
     {
       "id": "color",
-      "description": "Saved panel color/rgba32f as a CSS hex string."
+      "description": "Optional saved panel color as a CSS hex string. Omit for transparent."
     },
     {
       "id": "label",

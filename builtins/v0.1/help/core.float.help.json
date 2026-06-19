@@ -2,8 +2,8 @@
   "schema": "skenion.node.help",
   "schemaVersion": "0.1.0",
   "id": "core.float",
-  "summary": "Stores and emits a 32-bit floating-point control value.",
-  "description": "Use Float when a patch needs a generic numeric control value. The graph parameter is the saved default; runtime control events can update the live session value without changing the saved graph.",
+  "summary": "Stores and emits a floating-point control value.",
+  "description": "Use Float when a patch needs a generic numeric control value. Representation such as f32 or f8 is selected separately from the semantic number.float type.",
   "docsPath": "docs/nodes/core.float.md",
   "helpGraph": "help/v0.1/nodes/core.float.help.graph.json",
   "tags": [
@@ -13,8 +13,6 @@
   ],
   "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored value without changing it.",
   "relatedNodes": [
-    "core.bang-button",
-    "core.target",
     "render.fullscreen-shader"
   ],
   "ports": [
@@ -47,6 +45,14 @@
     {
       "id": "receiveName",
       "description": "Optional typed channel name used to receive routed updates."
+    },
+    {
+      "id": "widget",
+      "description": "Optional display widget. Use slider for a compact runtime slider object."
+    },
+    {
+      "id": "representation",
+      "description": "Numeric storage/transport representation such as f32, f16, or f8.e4m3."
     }
   ],
   "example": {

@@ -81,7 +81,7 @@ fn reports_public_validation_errors() {
           "displayName": "Bad",
           "category": "Script",
           "ports": [
-            { "id": "out", "direction": "output", "type": { "flow": "event", "dataKind": "bang" }, "activation": "trigger" }
+            { "id": "out", "direction": "output", "type": { "flow": "event", "dataKind": "event.bang" }, "activation": "trigger" }
           ],
           "execution": { "model": "script_control" },
           "state": { "persistent": false },
@@ -134,7 +134,7 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "in", "direction": "input", "type": { "flow": "event", "dataKind": "bang" }, "activation": "trigger" }
+                { "id": "in", "direction": "input", "type": { "flow": "event", "dataKind": "event.bang" }, "activation": "trigger" }
               ]
             }
           ],

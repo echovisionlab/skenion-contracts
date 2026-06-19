@@ -1,8 +1,8 @@
 # Control Routing
 
 Skenion v0.1 uses object-owned typed routing for non-local control values.
-Value, message, and UI control objects can publish to or receive from named
-channels through `sendName` and `receiveName` params. Standalone routing
+Value, message, panel, and annotation objects can publish to or receive from
+named channels through `sendName` and `receiveName` params. Standalone routing
 objects are not part of the builtin object model.
 
 ## Object-Owned Channels
@@ -52,16 +52,17 @@ Primary routing-capable objects include:
 - `core.float`, `core.int`, `core.bool`
 - `core.color`, `core.string`, `core.message`
 - `core.comment`, `core.panel`
-- `ui.button`, `ui.slider-float`, `ui.toggle`
+- `core.bang`
 
 ## Panel Controls
 
-Panel control nodes emit runtime control events. These interactions are
-performance-time state changes, not graph edits:
+Widget params choose the visible object style without changing the canonical
+node kind. These interactions are performance-time state changes, not graph
+edits:
 
-- `ui.button` accepts any incoming message and emits `event.bang`
-- `ui.slider-float` accepts `in`, `set`, and `bang` and emits `value<number.float>`
-- `ui.toggle` accepts `bang`, `0/1`, `off/on`, `false/true`, and `set` forms
+- `core.bang` accepts any incoming message and emits `event.bang`
+- `core.float` with `widget: "slider"` accepts `in`, `set`, and `bang` and emits `value<number.float>`
+- `core.bool` with `widget: "toggle"` accepts `bang`, `0/1`, `off/on`, `false/true`, and `set` forms
 
 Changing graph parameters such as `label`, `min`, `max`, `step`, `sendName`, or
 `receiveName` remains a graph patch. Moving a runtime slider or clicking a

@@ -6,7 +6,6 @@
   "nodes": [
     {
       "id": "toggle_1",
-      "kind": "core.toggle",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
@@ -18,7 +17,8 @@
             "dataKind": "boolean"
           }
         }
-      ]
+      ],
+      "kind": "core.bool"
     },
     {
       "id": "burst_1",
@@ -31,7 +31,7 @@
           "direction": "input",
           "type": {
             "flow": "event",
-            "dataKind": "bang"
+            "dataKind": "event.bang"
           },
           "activation": "trigger"
         }

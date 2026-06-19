@@ -13,9 +13,10 @@ typed values and simple control annotations.
 - `bang`: emit the current stored value without changing it
 - `value`: output the current stored value
 
-`core.toggle` uses the same boolean type as `core.bool`, but `bang` flips
-the stored value and emits the new value. Value objects may also use
-`sendName` and `receiveName` graph params for named typed routing.
+`core.bool` is also the canonical toggle object when `params.widget` is
+`"toggle"` or `"checkbox"`. In that widget mode, `bang` flips the stored value
+and emits the new value. Value objects may also use `sendName` and
+`receiveName` graph params for named typed routing.
 
 ## Message And Comment
 
@@ -24,14 +25,15 @@ saved payload. `set <message>` updates runtime message state silently. Inspector
 text edits remain graph patches.
 
 `core.comment` documents the patch and has no runtime behavior. It is rendered
-as a text annotation, not as a generic node card. It may still expose a `set`
-inlet and `receiveName` for patcher-style live text updates; it does not emit.
+as a text annotation, not as a generic node card.
 
-## UI Objects
+## UI Widgets
 
-`ui.button`, `ui.slider-float`, and `ui.toggle` are object controls, not generic
-cards. They may use `sendName` and `receiveName` just like core value objects.
-Standalone routing nodes are not part of the builtin object model.
+Buttons, sliders, toggles, and compact number boxes are widget modes on
+canonical core objects. `core.bang` is the button-like bang object, `core.float`
+with `widget: "slider"` is the float slider, and `core.bool` with
+`widget: "toggle"` is the boolean toggle. Standalone routing nodes are not part
+of the builtin object model.
 
 ## Addressing
 

@@ -13,7 +13,6 @@
   ],
   "runtimeBehavior": "in updates and emits, set updates silently, and bang emits the stored unsigned integer value without changing it.",
   "relatedNodes": [
-    "core.bang-button",
     "render.fullscreen-shader"
   ],
   "ports": [

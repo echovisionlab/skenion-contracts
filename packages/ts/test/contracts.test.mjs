@@ -362,10 +362,6 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.deepEqual(stringDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
   assert.equal(stringDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
 
-  const toggleDefinition = getBuiltinNodeDefinition("core.toggle");
-  assert.deepEqual(toggleDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
-  assert.equal(toggleDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "boolean");
-
   const commentDefinition = getBuiltinNodeDefinition("core.comment");
   assert.deepEqual(commentDefinition?.ports.map((port) => port.id), []);
 
@@ -379,17 +375,22 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.equal(messageDefinition?.ports.find((port) => port.id === "set")?.type.dataKind, "message.any");
   assert.equal(messageDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "message.any");
 
-  const sliderDefinition = getBuiltinNodeDefinition("ui.slider-float");
-  assert.deepEqual(sliderDefinition?.ports.map((port) => port.id), ["in", "set", "bang", "value"]);
-  assert.equal(sliderDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.float");
+  const bangDefinition = getBuiltinNodeDefinition("core.bang");
+  assert.deepEqual(bangDefinition?.ports.map((port) => port.id), ["in", "bang"]);
+  assert.equal(bangDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
+  assert.equal(bangDefinition?.ports.find((port) => port.id === "bang")?.type.dataKind, "event.bang");
 
-  const buttonDefinition = getBuiltinNodeDefinition("ui.button");
-  assert.deepEqual(buttonDefinition?.ports.map((port) => port.id), ["in", "bang"]);
-  assert.equal(buttonDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
-
-  const uiToggleDefinition = getBuiltinNodeDefinition("ui.toggle");
-  assert.deepEqual(uiToggleDefinition?.ports.map((port) => port.id), ["in", "set", "value"]);
-  assert.equal(uiToggleDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
+  for (const removedId of [
+    ["core", "target"],
+    ["core", "event-log"],
+    ["core", "bang-button"],
+    ["core", "toggle"],
+    ["ui", "button"],
+    ["ui", "slider-float"],
+    ["ui", "toggle"]
+  ].map((parts) => parts.join("."))) {
+    assert.equal(getBuiltinNodeDefinition(removedId), undefined);
+  }
 
   const shaderDefinition = getBuiltinNodeDefinition("render.fullscreen-shader");
   assert.deepEqual(shaderDefinition?.ports.map((port) => port.id), ["out"]);
@@ -716,8 +717,9 @@ test("exports builtin node help", () => {
   assert.equal(valueHelp?.helpGraph, "help/v0.1/nodes/core.float.help.graph.json");
   assert.equal(valueHelp?.tags.includes("control"), true);
 
-  const toggleHelp = getBuiltinNodeHelp("core.toggle");
-  assert.match(toggleHelp?.ports?.find((port) => port.id === "bang")?.description ?? "", /Flips/);
+  const bangHelp = getBuiltinNodeHelp("core.bang");
+  assert.match(bangHelp?.description ?? "", /event\.bang.*selector/);
+  assert.deepEqual(bangHelp?.ports?.map((port) => port.id), ["in", "bang"]);
 
   const shaderHelp = getBuiltinNodeHelp("render.fullscreen-shader");
   assert.match(shaderHelp?.runtimeBehavior ?? "", /dynamic uniform layout/);
