@@ -41,8 +41,14 @@ process:
     "slider_1": { "type": "float", "representation": "f32", "value": 0.75 }
   },
   "channels": {
-    "number.float:speed": { "type": "float", "representation": "f32", "value": 0.75 },
-    "boolean:enabled": { "type": "bool", "value": true }
+    "number.float:speed": {
+      "selector": "float",
+      "atoms": [{ "type": "float", "representation": "f32", "value": 0.75 }]
+    },
+    "boolean:enabled": {
+      "selector": "bool",
+      "atoms": [{ "type": "bool", "value": true }]
+    }
   },
   "writtenAt": "unix-ms:1710000000000"
 }
@@ -51,6 +57,11 @@ process:
 The snapshot is written atomically by replacing the previous snapshot file. A
 preview process may poll the file and apply newer `controlRevision` values to
 the next frame.
+
+`channels` stores complete emitted `ControlMessage` payloads, not raw value
+atoms. This keeps selector-only messages such as `bang` and typed message-box
+payloads round-trippable through the preview boundary. Silent `set ...` updates
+change object state without publishing a channel message.
 
 ## Revisions
 

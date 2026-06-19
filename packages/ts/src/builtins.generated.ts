@@ -1147,7 +1147,7 @@ export const builtinNodeHelpV01 = [
       "panel",
       "background"
     ],
-    "runtimeBehavior": "set updates the runtime panel color/rgba32f silently. Inspector color/rgba32f edits remain graph patches.",
+    "runtimeBehavior": "set updates the runtime panel CSS color text silently. Inspector color edits remain graph patches.",
     "relatedNodes": [
       "core.comment",
       "core.message"
@@ -1155,7 +1155,7 @@ export const builtinNodeHelpV01 = [
     "ports": [
       {
         "id": "set",
-        "description": "Updates the panel color/rgba32f from a message such as set #00ff00 without output."
+        "description": "Updates the panel CSS color text from a message such as set #00ff00 without output."
       }
     ],
     "params": [
@@ -1169,7 +1169,7 @@ export const builtinNodeHelpV01 = [
       },
       {
         "id": "receiveName",
-        "description": "Optional string channel name used to receive routed color/rgba32f updates."
+        "description": "Optional string channel name used to receive routed CSS color text updates."
       }
     ],
     "example": {

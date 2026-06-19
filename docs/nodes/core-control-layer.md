@@ -5,7 +5,7 @@ typed values and simple control annotations.
 
 ## Value Nodes
 
-`core.float`, `core.int`, `core.bool`, `core.color`, and
+`core.float`, `core.int`, `core.uint`, `core.bool`, `core.color`, and
 `core.string` share the same stored-value surface:
 
 - `in`: hot `message.any` inlet; typed values update and emit, `bang` emits the

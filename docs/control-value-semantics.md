@@ -9,6 +9,7 @@ The canonical v0.1 typed value nodes are:
 
 - `core.float` for `value<number.float>`
 - `core.int` for `value<number.int>`
+- `core.uint` for `value<number.uint>`
 - `core.bool` for `value<boolean>`
 - `core.color` for `value<color>`
 - `core.string` for `value<string>`
@@ -81,3 +82,8 @@ in `docs/control-routing.md`.
 
 This is a pre-v1 contract. Breaking built-in node shape changes are allowed
 while Skenion is still converging on the runtime/editor control model.
+
+The previous value-object surface with separate visual `bang` and `set` input
+ports is removed. Canonical value objects expose only `in`, `cold`, and
+`value`; `bang` and `set` remain `ControlMessage.selector` values handled by
+the receiving object.
