@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.22.0...skenion-contracts-v0.23.0) (2026-06-19)
+
+
+### Features
+
+* **contracts:** define semantic representations and conversions ([ed5b8a2](https://github.com/echovisionlab/skenion-contracts/commit/ed5b8a2058be30dccec6a8d9a9b76ebb14129a3f))
+
 ## [0.22.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.21.0...skenion-contracts-v0.22.0) (2026-06-18)
 
 
