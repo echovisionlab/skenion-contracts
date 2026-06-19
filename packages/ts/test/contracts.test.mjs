@@ -425,15 +425,65 @@ test("exports the canonical v0.1 builtin manifest", () => {
 
 test("plans implicit numeric and color representation conversions", () => {
   assert.equal(representationRegistryV01.some((representation) => representation.id === "f8.e4m3"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "ufloat8"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "ufloat16"), true);
   assert.equal(representationRegistryV01.some((representation) => representation.id === "rgba8unorm"), true);
+
+  const knownRepresentations = new Set(representationRegistryV01.map((representation) => representation.id));
+  const valueType = (dataKind, format) => ({ flow: "value", dataKind, format });
+  const assertImplicitConversion = (label, source, target, expectedPolicy) => {
+    const plan = planConversion(source, target);
+    assert.equal(plan.ok, true, `${label} should be implicit`);
+    assert.equal(knownRepresentations.has(plan.source.representation), true, `${label} source representation is registered`);
+    assert.equal(knownRepresentations.has(plan.target.representation), true, `${label} target representation is registered`);
+    if (expectedPolicy) {
+      assert.equal(plan.steps[0].policy, expectedPolicy, `${label} policy`);
+    }
+    return plan;
+  };
+
+  const semanticConversions = [
+    ["float -> float", valueType("number.float", "f32"), valueType("number.float", "f16"), "numeric-cast"],
+    ["float -> int", valueType("number.float", "f32"), valueType("number.int", "i32"), "float-to-integer"],
+    ["float -> uint", valueType("number.float", "f32"), valueType("number.uint", "u32"), "float-to-integer"],
+    ["int -> int", valueType("number.int", "i32"), valueType("number.int", "i8"), "numeric-cast"],
+    ["int -> uint", valueType("number.int", "i32"), valueType("number.uint", "u32"), "integer-signedness"],
+    ["int -> float", valueType("number.int", "i32"), valueType("number.float", "f32"), "integer-to-float"],
+    ["uint -> uint", valueType("number.uint", "u32"), valueType("number.uint", "u8"), "numeric-cast"],
+    ["uint -> int", valueType("number.uint", "u32"), valueType("number.int", "i32"), "integer-signedness"],
+    ["uint -> float", valueType("number.uint", "u32"), valueType("number.float", "f32"), "integer-to-float"],
+    ["ufloat -> float", valueType("number.float", "ufloat8"), valueType("number.float", "f32"), "numeric-cast"],
+    ["ufloat -> int", valueType("number.float", "ufloat16"), valueType("number.int", "i32"), "float-to-integer"],
+    ["ufloat -> uint", valueType("number.float", "ufloat8"), valueType("number.uint", "u32"), "float-to-integer"],
+    ["color -> color", valueType("color", "rgba32f"), valueType("color", "rgba8unorm"), "color-cast"]
+  ];
+  for (const [label, source, target, expectedPolicy] of semanticConversions) {
+    assertImplicitConversion(label, source, target, expectedPolicy);
+  }
+
+  const representationConversions = [
+    ["f32 -> f8", valueType("number.float", "f32"), valueType("number.float", "f8.e4m3"), "numeric-cast"],
+    ["f8 -> f16", valueType("number.float", "f8.e4m3"), valueType("number.float", "f16"), "numeric-cast"],
+    ["ufloat8 -> uint", valueType("number.float", "ufloat8"), valueType("number.uint", "u8"), "float-to-integer"],
+    ["ufloat16 -> int", valueType("number.float", "ufloat16"), valueType("number.int", "i16"), "float-to-integer"],
+    ["float -> uint", valueType("number.float", "f32"), valueType("number.uint", "u8"), "float-to-integer"],
+    ["int -> float", valueType("number.int", "i32"), valueType("number.float", "f16"), "integer-to-float"],
+    ["uint -> int", valueType("number.uint", "u32"), valueType("number.int", "i8"), "integer-signedness"],
+    ["i32 -> i8", valueType("number.int", "i32"), valueType("number.int", "i8"), "numeric-cast"],
+    ["u32 -> u8", valueType("number.uint", "u32"), valueType("number.uint", "u8"), "numeric-cast"],
+    ["rgba32f -> rgba8unorm", valueType("color", "rgba32f"), valueType("color", "rgba8unorm"), "color-cast"],
+    ["rgb -> rgba", valueType("color", "rgb8unorm"), valueType("color", "rgba8unorm"), "color-cast"],
+    ["rgba -> rgb", valueType("color", "rgba8unorm"), valueType("color", "rgb8unorm"), "color-cast"]
+  ];
+  for (const [label, source, target, expectedPolicy] of representationConversions) {
+    assertImplicitConversion(label, source, target, expectedPolicy);
+  }
 
   const floatToByte = planConversion(
     { flow: "value", dataKind: "number.float", format: "f32" },
     { flow: "value", dataKind: "number.uint", format: "u8" }
   );
-  assert.equal(floatToByte.ok, true);
   assert.equal(floatToByte.lossy, true);
-  assert.equal(floatToByte.steps[0].policy, "float-to-integer");
   assert.equal(floatToByte.steps[0].clamp, "saturating");
   assert.equal(floatToByte.steps[0].trunc, "toward-zero");
 
@@ -515,17 +565,28 @@ test("plans implicit numeric and color representation conversions", () => {
     { flow: "value", dataKind: "number.float", format: "float.custom" },
     { flow: "value", dataKind: "number.float", format: "float.other" }
   );
-  assert.equal(unknownRepresentation.ok, true);
-  assert.equal(unknownRepresentation.lossy, true);
+  assert.equal(unknownRepresentation.ok, false);
 
   assert.equal(planConversion(
     { flow: "value", dataKind: "number.float", format: "f32" },
     { flow: "value", dataKind: "number.float", format: "float.other" }
-  ).ok, true);
+  ).ok, false);
   assert.equal(planConversion(
     { flow: "value", dataKind: "number.float", format: "float.custom" },
     { flow: "value", dataKind: "number.float", format: "f32" }
-  ).ok, true);
+  ).ok, false);
+  assert.equal(planConversion(
+    { flow: "value", dataKind: "number.float", format: "i32" },
+    { flow: "value", dataKind: "number.float", format: "f32" }
+  ).ok, false);
+  assert.equal(planConversion(
+    { flow: "value", dataKind: "color", format: "f32" },
+    { flow: "value", dataKind: "color", format: "rgba32f" }
+  ).ok, false);
+  assert.equal(planConversion(
+    { flow: "value", dataKind: "color", format: "rgba32f" },
+    { flow: "value", dataKind: "color", format: "color.custom" }
+  ).ok, false);
 });
 
 test("analyzes WGSL shader uniform annotations into dynamic ports", () => {

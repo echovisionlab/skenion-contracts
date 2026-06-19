@@ -35,20 +35,31 @@ export type SemanticDataKindV01 =
   | "gpu.texture2d"
   | "color";
 
-export type NumericRepresentationV01 =
+export type FloatRepresentationV01 =
   | "f64"
   | "f32"
   | "f16"
   | "f8.e4m3"
   | "f8.e5m2"
+  | "ufloat16"
+  | "ufloat8";
+
+export type IntRepresentationV01 =
   | "i64"
   | "i32"
   | "i16"
-  | "i8"
+  | "i8";
+
+export type UintRepresentationV01 =
   | "u64"
   | "u32"
   | "u16"
   | "u8";
+
+export type NumericRepresentationV01 =
+  | FloatRepresentationV01
+  | IntRepresentationV01
+  | UintRepresentationV01;
 
 export type ColorRepresentationV01 =
   | "rgba32f"
@@ -524,9 +535,9 @@ export interface ShaderInterfaceAnalysisV01 {
 }
 
 export type ControlAtomV01 =
-  | { type: "float"; representation: NumericRepresentationV01; value: number }
-  | { type: "int"; representation: NumericRepresentationV01; value: number }
-  | { type: "uint"; representation: NumericRepresentationV01; value: number }
+  | { type: "float"; representation: FloatRepresentationV01; value: number }
+  | { type: "int"; representation: IntRepresentationV01; value: number }
+  | { type: "uint"; representation: UintRepresentationV01; value: number }
   | { type: "bool"; value: boolean }
   | { type: "string"; value: string }
   | {

@@ -90,7 +90,9 @@ export const builtinManifestV01 = {
       "f32",
       "f16",
       "f8.e4m3",
-      "f8.e5m2"
+      "f8.e5m2",
+      "ufloat16",
+      "ufloat8"
     ],
     "number.int": [
       "i64",

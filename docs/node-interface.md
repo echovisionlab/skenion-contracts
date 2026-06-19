@@ -56,14 +56,13 @@ Initial core data kinds:
 
 | Data kind | Typical flow | Meaning |
 | --- | --- | --- |
-| `bang` | `event` | Momentary trigger event. |
+| `event.bang` | `event` | Momentary trigger event. |
 | `boolean` | `value`, `signal`, `event` | Boolean payload. |
-| `number.int` | `value`, `signal` | Signed 32-bit number. |
-| `number.u32` | `value`, `signal` | Unsigned 32-bit number. |
-| `number.float` | `value`, `signal` | 32-bit float. |
-| `number.f64` | `value`, `signal` | 64-bit float. |
+| `number.float` | `value`, `signal` | Floating-point number; storage/transport precision is a representation. |
+| `number.int` | `value`, `signal` | Signed integer; width is a representation. |
+| `number.uint` | `value`, `signal` | Unsigned integer; width is a representation. |
 | `vec2`, `vec3`, `vec4` | `value`, `signal` | Numeric vectors. |
-| `color` | `value`, `signal` | RGBA color. |
+| `color` | `value`, `signal` | Color value; channel count and encoding are representations. |
 | `string` | `value`, `event` | UTF-8 string. |
 | `enum` | `value`, `event` | One of a declared `values` set. |
 | `matrix.f32` | `value`, `signal`, `stream` | Numeric matrix. |

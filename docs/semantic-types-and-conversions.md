@@ -23,7 +23,7 @@ Representation-specific names such as `number.f32`, `number.i32`, or
 
 Representations describe how a semantic value is stored or delivered:
 
-- `number.float`: `f64`, `f32`, `f16`, `f8.e4m3`, `f8.e5m2`
+- `number.float`: `f64`, `f32`, `f16`, `f8.e4m3`, `f8.e5m2`, `ufloat16`, `ufloat8`
 - `number.int`: `i64`, `i32`, `i16`, `i8`
 - `number.uint`: `u64`, `u32`, `u16`, `u8`
 - `color`: `rgba32f`, `rgba16f`, `rgba8unorm`, `rgb8unorm`

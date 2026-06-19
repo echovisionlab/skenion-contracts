@@ -172,8 +172,8 @@ Rules:
   fullscreen triangle vertex entry point.
 - Uniform input ports are declared by line comments:
   `// @skenion.uniform <id> <dataKind> [attributes...]`.
-- Supported uniform data kinds are `number.float`, `number.int`, `boolean`, and
-  `color`.
+- Supported uniform data kinds are `number.float`, `number.int`,
+  `number.uint`, `boolean`, and `color`.
 - Uniform ids are port ids and WGSL field names. They are not types.
 - Reserved ids `out`, `in`, `set`, `bang`, and `value` are invalid.
 - `default`, `min`, `max`, `step`, and quoted `label` attributes may be used

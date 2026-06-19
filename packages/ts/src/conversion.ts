@@ -13,6 +13,8 @@ export const representationRegistryV01 = [
   { id: "f16", semanticDataKind: "number.float", bitsPerComponent: 16, signed: true },
   { id: "f8.e4m3", semanticDataKind: "number.float", bitsPerComponent: 8, signed: true },
   { id: "f8.e5m2", semanticDataKind: "number.float", bitsPerComponent: 8, signed: true },
+  { id: "ufloat16", semanticDataKind: "number.float", bitsPerComponent: 16, signed: false },
+  { id: "ufloat8", semanticDataKind: "number.float", bitsPerComponent: 8, signed: false },
   { id: "i64", semanticDataKind: "number.int", bitsPerComponent: 64, signed: true, integer: true },
   { id: "i32", semanticDataKind: "number.int", bitsPerComponent: 32, signed: true, integer: true },
   { id: "i16", semanticDataKind: "number.int", bitsPerComponent: 16, signed: true, integer: true },
@@ -90,6 +92,21 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
   }
 
   if (source.dataKind === "color" && target.dataKind === "color") {
+    const sourceRepresentation = representationById.get(String(source.representation));
+    const targetRepresentation = representationById.get(String(target.representation));
+    if (!sourceRepresentation || sourceRepresentation.semanticDataKind !== "color") {
+      return failedPlan(
+        base,
+        `unknown or mismatched source representation ${source.representation} for color`
+      );
+    }
+    if (!targetRepresentation || targetRepresentation.semanticDataKind !== "color") {
+      return failedPlan(
+        base,
+        `unknown or mismatched target representation ${target.representation} for color`
+      );
+    }
+
     return {
       ...base,
       ok: true,
@@ -112,10 +129,21 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
   const targetKind = base.target.dataKind;
   const sourceRepresentation = representationById.get(String(base.source.representation));
   const targetRepresentation = representationById.get(String(base.target.representation));
+  if (!sourceRepresentation || sourceRepresentation.semanticDataKind !== sourceKind) {
+    return failedPlan(
+      base,
+      `unknown or mismatched source representation ${base.source.representation} for ${sourceKind}`
+    );
+  }
+  if (!targetRepresentation || targetRepresentation.semanticDataKind !== targetKind) {
+    return failedPlan(
+      base,
+      `unknown or mismatched target representation ${base.target.representation} for ${targetKind}`
+    );
+  }
+
   const narrowing = Boolean(
-    sourceRepresentation &&
-      targetRepresentation &&
-      sourceRepresentation.bitsPerComponent > targetRepresentation.bitsPerComponent
+    sourceRepresentation.bitsPerComponent > targetRepresentation.bitsPerComponent
   );
   const lossy = narrowing || sourceKind !== targetKind || base.source.representation !== base.target.representation;
 
