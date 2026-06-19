@@ -24,8 +24,13 @@ stored value and emits the new value. Value objects may also use `sendName` and
 saved payload. `set <message>` on `in` updates runtime message state silently.
 Inspector text edits remain graph patches.
 
-`core.comment` documents the patch and has no runtime behavior. It is rendered
-as a text annotation, not as a generic node card.
+`core.comment` documents the patch as a text annotation. It receives
+`event<message.any>` on `in`; `set <text>` updates runtime display text
+silently. It has no output. Inspector text edits remain graph patches.
+
+`core.panel` groups controls visually. It receives `event<message.any>` on
+`in`; `set <hex>` updates runtime panel color silently. It has no output.
+Inspector color edits remain graph patches.
 
 ## UI Widgets
 

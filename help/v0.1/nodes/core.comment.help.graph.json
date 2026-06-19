@@ -9,9 +9,21 @@
       "kind": "core.comment",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "Comments annotate a patch. They have no runtime ports."
+        "text": "Comments annotate a patch. Send set <text> to in to update runtime display text."
       },
-      "ports": []
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "event",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        }
+      ]
     },
     {
       "id": "note_2",
@@ -20,7 +32,19 @@
       "params": {
         "text": "Use comments near important control or render decisions."
       },
-      "ports": []
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "event",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        }
+      ]
     }
   ],
   "edges": []

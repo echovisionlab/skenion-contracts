@@ -362,11 +362,14 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.equal(stringDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
 
   const commentDefinition = getBuiltinNodeDefinition("core.comment");
-  assert.deepEqual(commentDefinition?.ports.map((port) => port.id), []);
+  assert.deepEqual(commentDefinition?.ports.map((port) => port.id), ["in"]);
+  assert.equal(commentDefinition?.ports.find((port) => port.id === "in")?.type.flow, "event");
+  assert.equal(commentDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
 
   const panelDefinition = getBuiltinNodeDefinition("core.panel");
-  assert.deepEqual(panelDefinition?.ports.map((port) => port.id), ["set"]);
-  assert.equal(panelDefinition?.ports.find((port) => port.id === "set")?.type.dataKind, "message.any");
+  assert.deepEqual(panelDefinition?.ports.map((port) => port.id), ["in"]);
+  assert.equal(panelDefinition?.ports.find((port) => port.id === "in")?.type.flow, "event");
+  assert.equal(panelDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
 
   const messageDefinition = getBuiltinNodeDefinition("core.message");
   assert.deepEqual(messageDefinition?.ports.map((port) => port.id), ["in", "out"]);
@@ -874,6 +877,44 @@ test("v0.2 validates fan-out, fan-in, accepts, and feedback fixtures", async () 
   const invalidCycle = analyzeGraphDocumentV02(feedbackGraph);
   assert.equal(invalidCycle.ok, false);
   assert.equal(invalidCycle.cycles[0].classification, "invalid-cycle");
+});
+
+test("v0.2 message.any inlets accept bang events", () => {
+  const graph = {
+    schema: "skenion.graph",
+    schemaVersion: "0.2.0",
+    id: "message-any-bang",
+    revision: "1",
+    nodes: [
+      {
+        id: "button",
+        kind: "core.bang",
+        kindVersion: "0.2.0",
+        params: {},
+        ports: [
+          { id: "out", direction: "output", type: "event.bang", rate: "event" }
+        ]
+      },
+      {
+        id: "message",
+        kind: "core.message",
+        kindVersion: "0.2.0",
+        params: {},
+        ports: [
+          { id: "in", direction: "input", type: "message.any", rate: "event", triggerMode: "trigger" }
+        ]
+      }
+    ],
+    edges: [
+      {
+        id: "edge_button_message",
+        source: { nodeId: "button", portId: "out" },
+        target: { nodeId: "message", portId: "in" }
+      }
+    ]
+  };
+
+  assert.equal(validateGraphDocumentV02(graph).ok, true);
 });
 
 test("v0.2 rejects invalid direction fan-in and algebraic-loop fixtures", async () => {

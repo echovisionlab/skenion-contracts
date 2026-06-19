@@ -241,6 +241,7 @@ function validateBuiltins(manifestFile, builtinNodeFiles, validators) {
   validateTypedValueBuiltin(definitions, "core.string", "string", "Value");
   validateBangBuiltin(definitions);
   validateCommentBuiltin(definitions);
+  validatePanelBuiltin(definitions);
   validateMessageBuiltin(definitions);
 
   const shaderDefinition = definitions.find((definition) => definition.id === "render.fullscreen-shader");
@@ -382,8 +383,35 @@ function validateCommentBuiltin(definitions) {
   if (!definition) {
     fail(file, "core.comment must exist");
   }
-  if (definition.ports.length !== 0) {
-    fail(file, "core.comment must not declare runtime ports");
+  const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const input = ports.get("in");
+  if (input?.direction !== "input" || input?.type.flow !== "event" || input?.type.dataKind !== "message.any") {
+    fail(file, "core.comment.in must accept event<message.any>");
+  }
+  if (input.activation !== "trigger") {
+    fail(file, "core.comment.in activation must be trigger");
+  }
+  if (ports.has("set") || ports.has("bang") || ports.has("value")) {
+    fail(file, "core.comment must expose only in; set and bang are message selectors");
+  }
+}
+
+function validatePanelBuiltin(definitions) {
+  const definition = definitions.find((candidate) => candidate.id === "core.panel");
+  const file = "builtins/v0.1/nodes/core.panel.node.json";
+  if (!definition) {
+    fail(file, "core.panel must exist");
+  }
+  const ports = new Map(definition.ports.map((port) => [port.id, port]));
+  const input = ports.get("in");
+  if (input?.direction !== "input" || input?.type.flow !== "event" || input?.type.dataKind !== "message.any") {
+    fail(file, "core.panel.in must accept event<message.any>");
+  }
+  if (input.activation !== "trigger") {
+    fail(file, "core.panel.in activation must be trigger");
+  }
+  if (ports.has("set") || ports.has("bang") || ports.has("value")) {
+    fail(file, "core.panel must expose only in; set and bang are message selectors");
   }
 }
 

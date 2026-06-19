@@ -62,6 +62,10 @@ node kind. These interactions are performance-time state changes, not graph
 edits:
 
 - `core.bang` accepts any incoming control message and emits `event.bang`
+- `core.comment` accepts `set <text>` on `in` and updates runtime display text
+  without output
+- `core.panel` accepts `set <hex>` on `in` and updates runtime panel color
+  without output
 - `core.float` with `widget: "slider"` sends typed values to the hot `in` inlet
   and emits `value<number.float>`
 - `core.bool` with `widget: "toggle"` handles `bang`, `0/1`, `off/on`,

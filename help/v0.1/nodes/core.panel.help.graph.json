@@ -14,15 +14,15 @@
       },
       "ports": [
         {
-          "id": "set",
+          "id": "in",
           "direction": "input",
-          "label": "Set",
+          "label": "In",
           "type": {
-            "flow": "value",
+            "flow": "event",
             "dataKind": "message.any"
           },
           "required": false,
-          "activation": "latched"
+          "activation": "trigger"
         }
       ]
     },
@@ -31,9 +31,21 @@
       "kind": "core.comment",
       "kindVersion": "0.1.0",
       "params": {
-        "text": "Panel is a colored visual grouping object. set #00ff00 updates its runtime color state."
+        "text": "Panel is a visual grouping object. Send set #00ff00 to in to update runtime color state."
       },
-      "ports": []
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": {
+            "flow": "event",
+            "dataKind": "message.any"
+          },
+          "required": false,
+          "activation": "trigger"
+        }
+      ]
     }
   ],
   "edges": []
