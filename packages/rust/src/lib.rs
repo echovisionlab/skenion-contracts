@@ -17,8 +17,9 @@ pub use v0_1::{
     ShaderLanguageV01, ShaderUniformV01, StringOrStringsV01, ValidationErrorV01,
     ValidationReportV01, ViewStateV01, analyze_shader_interface_v01, apply_graph_patch_v01,
     compatible_data_types_v01, create_default_view_state_for_graph_v01, invert_graph_patch_v01,
-    shader_interface_to_ports_v01, type_label_v01, validate_graph_document_v01,
-    validate_node_definition_v01, validate_object_text_parse_result_v01,
+    parse_object_text_v01, shader_interface_to_ports_v01, type_label_v01,
+    validate_graph_document_v01, validate_node_definition_v01,
+    validate_object_text_parse_result_v01,
 };
 pub use v0_2::{
     CableStyleRegistryV02, CableStyleV02, CycleValidationV02, EdgeEndpointV02, EdgeSpecV02,

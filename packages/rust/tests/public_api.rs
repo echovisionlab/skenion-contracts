@@ -2,9 +2,10 @@ use skenion_contracts::{
     ApplyPatchErrorV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphDocumentV02,
     GraphPatchOperationV01, GraphPatchV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02,
     NumberRangeV01, ObjectTextParseResultV01, StringOrStringsV01, analyze_graph_document_v02,
-    apply_graph_patch_v01, compatible_data_types_v01, invert_graph_patch_v01, type_label_v01,
-    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
-    validate_node_definition_v02, validate_object_text_parse_result_v01,
+    apply_graph_patch_v01, compatible_data_types_v01, invert_graph_patch_v01,
+    parse_object_text_v01, type_label_v01, validate_graph_document_v01,
+    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
+    validate_object_text_parse_result_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -135,6 +136,68 @@ fn validates_public_object_text_parse_results() {
     let version_error = validate_object_text_parse_result_v01(&wrong_version)
         .expect_err("schema version mismatch should fail");
     assert!(version_error.to_string().contains("9.9.9"));
+
+    let parsed = parse_object_text_v01("[osc~ 440]");
+    assert_eq!(parsed.resolved_kind.as_deref(), Some("audio.osc"));
+    assert_eq!(
+        parsed.params.get("frequency"),
+        Some(&serde_json::json!(440))
+    );
+}
+
+#[test]
+fn parses_public_object_text_baseline_matrix() {
+    let supported = [
+        ("[+ 1]", Some("core.operator.add")),
+        ("[+ 1.]", Some("core.operator.add")),
+        ("[+]", Some("core.operator.add")),
+        ("[* 0.5]", Some("core.operator.mul")),
+        ("[/ 0.5]", Some("core.operator.div")),
+        ("[sqrt]", Some("core.operator.sqrt")),
+        ("[+~]", Some("audio.operator.add")),
+        ("[-~]", Some("audio.operator.sub")),
+        ("[*~ 0.5]", Some("audio.operator.mul")),
+        ("[/~ 0.5]", Some("audio.operator.div")),
+        ("[sqrt~]", Some("audio.operator.sqrt")),
+        ("[osc~ 440]", Some("audio.osc")),
+        ("[phasor~ 1]", Some("audio.phasor")),
+    ];
+
+    for (input, expected_kind) in supported {
+        let result = parse_object_text_v01(input);
+        validate_object_text_parse_result_v01(&result).expect("parse result should validate");
+        assert!(result.ok, "{input} should parse");
+        assert_eq!(result.resolved_kind.as_deref(), expected_kind);
+    }
+
+    for input in [
+        "[+ 1",
+        "+ 1]",
+        "",
+        "[+ 1 2]",
+        "[+ true]",
+        "[+ false]",
+        "[+ 1.bad]",
+        "[+ 1e309]",
+        "[*~ 1 2]",
+        "[*~ beep]",
+        "[/~ false]",
+        "[sqrt~ 1]",
+        "[osc~ 1 2]",
+        "[osc~ false]",
+        "[phasor~ beep]",
+        "[sin~]",
+        "[expr $f1]",
+        "[frobnicate]",
+    ] {
+        let result = parse_object_text_v01(input);
+        validate_object_text_parse_result_v01(&result).expect("failure result should validate");
+        assert!(!result.ok, "{input} should fail without throwing");
+        assert!(
+            !result.diagnostics.is_empty(),
+            "{input} should include diagnostics"
+        );
+    }
 }
 
 #[test]

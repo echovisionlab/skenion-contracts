@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import {
@@ -24,6 +24,7 @@ import {
   objectTextParseResultV01Schema,
   planConversion,
   projectV01Schema,
+  parseObjectTextV01,
   representationForDataType,
   representationRegistryV01,
   shaderDiagnosticV01Schema,
@@ -50,6 +51,14 @@ const repoRoot = path.resolve(import.meta.dirname, "../../..");
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(repoRoot, relativePath), "utf8"));
+}
+
+async function fixtureFiles(relativePath) {
+  const directory = path.join(repoRoot, relativePath);
+  return (await readdir(directory))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort()
+    .map((fileName) => path.join(relativePath, fileName));
 }
 
 test("exports v0.1 graph and node definition schemas", () => {
@@ -104,6 +113,48 @@ test("validates object text parse result fixtures", async () => {
 
   assert.equal(invalidResult.ok, false);
   assert.match(invalidResult.errors.join("\n"), /classSymbol/);
+});
+
+test("parses object text into golden parse results", async () => {
+  for (const fixture of await fixtureFiles("fixtures/object-text/v0.1/valid")) {
+    const expected = await readJson(fixture);
+    assert.deepEqual(parseObjectTextV01(expected.input), expected, fixture);
+  }
+
+  const raw = parseObjectTextV01("+ 1");
+  assert.equal(raw.ok, true);
+  assert.equal(raw.input, "+ 1");
+  assert.equal(raw.displayText, "+ 1");
+  assert.equal(raw.resolvedKind, "core.operator.add");
+
+  assert.deepEqual(parseObjectTextV01("+").params, { right: 0 });
+  assert.equal(parseObjectTextV01("- 2").resolvedKind, "core.operator.sub");
+  assert.equal(parseObjectTextV01("pow 2").resolvedKind, "core.operator.pow");
+  assert.equal(parseObjectTextV01("min 2").resolvedKind, "core.operator.min");
+  assert.equal(parseObjectTextV01("max 2").resolvedKind, "core.operator.max");
+  assert.equal(parseObjectTextV01("sqrt").resolvedKind, "core.operator.sqrt");
+  assert.equal(parseObjectTextV01("-~ 0.25").resolvedKind, "audio.operator.sub");
+  assert.deepEqual(parseObjectTextV01("osc~").params, { frequency: 0 });
+  assert.deepEqual(parseObjectTextV01("phasor~").params, { frequency: 0 });
+
+  assert.equal(parseObjectTextV01("[+ 1").diagnostics[0].code, "invalid-syntax");
+  assert.equal(parseObjectTextV01("+ 1]").diagnostics[0].code, "invalid-syntax");
+  assert.equal(parseObjectTextV01("").diagnostics[0].code, "empty-object-text");
+  assert.equal(parseObjectTextV01("+ 1 2").diagnostics[0].code, "invalid-arg-count");
+  assert.equal(parseObjectTextV01("+ true").diagnostics[0].code, "invalid-arg-type");
+  assert.equal(parseObjectTextV01("+ false").diagnostics[0].code, "invalid-arg-type");
+  assert.equal(parseObjectTextV01("+ .").diagnostics[0].code, "invalid-arg-type");
+  assert.equal(parseObjectTextV01("sqrt 1").diagnostics[0].code, "invalid-arg-count");
+  assert.equal(parseObjectTextV01("*~ beep").diagnostics[0].code, "invalid-arg-type");
+  assert.equal(parseObjectTextV01("sqrt~ 1").diagnostics[0].code, "invalid-arg-count");
+  assert.equal(parseObjectTextV01("osc~ 1 2").diagnostics[0].code, "invalid-arg-count");
+  assert.equal(parseObjectTextV01("phasor~ beep").diagnostics[0].code, "invalid-arg-type");
+  assert.equal(parseObjectTextV01("square~").diagnostics[0].code, "deferred-object");
+  assert.equal(parseObjectTextV01("adc~").diagnostics[0].code, "deferred-object");
+  assert.equal(parseObjectTextV01("dac~").diagnostics[0].code, "deferred-object");
+  assert.equal(parseObjectTextV01("expr").diagnostics[0].code, "deferred-object");
+  assert.equal(parseObjectTextV01("expr~").diagnostics[0].code, "deferred-object");
+  assert.equal(parseObjectTextV01("fexpr~").diagnostics[0].code, "deferred-object");
 });
 
 test("validates control messages as selector and atoms", () => {

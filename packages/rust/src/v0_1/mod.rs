@@ -14,7 +14,7 @@ pub use node_definition::{NodeDefinitionManifestV01, NodeExecutionV01, NodeState
 pub use object_text::{
     ObjectTextAtomV01, ObjectTextDiagnosticSeverityV01, ObjectTextDiagnosticV01,
     ObjectTextParseResultV01, ObjectTextPortActivationV01, ObjectTextPortDirectionV01,
-    ObjectTextPortRateV01, ObjectTextPortV01, ObjectTextValidationErrorV01,
+    ObjectTextPortRateV01, ObjectTextPortV01, ObjectTextValidationErrorV01, parse_object_text_v01,
     validate_object_text_parse_result_v01,
 };
 pub use patch::{

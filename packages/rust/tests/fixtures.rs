@@ -3,8 +3,9 @@ use std::{fs, path::Path};
 use skenion_contracts::{
     GraphDocumentV01, GraphDocumentV02, GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01,
     NodeDefinitionManifestV01, NodeDefinitionManifestV02, ObjectTextParseResultV01,
-    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
-    validate_node_definition_v02, validate_object_text_parse_result_v01,
+    parse_object_text_v01, validate_graph_document_v01, validate_graph_document_v02,
+    validate_node_definition_v01, validate_node_definition_v02,
+    validate_object_text_parse_result_v01,
 };
 
 fn collect_json_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
@@ -187,6 +188,12 @@ fn parses_object_text_parse_result_fixtures() {
                 .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
         validate_object_text_parse_result_v01(&result)
             .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+        assert_eq!(
+            parse_object_text_v01(&result.input),
+            result,
+            "{} should match parser output",
+            file.display()
+        );
     }
 
     for file in fixture_files("../../fixtures/object-text/v0.1/invalid") {
@@ -198,5 +205,64 @@ fn parses_object_text_parse_result_fixtures() {
             "{} should be structurally invalid",
             file.display()
         );
+    }
+
+    for input in [
+        "[+ 1]",
+        "[+ 1.]",
+        "[+]",
+        "[- 2]",
+        "[* 0.5]",
+        "[/ 0.5]",
+        "[pow 2]",
+        "[min 2]",
+        "[max 2]",
+        "[sqrt]",
+        "[+~]",
+        "[-~ 0.25]",
+        "[*~ 0.5]",
+        "[/~ 0.5]",
+        "[sqrt~]",
+        "[osc~]",
+        "[osc~ 440]",
+        "[phasor~]",
+        "[phasor~ 1]",
+    ] {
+        let result = parse_object_text_v01(input);
+        validate_object_text_parse_result_v01(&result)
+            .unwrap_or_else(|error| panic!("{input} success should validate: {error}"));
+        assert!(result.ok, "{input} should parse");
+    }
+
+    for input in [
+        "[+ 1",
+        "+ 1]",
+        "",
+        "[+ true]",
+        "[+ false]",
+        "[+ +]",
+        "[+ 1.bad]",
+        "[+ 1e309]",
+        "[*~ 1 2]",
+        "[*~ beep]",
+        "[/~ false]",
+        "[sqrt 1]",
+        "[sqrt~ 1]",
+        "[osc~ 1 2]",
+        "[osc~ false]",
+        "[phasor~ beep]",
+        "[sin~]",
+        "[square~]",
+        "[expr $f1]",
+        "[expr~ $v1]",
+        "[fexpr~ $x1]",
+        "[adc~]",
+        "[dac~]",
+        "[frobnicate]",
+    ] {
+        let result = parse_object_text_v01(input);
+        validate_object_text_parse_result_v01(&result)
+            .unwrap_or_else(|error| panic!("{input} failure should validate: {error}"));
+        assert!(!result.ok, "{input} should fail without panicking");
     }
 }

@@ -115,6 +115,7 @@ export {
   typeDescriptorForDataType
 } from "./conversion.js";
 export { applyGraphPatch, invertGraphPatch } from "./patch.js";
+export { parseObjectTextV01 } from "./objectText.js";
 export { createDefaultViewStateForGraph } from "./project.js";
 export { analyzeShaderInterfaceV01, shaderInterfaceToPortsV01 } from "./shaderInterface.js";
 export {
