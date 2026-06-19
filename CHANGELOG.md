@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.23.0...skenion-contracts-v0.24.0) (2026-06-19)
+
+
+### Features
+
+* **contracts:** align canonical object surface ([#60](https://github.com/echovisionlab/skenion-contracts/issues/60)) ([6c53e43](https://github.com/echovisionlab/skenion-contracts/commit/6c53e4309036e01aa16f5cf3d70c54f2d74aad22))
+
 ## [0.23.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.22.0...skenion-contracts-v0.23.0) (2026-06-19)
 
 
