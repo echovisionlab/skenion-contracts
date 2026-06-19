@@ -257,7 +257,19 @@ export const builtinNodeDefinitionsV01 = [
     "version": "0.1.0",
     "displayName": "Comment",
     "category": "Control",
-    "ports": [],
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "event",
+          "dataKind": "message.any"
+        },
+        "required": false,
+        "activation": "trigger"
+      }
+    ],
     "execution": {
       "model": "event"
     },
@@ -459,15 +471,15 @@ export const builtinNodeDefinitionsV01 = [
     "category": "Control",
     "ports": [
       {
-        "id": "set",
+        "id": "in",
         "direction": "input",
-        "label": "Set",
+        "label": "In",
         "type": {
-          "flow": "value",
+          "flow": "event",
           "dataKind": "message.any"
         },
         "required": false,
-        "activation": "latched"
+        "activation": "trigger"
       }
     ],
     "execution": {
@@ -921,18 +933,23 @@ export const builtinNodeHelpV01 = [
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
     "id": "core.comment",
-    "summary": "Documents a patch without participating in execution.",
-    "description": "Comment nodes are persisted graph annotations. They render as canvas text and do not participate in runtime control dispatch.",
+    "summary": "Displays patch notes and can receive Pd-style set messages.",
+    "description": "Comment nodes render as canvas text. They can receive message events on their inlet; set <text> updates the runtime displayed text silently, but comments do not output values.",
     "helpGraph": "help/v0.1/nodes/core.comment.help.graph.json",
     "tags": [
       "documentation",
       "annotation"
     ],
-    "runtimeBehavior": "Comment has no runtime state, no ports, and no output. Inspector edits are graph patches.",
+    "runtimeBehavior": "Messages arrive through in. set <text> updates the runtime comment text silently. Inspector text edits remain graph patches.",
     "relatedNodes": [
       "core.message"
     ],
-    "ports": [],
+    "ports": [
+      {
+        "id": "in",
+        "description": "Accepts event<message.any>. A set message updates runtime comment text without output."
+      }
+    ],
     "params": [
       {
         "id": "text",
@@ -941,7 +958,7 @@ export const builtinNodeHelpV01 = [
     ],
     "example": {
       "title": "Annotate a patch",
-      "description": "Use comments to label intent near control and render nodes.",
+      "description": "Use comments to label intent near control and render nodes. Send set <text> to update runtime display text.",
       "graph": "help/v0.1/nodes/core.comment.help.graph.json"
     }
   },
@@ -1140,22 +1157,22 @@ export const builtinNodeHelpV01 = [
     "schemaVersion": "0.1.0",
     "id": "core.panel",
     "summary": "Draws a colored background panel on the patch canvas.",
-    "description": "Panel is a visual patch annotation object. Its saved default is transparent unless a color param is set. It can receive set <hex> style messages to update its runtime color state, but it does not output values.",
+    "description": "Panel is a visual patch annotation object. Its saved default is transparent unless a color param is set. It receives message events on its inlet; set <hex> updates its runtime color state silently, but it does not output values.",
     "helpGraph": "help/v0.1/nodes/core.panel.help.graph.json",
     "tags": [
       "annotation",
       "panel",
       "background"
     ],
-    "runtimeBehavior": "set updates the runtime panel CSS color text silently. Inspector color edits remain graph patches.",
+    "runtimeBehavior": "Messages arrive through in. set <hex> updates the runtime panel CSS color text silently. Inspector color edits remain graph patches.",
     "relatedNodes": [
       "core.comment",
       "core.message"
     ],
     "ports": [
       {
-        "id": "set",
-        "description": "Updates the panel CSS color text from a message such as set #00ff00 without output."
+        "id": "in",
+        "description": "Accepts event<message.any>. A set #00ff00 message updates the panel CSS color text without output."
       }
     ],
     "params": [
@@ -1905,9 +1922,21 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Comments annotate a patch. They have no runtime ports."
+            "text": "Comments annotate a patch. Send set <text> to in to update runtime display text."
           },
-          "ports": []
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            }
+          ]
         },
         {
           "id": "note_2",
@@ -1916,7 +1945,19 @@ export const builtinNodeHelpGraphsV01 = [
           "params": {
             "text": "Use comments near important control or render decisions."
           },
-          "ports": []
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            }
+          ]
         }
       ],
       "edges": []
@@ -2433,15 +2474,15 @@ export const builtinNodeHelpGraphsV01 = [
           },
           "ports": [
             {
-              "id": "set",
+              "id": "in",
               "direction": "input",
-              "label": "Set",
+              "label": "In",
               "type": {
-                "flow": "value",
+                "flow": "event",
                 "dataKind": "message.any"
               },
               "required": false,
-              "activation": "latched"
+              "activation": "trigger"
             }
           ]
         },
@@ -2450,9 +2491,21 @@ export const builtinNodeHelpGraphsV01 = [
           "kind": "core.comment",
           "kindVersion": "0.1.0",
           "params": {
-            "text": "Panel is a colored visual grouping object. set #00ff00 updates its runtime color state."
+            "text": "Panel is a visual grouping object. Send set #00ff00 to in to update runtime color state."
           },
-          "ports": []
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "label": "In",
+              "type": {
+                "flow": "event",
+                "dataKind": "message.any"
+              },
+              "required": false,
+              "activation": "trigger"
+            }
+          ]
         }
       ],
       "edges": []

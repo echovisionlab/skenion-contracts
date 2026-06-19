@@ -215,7 +215,23 @@ function portFanOutPolicy(port: PortSpecV02): string {
 }
 
 function portTypeAccepts(source: PortSpecV02, target: PortSpecV02): boolean {
+  if (target.type === "message.any" && isControlMessagePortType(source.type)) {
+    return true;
+  }
   return source.type === target.type || target.accepts?.includes(source.type) === true;
+}
+
+function isControlMessagePortType(type: string): boolean {
+  return [
+    "message.any",
+    "event.bang",
+    "number.float",
+    "number.int",
+    "number.uint",
+    "boolean",
+    "color",
+    "string"
+  ].includes(type);
 }
 
 function portFamily(type: string): string {

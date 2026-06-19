@@ -113,11 +113,28 @@ fn merge_policy_for(port: &PortSpecV02) -> MergePolicyV02 {
 }
 
 fn accepts(source: &PortSpecV02, target: &PortSpecV02) -> bool {
+    if target.port_type == "message.any" && is_control_message_port_type(&source.port_type) {
+        return true;
+    }
     source.port_type == target.port_type
         || target
             .accepts
             .as_ref()
             .is_some_and(|accepted| accepted.contains(&source.port_type))
+}
+
+fn is_control_message_port_type(port_type: &str) -> bool {
+    matches!(
+        port_type,
+        "message.any"
+            | "event.bang"
+            | "number.float"
+            | "number.int"
+            | "number.uint"
+            | "boolean"
+            | "color"
+            | "string"
+    )
 }
 
 fn port_family(port_type: &str) -> &str {
@@ -887,6 +904,131 @@ mod tests {
         assert!(merge.to_string().contains("fan-in-without-merge-policy"));
         graph.nodes[1].ports[0].merge_policy = Some(MergePolicyV02::Array);
         assert!(validate_graph_document_v02(&graph).is_ok());
+    }
+
+    #[test]
+    fn message_any_inlets_accept_bang_events() {
+        let graph = graph(
+            r#"{
+              "schema": "skenion.graph",
+              "schemaVersion": "0.2.0",
+              "id": "message-any-control-types",
+              "revision": "1",
+              "nodes": [
+                {
+                  "id": "button",
+                  "kind": "core.bang",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "out", "direction": "output", "type": "event.bang", "rate": "event" }
+                  ]
+                },
+                {
+                  "id": "float_value",
+                  "kind": "core.float",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "value", "direction": "output", "type": "number.float", "rate": "event" }
+                  ]
+                },
+                {
+                  "id": "int_value",
+                  "kind": "core.int",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "value", "direction": "output", "type": "number.int", "rate": "event" }
+                  ]
+                },
+                {
+                  "id": "uint_value",
+                  "kind": "core.uint",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "value", "direction": "output", "type": "number.uint", "rate": "event" }
+                  ]
+                },
+                {
+                  "id": "bool_value",
+                  "kind": "core.bool",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "value", "direction": "output", "type": "boolean", "rate": "event" }
+                  ]
+                },
+                {
+                  "id": "color_value",
+                  "kind": "core.color",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "value", "direction": "output", "type": "color", "rate": "event" }
+                  ]
+                },
+                {
+                  "id": "string_value",
+                  "kind": "core.string",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "value", "direction": "output", "type": "string", "rate": "event" }
+                  ]
+                },
+                {
+                  "id": "message",
+                  "kind": "core.message",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "in", "direction": "input", "type": "message.any", "rate": "event", "maxConnections": 7, "mergePolicy": "ordered-events", "triggerMode": "trigger" }
+                  ]
+                }
+              ],
+              "edges": [
+                {
+                  "id": "edge_button_message",
+                  "source": { "nodeId": "button", "portId": "out" },
+                  "target": { "nodeId": "message", "portId": "in" }
+                },
+                {
+                  "id": "edge_float_message",
+                  "source": { "nodeId": "float_value", "portId": "value" },
+                  "target": { "nodeId": "message", "portId": "in" }
+                },
+                {
+                  "id": "edge_int_message",
+                  "source": { "nodeId": "int_value", "portId": "value" },
+                  "target": { "nodeId": "message", "portId": "in" }
+                },
+                {
+                  "id": "edge_uint_message",
+                  "source": { "nodeId": "uint_value", "portId": "value" },
+                  "target": { "nodeId": "message", "portId": "in" }
+                },
+                {
+                  "id": "edge_bool_message",
+                  "source": { "nodeId": "bool_value", "portId": "value" },
+                  "target": { "nodeId": "message", "portId": "in" }
+                },
+                {
+                  "id": "edge_color_message",
+                  "source": { "nodeId": "color_value", "portId": "value" },
+                  "target": { "nodeId": "message", "portId": "in" }
+                },
+                {
+                  "id": "edge_string_message",
+                  "source": { "nodeId": "string_value", "portId": "value" },
+                  "target": { "nodeId": "message", "portId": "in" }
+                }
+              ]
+            }"#,
+        );
+
+        validate_graph_document_v02(&graph).expect("event.bang should feed message.any");
     }
 
     #[test]

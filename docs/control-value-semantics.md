@@ -64,8 +64,9 @@ builtin itself stays unconstrained.
 
 ## Comments And Messages
 
-`core.comment` is a persisted graph annotation. It has no ports and does not
-participate in runtime execution.
+`core.comment` is a persisted graph annotation and runtime text object. It has
+one hot `in` inlet for `event<message.any>`. `set <text>` updates the runtime
+display text silently. Inspector text edits remain graph patches.
 
 `core.message` is the first simple message-box form. It stores message box text
 in graph params and emits a `ControlMessage` selector plus typed atoms when
