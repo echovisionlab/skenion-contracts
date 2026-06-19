@@ -4,6 +4,10 @@ Skenion control patching is message-driven. A control event is not just a typed
 value flowing through an adapter. It is a message selector plus zero or more
 typed atoms, dispatched by the receiving object.
 
+For the broader delivery model that separates control messages from audio
+signals, video streams, render frames, and GPU resources, see
+[Skenion Docs](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/data-delivery-model.md).
+
 ## Message Shape
 
 ```json

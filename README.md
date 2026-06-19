@@ -3,6 +3,8 @@
 Versioned contracts, schemas, generated protocol packages, and conformance tests for Skenion.
 
 This repository is the source of truth for TypeScript/Rust communication contracts.
+Human-readable delivery and processing model docs live in
+[EchoVisionLab/skenion-docs](https://github.com/echovisionlab/skenion-docs).
 
 ## Contract Surfaces
 
@@ -30,6 +32,9 @@ docs/           Contract evolution and compatibility rules
 See [Node Interface](docs/node-interface.md) for the initial node and port type
 model, and [Script Nodes](docs/script-nodes.md) for the script node manifest
 boundary.
+For design review of how values, messages, audio, video, render frames, and GPU
+resources move through the system, start with the
+[Skenion Docs data delivery model](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/data-delivery-model.md).
 
 ## Initial Validation
 

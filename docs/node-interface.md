@@ -4,6 +4,10 @@ Skenion nodes are typed, time-aware runtime actors. The persisted graph document
 stores patch wiring. Runtime scheduling details live in node definition
 manifests and runtime registries.
 
+For human-readable review of how data moves across control, audio, video,
+render, and GPU domains, see the
+[Skenion Docs data delivery model](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/data-delivery-model.md).
+
 ## Documents
 
 There are two related contracts:
