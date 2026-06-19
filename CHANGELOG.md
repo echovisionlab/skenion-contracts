@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.25.1...skenion-contracts-v0.26.0) (2026-06-19)
+
+
+### Features
+
+* **contracts:** add pd object text and dsp contract baseline ([9ed9cdf](https://github.com/echovisionlab/skenion-contracts/commit/9ed9cdf305ef74849b9f53dc9b2fd8abab069ddd))
+
 ## [0.25.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.25.0...skenion-contracts-v0.25.1) (2026-06-19)
 
 
