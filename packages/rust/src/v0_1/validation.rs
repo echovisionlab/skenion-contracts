@@ -329,10 +329,23 @@ mod tests {
         assert!(compatible_data_types_v01(&string_source, &any_target));
         let bool_source = value_type("boolean");
         assert!(compatible_data_types_v01(&bool_source, &any_target));
-        let mut bang_source = value_type("event.bang");
-        bang_source.flow = DataFlowV01::Event;
         let mut event_any_target = value_type("message.any");
         event_any_target.flow = DataFlowV01::Event;
+        for data_kind in [
+            "number.float",
+            "number.int",
+            "number.uint",
+            "boolean",
+            "color",
+            "string",
+        ] {
+            assert!(
+                compatible_data_types_v01(&value_type(data_kind), &event_any_target),
+                "{data_kind} should connect to event<message.any> object inlets"
+            );
+        }
+        let mut bang_source = value_type("event.bang");
+        bang_source.flow = DataFlowV01::Event;
         assert!(compatible_data_types_v01(&bang_source, &event_any_target));
         assert!(compatible_data_types_v01(&string_source, &event_any_target));
         let mut resource_source = value_type("gpu.texture2d");

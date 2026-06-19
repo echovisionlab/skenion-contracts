@@ -493,6 +493,18 @@ test("plans implicit numeric and color representation conversions", () => {
   assert.equal(messageSink.ok, true);
   assert.equal(messageSink.lossy, false);
 
+  for (const dataKind of ["number.float", "number.int", "number.uint", "boolean", "color", "string"]) {
+    const valueToBangObjectInlet = planConversion(
+      { flow: "value", dataKind },
+      { flow: "event", dataKind: "message.any" }
+    );
+    assert.equal(
+      valueToBangObjectInlet.ok,
+      true,
+      `${dataKind} should connect to a message.any object inlet such as core.bang.in`
+    );
+  }
+
   const panelMessageSink = planConversion(
     { flow: "value", dataKind: "string" },
     { flow: "value", dataKind: "message.any" }
@@ -761,6 +773,7 @@ test("exports builtin node help", () => {
 
   const bangHelp = getBuiltinNodeHelp("core.bang");
   assert.match(bangHelp?.description ?? "", /event\.bang.*selector/);
+  assert.match(bangHelp?.runtimeBehavior ?? "", /any message/);
   assert.deepEqual(bangHelp?.ports?.map((port) => port.id), ["in", "out"]);
 
   const shaderHelp = getBuiltinNodeHelp("render.fullscreen-shader");

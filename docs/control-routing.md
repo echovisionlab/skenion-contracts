@@ -21,7 +21,7 @@ number.int:iterations
 boolean:enabled
 color:tint
 string:status
-event.bang:reset
+message.any:reset
 ```
 
 Generic graph dataflow is intentionally not part of v0.1, but control objects
@@ -42,7 +42,8 @@ Routing-capable objects may declare these graph params:
 When an object emits a value, Runtime also writes the emitted value to
 `<dataKind>:<sendName>` if `sendName` is non-empty. When Runtime receives a
 compatible channel update for an object's `receiveName`, it may update that
-object's runtime state.
+object's runtime state or dispatch the incoming message to an object handler.
+For `core.bang`, any compatible channel message triggers `out` as `event.bang`.
 
 The graph must still use explicit edges for execution dependencies. Hidden
 shader or render reads from channel names are not part of v0.1.
@@ -60,7 +61,7 @@ Widget params choose the visible object style without changing the canonical
 node kind. These interactions are performance-time state changes, not graph
 edits:
 
-- `core.bang` accepts any incoming message and emits `event.bang`
+- `core.bang` accepts any incoming control message and emits `event.bang`
 - `core.float` with `widget: "slider"` sends typed values to the hot `in` inlet
   and emits `value<number.float>`
 - `core.bool` with `widget: "toggle"` handles `bang`, `0/1`, `off/on`,

@@ -30,7 +30,10 @@ value.
 
 Objects own their message handlers:
 
-- Bang accepts any incoming message on its inlet and emits `bang`.
+- Bang accepts any incoming control message on its inlet and emits `bang`.
+  This includes numeric values, booleans, strings, stored message-box output,
+  selector-only messages, and `bang` itself. Bang is a message-to-bang object,
+  not an `event.bang`-only adapter.
 - Value objects handle selectors on their hot inlet. A typed value updates and
   emits, `bang` emits the stored value, and `set ...` updates silently.
 - Value objects also expose a cold inlet for silent typed value storage.
@@ -41,6 +44,8 @@ Objects own their message handlers:
 - Comment is a canvas annotation. It has no runtime control state and no ports.
 
 `message.any` is a message domain data kind. It is not a string value.
+Any scalar/control value can be lifted into this message domain when connected
+to an object inlet such as `core.bang.in` or `core.message.in`.
 
 `bang` and `set` are message selectors, not visual inlet names. A node should
 not expose a dedicated `bang` inlet just to receive the `bang` selector.

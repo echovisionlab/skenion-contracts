@@ -1,13 +1,13 @@
 # core.message
 
 `core.message` is a Max/Pd-like message box. It stores message text and emits a
-control message: selector plus typed atoms.
+control message: selector plus typed atoms. It is not a string value node.
 
 Input:
 
 - `in`: hot message inlet. `bang` emits the saved payload, `set ...` updates the
   runtime payload without output, and other messages evaluate the stored message
-  payload.
+  payload with the incoming atoms where supported.
 
 Output:
 
