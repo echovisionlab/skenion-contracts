@@ -327,23 +327,31 @@ mod tests {
         assert!(!compatible_data_types_v01(&source, &any_target));
         let string_source = value_type("string");
         assert!(compatible_data_types_v01(&string_source, &any_target));
+        let bool_source = value_type("boolean");
+        assert!(compatible_data_types_v01(&bool_source, &any_target));
         let mut bang_source = value_type("event.bang");
         bang_source.flow = DataFlowV01::Event;
         let mut event_any_target = value_type("message.any");
         event_any_target.flow = DataFlowV01::Event;
         assert!(compatible_data_types_v01(&bang_source, &event_any_target));
+        assert!(compatible_data_types_v01(&string_source, &event_any_target));
         let mut resource_source = value_type("gpu.texture2d");
         resource_source.flow = DataFlowV01::Resource;
         assert!(!compatible_data_types_v01(
             &resource_source,
             &event_any_target
         ));
+        let mut signal_any_target = value_type("message.any");
+        signal_any_target.flow = DataFlowV01::Signal;
+        assert!(!compatible_data_types_v01(
+            &string_source,
+            &signal_any_target
+        ));
 
         let int_source = value_type("number.int");
         let uint_target = value_type("number.uint");
         assert!(compatible_data_types_v01(&int_source, &uint_target));
 
-        let bool_source = value_type("boolean");
         assert!(!compatible_data_types_v01(&bool_source, &uint_target));
 
         source.range = Some(NumberRangeV01 {
