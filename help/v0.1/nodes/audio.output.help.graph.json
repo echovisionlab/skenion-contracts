@@ -1,0 +1,84 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-audio-output",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "osc",
+      "kind": "audio.osc",
+      "kindVersion": "0.1.0",
+      "params": {
+        "frequency": 440
+      },
+      "ports": [
+        {
+          "id": "frequency",
+          "direction": "input",
+          "type": {
+            "flow": "value",
+            "dataKind": "number.float",
+            "format": "f32"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          }
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "kind": "audio.output",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "left",
+          "direction": "input",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "right",
+          "direction": "input",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          },
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "osc",
+        "port": "out"
+      },
+      "to": {
+        "node": "output",
+        "port": "left"
+      }
+    },
+    {
+      "from": {
+        "node": "osc",
+        "port": "out"
+      },
+      "to": {
+        "node": "output",
+        "port": "right"
+      }
+    }
+  ]
+}

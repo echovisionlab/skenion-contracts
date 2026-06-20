@@ -40,7 +40,8 @@
     "audio.cos",
     "audio.noise",
     "audio.sig",
-    "audio.snapshot"
+    "audio.snapshot",
+    "audio.output"
   ],
   "canonicalDataKinds": [
     "number.float",

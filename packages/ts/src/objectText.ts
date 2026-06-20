@@ -28,8 +28,7 @@ const DEFERRED_OBJECTS = new Map([
   ["expr", "expr is deferred until the expression layer contract is implemented"],
   ["expr~", "expr~ is deferred until the expression layer contract is implemented"],
   ["fexpr~", "fexpr~ is deferred until the expression layer contract is implemented"],
-  ["adc~", "adc~ is deferred until the audio backend contract is implemented"],
-  ["dac~", "dac~ is deferred until the audio backend contract is implemented"]
+  ["adc~", "adc~ is deferred until the audio input backend contract is implemented"]
 ]);
 
 function diagnostic(code: string, message: string): ObjectTextDiagnosticV01 {
@@ -180,6 +179,13 @@ function oscillatorPorts(defaultValue: number): ObjectTextPortV01[] {
   ];
 }
 
+function audioOutputPorts(): ObjectTextPortV01[] {
+  return [
+    { id: "left", direction: "input", type: "signal.audio", rate: "audio", activation: "latched" },
+    { id: "right", direction: "input", type: "signal.audio", rate: "audio", activation: "latched" }
+  ];
+}
+
 export function parseObjectTextV01(input: string): ObjectTextParseResultV01 {
   const normalized = normalizeInput(input);
   if (!normalized.ok) {
@@ -296,6 +302,20 @@ export function parseObjectTextV01(input: string): ObjectTextParseResultV01 {
       resolvedKindVersion: SCHEMA_VERSION,
       params: { frequency },
       instancePorts: oscillatorPorts(frequency),
+      diagnostics: []
+    });
+  }
+
+  if (classSymbol === "dac~") {
+    if (creationArgs.length > 0) {
+      return failure(input, displayText, classSymbol, creationArgs, "invalid-arg-count", "dac~ accepts no creation arguments in the first audio backend contract");
+    }
+    return result(input, displayText, classSymbol, creationArgs, {
+      ok: true,
+      resolvedKind: "audio.output",
+      resolvedKindVersion: SCHEMA_VERSION,
+      params: {},
+      instancePorts: audioOutputPorts(),
       diagnostics: []
     });
   }

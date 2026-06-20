@@ -257,7 +257,7 @@ fn parses_object_text_parse_result_fixtures() {
         "[expr~ $v1]",
         "[fexpr~ $x1]",
         "[adc~]",
-        "[dac~]",
+        "[dac~ 1]",
         "[frobnicate]",
     ] {
         let result = parse_object_text_v01(input);

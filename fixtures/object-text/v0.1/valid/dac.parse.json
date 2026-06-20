@@ -1,0 +1,29 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[dac~]",
+  "ok": true,
+  "classSymbol": "dac~",
+  "creationArgs": [],
+  "resolvedKind": "audio.output",
+  "resolvedKindVersion": "0.1.0",
+  "params": {},
+  "instancePorts": [
+    {
+      "id": "left",
+      "direction": "input",
+      "type": "signal.audio",
+      "rate": "audio",
+      "activation": "latched"
+    },
+    {
+      "id": "right",
+      "direction": "input",
+      "type": "signal.audio",
+      "rate": "audio",
+      "activation": "latched"
+    }
+  ],
+  "displayText": "dac~",
+  "diagnostics": []
+}

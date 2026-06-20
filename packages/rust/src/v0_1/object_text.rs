@@ -432,10 +432,26 @@ fn deferred_message(class_symbol: &str) -> Option<&'static str> {
         "expr" => Some("expr is deferred until the expression layer contract is implemented"),
         "expr~" => Some("expr~ is deferred until the expression layer contract is implemented"),
         "fexpr~" => Some("fexpr~ is deferred until the expression layer contract is implemented"),
-        "adc~" => Some("adc~ is deferred until the audio backend contract is implemented"),
-        "dac~" => Some("dac~ is deferred until the audio backend contract is implemented"),
+        "adc~" => Some("adc~ is deferred until the audio input backend contract is implemented"),
         _ => None,
     }
+}
+
+fn audio_output_ports() -> Vec<ObjectTextPortV01> {
+    vec![
+        input_port(
+            "left",
+            "signal.audio",
+            ObjectTextPortRateV01::Audio,
+            ObjectTextPortActivationV01::Latched,
+        ),
+        input_port(
+            "right",
+            "signal.audio",
+            ObjectTextPortRateV01::Audio,
+            ObjectTextPortActivationV01::Latched,
+        ),
+    ]
 }
 
 pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
@@ -655,6 +671,28 @@ pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
         );
     }
 
+    if *class_symbol == "dac~" {
+        if !creation_args.is_empty() {
+            return failure(
+                input,
+                &display_text,
+                class_symbol,
+                creation_args,
+                "invalid-arg-count",
+                "dac~ accepts no creation arguments in the first audio backend contract",
+            );
+        }
+        return success(
+            input,
+            &display_text,
+            class_symbol,
+            creation_args,
+            "audio.output",
+            Map::new(),
+            audio_output_ports(),
+        );
+    }
+
     failure(
         input,
         &display_text,
@@ -755,6 +793,10 @@ mod tests {
             parse_object_text_v01("phasor~ 1").params.get("frequency"),
             Some(&json!(1))
         );
+        assert_eq!(
+            parse_object_text_v01("dac~").resolved_kind.as_deref(),
+            Some("audio.output")
+        );
     }
 
     #[test]
@@ -775,6 +817,7 @@ mod tests {
         assert_eq!(code("osc~ 1 2"), "invalid-arg-count");
         assert_eq!(code("osc~ false"), "invalid-arg-type");
         assert_eq!(code("phasor~ beep"), "invalid-arg-type");
+        assert_eq!(code("dac~ 1"), "invalid-arg-count");
         assert_eq!(code("frobnicate"), "unsupported-class");
     }
 
@@ -786,7 +829,6 @@ mod tests {
         assert_eq!(code("expr~"), "deferred-object");
         assert_eq!(code("fexpr~"), "deferred-object");
         assert_eq!(code("adc~"), "deferred-object");
-        assert_eq!(code("dac~"), "deferred-object");
     }
 
     #[test]

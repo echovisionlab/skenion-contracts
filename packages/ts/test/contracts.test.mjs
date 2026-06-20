@@ -136,6 +136,7 @@ test("parses object text into golden parse results", async () => {
   assert.equal(parseObjectTextV01("-~ 0.25").resolvedKind, "audio.operator.sub");
   assert.deepEqual(parseObjectTextV01("osc~").params, { frequency: 0 });
   assert.deepEqual(parseObjectTextV01("phasor~").params, { frequency: 0 });
+  assert.equal(parseObjectTextV01("dac~").resolvedKind, "audio.output");
 
   assert.equal(parseObjectTextV01("[+ 1").diagnostics[0].code, "invalid-syntax");
   assert.equal(parseObjectTextV01("+ 1]").diagnostics[0].code, "invalid-syntax");
@@ -151,7 +152,7 @@ test("parses object text into golden parse results", async () => {
   assert.equal(parseObjectTextV01("phasor~ beep").diagnostics[0].code, "invalid-arg-type");
   assert.equal(parseObjectTextV01("square~").diagnostics[0].code, "deferred-object");
   assert.equal(parseObjectTextV01("adc~").diagnostics[0].code, "deferred-object");
-  assert.equal(parseObjectTextV01("dac~").diagnostics[0].code, "deferred-object");
+  assert.equal(parseObjectTextV01("dac~ 1").diagnostics[0].code, "invalid-arg-count");
   assert.equal(parseObjectTextV01("expr").diagnostics[0].code, "deferred-object");
   assert.equal(parseObjectTextV01("expr~").diagnostics[0].code, "deferred-object");
   assert.equal(parseObjectTextV01("fexpr~").diagnostics[0].code, "deferred-object");

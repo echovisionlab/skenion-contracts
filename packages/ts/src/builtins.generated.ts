@@ -84,7 +84,8 @@ export const builtinManifestV01 = {
     "audio.cos",
     "audio.noise",
     "audio.sig",
-    "audio.snapshot"
+    "audio.snapshot",
+    "audio.output"
   ],
   "canonicalDataKinds": [
     "number.float",
@@ -503,6 +504,50 @@ export const builtinNodeDefinitionsV01 = [
     },
     "permissions": [],
     "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.output",
+    "version": "0.1.0",
+    "displayName": "Audio Output",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "left",
+        "direction": "input",
+        "label": "Left",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "right",
+        "direction": "input",
+        "label": "Right",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "audio.backend.v0.1",
       "pd.audio.v0.1"
     ]
   },
@@ -1972,6 +2017,20 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
+    "id": "audio.output",
+    "summary": "Pd-style dac~ audio device output sink.",
+    "description": "Audio Output owns the selected output device sample clock for its DSP subgraph. Connected audio signals inherit that sample clock; musical transport and clock objects do not drive the device callback.",
+    "helpGraph": "help/v0.1/nodes/audio.output.help.graph.json",
+    "tags": [
+      "audio",
+      "backend",
+      "pd"
+    ],
+    "runtimeBehavior": "Runs inside the audio backend block executor. The first backend milestone supports one default output device and one audio sample clock domain."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
     "id": "audio.phasor",
     "summary": "Pd-style phasor~ ramp generator.",
     "description": "Phasor is a stateful phase ramp generator used to build saw-like shapes and phase-domain patches.",
@@ -3013,6 +3072,93 @@ export const builtinNodeHelpGraphsV01 = [
       "revision": "1",
       "nodes": [],
       "edges": []
+    }
+  },
+  {
+    "id": "audio.output",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-output",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "osc",
+          "kind": "audio.osc",
+          "kindVersion": "0.1.0",
+          "params": {
+            "frequency": 440
+          },
+          "ports": [
+            {
+              "id": "frequency",
+              "direction": "input",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "out",
+              "direction": "output",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              }
+            }
+          ]
+        },
+        {
+          "id": "output",
+          "kind": "audio.output",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "left",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "right",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "osc",
+            "port": "out"
+          },
+          "to": {
+            "node": "output",
+            "port": "left"
+          }
+        },
+        {
+          "from": {
+            "node": "osc",
+            "port": "out"
+          },
+          "to": {
+            "node": "output",
+            "port": "right"
+          }
+        }
+      ]
     }
   },
   {
