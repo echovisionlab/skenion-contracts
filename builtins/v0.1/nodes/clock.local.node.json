@@ -1,0 +1,86 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "clock.local",
+  "version": "0.1.0",
+  "displayName": "Local Clock",
+  "category": "Clock",
+  "ports": [
+    {
+      "id": "sync",
+      "direction": "input",
+      "label": "Sync",
+      "type": {
+        "flow": "value",
+        "dataKind": "clock.state"
+      },
+      "required": false,
+      "activation": "latched"
+    },
+    {
+      "id": "reset",
+      "direction": "input",
+      "label": "Reset",
+      "type": {
+        "flow": "event",
+        "dataKind": "event.bang"
+      },
+      "required": false,
+      "activation": "trigger"
+    },
+    {
+      "id": "state",
+      "direction": "output",
+      "label": "State",
+      "type": {
+        "flow": "value",
+        "dataKind": "clock.state"
+      }
+    },
+    {
+      "id": "tick",
+      "direction": "output",
+      "label": "Tick",
+      "type": {
+        "flow": "event",
+        "dataKind": "event.bang"
+      }
+    },
+    {
+      "id": "phase",
+      "direction": "output",
+      "label": "Phase",
+      "type": {
+        "flow": "value",
+        "dataKind": "number.float",
+        "format": "f32",
+        "range": {
+          "min": 0,
+          "max": 1
+        }
+      }
+    },
+    {
+      "id": "tempo",
+      "direction": "output",
+      "label": "Tempo",
+      "type": {
+        "flow": "value",
+        "dataKind": "number.float",
+        "unit": "bpm",
+        "format": "f32"
+      }
+    }
+  ],
+  "execution": {
+    "model": "value",
+    "clock": "beat"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "clock.transport.v0.1"
+  ]
+}

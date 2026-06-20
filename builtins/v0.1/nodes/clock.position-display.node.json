@@ -1,0 +1,32 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "clock.position-display",
+  "version": "0.1.0",
+  "displayName": "Clock Position Display",
+  "category": "Clock",
+  "ports": [
+    {
+      "id": "clock",
+      "direction": "input",
+      "label": "Clock",
+      "type": {
+        "flow": "value",
+        "dataKind": "clock.state"
+      },
+      "required": false,
+      "activation": "latched"
+    }
+  ],
+  "execution": {
+    "model": "value",
+    "clock": "external"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "clock.display.v0.1"
+  ]
+}
