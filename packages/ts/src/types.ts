@@ -30,6 +30,7 @@ export type SemanticDataKindV01 =
   | "string"
   | "message.any"
   | "event.bang"
+  | "clock.state"
   | "asset.video"
   | "video.frame"
   | "signal.audio"

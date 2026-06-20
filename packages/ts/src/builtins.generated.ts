@@ -61,6 +61,8 @@ export const builtinManifestV01 = {
     "core.video-decode",
     "core.gpu-upload",
     "core.preview",
+    "clock.local",
+    "clock.position-display",
     "render.clear-color",
     "render.fullscreen-shader",
     "render.output",
@@ -92,6 +94,7 @@ export const builtinManifestV01 = {
     "string",
     "message.any",
     "event.bang",
+    "clock.state",
     "asset.video",
     "video.frame",
     "gpu.texture2d",
@@ -637,6 +640,124 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "clock.local",
+    "version": "0.1.0",
+    "displayName": "Local Clock",
+    "category": "Clock",
+    "ports": [
+      {
+        "id": "sync",
+        "direction": "input",
+        "label": "Sync",
+        "type": {
+          "flow": "value",
+          "dataKind": "clock.state"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "reset",
+        "direction": "input",
+        "label": "Reset",
+        "type": {
+          "flow": "event",
+          "dataKind": "event.bang"
+        },
+        "required": false,
+        "activation": "trigger"
+      },
+      {
+        "id": "state",
+        "direction": "output",
+        "label": "State",
+        "type": {
+          "flow": "value",
+          "dataKind": "clock.state"
+        }
+      },
+      {
+        "id": "tick",
+        "direction": "output",
+        "label": "Tick",
+        "type": {
+          "flow": "event",
+          "dataKind": "event.bang"
+        }
+      },
+      {
+        "id": "phase",
+        "direction": "output",
+        "label": "Phase",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "format": "f32",
+          "range": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      },
+      {
+        "id": "tempo",
+        "direction": "output",
+        "label": "Tempo",
+        "type": {
+          "flow": "value",
+          "dataKind": "number.float",
+          "unit": "bpm",
+          "format": "f32"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value",
+      "clock": "beat"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "clock.transport.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "clock.position-display",
+    "version": "0.1.0",
+    "displayName": "Clock Position Display",
+    "category": "Clock",
+    "ports": [
+      {
+        "id": "clock",
+        "direction": "input",
+        "label": "Clock",
+        "type": {
+          "flow": "value",
+          "dataKind": "clock.state"
+        },
+        "required": false,
+        "activation": "latched"
+      }
+    ],
+    "execution": {
+      "model": "value",
+      "clock": "external"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "clock.display.v0.1"
     ]
   },
   {
@@ -1890,6 +2011,92 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
+    "id": "clock.local",
+    "summary": "Graph-visible local musical clock.",
+    "description": "Local Clock is a patch object for musical timing. It is not the runtime's hidden master clock and it does not drive audio callbacks. It emits clock.state plus tick, phase, and tempo projections that other graph nodes can consume.",
+    "helpGraph": "help/v0.1/nodes/clock.local.help.graph.json",
+    "tags": [
+      "clock",
+      "transport",
+      "timing"
+    ],
+    "runtimeBehavior": "Runs as graph-visible musical transport state. Audio DSP still runs from audio.output's device sample clock.",
+    "relatedNodes": [
+      "clock.position-display"
+    ],
+    "ports": [
+      {
+        "id": "sync",
+        "description": "Optional value<clock.state> input used by future follow/sync policies."
+      },
+      {
+        "id": "reset",
+        "description": "Optional event<event.bang> input that resets local phase/position."
+      },
+      {
+        "id": "state",
+        "description": "Outputs value<clock.state> with source capability and authority metadata."
+      },
+      {
+        "id": "tick",
+        "description": "Outputs event<event.bang> for discrete musical ticks."
+      },
+      {
+        "id": "phase",
+        "description": "Outputs normalized number.float phase in the current cycle."
+      },
+      {
+        "id": "tempo",
+        "description": "Outputs tempo as number.float in BPM."
+      }
+    ],
+    "params": [
+      {
+        "id": "tempoBpm",
+        "description": "Initial local tempo in BPM."
+      },
+      {
+        "id": "running",
+        "description": "Initial transport running state."
+      }
+    ],
+    "example": {
+      "title": "Display local clock position",
+      "description": "Connect state to clock.position-display to inspect available bar, beat, phase, time, and authority fields.",
+      "graph": "help/v0.1/nodes/clock.local.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "clock.position-display",
+    "summary": "Displays clock position fields with authority metadata.",
+    "description": "Clock Position Display is a UI object for clock.state. It may show bar, beat, division, tick, timecode, or time fields when the source provides them, and must distinguish authoritative, derived, estimated, and unavailable values.",
+    "helpGraph": "help/v0.1/nodes/clock.position-display.help.graph.json",
+    "tags": [
+      "clock",
+      "display",
+      "transport"
+    ],
+    "runtimeBehavior": "Displays clock.state projections only. It does not create a master transport and does not drive audio or render callbacks.",
+    "relatedNodes": [
+      "clock.local"
+    ],
+    "ports": [
+      {
+        "id": "clock",
+        "description": "Accepts value<clock.state> from clock.local or future external clock source objects."
+      }
+    ],
+    "example": {
+      "title": "Inspect clock authority",
+      "description": "Use this display to see whether bar, beat, timecode, and phase are authoritative, derived, estimated, or unavailable.",
+      "graph": "help/v0.1/nodes/clock.position-display.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
     "id": "core.bang",
     "summary": "Emits a discrete bang event.",
     "description": "Bang is the simplest manual trigger object. It emits event.bang and does not store a value; event.bang itself remains a data kind/message selector, not an object.",
@@ -2839,6 +3046,194 @@ export const builtinNodeHelpGraphsV01 = [
       "revision": "1",
       "nodes": [],
       "edges": []
+    }
+  },
+  {
+    "id": "clock.local",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-clock-local",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "clock_1",
+          "kind": "clock.local",
+          "kindVersion": "0.1.0",
+          "params": {
+            "tempoBpm": 120,
+            "running": true
+          },
+          "ports": [
+            {
+              "id": "sync",
+              "direction": "input",
+              "label": "Sync",
+              "type": {
+                "flow": "value",
+                "dataKind": "clock.state"
+              },
+              "required": false,
+              "activation": "latched"
+            },
+            {
+              "id": "reset",
+              "direction": "input",
+              "label": "Reset",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              },
+              "required": false,
+              "activation": "trigger"
+            },
+            {
+              "id": "state",
+              "direction": "output",
+              "label": "State",
+              "type": {
+                "flow": "value",
+                "dataKind": "clock.state"
+              }
+            },
+            {
+              "id": "tick",
+              "direction": "output",
+              "label": "Tick",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              }
+            },
+            {
+              "id": "phase",
+              "direction": "output",
+              "label": "Phase",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "format": "f32",
+                "range": {
+                  "min": 0,
+                  "max": 1
+                }
+              }
+            },
+            {
+              "id": "tempo",
+              "direction": "output",
+              "label": "Tempo",
+              "type": {
+                "flow": "value",
+                "dataKind": "number.float",
+                "unit": "bpm",
+                "format": "f32"
+              }
+            }
+          ]
+        },
+        {
+          "id": "display_1",
+          "kind": "clock.position-display",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "clock",
+              "direction": "input",
+              "label": "Clock",
+              "type": {
+                "flow": "value",
+                "dataKind": "clock.state"
+              },
+              "required": false,
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "clock_1",
+            "port": "state"
+          },
+          "to": {
+            "node": "display_1",
+            "port": "clock"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "clock.position-display",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-clock-position-display",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "clock_1",
+          "kind": "clock.local",
+          "kindVersion": "0.1.0",
+          "params": {
+            "tempoBpm": 120,
+            "running": true
+          },
+          "ports": [
+            {
+              "id": "state",
+              "direction": "output",
+              "label": "State",
+              "type": {
+                "flow": "value",
+                "dataKind": "clock.state"
+              }
+            }
+          ]
+        },
+        {
+          "id": "display_1",
+          "kind": "clock.position-display",
+          "kindVersion": "0.1.0",
+          "params": {
+            "fields": [
+              "bar",
+              "beat",
+              "division",
+              "tick",
+              "timecode"
+            ]
+          },
+          "ports": [
+            {
+              "id": "clock",
+              "direction": "input",
+              "label": "Clock",
+              "type": {
+                "flow": "value",
+                "dataKind": "clock.state"
+              },
+              "required": false,
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "clock_1",
+            "port": "state"
+          },
+          "to": {
+            "node": "display_1",
+            "port": "clock"
+          }
+        }
+      ]
     }
   },
   {

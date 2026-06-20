@@ -1,0 +1,67 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-clock-position-display",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "clock_1",
+      "kind": "clock.local",
+      "kindVersion": "0.1.0",
+      "params": {
+        "tempoBpm": 120,
+        "running": true
+      },
+      "ports": [
+        {
+          "id": "state",
+          "direction": "output",
+          "label": "State",
+          "type": {
+            "flow": "value",
+            "dataKind": "clock.state"
+          }
+        }
+      ]
+    },
+    {
+      "id": "display_1",
+      "kind": "clock.position-display",
+      "kindVersion": "0.1.0",
+      "params": {
+        "fields": [
+          "bar",
+          "beat",
+          "division",
+          "tick",
+          "timecode"
+        ]
+      },
+      "ports": [
+        {
+          "id": "clock",
+          "direction": "input",
+          "label": "Clock",
+          "type": {
+            "flow": "value",
+            "dataKind": "clock.state"
+          },
+          "required": false,
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "clock_1",
+        "port": "state"
+      },
+      "to": {
+        "node": "display_1",
+        "port": "clock"
+      }
+    }
+  ]
+}

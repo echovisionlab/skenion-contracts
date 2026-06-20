@@ -505,6 +505,7 @@ test("exports the canonical v0.1 builtin manifest", () => {
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("string"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("message.any"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("event.bang"), true);
+  assert.equal(builtinManifestV01.canonicalDataKinds.includes("clock.state"), true);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("f32"), false);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.f32"), false);
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
