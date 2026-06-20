@@ -41,7 +41,10 @@
     "audio.noise",
     "audio.sig",
     "audio.snapshot",
-    "audio.output"
+    "audio.input",
+    "audio.output",
+    "audio.clock-bridge",
+    "audio.resample"
   ],
   "canonicalDataKinds": [
     "number.float",

@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "audio.input",
+  "summary": "Pd-style adc~ audio device input source.",
+  "description": "Audio Input owns an input stream sample clock. Direct routing to audio.output is valid only when the runtime can prove both endpoints share an audio clock domain.",
+  "helpGraph": "help/v0.1/nodes/audio.input.help.graph.json",
+  "tags": [
+    "audio",
+    "backend",
+    "pd"
+  ],
+  "runtimeBehavior": "Produces audio signal channels from a runtime input endpoint. Independent input-to-output domain crossing requires audio.clock-bridge or audio.resample."
+}

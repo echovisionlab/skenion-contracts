@@ -432,7 +432,6 @@ fn deferred_message(class_symbol: &str) -> Option<&'static str> {
         "expr" => Some("expr is deferred until the expression layer contract is implemented"),
         "expr~" => Some("expr~ is deferred until the expression layer contract is implemented"),
         "fexpr~" => Some("fexpr~ is deferred until the expression layer contract is implemented"),
-        "adc~" => Some("adc~ is deferred until the audio input backend contract is implemented"),
         _ => None,
     }
 }
@@ -451,6 +450,13 @@ fn audio_output_ports() -> Vec<ObjectTextPortV01> {
             ObjectTextPortRateV01::Audio,
             ObjectTextPortActivationV01::Latched,
         ),
+    ]
+}
+
+fn audio_input_ports() -> Vec<ObjectTextPortV01> {
+    vec![
+        output_port("left", "signal.audio", ObjectTextPortRateV01::Audio),
+        output_port("right", "signal.audio", ObjectTextPortRateV01::Audio),
     ]
 }
 
@@ -693,6 +699,28 @@ pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
         );
     }
 
+    if *class_symbol == "adc~" {
+        if !creation_args.is_empty() {
+            return failure(
+                input,
+                &display_text,
+                class_symbol,
+                creation_args,
+                "invalid-arg-count",
+                "adc~ accepts no creation arguments in the first audio endpoint contract",
+            );
+        }
+        return success(
+            input,
+            &display_text,
+            class_symbol,
+            creation_args,
+            "audio.input",
+            Map::new(),
+            audio_input_ports(),
+        );
+    }
+
     failure(
         input,
         &display_text,
@@ -828,7 +856,7 @@ mod tests {
         assert_eq!(code("expr"), "deferred-object");
         assert_eq!(code("expr~"), "deferred-object");
         assert_eq!(code("fexpr~"), "deferred-object");
-        assert_eq!(code("adc~"), "deferred-object");
+        assert_eq!(code("adc~ 1"), "invalid-arg-count");
     }
 
     #[test]

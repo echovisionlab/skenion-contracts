@@ -27,8 +27,7 @@ const DEFERRED_OBJECTS = new Map([
   ["square~", "square~ is deferred; use phasor~ plus comparison/expression logic, or a future Skenion extension"],
   ["expr", "expr is deferred until the expression layer contract is implemented"],
   ["expr~", "expr~ is deferred until the expression layer contract is implemented"],
-  ["fexpr~", "fexpr~ is deferred until the expression layer contract is implemented"],
-  ["adc~", "adc~ is deferred until the audio input backend contract is implemented"]
+  ["fexpr~", "fexpr~ is deferred until the expression layer contract is implemented"]
 ]);
 
 function diagnostic(code: string, message: string): ObjectTextDiagnosticV01 {
@@ -186,6 +185,13 @@ function audioOutputPorts(): ObjectTextPortV01[] {
   ];
 }
 
+function audioInputPorts(): ObjectTextPortV01[] {
+  return [
+    { id: "left", direction: "output", type: "signal.audio", rate: "audio" },
+    { id: "right", direction: "output", type: "signal.audio", rate: "audio" }
+  ];
+}
+
 export function parseObjectTextV01(input: string): ObjectTextParseResultV01 {
   const normalized = normalizeInput(input);
   if (!normalized.ok) {
@@ -316,6 +322,20 @@ export function parseObjectTextV01(input: string): ObjectTextParseResultV01 {
       resolvedKindVersion: SCHEMA_VERSION,
       params: {},
       instancePorts: audioOutputPorts(),
+      diagnostics: []
+    });
+  }
+
+  if (classSymbol === "adc~") {
+    if (creationArgs.length > 0) {
+      return failure(input, displayText, classSymbol, creationArgs, "invalid-arg-count", "adc~ accepts no creation arguments in the first audio endpoint contract");
+    }
+    return result(input, displayText, classSymbol, creationArgs, {
+      ok: true,
+      resolvedKind: "audio.input",
+      resolvedKindVersion: SCHEMA_VERSION,
+      params: {},
+      instancePorts: audioInputPorts(),
       diagnostics: []
     });
   }

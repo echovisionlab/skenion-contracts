@@ -256,7 +256,7 @@ fn parses_object_text_parse_result_fixtures() {
         "[expr $f1]",
         "[expr~ $v1]",
         "[fexpr~ $x1]",
-        "[adc~]",
+        "[adc~ 1]",
         "[dac~ 1]",
         "[frobnicate]",
     ] {

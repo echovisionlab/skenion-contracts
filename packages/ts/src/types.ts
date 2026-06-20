@@ -71,6 +71,110 @@ export type ColorRepresentationV01 =
 
 export type RepresentationV01 = NumericRepresentationV01 | ColorRepresentationV01;
 
+export type AudioEndpointDirectionV01 = "input" | "output";
+export type AudioClockDomainAuthorityV01 =
+  | "authoritative"
+  | "driver-reported"
+  | "user-configured"
+  | "derived"
+  | "unavailable";
+export type AudioClockBridgeMethodV01 = "direct" | "clock-bridge" | "resample" | "invalid";
+
+export interface AudioDeviceDescriptorV01 {
+  id: string;
+  name: string;
+  hostApi?: string;
+  isDefaultInput?: boolean;
+  isDefaultOutput?: boolean;
+  maxInputChannels?: number;
+  maxOutputChannels?: number;
+  clockDomainHint?: string;
+}
+
+export interface AudioDevicePreferenceV01 {
+  deviceId?: string;
+  nameContains?: string;
+  defaultInput?: boolean;
+  defaultOutput?: boolean;
+}
+
+export interface AudioStreamConfigRequestV01 {
+  endpointId: string;
+  direction: AudioEndpointDirectionV01;
+  device?: AudioDevicePreferenceV01;
+  sampleRate?: number;
+  channels?: number;
+  sampleFormat?: string;
+  blockSize?: number;
+}
+
+export interface AudioStreamConfigResolvedV01 {
+  endpointId: string;
+  direction: AudioEndpointDirectionV01;
+  device: AudioDeviceDescriptorV01;
+  sampleRate: number;
+  channels: number;
+  sampleFormat: string;
+  blockSize?: number;
+  clockDomainId: string;
+}
+
+export interface AudioEndpointV01 {
+  id: string;
+  nodeId: string;
+  direction: AudioEndpointDirectionV01;
+  channelPorts: string[];
+  requestedConfig?: AudioStreamConfigRequestV01;
+  resolvedConfig?: AudioStreamConfigResolvedV01;
+  clockDomainId?: string;
+}
+
+export interface AudioInputEndpointV01 extends AudioEndpointV01 {
+  direction: "input";
+}
+
+export interface AudioOutputEndpointV01 extends AudioEndpointV01 {
+  direction: "output";
+}
+
+export interface AudioClockDomainV01 {
+  id: string;
+  authority: AudioClockDomainAuthorityV01;
+  source: string;
+  sampleRate?: number;
+  driftCompensated?: boolean;
+  sharedWith?: string[];
+}
+
+export interface AudioGraphPartitionV01 {
+  id: string;
+  clockDomainId: string;
+  endpointIds: string[];
+  nodeIds: string[];
+}
+
+export interface AudioClockBridgeDiagnosticV01 {
+  severity: "info" | "warning" | "error";
+  code: string;
+  message: string;
+}
+
+export interface AudioClockBridgePlanV01 {
+  required: boolean;
+  sourceClockDomainId: string;
+  targetClockDomainId: string;
+  method: AudioClockBridgeMethodV01;
+  bridgeNodeId?: string;
+  diagnostics: AudioClockBridgeDiagnosticV01[];
+}
+
+export interface AudioResamplerPlanV01 {
+  sourceSampleRate: number;
+  targetSampleRate: number;
+  driftCompensation: boolean;
+  quality: "placeholder" | "linear" | "sinc" | "external";
+}
+
 export interface RepresentationSpecV01 {
   id: RepresentationV01;
   semanticDataKind: "number.float" | "number.int" | "number.uint" | "color";
