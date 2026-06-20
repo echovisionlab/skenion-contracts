@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.32.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.31.0...skenion-contracts-v0.32.0) (2026-06-20)
+
+
+### Features
+
+* **runtime-wire:** document clock source APIs ([#81](https://github.com/echovisionlab/skenion-contracts/issues/81)) ([8f87c88](https://github.com/echovisionlab/skenion-contracts/commit/8f87c88d919c7b72ed1214b1bca34c5b3af992aa))
+
 ## [0.31.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.30.0...skenion-contracts-v0.31.0) (2026-06-20)
 
 
