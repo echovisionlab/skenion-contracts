@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.28.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.27.0...skenion-contracts-v0.28.0) (2026-06-20)
+
+
+### Features
+
+* **contracts:** add clock transport contract baseline ([2b0387d](https://github.com/echovisionlab/skenion-contracts/commit/2b0387d176e6b0d6f0da4580cf6907d63fc5ee1e))
+
 ## [0.27.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.26.0...skenion-contracts-v0.27.0) (2026-06-19)
 
 
