@@ -34,6 +34,10 @@ import {
   analyzeShaderInterfaceV01,
   shaderInterfaceToPortsV01,
   analyzeGraphDocumentV02,
+  applyMidiClockMessageV01,
+  createInitialMidiClockSnapshotV01,
+  midiClockSnapshotToClockStateV01,
+  parseMidiClockMessageV01,
   validateGraphPatchEvent,
   validateGraphPatchHistory,
   validateGraphPatch,
@@ -514,9 +518,100 @@ test("exports the canonical v0.1 builtin manifest", () => {
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
   assert.deepEqual(builtinManifestV01.representations["number.float"].includes("f8.e4m3"), true);
   assert.deepEqual(builtinManifestV01.representations.color.includes("rgba8unorm"), true);
+  assert.equal(getBuiltinNodeDefinition("clock.midi-clock")?.ports.map((port) => port.id).join(","), "state,tick,running");
   assert.equal(getBuiltinNodeDefinition("audio.input")?.ports.map((port) => port.id).join(","), "left,right");
   assert.equal(getBuiltinNodeDefinition("audio.clock-bridge")?.ports.map((port) => port.id).join(","), "in,out");
   assert.equal(getBuiltinNodeDefinition("audio.resample")?.ports.map((port) => port.id).join(","), "in,out");
+});
+
+test("parses MIDI Clock messages into clock state authority", () => {
+  assert.deepEqual(parseMidiClockMessageV01([0xf8]), { kind: "tick" });
+  assert.deepEqual(parseMidiClockMessageV01([0xfa]), { kind: "start" });
+  assert.deepEqual(parseMidiClockMessageV01([0xfb]), { kind: "continue" });
+  assert.deepEqual(parseMidiClockMessageV01([0xfc]), { kind: "stop" });
+  assert.deepEqual(parseMidiClockMessageV01([0xf2, 16, 0]), {
+    kind: "song-position-pointer",
+    songPositionSixteenth: 16
+  });
+  assert.equal(parseMidiClockMessageV01([]), null);
+  assert.equal(parseMidiClockMessageV01([0x90, 60, 127]), null);
+  assert.equal(parseMidiClockMessageV01([0xf2]), null);
+  assert.equal(parseMidiClockMessageV01([0xf2, 0x80, 0]), null);
+
+  let snapshot = createInitialMidiClockSnapshotV01({
+    sourceId: "midi-a",
+    timeSignature: { numerator: 4, denominator: 4 }
+  });
+  let result = applyMidiClockMessageV01(snapshot, {
+    kind: "start",
+    receivedHostTimeNs: 100
+  });
+  assert.equal(result.snapshot.running, true);
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.clockState.running.value, true);
+  assert.equal(result.clockState.bar.value, 1);
+  assert.equal(result.clockState.beat.value, 1);
+  assert.equal(result.clockState.tempoBpm.authority, "unavailable");
+  assert.equal(result.clockState.lastUpdateHostTimeNs, 100);
+
+  snapshot = result.snapshot;
+  result = applyMidiClockMessageV01(snapshot, { kind: "tick" });
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.snapshot.tickIndex, 1);
+  assert.equal(result.clockState.tickIndex.value, 1);
+  assert.equal(result.clockState.ppqPosition.value, 1 / 24);
+  assert.equal(result.clockState.phase01.value, 1 / 24);
+  assert.equal(result.clockState.songPositionSixteenth.value, 0);
+
+  result = applyMidiClockMessageV01(snapshot, {
+    kind: "song-position-pointer",
+    songPositionSixteenth: 16
+  });
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.snapshot.tickIndex, 96);
+  assert.equal(result.clockState.bar.value, 2);
+  assert.equal(result.clockState.beat.value, 1);
+  assert.equal(result.clockState.division.value, 1);
+
+  result = applyMidiClockMessageV01(result.snapshot, { kind: "stop" });
+  assert.equal(result.clockState.running.value, false);
+  result = applyMidiClockMessageV01(result.snapshot, { kind: "continue" });
+  assert.equal(result.clockState.running.value, true);
+
+  const noMeter = midiClockSnapshotToClockStateV01(createInitialMidiClockSnapshotV01());
+  assert.equal(noMeter.bar.authority, "unavailable");
+  assert.equal(noMeter.timeSignature.value, null);
+  assert.equal(noMeter.capabilities.includes("bar-beat"), false);
+
+  const custom = createInitialMidiClockSnapshotV01({
+    ticksPerQuarter: 48,
+    lastUpdateHostTimeNs: 7
+  });
+  result = applyMidiClockMessageV01(custom, { kind: "song-position-pointer" });
+  assert.equal(result.diagnostics[0].code, "invalid-midi-song-position-pointer");
+  assert.equal(result.snapshot.tickIndex, 0);
+  assert.equal(result.snapshot.lastUpdateHostTimeNs, 7);
+
+  result = applyMidiClockMessageV01(custom, {
+    kind: "song-position-pointer",
+    songPositionSixteenth: 16_384
+  });
+  assert.equal(result.diagnostics[0].code, "invalid-midi-song-position-pointer");
+  assert.equal(result.snapshot.tickIndex, 0);
+
+  const invalidTiming = midiClockSnapshotToClockStateV01({
+    ...custom,
+    ticksPerQuarter: 0,
+    timeSignature: { numerator: 4, denominator: 0 }
+  });
+  assert.equal(invalidTiming.ppqPosition.value, 0);
+  assert.equal(invalidTiming.bar.authority, "unavailable");
+
+  result = applyMidiClockMessageV01({
+    ...custom,
+    tickIndex: Number.MAX_SAFE_INTEGER
+  }, { kind: "tick" });
+  assert.equal(result.diagnostics[0].code, "midi-clock-tick-overflow");
 });
 
 test("plans audio clock-domain bridge requirements", () => {

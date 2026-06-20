@@ -1,4 +1,5 @@
 mod audio_clock;
+mod clock;
 mod control_message;
 mod graph;
 mod node_definition;
@@ -15,6 +16,14 @@ pub use audio_clock::{
     AudioClockDomainV01, AudioDeviceDescriptorV01, AudioDevicePreferenceV01,
     AudioEndpointDirectionV01, AudioEndpointV01, AudioGraphPartitionV01, AudioResamplerPlanV01,
     AudioStreamConfigRequestV01, AudioStreamConfigResolvedV01, plan_audio_clock_bridge_v01,
+};
+pub use clock::{
+    ClockAuthorityV01, ClockCapabilityV01, ClockFieldV01, ClockSourceKindV01, ClockStateV01,
+    ClockTimeSignatureV01, MIDI_CLOCK_TICKS_PER_QUARTER_V01, MIDI_CLOCK_TICKS_PER_SIXTEENTH_V01,
+    MidiClockApplyResultV01, MidiClockDiagnosticSeverityV01, MidiClockDiagnosticV01,
+    MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01,
+    apply_midi_clock_message_v01, midi_clock_snapshot_to_clock_state_v01,
+    parse_midi_clock_message_v01,
 };
 pub use control_message::{ControlAtomV01, ControlMessageV01};
 pub use graph::{EdgeV01, GraphDocumentV01, GraphNodeV01, PortRefV01};

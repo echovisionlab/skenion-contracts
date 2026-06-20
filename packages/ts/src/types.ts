@@ -79,6 +79,62 @@ export type AudioClockDomainAuthorityV01 =
   | "derived"
   | "unavailable";
 export type AudioClockBridgeMethodV01 = "direct" | "clock-bridge" | "resample" | "invalid";
+export type ClockAuthorityV01 = "authoritative" | "derived" | "estimated" | "unavailable";
+export type ClockSourceKindV01 =
+  | "local"
+  | "audio-device"
+  | "render-frame"
+  | "link"
+  | "midi-clock"
+  | "mtc"
+  | "host-transport";
+export type ClockCapabilityV01 =
+  | "running"
+  | "tempo-bpm"
+  | "phase"
+  | "tick"
+  | "ppq-position"
+  | "song-position"
+  | "bar-beat"
+  | "time-signature"
+  | "time-seconds"
+  | "timecode"
+  | "sample-frame";
+
+export interface ClockFieldV01<T> {
+  value: T | null;
+  authority: ClockAuthorityV01;
+  source: string;
+  confidence?: number;
+}
+
+export interface ClockTimeSignatureV01 {
+  numerator: number;
+  denominator: number;
+}
+
+export interface ClockStateV01 {
+  sourceId: string;
+  sourceKind: ClockSourceKindV01 | string;
+  capabilities: Array<ClockCapabilityV01 | string>;
+  running?: ClockFieldV01<boolean>;
+  tempoBpm?: ClockFieldV01<number>;
+  phase01?: ClockFieldV01<number>;
+  tickIndex?: ClockFieldV01<number>;
+  ppqPosition?: ClockFieldV01<number>;
+  songPositionSixteenth?: ClockFieldV01<number>;
+  bar?: ClockFieldV01<number>;
+  beat?: ClockFieldV01<number>;
+  division?: ClockFieldV01<number>;
+  tickInDivision?: ClockFieldV01<number>;
+  timeSignature?: ClockFieldV01<ClockTimeSignatureV01>;
+  timeSeconds?: ClockFieldV01<number>;
+  timecode?: ClockFieldV01<string>;
+  sampleRate?: ClockFieldV01<number>;
+  sampleFrame?: ClockFieldV01<number>;
+  latencySeconds?: ClockFieldV01<number>;
+  lastUpdateHostTimeNs?: number;
+}
 
 export interface AudioDeviceDescriptorV01 {
   id: string;

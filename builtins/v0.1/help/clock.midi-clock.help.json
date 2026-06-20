@@ -1,0 +1,52 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "clock.midi-clock",
+  "summary": "Imports MIDI Clock transport into clock.state.",
+  "description": "MIDI Clock converts tick, start, stop, continue, and Song Position Pointer messages into graph-visible clock.state. It exposes timing authority explicitly and never drives audio callbacks directly.",
+  "helpGraph": "help/v0.1/nodes/clock.midi-clock.help.graph.json",
+  "tags": [
+    "clock",
+    "midi",
+    "transport",
+    "sync"
+  ],
+  "runtimeBehavior": "Runs as an external clock adapter. Runtime code snapshots incoming MIDI messages outside realtime audio callbacks and hands clock.state into the graph.",
+  "relatedNodes": [
+    "clock.position-display",
+    "clock.local"
+  ],
+  "ports": [
+    {
+      "id": "state",
+      "description": "Outputs value<clock.state> with MIDI Clock capability and authority metadata."
+    },
+    {
+      "id": "tick",
+      "description": "Outputs event<event.bang> for each MIDI Timing Clock tick."
+    },
+    {
+      "id": "running",
+      "description": "Outputs boolean transport state from MIDI Start, Stop, and Continue."
+    }
+  ],
+  "params": [
+    {
+      "id": "sourceId",
+      "description": "Stable runtime MIDI source identifier."
+    },
+    {
+      "id": "timeSignatureNumerator",
+      "description": "Optional meter numerator used to derive bar and beat from Song Position Pointer."
+    },
+    {
+      "id": "timeSignatureDenominator",
+      "description": "Optional meter denominator used to derive bar and beat from Song Position Pointer."
+    }
+  ],
+  "example": {
+    "title": "Display MIDI Clock authority",
+    "description": "Connect state to clock.position-display to inspect which MIDI timing fields are authoritative, derived, or unavailable.",
+    "graph": "help/v0.1/nodes/clock.midi-clock.help.graph.json"
+  }
+}

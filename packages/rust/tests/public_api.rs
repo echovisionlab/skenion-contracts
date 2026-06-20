@@ -1,12 +1,15 @@
 use skenion_contracts::{
     ApplyPatchErrorV01, AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01,
-    AudioClockDomainV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphDocumentV02,
-    GraphPatchOperationV01, GraphPatchV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02,
-    NumberRangeV01, ObjectTextParseResultV01, StringOrStringsV01, analyze_graph_document_v02,
-    apply_graph_patch_v01, compatible_data_types_v01, invert_graph_patch_v01,
-    parse_object_text_v01, plan_audio_clock_bridge_v01, type_label_v01,
-    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
-    validate_node_definition_v02, validate_object_text_parse_result_v01,
+    AudioClockDomainV01, ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, DataFlowV01,
+    DataTypeV01, GraphDocumentV01, GraphDocumentV02, GraphPatchOperationV01, GraphPatchV01,
+    MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01,
+    NodeDefinitionManifestV02, NumberRangeV01, ObjectTextParseResultV01, StringOrStringsV01,
+    analyze_graph_document_v02, apply_graph_patch_v01, apply_midi_clock_message_v01,
+    compatible_data_types_v01, invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01,
+    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
+    type_label_v01, validate_graph_document_v01, validate_graph_document_v02,
+    validate_node_definition_v01, validate_node_definition_v02,
+    validate_object_text_parse_result_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -248,6 +251,194 @@ fn plans_public_audio_clock_bridge_requirements() {
     assert!(bridged.required);
     assert_eq!(bridged.method, AudioClockBridgeMethodV01::ClockBridge);
     assert_eq!(bridged.bridge_node_id.as_deref(), Some("bridge"));
+}
+
+#[test]
+fn parses_public_midi_clock_messages_into_clock_state() {
+    assert_eq!(
+        parse_midi_clock_message_v01(&[0xf8]).map(|message| message.kind),
+        Some(MidiClockMessageKindV01::Tick)
+    );
+    assert_eq!(
+        parse_midi_clock_message_v01(&[0xfa]).map(|message| message.kind),
+        Some(MidiClockMessageKindV01::Start)
+    );
+    assert_eq!(
+        parse_midi_clock_message_v01(&[0xfb]).map(|message| message.kind),
+        Some(MidiClockMessageKindV01::Continue)
+    );
+    assert_eq!(
+        parse_midi_clock_message_v01(&[0xfc]).map(|message| message.kind),
+        Some(MidiClockMessageKindV01::Stop)
+    );
+    assert_eq!(
+        parse_midi_clock_message_v01(&[0xf2, 16, 0])
+            .and_then(|message| message.song_position_sixteenth),
+        Some(16)
+    );
+    assert_eq!(parse_midi_clock_message_v01(&[]), None);
+    assert_eq!(parse_midi_clock_message_v01(&[0x90, 60, 127]), None);
+    assert_eq!(parse_midi_clock_message_v01(&[0xf2, 0x80, 0]), None);
+
+    let mut snapshot = MidiClockSnapshotV01::new("midi-a");
+    snapshot.time_signature = Some(ClockTimeSignatureV01 {
+        numerator: 4,
+        denominator: 4,
+    });
+    let start = MidiClockMessageV01 {
+        kind: MidiClockMessageKindV01::Start,
+        song_position_sixteenth: None,
+        received_host_time_ns: Some(100),
+    };
+    let mut result = apply_midi_clock_message_v01(&snapshot, &start);
+    assert!(result.diagnostics.is_empty());
+    assert!(result.snapshot.running);
+    assert_eq!(
+        result
+            .clock_state
+            .running
+            .as_ref()
+            .and_then(|field| field.value),
+        Some(true)
+    );
+    assert_eq!(
+        result
+            .clock_state
+            .bar
+            .as_ref()
+            .and_then(|field| field.value),
+        Some(1)
+    );
+    assert_eq!(
+        result
+            .clock_state
+            .tempo_bpm
+            .as_ref()
+            .map(|field| field.authority.clone()),
+        Some(ClockAuthorityV01::Unavailable)
+    );
+    assert_eq!(result.clock_state.last_update_host_time_ns, Some(100));
+
+    let tick = MidiClockMessageV01 {
+        kind: MidiClockMessageKindV01::Tick,
+        song_position_sixteenth: None,
+        received_host_time_ns: None,
+    };
+    result = apply_midi_clock_message_v01(&result.snapshot, &tick);
+    assert!(result.diagnostics.is_empty());
+    assert_eq!(result.snapshot.tick_index, 1);
+    assert_eq!(
+        result
+            .clock_state
+            .ppq_position
+            .as_ref()
+            .and_then(|field| field.value),
+        Some(1.0 / 24.0)
+    );
+
+    let spp = MidiClockMessageV01 {
+        kind: MidiClockMessageKindV01::SongPositionPointer,
+        song_position_sixteenth: Some(16),
+        received_host_time_ns: None,
+    };
+    result = apply_midi_clock_message_v01(&result.snapshot, &spp);
+    assert!(result.diagnostics.is_empty());
+    assert_eq!(result.snapshot.tick_index, 96);
+    assert_eq!(
+        result
+            .clock_state
+            .bar
+            .as_ref()
+            .and_then(|field| field.value),
+        Some(2)
+    );
+
+    let stop = MidiClockMessageV01 {
+        kind: MidiClockMessageKindV01::Stop,
+        song_position_sixteenth: None,
+        received_host_time_ns: None,
+    };
+    result = apply_midi_clock_message_v01(&result.snapshot, &stop);
+    assert_eq!(
+        result
+            .clock_state
+            .running
+            .as_ref()
+            .and_then(|field| field.value),
+        Some(false)
+    );
+
+    let continue_message = MidiClockMessageV01 {
+        kind: MidiClockMessageKindV01::Continue,
+        song_position_sixteenth: None,
+        received_host_time_ns: None,
+    };
+    result = apply_midi_clock_message_v01(&result.snapshot, &continue_message);
+    assert_eq!(
+        result
+            .clock_state
+            .running
+            .as_ref()
+            .and_then(|field| field.value),
+        Some(true)
+    );
+
+    let no_meter = midi_clock_snapshot_to_clock_state_v01(&MidiClockSnapshotV01::new("midi-b"));
+    assert_eq!(
+        no_meter.bar.as_ref().map(|field| field.authority.clone()),
+        Some(ClockAuthorityV01::Unavailable)
+    );
+    assert!(!no_meter.capabilities.contains(&ClockCapabilityV01::BarBeat));
+
+    let mut invalid_timing = MidiClockSnapshotV01::new("midi-c");
+    invalid_timing.ticks_per_quarter = 0;
+    invalid_timing.time_signature = Some(ClockTimeSignatureV01 {
+        numerator: 4,
+        denominator: 0,
+    });
+    let invalid_state = midi_clock_snapshot_to_clock_state_v01(&invalid_timing);
+    assert_eq!(
+        invalid_state
+            .ppq_position
+            .as_ref()
+            .and_then(|field| field.value),
+        Some(0.0)
+    );
+    assert_eq!(
+        invalid_state
+            .bar
+            .as_ref()
+            .map(|field| field.authority.clone()),
+        Some(ClockAuthorityV01::Unavailable)
+    );
+
+    let invalid_spp = MidiClockMessageV01 {
+        kind: MidiClockMessageKindV01::SongPositionPointer,
+        song_position_sixteenth: Some(16_384),
+        received_host_time_ns: None,
+    };
+    let result = apply_midi_clock_message_v01(&MidiClockSnapshotV01::new("midi-d"), &invalid_spp);
+    assert_eq!(
+        result.diagnostics[0].code,
+        "invalid-midi-song-position-pointer"
+    );
+    assert_eq!(result.snapshot.tick_index, 0);
+
+    let missing_spp = MidiClockMessageV01 {
+        kind: MidiClockMessageKindV01::SongPositionPointer,
+        song_position_sixteenth: None,
+        received_host_time_ns: None,
+    };
+    let result = apply_midi_clock_message_v01(&MidiClockSnapshotV01::new("midi-e"), &missing_spp);
+    assert_eq!(
+        result.diagnostics[0].code,
+        "invalid-midi-song-position-pointer"
+    );
+
+    let mut saturated = MidiClockSnapshotV01::new("midi-f");
+    saturated.tick_index = u64::MAX;
+    let result = apply_midi_clock_message_v01(&saturated, &tick);
+    assert_eq!(result.diagnostics[0].code, "midi-clock-tick-overflow");
 }
 
 #[test]

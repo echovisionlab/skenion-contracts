@@ -62,6 +62,7 @@ export const builtinManifestV01 = {
     "core.gpu-upload",
     "core.preview",
     "clock.local",
+    "clock.midi-clock",
     "clock.position-display",
     "render.clear-color",
     "render.fullscreen-shader",
@@ -898,6 +899,55 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "clock.transport.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "clock.midi-clock",
+    "version": "0.1.0",
+    "displayName": "MIDI Clock",
+    "category": "Clock",
+    "ports": [
+      {
+        "id": "state",
+        "direction": "output",
+        "label": "State",
+        "type": {
+          "flow": "value",
+          "dataKind": "clock.state"
+        }
+      },
+      {
+        "id": "tick",
+        "direction": "output",
+        "label": "Tick",
+        "type": {
+          "flow": "event",
+          "dataKind": "event.bang"
+        }
+      },
+      {
+        "id": "running",
+        "direction": "output",
+        "label": "Running",
+        "type": {
+          "flow": "value",
+          "dataKind": "boolean"
+        }
+      }
+    ],
+    "execution": {
+      "model": "value",
+      "clock": "external"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "clock.external-source.v0.1",
+      "clock.midi-clock.v0.1"
     ]
   },
   {
@@ -2292,6 +2342,58 @@ export const builtinNodeHelpV01 = [
       "title": "Display local clock position",
       "description": "Connect state to clock.position-display to inspect available bar, beat, phase, time, and authority fields.",
       "graph": "help/v0.1/nodes/clock.local.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "clock.midi-clock",
+    "summary": "Imports MIDI Clock transport into clock.state.",
+    "description": "MIDI Clock converts tick, start, stop, continue, and Song Position Pointer messages into graph-visible clock.state. It exposes timing authority explicitly and never drives audio callbacks directly.",
+    "helpGraph": "help/v0.1/nodes/clock.midi-clock.help.graph.json",
+    "tags": [
+      "clock",
+      "midi",
+      "transport",
+      "sync"
+    ],
+    "runtimeBehavior": "Runs as an external clock adapter. Runtime code snapshots incoming MIDI messages outside realtime audio callbacks and hands clock.state into the graph.",
+    "relatedNodes": [
+      "clock.position-display",
+      "clock.local"
+    ],
+    "ports": [
+      {
+        "id": "state",
+        "description": "Outputs value<clock.state> with MIDI Clock capability and authority metadata."
+      },
+      {
+        "id": "tick",
+        "description": "Outputs event<event.bang> for each MIDI Timing Clock tick."
+      },
+      {
+        "id": "running",
+        "description": "Outputs boolean transport state from MIDI Start, Stop, and Continue."
+      }
+    ],
+    "params": [
+      {
+        "id": "sourceId",
+        "description": "Stable runtime MIDI source identifier."
+      },
+      {
+        "id": "timeSignatureNumerator",
+        "description": "Optional meter numerator used to derive bar and beat from Song Position Pointer."
+      },
+      {
+        "id": "timeSignatureDenominator",
+        "description": "Optional meter denominator used to derive bar and beat from Song Position Pointer."
+      }
+    ],
+    "example": {
+      "title": "Display MIDI Clock authority",
+      "description": "Connect state to clock.position-display to inspect which MIDI timing fields are authoritative, derived, or unavailable.",
+      "graph": "help/v0.1/nodes/clock.midi-clock.help.graph.json"
     }
   },
   {
@@ -3748,6 +3850,87 @@ export const builtinNodeHelpGraphsV01 = [
         {
           "from": {
             "node": "clock_1",
+            "port": "state"
+          },
+          "to": {
+            "node": "display_1",
+            "port": "clock"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "clock.midi-clock",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-clock-midi-clock",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "midi_clock_1",
+          "kind": "clock.midi-clock",
+          "kindVersion": "0.1.0",
+          "params": {
+            "sourceId": "midi-clock-1",
+            "timeSignatureNumerator": 4,
+            "timeSignatureDenominator": 4
+          },
+          "ports": [
+            {
+              "id": "state",
+              "direction": "output",
+              "label": "State",
+              "type": {
+                "flow": "value",
+                "dataKind": "clock.state"
+              }
+            },
+            {
+              "id": "tick",
+              "direction": "output",
+              "label": "Tick",
+              "type": {
+                "flow": "event",
+                "dataKind": "event.bang"
+              }
+            },
+            {
+              "id": "running",
+              "direction": "output",
+              "label": "Running",
+              "type": {
+                "flow": "value",
+                "dataKind": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "id": "display_1",
+          "kind": "clock.position-display",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "clock",
+              "direction": "input",
+              "label": "Clock",
+              "type": {
+                "flow": "value",
+                "dataKind": "clock.state"
+              },
+              "required": false,
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "midi_clock_1",
             "port": "state"
           },
           "to": {

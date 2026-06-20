@@ -1,0 +1,49 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "clock.midi-clock",
+  "version": "0.1.0",
+  "displayName": "MIDI Clock",
+  "category": "Clock",
+  "ports": [
+    {
+      "id": "state",
+      "direction": "output",
+      "label": "State",
+      "type": {
+        "flow": "value",
+        "dataKind": "clock.state"
+      }
+    },
+    {
+      "id": "tick",
+      "direction": "output",
+      "label": "Tick",
+      "type": {
+        "flow": "event",
+        "dataKind": "event.bang"
+      }
+    },
+    {
+      "id": "running",
+      "direction": "output",
+      "label": "Running",
+      "type": {
+        "flow": "value",
+        "dataKind": "boolean"
+      }
+    }
+  ],
+  "execution": {
+    "model": "value",
+    "clock": "external"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "clock.external-source.v0.1",
+    "clock.midi-clock.v0.1"
+  ]
+}

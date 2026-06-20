@@ -18,6 +18,7 @@
     "core.gpu-upload",
     "core.preview",
     "clock.local",
+    "clock.midi-clock",
     "clock.position-display",
     "render.clear-color",
     "render.fullscreen-shader",

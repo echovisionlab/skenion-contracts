@@ -47,6 +47,12 @@ export type {
   CableStyleV02,
   CanvasNodeViewV01,
   CanvasViewportV01,
+  ClockAuthorityV01,
+  ClockCapabilityV01,
+  ClockFieldV01,
+  ClockSourceKindV01,
+  ClockStateV01,
+  ClockTimeSignatureV01,
   ColorRepresentationV01,
   ControlAtomV01,
   ControlMessageV01,
@@ -130,6 +136,22 @@ export {
   typeDescriptorForDataType
 } from "./conversion.js";
 export { planAudioClockBridgeV01 } from "./audioClock.js";
+export {
+  MIDI_CLOCK_TICKS_PER_QUARTER_V01,
+  MIDI_CLOCK_TICKS_PER_SIXTEENTH_V01,
+  applyMidiClockMessageV01,
+  createInitialMidiClockSnapshotV01,
+  midiClockSnapshotToClockStateV01,
+  parseMidiClockMessageV01
+} from "./clock.js";
+export type {
+  MidiClockApplyResultV01,
+  MidiClockDiagnosticV01,
+  MidiClockMessageKindV01,
+  MidiClockMessageV01,
+  MidiClockSnapshotOptionsV01,
+  MidiClockSnapshotV01
+} from "./clock.js";
 export { applyGraphPatch, invertGraphPatch } from "./patch.js";
 export { parseObjectTextV01 } from "./objectText.js";
 export { createDefaultViewStateForGraph } from "./project.js";
