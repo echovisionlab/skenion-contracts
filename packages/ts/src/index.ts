@@ -28,6 +28,21 @@ export type {
   AddNodeOperationV01,
   AlphaPolicy,
   ApplyGraphPatchResult,
+  AudioClockBridgeDiagnosticV01,
+  AudioClockBridgeMethodV01,
+  AudioClockBridgePlanV01,
+  AudioClockDomainAuthorityV01,
+  AudioClockDomainV01,
+  AudioDeviceDescriptorV01,
+  AudioDevicePreferenceV01,
+  AudioEndpointDirectionV01,
+  AudioEndpointV01,
+  AudioGraphPartitionV01,
+  AudioInputEndpointV01,
+  AudioOutputEndpointV01,
+  AudioResamplerPlanV01,
+  AudioStreamConfigRequestV01,
+  AudioStreamConfigResolvedV01,
   CableStyleRegistryV02,
   CableStyleV02,
   CanvasNodeViewV01,
@@ -114,6 +129,7 @@ export {
   representationRegistryV01,
   typeDescriptorForDataType
 } from "./conversion.js";
+export { planAudioClockBridgeV01 } from "./audioClock.js";
 export { applyGraphPatch, invertGraphPatch } from "./patch.js";
 export { parseObjectTextV01 } from "./objectText.js";
 export { createDefaultViewStateForGraph } from "./project.js";

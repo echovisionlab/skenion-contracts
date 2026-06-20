@@ -22,6 +22,7 @@ import {
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
   objectTextParseResultV01Schema,
+  planAudioClockBridgeV01,
   planConversion,
   projectV01Schema,
   parseObjectTextV01,
@@ -136,6 +137,7 @@ test("parses object text into golden parse results", async () => {
   assert.equal(parseObjectTextV01("-~ 0.25").resolvedKind, "audio.operator.sub");
   assert.deepEqual(parseObjectTextV01("osc~").params, { frequency: 0 });
   assert.deepEqual(parseObjectTextV01("phasor~").params, { frequency: 0 });
+  assert.equal(parseObjectTextV01("adc~").resolvedKind, "audio.input");
   assert.equal(parseObjectTextV01("dac~").resolvedKind, "audio.output");
 
   assert.equal(parseObjectTextV01("[+ 1").diagnostics[0].code, "invalid-syntax");
@@ -151,7 +153,7 @@ test("parses object text into golden parse results", async () => {
   assert.equal(parseObjectTextV01("osc~ 1 2").diagnostics[0].code, "invalid-arg-count");
   assert.equal(parseObjectTextV01("phasor~ beep").diagnostics[0].code, "invalid-arg-type");
   assert.equal(parseObjectTextV01("square~").diagnostics[0].code, "deferred-object");
-  assert.equal(parseObjectTextV01("adc~").diagnostics[0].code, "deferred-object");
+  assert.equal(parseObjectTextV01("adc~ 1").diagnostics[0].code, "invalid-arg-count");
   assert.equal(parseObjectTextV01("dac~ 1").diagnostics[0].code, "invalid-arg-count");
   assert.equal(parseObjectTextV01("expr").diagnostics[0].code, "deferred-object");
   assert.equal(parseObjectTextV01("expr~").diagnostics[0].code, "deferred-object");
@@ -512,6 +514,48 @@ test("exports the canonical v0.1 builtin manifest", () => {
   assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
   assert.deepEqual(builtinManifestV01.representations["number.float"].includes("f8.e4m3"), true);
   assert.deepEqual(builtinManifestV01.representations.color.includes("rgba8unorm"), true);
+  assert.equal(getBuiltinNodeDefinition("audio.input")?.ports.map((port) => port.id).join(","), "left,right");
+  assert.equal(getBuiltinNodeDefinition("audio.clock-bridge")?.ports.map((port) => port.id).join(","), "in,out");
+  assert.equal(getBuiltinNodeDefinition("audio.resample")?.ports.map((port) => port.id).join(","), "in,out");
+});
+
+test("plans audio clock-domain bridge requirements", () => {
+  const source = {
+    id: "input-device",
+    authority: "driver-reported",
+    source: "audio.input",
+    sampleRate: 48_000
+  };
+  const same = {
+    id: "input-device",
+    authority: "driver-reported",
+    source: "audio.output",
+    sampleRate: 48_000
+  };
+  const independent = {
+    id: "output-device",
+    authority: "driver-reported",
+    source: "audio.output",
+    sampleRate: 48_000
+  };
+
+  assert.deepEqual(planAudioClockBridgeV01(source, same), {
+    required: false,
+    sourceClockDomainId: "input-device",
+    targetClockDomainId: "input-device",
+    method: "direct",
+    diagnostics: []
+  });
+
+  const invalid = planAudioClockBridgeV01(source, independent);
+  assert.equal(invalid.required, true);
+  assert.equal(invalid.method, "invalid");
+  assert.equal(invalid.diagnostics[0].code, "audio-clock-domain-crossing-requires-bridge");
+
+  const bridged = planAudioClockBridgeV01(source, independent, "bridge");
+  assert.equal(bridged.required, true);
+  assert.equal(bridged.method, "clock-bridge");
+  assert.equal(bridged.bridgeNodeId, "bridge");
 });
 
 test("plans implicit numeric and color representation conversions", () => {

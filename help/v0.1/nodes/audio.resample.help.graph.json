@@ -1,0 +1,94 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-audio-resample",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "input",
+      "kind": "audio.input",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "input-44100"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "output",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          }
+        }
+      ]
+    },
+    {
+      "id": "resample",
+      "kind": "audio.resample",
+      "kindVersion": "0.1.0",
+      "params": {
+        "quality": "placeholder"
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          }
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "kind": "audio.output",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "output-48000"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "input",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          },
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "input",
+        "port": "left"
+      },
+      "to": {
+        "node": "resample",
+        "port": "in"
+      }
+    },
+    {
+      "from": {
+        "node": "resample",
+        "port": "out"
+      },
+      "to": {
+        "node": "output",
+        "port": "left"
+      }
+    }
+  ]
+}

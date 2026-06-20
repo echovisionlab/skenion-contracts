@@ -1,11 +1,12 @@
 use skenion_contracts::{
-    ApplyPatchErrorV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphDocumentV02,
+    ApplyPatchErrorV01, AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01,
+    AudioClockDomainV01, DataFlowV01, DataTypeV01, GraphDocumentV01, GraphDocumentV02,
     GraphPatchOperationV01, GraphPatchV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02,
     NumberRangeV01, ObjectTextParseResultV01, StringOrStringsV01, analyze_graph_document_v02,
     apply_graph_patch_v01, compatible_data_types_v01, invert_graph_patch_v01,
-    parse_object_text_v01, type_label_v01, validate_graph_document_v01,
-    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
-    validate_object_text_parse_result_v01,
+    parse_object_text_v01, plan_audio_clock_bridge_v01, type_label_v01,
+    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
+    validate_node_definition_v02, validate_object_text_parse_result_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -161,6 +162,8 @@ fn parses_public_object_text_baseline_matrix() {
         ("[sqrt~]", Some("audio.operator.sqrt")),
         ("[osc~ 440]", Some("audio.osc")),
         ("[phasor~ 1]", Some("audio.phasor")),
+        ("[adc~]", Some("audio.input")),
+        ("[dac~]", Some("audio.output")),
     ];
 
     for (input, expected_kind) in supported {
@@ -186,6 +189,8 @@ fn parses_public_object_text_baseline_matrix() {
         "[osc~ 1 2]",
         "[osc~ false]",
         "[phasor~ beep]",
+        "[adc~ 1]",
+        "[dac~ 1]",
         "[sin~]",
         "[expr $f1]",
         "[frobnicate]",
@@ -198,6 +203,51 @@ fn parses_public_object_text_baseline_matrix() {
             "{input} should include diagnostics"
         );
     }
+}
+
+#[test]
+fn plans_public_audio_clock_bridge_requirements() {
+    let source = AudioClockDomainV01 {
+        id: "input-device".to_owned(),
+        authority: AudioClockDomainAuthorityV01::DriverReported,
+        source: "audio.input".to_owned(),
+        sample_rate: Some(48_000),
+        drift_compensated: None,
+        shared_with: None,
+    };
+    let same = AudioClockDomainV01 {
+        id: "input-device".to_owned(),
+        authority: AudioClockDomainAuthorityV01::DriverReported,
+        source: "audio.output".to_owned(),
+        sample_rate: Some(48_000),
+        drift_compensated: None,
+        shared_with: None,
+    };
+    let independent = AudioClockDomainV01 {
+        id: "output-device".to_owned(),
+        authority: AudioClockDomainAuthorityV01::DriverReported,
+        source: "audio.output".to_owned(),
+        sample_rate: Some(48_000),
+        drift_compensated: None,
+        shared_with: None,
+    };
+
+    let direct = plan_audio_clock_bridge_v01(&source, &same, None);
+    assert!(!direct.required);
+    assert_eq!(direct.method, AudioClockBridgeMethodV01::Direct);
+
+    let invalid = plan_audio_clock_bridge_v01(&source, &independent, None);
+    assert!(invalid.required);
+    assert_eq!(invalid.method, AudioClockBridgeMethodV01::Invalid);
+    assert_eq!(
+        invalid.diagnostics[0].code,
+        "audio-clock-domain-crossing-requires-bridge"
+    );
+
+    let bridged = plan_audio_clock_bridge_v01(&source, &independent, Some("bridge"));
+    assert!(bridged.required);
+    assert_eq!(bridged.method, AudioClockBridgeMethodV01::ClockBridge);
+    assert_eq!(bridged.bridge_node_id.as_deref(), Some("bridge"));
 }
 
 #[test]

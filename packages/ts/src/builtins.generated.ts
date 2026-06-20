@@ -85,7 +85,10 @@ export const builtinManifestV01 = {
     "audio.noise",
     "audio.sig",
     "audio.snapshot",
-    "audio.output"
+    "audio.input",
+    "audio.output",
+    "audio.clock-bridge",
+    "audio.resample"
   ],
   "canonicalDataKinds": [
     "number.float",
@@ -137,6 +140,48 @@ export const builtinNodeDefinitionsV01 = [
   {
     "schema": "skenion.node.definition",
     "schemaVersion": "0.1.0",
+    "id": "audio.clock-bridge",
+    "version": "0.1.0",
+    "displayName": "Audio Clock Bridge",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Out",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "audio.clock-domain.v0.1",
+      "validation-only.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
     "id": "audio.cos",
     "version": "0.1.0",
     "displayName": "Cosine",
@@ -172,6 +217,46 @@ export const builtinNodeDefinitionsV01 = [
     },
     "permissions": [],
     "capabilities": [
+      "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.input",
+    "version": "0.1.0",
+    "displayName": "Audio Input",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "left",
+        "direction": "output",
+        "label": "Left",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      },
+      {
+        "id": "right",
+        "direction": "output",
+        "label": "Right",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "audio.input.v0.1",
       "pd.audio.v0.1"
     ]
   },
@@ -591,6 +676,48 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
+    ]
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "audio.resample",
+    "version": "0.1.0",
+    "displayName": "Audio Resample",
+    "category": "Audio",
+    "ports": [
+      {
+        "id": "in",
+        "direction": "input",
+        "label": "In",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        },
+        "required": false,
+        "activation": "latched"
+      },
+      {
+        "id": "out",
+        "direction": "output",
+        "label": "Out",
+        "type": {
+          "flow": "signal",
+          "dataKind": "signal.audio"
+        }
+      }
+    ],
+    "execution": {
+      "model": "audio_block",
+      "clock": "audio"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "audio.resample.v0.1",
+      "validation-only.v0.1"
     ]
   },
   {
@@ -1908,6 +2035,20 @@ export const builtinNodeHelpV01 = [
   {
     "schema": "skenion.node.help",
     "schemaVersion": "0.1.0",
+    "id": "audio.clock-bridge",
+    "summary": "Explicit audio clock-domain crossing boundary.",
+    "description": "Audio Clock Bridge marks an audio signal route that crosses independent sample-clock domains. v0 keeps this as a validation/planning skeleton before high-quality bridge implementation.",
+    "helpGraph": "help/v0.1/nodes/audio.clock-bridge.help.graph.json",
+    "tags": [
+      "audio",
+      "clock",
+      "bridge"
+    ],
+    "runtimeBehavior": "Validation and planning boundary only in v0. It must not hide cross-domain routing inside ordinary signal edges."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
     "id": "audio.cos",
     "summary": "Pd-style cos~ phase-domain cosine lookup.",
     "description": "Cosine maps an audio phase signal to cosine output. It is not a frequency oscillator by itself.",
@@ -1917,6 +2058,20 @@ export const builtinNodeHelpV01 = [
       "pd"
     ],
     "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.input",
+    "summary": "Pd-style adc~ audio device input source.",
+    "description": "Audio Input owns an input stream sample clock. Direct routing to audio.output is valid only when the runtime can prove both endpoints share an audio clock domain.",
+    "helpGraph": "help/v0.1/nodes/audio.input.help.graph.json",
+    "tags": [
+      "audio",
+      "backend",
+      "pd"
+    ],
+    "runtimeBehavior": "Produces audio signal channels from a runtime input endpoint. Independent input-to-output domain crossing requires audio.clock-bridge or audio.resample."
   },
   {
     "schema": "skenion.node.help",
@@ -2040,6 +2195,20 @@ export const builtinNodeHelpV01 = [
       "pd"
     ],
     "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "audio.resample",
+    "summary": "Explicit audio sample-rate and drift compensation boundary.",
+    "description": "Audio Resample marks a signal route where sample-rate conversion or drift compensation is needed between independent audio clock domains.",
+    "helpGraph": "help/v0.1/nodes/audio.resample.help.graph.json",
+    "tags": [
+      "audio",
+      "clock",
+      "resample"
+    ],
+    "runtimeBehavior": "Validation and planning boundary only in v0. Real resampling quality is deferred to a later audio backend milestone."
   },
   {
     "schema": "skenion.node.help",
@@ -2987,6 +3156,101 @@ export const builtinNodeHelpV01 = [
 
 export const builtinNodeHelpGraphsV01 = [
   {
+    "id": "audio.clock-bridge",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-clock-bridge",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "input",
+          "kind": "audio.input",
+          "kindVersion": "0.1.0",
+          "params": {
+            "clockDomain": "input-device"
+          },
+          "ports": [
+            {
+              "id": "left",
+              "direction": "output",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              }
+            }
+          ]
+        },
+        {
+          "id": "bridge",
+          "kind": "audio.clock-bridge",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "out",
+              "direction": "output",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              }
+            }
+          ]
+        },
+        {
+          "id": "output",
+          "kind": "audio.output",
+          "kindVersion": "0.1.0",
+          "params": {
+            "clockDomain": "output-device"
+          },
+          "ports": [
+            {
+              "id": "left",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "input",
+            "port": "left"
+          },
+          "to": {
+            "node": "bridge",
+            "port": "in"
+          }
+        },
+        {
+          "from": {
+            "node": "bridge",
+            "port": "out"
+          },
+          "to": {
+            "node": "output",
+            "port": "left"
+          }
+        }
+      ]
+    }
+  },
+  {
     "id": "audio.cos",
     "graph": {
       "schema": "skenion.graph",
@@ -2995,6 +3259,91 @@ export const builtinNodeHelpGraphsV01 = [
       "revision": "1",
       "nodes": [],
       "edges": []
+    }
+  },
+  {
+    "id": "audio.input",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-input",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "input",
+          "kind": "audio.input",
+          "kindVersion": "0.1.0",
+          "params": {},
+          "ports": [
+            {
+              "id": "left",
+              "direction": "output",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              }
+            },
+            {
+              "id": "right",
+              "direction": "output",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              }
+            }
+          ]
+        },
+        {
+          "id": "output",
+          "kind": "audio.output",
+          "kindVersion": "0.1.0",
+          "params": {
+            "clockDomain": "same-device"
+          },
+          "ports": [
+            {
+              "id": "left",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "right",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "input",
+            "port": "left"
+          },
+          "to": {
+            "node": "output",
+            "port": "left"
+          }
+        },
+        {
+          "from": {
+            "node": "input",
+            "port": "right"
+          },
+          "to": {
+            "node": "output",
+            "port": "right"
+          }
+        }
+      ]
     }
   },
   {
@@ -3170,6 +3519,103 @@ export const builtinNodeHelpGraphsV01 = [
       "revision": "1",
       "nodes": [],
       "edges": []
+    }
+  },
+  {
+    "id": "audio.resample",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-audio-resample",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "input",
+          "kind": "audio.input",
+          "kindVersion": "0.1.0",
+          "params": {
+            "clockDomain": "input-44100"
+          },
+          "ports": [
+            {
+              "id": "left",
+              "direction": "output",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              }
+            }
+          ]
+        },
+        {
+          "id": "resample",
+          "kind": "audio.resample",
+          "kindVersion": "0.1.0",
+          "params": {
+            "quality": "placeholder"
+          },
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            },
+            {
+              "id": "out",
+              "direction": "output",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              }
+            }
+          ]
+        },
+        {
+          "id": "output",
+          "kind": "audio.output",
+          "kindVersion": "0.1.0",
+          "params": {
+            "clockDomain": "output-48000"
+          },
+          "ports": [
+            {
+              "id": "left",
+              "direction": "input",
+              "type": {
+                "flow": "signal",
+                "dataKind": "signal.audio"
+              },
+              "activation": "latched"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": {
+            "node": "input",
+            "port": "left"
+          },
+          "to": {
+            "node": "resample",
+            "port": "in"
+          }
+        },
+        {
+          "from": {
+            "node": "resample",
+            "port": "out"
+          },
+          "to": {
+            "node": "output",
+            "port": "left"
+          }
+        }
+      ]
     }
   },
   {

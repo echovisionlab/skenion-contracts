@@ -1,0 +1,82 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-audio-input",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "input",
+      "kind": "audio.input",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "left",
+          "direction": "output",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          }
+        },
+        {
+          "id": "right",
+          "direction": "output",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          }
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "kind": "audio.output",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "same-device"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "input",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          },
+          "activation": "latched"
+        },
+        {
+          "id": "right",
+          "direction": "input",
+          "type": {
+            "flow": "signal",
+            "dataKind": "signal.audio"
+          },
+          "activation": "latched"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "node": "input",
+        "port": "left"
+      },
+      "to": {
+        "node": "output",
+        "port": "left"
+      }
+    },
+    {
+      "from": {
+        "node": "input",
+        "port": "right"
+      },
+      "to": {
+        "node": "output",
+        "port": "right"
+      }
+    }
+  ]
+}

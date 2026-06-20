@@ -1,3 +1,4 @@
+mod audio_clock;
 mod control_message;
 mod graph;
 mod node_definition;
@@ -8,6 +9,13 @@ mod shader_interface;
 mod types;
 mod validation;
 
+pub use audio_clock::{
+    AudioClockBridgeDiagnosticSeverityV01, AudioClockBridgeDiagnosticV01,
+    AudioClockBridgeMethodV01, AudioClockBridgePlanV01, AudioClockDomainAuthorityV01,
+    AudioClockDomainV01, AudioDeviceDescriptorV01, AudioDevicePreferenceV01,
+    AudioEndpointDirectionV01, AudioEndpointV01, AudioGraphPartitionV01, AudioResamplerPlanV01,
+    AudioStreamConfigRequestV01, AudioStreamConfigResolvedV01, plan_audio_clock_bridge_v01,
+};
 pub use control_message::{ControlAtomV01, ControlMessageV01};
 pub use graph::{EdgeV01, GraphDocumentV01, GraphNodeV01, PortRefV01};
 pub use node_definition::{NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01};
