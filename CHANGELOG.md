@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.30.0...skenion-contracts-v0.31.0) (2026-06-20)
+
+
+### Features
+
+* **contracts:** add midi clock contract parser ([493eaf9](https://github.com/echovisionlab/skenion-contracts/commit/493eaf97e7fc63006453a18698ec247572a8ef3e))
+
 ## [0.30.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.29.0...skenion-contracts-v0.30.0) (2026-06-20)
 
 
