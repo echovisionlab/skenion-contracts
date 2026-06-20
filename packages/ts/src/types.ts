@@ -136,6 +136,72 @@ export interface ClockStateV01 {
   lastUpdateHostTimeNs?: number;
 }
 
+export type RuntimeClockDiagnosticSeverity = "warning" | "error";
+
+export interface RuntimeClockDiagnostic {
+  severity: RuntimeClockDiagnosticSeverity;
+  code: string;
+  message: string;
+}
+
+export type RuntimeClockSourceStatus = "running" | "stopped" | "error";
+
+export interface ClockSourceSnapshot {
+  sourceId: string;
+  sourceKind: ClockSourceKindV01 | string;
+  status: RuntimeClockSourceStatus;
+  latestSnapshot: ClockStateV01 | null;
+  diagnostics: RuntimeClockDiagnostic[];
+}
+
+export interface ClockSourceListResponse {
+  ok: boolean;
+  sources: ClockSourceSnapshot[];
+  diagnostics: RuntimeClockDiagnostic[];
+}
+
+export interface ClockSourceSnapshotResponse {
+  ok: boolean;
+  source: ClockSourceSnapshot | null;
+  diagnostics: RuntimeClockDiagnostic[];
+}
+
+export interface MidiInputDescriptor {
+  index: number;
+  name: string;
+  backend: "midir";
+  id: string | null;
+  stable: false;
+}
+
+export interface MidiInputListResponse {
+  ok: boolean;
+  inputs: MidiInputDescriptor[];
+  diagnostics: RuntimeClockDiagnostic[];
+}
+
+export interface MidiClockSourceStartRequest {
+  sourceId: string;
+  inputPortIndex: number;
+  timeSignature?: ClockTimeSignatureV01 | null;
+}
+
+export interface MidiClockSourceStartResponse {
+  ok: boolean;
+  source: ClockSourceSnapshot | null;
+  diagnostics: RuntimeClockDiagnostic[];
+}
+
+export interface MidiClockSourceStopRequest {
+  sourceId: string;
+}
+
+export interface MidiClockSourceStopResponse {
+  ok: boolean;
+  source: ClockSourceSnapshot | null;
+  diagnostics: RuntimeClockDiagnostic[];
+}
+
 export interface AudioDeviceDescriptorV01 {
   id: string;
   name: string;

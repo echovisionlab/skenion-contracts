@@ -87,6 +87,31 @@ test("exports v0.1 graph and node definition schemas", () => {
   ]);
 });
 
+test("documents runtime clock source HTTP APIs", async () => {
+  const openApi = await readFile(path.join(repoRoot, "openapi/runtime-http.v0.yaml"), "utf8");
+
+  for (const pathName of [
+    "/v0/clock/sources:",
+    "/v0/clock/sources/{sourceId}:",
+    "/v0/clock/midi/inputs:",
+    "/v0/clock/midi/start:",
+    "/v0/clock/midi/stop:"
+  ]) {
+    assert.match(openApi, new RegExp(pathName.replace(/[{}]/g, "\\$&")));
+  }
+
+  for (const schemaName of [
+    "ClockSourceListResponse",
+    "ClockSourceSnapshotResponse",
+    "MidiInputListResponse",
+    "MidiClockSourceStartRequest",
+    "MidiClockSourceStopResponse",
+    "RuntimeClockDiagnostic"
+  ]) {
+    assert.match(openApi, new RegExp(`\\b${schemaName}:`));
+  }
+});
+
 test("validates object text parse result fixtures", async () => {
   const add = await readJson("fixtures/object-text/v0.1/valid/add-int.parse.json");
   const addResult = validateObjectTextParseResult(add);

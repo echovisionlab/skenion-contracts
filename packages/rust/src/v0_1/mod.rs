@@ -6,6 +6,7 @@ mod node_definition;
 mod object_text;
 mod patch;
 mod project;
+mod runtime_clock;
 mod shader_interface;
 mod types;
 mod validation;
@@ -42,6 +43,12 @@ pub use patch::{
 pub use project::{
     CanvasNodeViewV01, CanvasViewStateV01, CanvasViewportV01, ProjectDocumentV01,
     ProjectMetadataV01, ViewStateV01, create_default_view_state_for_graph_v01,
+};
+pub use runtime_clock::{
+    ClockSourceListResponseV01, ClockSourceSnapshotResponseV01, ClockSourceSnapshotV01,
+    MidiClockSourceStartRequestV01, MidiClockSourceStartResponseV01, MidiClockSourceStopRequestV01,
+    MidiClockSourceStopResponseV01, MidiInputDescriptorV01, MidiInputListResponseV01,
+    RuntimeClockDiagnosticSeverityV01, RuntimeClockDiagnosticV01, RuntimeClockSourceStatusV01,
 };
 pub use shader_interface::{
     GeneratedShaderSourceMapV01, ShaderDiagnosticPhaseV01, ShaderDiagnosticSeverityV01,
