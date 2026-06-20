@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.28.0...skenion-contracts-v0.29.0) (2026-06-20)
+
+
+### Features
+
+* **contracts:** add audio output object contract ([#75](https://github.com/echovisionlab/skenion-contracts/issues/75)) ([14b7861](https://github.com/echovisionlab/skenion-contracts/commit/14b7861a5764a996156a05b43e0463c909e99b72))
+
 ## [0.28.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.27.0...skenion-contracts-v0.28.0) (2026-06-20)
 
 
