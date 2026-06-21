@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.33.0...skenion-contracts-v0.34.0) (2026-06-21)
+
+
+### Features
+
+* **contracts:** define runtime extension package contracts ([1906917](https://github.com/echovisionlab/skenion-contracts/commit/19069173043dccd0c2007ea6a4ac0db869afba20)), closes [#87](https://github.com/echovisionlab/skenion-contracts/issues/87)
+
 ## [0.33.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.32.0...skenion-contracts-v0.33.0) (2026-06-21)
 
 
