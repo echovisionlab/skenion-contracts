@@ -291,6 +291,9 @@ test("documents runtime IO discovery HTTP API", async () => {
   assert.match(openApi, /authPolicy:/);
   assert.match(openApi, /sessions\.events\.stream/);
   assert.match(openApi, /sessionId:/);
+  assert.match(openApi, /RuntimeMutationRequest:[\s\S]*?graphPatch:\n\s+\$ref: "#\/components\/schemas\/RuntimeMutationGraphPatch"/);
+  assert.match(openApi, /RuntimeMutationGraphPatch:\n\s+\$ref: "\.\.\/json-schema\/graph\/v0\.1\/patch\.schema\.json"/);
+  assert.match(openApi, /GraphPatchV01:[\s\S]*?ops:[\s\S]*?additionalProperties: true/);
 });
 
 test("validates object text parse result fixtures", async () => {

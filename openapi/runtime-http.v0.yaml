@@ -1168,7 +1168,7 @@ components:
       type: object
       properties:
         graphPatch:
-          $ref: "#/components/schemas/GraphPatchV01"
+          $ref: "#/components/schemas/RuntimeMutationGraphPatch"
         viewPatch:
           $ref: "#/components/schemas/RuntimeViewPatch"
         clientId:
@@ -1177,6 +1177,8 @@ components:
         description:
           type: string
       additionalProperties: false
+    RuntimeMutationGraphPatch:
+      $ref: "../json-schema/graph/v0.1/patch.schema.json"
     GraphFragmentV02:
       $ref: "../json-schema/graph/v0.2/fragment.schema.json"
     PatchPath:
