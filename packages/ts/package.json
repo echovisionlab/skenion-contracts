@@ -5,6 +5,18 @@
   "type": "module",
   "license": "Apache-2.0",
   "sideEffects": false,
+  "homepage": "https://github.com/echovisionlab/skenion-contracts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/echovisionlab/skenion-contracts.git",
+    "directory": "packages/ts"
+  },
+  "bugs": {
+    "url": "https://github.com/echovisionlab/skenion-contracts/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
