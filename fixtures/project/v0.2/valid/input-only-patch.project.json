@@ -1,0 +1,57 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.2.0",
+  "id": "project-input-only-patch",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.2.0",
+    "id": "root-input-only-patch",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [
+    {
+      "id": "input_only",
+      "revision": "1",
+      "metadata": {
+        "title": "Input Only"
+      },
+      "graph": {
+        "schema": "skenion.graph",
+        "schemaVersion": "0.2.0",
+        "id": "patch-input-only",
+        "revision": "1",
+        "nodes": [
+          {
+            "id": "frequency_in",
+            "kind": "core.inlet",
+            "kindVersion": "0.2.0",
+            "params": {
+              "portId": "frequency",
+              "label": "Frequency"
+            },
+            "ports": [
+              {
+                "id": "out",
+                "direction": "output",
+                "type": "number.float",
+                "rate": "control",
+                "description": "Frequency value entering the patch."
+              }
+            ]
+          }
+        ],
+        "edges": []
+      }
+    }
+  ]
+}

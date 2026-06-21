@@ -16,10 +16,12 @@ import {
   nodeDefinitionV02Schema,
   objectTextParseResultV01Schema,
   projectV01Schema,
+  projectV02Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
 import { planConversion } from "./conversion.js";
+import { derivePatchContractV02 } from "./project.js";
 import type {
   ControlMessageV01,
   DataTypeV01,
@@ -36,9 +38,11 @@ import type {
   NodeDefinitionManifestV01,
   NodeDefinitionManifestV02,
   ObjectTextParseResultV01,
+  PatchDefinitionV02,
   PortV01,
   PortSpecV02,
   ProjectDocumentV01,
+  ProjectDocumentV02,
   ShaderInterfaceV01,
   ValidationResult,
   ViewStateV01
@@ -66,6 +70,12 @@ const nodeDefinitionV02Validator = ajv.compile(nodeDefinitionV02Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
+const projectV02Validator = ajv.compile(projectV02Schema);
+const patchDefinitionV02Validator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/project/v0.2/patch-definition.schema.json",
+  $ref: "https://skenion.dev/schemas/project/v0.2/project.schema.json#/$defs/patchDefinition"
+});
 const extensionManifestV01Validator = ajv.compile(extensionManifestV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
@@ -171,14 +181,73 @@ function validateNodeDefinitionV01Semantics(definition: NodeDefinitionManifestV0
   return errors;
 }
 
-function validateProjectDocumentV01Semantics(project: ProjectDocumentV01): string[] {
-  const errors = validateGraphV01Semantics(project.graph);
-  const graphNodeIds = new Set(project.graph.nodes.map((node) => node.id));
+function validateViewStateNodeReferences(
+  viewState: ViewStateV01,
+  graph: Pick<GraphDocumentV01 | GraphDocumentV02, "nodes">,
+  label = "viewState"
+): string[] {
+  const errors: string[] = [];
+  const graphNodeIds = new Set(graph.nodes.map((node) => node.id));
 
-  for (const nodeId of Object.keys(project.viewState.canvas.nodes)) {
+  for (const nodeId of Object.keys(viewState.canvas.nodes)) {
     if (!graphNodeIds.has(nodeId)) {
-      errors.push(`viewState references missing graph node: ${nodeId}`);
+      errors.push(`${label} references missing graph node: ${nodeId}`);
     }
+  }
+
+  return errors;
+}
+
+function validateProjectDocumentV01Semantics(project: ProjectDocumentV01): string[] {
+  return [
+    ...validateGraphV01Semantics(project.graph),
+    ...validateViewStateNodeReferences(project.viewState, project.graph)
+  ];
+}
+
+function graphV02SemanticErrors(graph: GraphDocumentV02, label: string): string[] {
+  const result = analyzeGraphDocumentV02(graph);
+  return result.diagnostics
+    .filter((diagnostic) => diagnostic.severity === "error")
+    .map((diagnostic) => `${label} ${diagnostic.code}: ${diagnostic.message}`);
+}
+
+function validatePatchDefinitionV02Semantics(patch: PatchDefinitionV02): string[] {
+  const errors = graphV02SemanticErrors(patch.graph, `patch ${patch.id} graph`);
+
+  if (patch.viewState) {
+    errors.push(
+      ...validateViewStateNodeReferences(
+        patch.viewState,
+        patch.graph,
+        `patch ${patch.id} viewState`
+      )
+    );
+  }
+
+  const contract = derivePatchContractV02(patch);
+  errors.push(
+    ...duplicateErrors(
+      contract.ports.map((port) => port.id),
+      `boundary port id on patch ${patch.id}`
+    )
+  );
+
+  return errors;
+}
+
+function validateProjectDocumentV02Semantics(project: ProjectDocumentV02): string[] {
+  const errors = [
+    ...graphV02SemanticErrors(project.graph, "root graph"),
+    ...validateViewStateNodeReferences(project.viewState, project.graph),
+    ...duplicateErrors(
+      project.patchLibrary.map((patch) => patch.id),
+      "patch id"
+    )
+  ];
+
+  for (const patch of project.patchLibrary) {
+    errors.push(...validatePatchDefinitionV02Semantics(patch));
   }
 
   return errors;
@@ -658,6 +727,38 @@ export function validateProjectDocument(document: unknown): ValidationResult<Pro
 
   const project = document as ProjectDocumentV01;
   const errors = validateProjectDocumentV01Semantics(project);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: project };
+}
+
+export function validatePatchDefinitionV02(
+  document: unknown
+): ValidationResult<PatchDefinitionV02> {
+  if (!patchDefinitionV02Validator(document)) {
+    return { ok: false, errors: schemaErrors(patchDefinitionV02Validator.errors as ErrorObject[]) };
+  }
+
+  const patch = document as PatchDefinitionV02;
+  const errors = validatePatchDefinitionV02Semantics(patch);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: patch };
+}
+
+export function validateProjectDocumentV02(
+  document: unknown
+): ValidationResult<ProjectDocumentV02> {
+  if (!projectV02Validator(document)) {
+    return { ok: false, errors: schemaErrors(projectV02Validator.errors as ErrorObject[]) };
+  }
+
+  const project = document as ProjectDocumentV02;
+  const errors = validateProjectDocumentV02Semantics(project);
   if (errors.length > 0) {
     return { ok: false, errors };
   }

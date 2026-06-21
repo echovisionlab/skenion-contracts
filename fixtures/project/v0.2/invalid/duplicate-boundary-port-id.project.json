@@ -1,0 +1,70 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.2.0",
+  "id": "project-duplicate-boundary-port",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.2.0",
+    "id": "root-duplicate-boundary-port",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [
+    {
+      "id": "duplicate_boundary",
+      "revision": "1",
+      "graph": {
+        "schema": "skenion.graph",
+        "schemaVersion": "0.2.0",
+        "id": "patch-duplicate-boundary",
+        "revision": "1",
+        "nodes": [
+          {
+            "id": "first_in",
+            "kind": "core.inlet",
+            "kindVersion": "0.2.0",
+            "params": {
+              "portId": "value"
+            },
+            "ports": [
+              {
+                "id": "out",
+                "direction": "output",
+                "type": "number.float",
+                "rate": "control",
+                "description": "First value input."
+              }
+            ]
+          },
+          {
+            "id": "second_in",
+            "kind": "core.inlet",
+            "kindVersion": "0.2.0",
+            "params": {
+              "portId": "value"
+            },
+            "ports": [
+              {
+                "id": "out",
+                "direction": "output",
+                "type": "number.float",
+                "rate": "control",
+                "description": "Second value input with a duplicate boundary id."
+              }
+            ]
+          }
+        ],
+        "edges": []
+      }
+    }
+  ]
+}

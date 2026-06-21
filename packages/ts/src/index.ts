@@ -10,6 +10,7 @@ export {
   nodeDefinitionV02Schema,
   objectTextParseResultV01Schema,
   projectV01Schema,
+  projectV02Schema,
   shaderDiagnosticV01Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
@@ -110,6 +111,9 @@ export type {
   ObjectTextParseResultV01,
   ObjectTextPortV01,
   NumericRepresentationV01,
+  PatchContractPortV02,
+  PatchContractV02,
+  PatchDefinitionV02,
   PortActivation,
   PortDirection,
   PortGroupSpecV02,
@@ -117,6 +121,8 @@ export type {
   PortRateV02,
   PortSpecV02,
   ProjectDocumentV01,
+  ProjectDocumentV02,
+  ProjectMetadataV02,
   RemoveEdgeOperationV01,
   RemoveNodeOperationV01,
   RepresentationSpecV01,
@@ -240,7 +246,11 @@ export type {
 } from "./clock.js";
 export { applyGraphPatch, invertGraphPatch } from "./patch.js";
 export { parseObjectTextV01 } from "./objectText.js";
-export { createDefaultViewStateForGraph } from "./project.js";
+export {
+  createDefaultViewStateForGraph,
+  derivePatchContractV02,
+  derivePatchContractsV02
+} from "./project.js";
 export { analyzeShaderInterfaceV01, shaderInterfaceToPortsV01 } from "./shaderInterface.js";
 export {
   analyzeGraphDocumentV02,
@@ -254,7 +264,9 @@ export {
   validateObjectTextParseResult,
   validateNodeDefinition,
   validateNodeDefinitionV02,
+  validatePatchDefinitionV02,
   validateProjectDocument,
+  validateProjectDocumentV02,
   validateViewState,
   validateShaderInterface
 } from "./validate.js";

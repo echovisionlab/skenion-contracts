@@ -4,12 +4,13 @@ use skenion_contracts::{
     DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01, GraphDocumentV02,
     GraphPatchOperationV01, GraphPatchV01, MidiClockMessageKindV01, MidiClockMessageV01,
     MidiClockSnapshotV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02, NumberRangeV01,
-    ObjectTextParseResultV01, StringOrStringsV01, analyze_graph_document_v02,
+    ObjectTextParseResultV01, ProjectDocumentV02, StringOrStringsV01, analyze_graph_document_v02,
     apply_graph_patch_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
-    invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01,
-    parse_object_text_v01, plan_audio_clock_bridge_v01, type_label_v01,
-    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
-    validate_node_definition_v02, validate_object_text_parse_result_v01,
+    derive_patch_contract_v02, invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01,
+    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
+    type_label_v01, validate_graph_document_v01, validate_graph_document_v02,
+    validate_node_definition_v01, validate_node_definition_v02,
+    validate_object_text_parse_result_v01, validate_project_document_v02,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -690,4 +691,37 @@ fn validates_public_v02_graph_and_node_contracts() {
     .expect("v0.2 node should parse");
 
     validate_node_definition_v02(&node).expect("v0.2 node should validate");
+}
+
+#[test]
+fn validates_public_v02_project_and_derived_patch_contracts() {
+    let project: ProjectDocumentV02 = serde_json::from_str(include_str!(
+        "../../../fixtures/project/v0.2/valid/n-m-boundary-patch.project.json"
+    ))
+    .expect("v0.2 project should parse");
+
+    validate_project_document_v02(&project).expect("v0.2 project should validate");
+
+    let contract = derive_patch_contract_v02(&project.patch_library[0]);
+    let port_labels: Vec<String> = contract
+        .ports
+        .iter()
+        .map(|port| format!("{}:{:?}", port.port.id, port.port.direction))
+        .collect();
+
+    assert_eq!(
+        port_labels,
+        vec![
+            "left:Input",
+            "right:Input",
+            "sum:Output",
+            "difference:Output"
+        ]
+    );
+    assert_eq!(
+        contract.ports[0].port.description.as_deref(),
+        Some("Left input value.")
+    );
+    assert_eq!(contract.ports[0].boundary_node_id, "left_in");
+    assert_eq!(contract.ports[0].boundary_port_id, "out");
 }

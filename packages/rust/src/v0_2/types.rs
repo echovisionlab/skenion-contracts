@@ -1,6 +1,15 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
+
+use crate::v0_1::ViewStateV01;
+
+fn deserialize_nullable_u64<'de, D>(deserializer: D) -> Result<Option<Option<u64>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<u64>::deserialize(deserializer).map(Some)
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -98,8 +107,12 @@ pub struct PortSpecV02 {
     pub accepts: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min_connections: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_connections: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_nullable_u64",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_connections: Option<Option<u64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub merge_policy: Option<MergePolicyV02>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -241,6 +254,158 @@ pub struct GraphDocumentV02 {
     pub edges: Vec<EdgeSpecV02>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cable_styles: Option<CableStyleRegistryV02>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectMetadataV02 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<String>,
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PatchDefinitionV02 {
+    pub id: String,
+    pub revision: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<ProjectMetadataV02>,
+    pub graph: GraphDocumentV02,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view_state: Option<ViewStateV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PatchContractPortV02 {
+    #[serde(flatten)]
+    pub port: PortSpecV02,
+    pub boundary_node_id: String,
+    pub boundary_port_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PatchContractV02 {
+    pub id: String,
+    pub revision: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<ProjectMetadataV02>,
+    pub ports: Vec<PatchContractPortV02>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectDocumentV02 {
+    pub schema: String,
+    pub schema_version: String,
+    pub id: String,
+    pub revision: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<ProjectMetadataV02>,
+    pub graph: GraphDocumentV02,
+    pub view_state: ViewStateV01,
+    pub patch_library: Vec<PatchDefinitionV02>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tutorial: Option<serde_json::Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub help: Option<serde_json::Map<String, Value>>,
+}
+
+fn string_param(node: &GraphNodeV02, key: &str) -> Option<String> {
+    node.params
+        .get(key)
+        .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+}
+
+fn boundary_port_id(node: &GraphNodeV02, port: &PortSpecV02, eligible_port_count: usize) -> String {
+    string_param(node, "portId")
+        .or_else(|| string_param(node, "externalPortId"))
+        .unwrap_or_else(|| {
+            if eligible_port_count == 1 {
+                node.id.clone()
+            } else {
+                port.id.clone()
+            }
+        })
+}
+
+fn boundary_port_label(node: &GraphNodeV02, port: &PortSpecV02) -> Option<String> {
+    port.label.clone().or_else(|| string_param(node, "label"))
+}
+
+fn derive_boundary_ports(
+    node: &GraphNodeV02,
+    internal_direction: PortDirectionV02,
+    external_direction: PortDirectionV02,
+) -> Vec<PatchContractPortV02> {
+    let ports: Vec<&PortSpecV02> = node
+        .ports
+        .iter()
+        .filter(|port| port.direction == internal_direction)
+        .collect();
+
+    ports
+        .iter()
+        .map(|port| {
+            let mut external_port = (*port).clone();
+            external_port.id = boundary_port_id(node, port, ports.len());
+            external_port.direction = external_direction.clone();
+            external_port.label = boundary_port_label(node, port);
+            PatchContractPortV02 {
+                port: external_port,
+                boundary_node_id: node.id.clone(),
+                boundary_port_id: port.id.clone(),
+            }
+        })
+        .collect()
+}
+
+pub fn derive_patch_contract_v02(patch: &PatchDefinitionV02) -> PatchContractV02 {
+    let mut ports = Vec::new();
+    for node in &patch.graph.nodes {
+        if node.kind == "core.inlet" {
+            ports.extend(derive_boundary_ports(
+                node,
+                PortDirectionV02::Output,
+                PortDirectionV02::Input,
+            ));
+        } else if node.kind == "core.outlet" {
+            ports.extend(derive_boundary_ports(
+                node,
+                PortDirectionV02::Input,
+                PortDirectionV02::Output,
+            ));
+        }
+    }
+
+    PatchContractV02 {
+        id: patch.id.clone(),
+        revision: patch.revision.clone(),
+        metadata: patch.metadata.clone(),
+        ports,
+    }
+}
+
+pub fn derive_patch_contracts_v02(project: &ProjectDocumentV02) -> Vec<PatchContractV02> {
+    project
+        .patch_library
+        .iter()
+        .map(derive_patch_contract_v02)
+        .collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]

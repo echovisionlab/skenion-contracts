@@ -1015,6 +1015,47 @@ export interface GraphDocumentV02 {
   cableStyles?: CableStyleRegistryV02;
 }
 
+export interface ProjectMetadataV02 {
+  title?: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface PatchDefinitionV02 {
+  id: string;
+  revision: string;
+  metadata?: ProjectMetadataV02;
+  graph: GraphDocumentV02;
+  viewState?: ViewStateV01;
+}
+
+export interface PatchContractPortV02 extends PortSpecV02 {
+  boundaryNodeId: string;
+  boundaryPortId: string;
+}
+
+export interface PatchContractV02 {
+  id: string;
+  revision: string;
+  metadata?: ProjectMetadataV02;
+  ports: PatchContractPortV02[];
+}
+
+export interface ProjectDocumentV02 {
+  schema: "skenion.project";
+  schemaVersion: "0.2.0";
+  id: string;
+  revision: string;
+  metadata?: ProjectMetadataV02;
+  graph: GraphDocumentV02;
+  viewState: ViewStateV01;
+  patchLibrary: PatchDefinitionV02[];
+  tutorial?: Record<string, unknown>;
+  help?: Record<string, unknown>;
+}
+
 export interface GraphValidationDiagnosticV02 {
   severity: "error" | "warning";
   code: string;
