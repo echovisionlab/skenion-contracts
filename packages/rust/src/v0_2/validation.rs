@@ -11,8 +11,9 @@ use super::{
     GraphValidationResultV02, MergePolicyV02, NodeDefinitionManifestV02, PasteGraphFragmentRequest,
     PasteGraphFragmentResponse, PatchDefinitionV02, PortDirectionV02, PortSpecV02,
     ProjectDocumentV02, RuntimeConnectionProfile, RuntimeConnectionProfileMode, RuntimeHistory,
-    RuntimeHistoryEntry, RuntimeOperationEnvelope, RuntimeOwnershipMode, RuntimeSessionEvent,
-    RuntimeSessionInfoResponse, RuntimeSessionSnapshot, derive_patch_contract_v02,
+    RuntimeHistoryEntry, RuntimeMutationRequest, RuntimeOperationEnvelope, RuntimeOwnershipMode,
+    RuntimeSessionEvent, RuntimeSessionInfoResponse, RuntimeSessionSnapshot,
+    derive_patch_contract_v02,
 };
 use crate::v0_1::ViewStateV01;
 
@@ -1119,6 +1120,11 @@ fn runtime_session_snapshot_errors(snapshot: &RuntimeSessionSnapshot) -> Vec<Val
             "snapshot diagnostics must include non-empty message",
         ));
     }
+    if snapshot.plan.as_ref().is_some_and(|plan| !plan.is_object()) {
+        errors.push(ValidationErrorV02::new(
+            "snapshot plan must be an object or null",
+        ));
+    }
     errors
 }
 
@@ -1172,6 +1178,45 @@ fn runtime_history_entry_errors(
         )));
     }
     if entry.client_id.as_ref().is_some_and(String::is_empty) {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} clientId must not be empty"
+        )));
+    }
+    errors.extend(runtime_mutation_request_errors(
+        &entry.mutation,
+        &format!("{label} mutation"),
+    ));
+    errors.extend(runtime_mutation_request_errors(
+        &entry.inverse_mutation,
+        &format!("{label} inverseMutation"),
+    ));
+    errors
+}
+
+fn runtime_mutation_request_errors(
+    mutation: &RuntimeMutationRequest,
+    label: &str,
+) -> Vec<ValidationErrorV02> {
+    let mut errors = Vec::new();
+    if mutation
+        .graph_patch
+        .as_ref()
+        .is_some_and(|patch| !patch.is_object())
+    {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} graphPatch must be an object"
+        )));
+    }
+    if mutation
+        .view_patch
+        .as_ref()
+        .is_some_and(|patch| !patch.is_object())
+    {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} viewPatch must be an object"
+        )));
+    }
+    if mutation.client_id.as_ref().is_some_and(String::is_empty) {
         errors.push(ValidationErrorV02::new(format!(
             "{label} clientId must not be empty"
         )));
@@ -2354,14 +2399,15 @@ mod tests {
         invalid_event.snapshot.diagnostics.push(json!({
             "severity": "warning"
         }));
+        invalid_event.snapshot.plan = Some(json!("opaque-plan"));
         invalid_event.history.schema = "wrong".to_owned();
         invalid_event.history.schema_version = "9.9.9".to_owned();
         let invalid_entry: RuntimeHistoryEntry = serde_json::from_value(json!({
             "id": "",
             "sequence": 0,
             "kind": "apply",
-            "mutation": {},
-            "inverseMutation": {},
+            "mutation": { "graphPatch": [], "clientId": "" },
+            "inverseMutation": { "viewPatch": [], "clientId": "" },
             "subjectEventId": "",
             "clientId": "",
             "createdAt": ""
@@ -2386,6 +2432,7 @@ mod tests {
         assert!(event_error.contains("sequence must be at least 1"));
         assert!(event_error.contains("createdAt must not be empty"));
         assert!(event_error.contains("snapshot diagnostics must include non-empty message"));
+        assert!(event_error.contains("snapshot plan must be an object or null"));
         assert!(event_error.contains("expected history schema skenion.runtime.history"));
         assert!(event_error.contains("expected history schemaVersion 0.1.0"));
         assert!(event_error.contains("history entry id must not be empty"));
@@ -2393,7 +2440,15 @@ mod tests {
         assert!(event_error.contains("history entry createdAt must not be empty"));
         assert!(event_error.contains("history entry subjectEventId must not be empty"));
         assert!(event_error.contains("history entry clientId must not be empty"));
+        assert!(event_error.contains("history entry mutation graphPatch must be an object"));
+        assert!(event_error.contains("history entry mutation clientId must not be empty"));
+        assert!(event_error.contains("history entry inverseMutation viewPatch must be an object"));
+        assert!(event_error.contains("history entry inverseMutation clientId must not be empty"));
         assert!(event_error.contains("mutation id must not be empty"));
+        assert!(event_error.contains("mutation mutation graphPatch must be an object"));
+        assert!(event_error.contains("mutation mutation clientId must not be empty"));
+        assert!(event_error.contains("mutation inverseMutation viewPatch must be an object"));
+        assert!(event_error.contains("mutation inverseMutation clientId must not be empty"));
         assert!(event_error.contains("replay cursor must not be empty"));
         assert!(event_error.contains("replay previousCursor must not be empty"));
         assert!(event_error.contains("replay gap sequences must be at least 1"));

@@ -164,7 +164,9 @@ test("validates runtime session profile and replay fixtures", async () => {
     "fixtures/runtime-session/v0/invalid/missing-replay.session-event.json",
     "fixtures/runtime-session/v0/invalid/empty-replay-cursor.session-event.json",
     "fixtures/runtime-session/v0/invalid/replay-additional-property.session-event.json",
-    "fixtures/runtime-session/v0/invalid/replay-gap-order.session-event.json"
+    "fixtures/runtime-session/v0/invalid/replay-gap-order.session-event.json",
+    "fixtures/runtime-session/v0/invalid/scalar-plan.session-event.json",
+    "fixtures/runtime-session/v0/invalid/nested-mutation-client-id.session-event.json"
   ];
 
   for (const fixture of invalidEventFixtures) {

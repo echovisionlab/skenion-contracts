@@ -1,0 +1,47 @@
+{
+  "schema": "skenion.runtime.session.event",
+  "schemaVersion": "0.1.0",
+  "id": "event-nested-client",
+  "sessionId": "session-a",
+  "sequence": 11,
+  "sessionRevision": 9,
+  "kind": "mutate",
+  "snapshot": {
+    "sessionRevision": 9,
+    "viewRevision": 2,
+    "controlRevision": 4,
+    "project": null,
+    "diagnostics": [],
+    "plan": null
+  },
+  "history": {
+    "schema": "skenion.runtime.history",
+    "schemaVersion": "0.1.0",
+    "entries": [
+      {
+        "id": "history-9",
+        "sequence": 9,
+        "kind": "apply",
+        "mutation": {
+          "clientId": ""
+        },
+        "inverseMutation": {},
+        "clientId": "studio-main",
+        "createdAt": "2026-06-22T00:00:03.000Z"
+      }
+    ],
+    "canUndo": true,
+    "canRedo": false,
+    "undoDepth": 1,
+    "redoDepth": 0
+  },
+  "replay": {
+    "cursor": "11",
+    "previousCursor": "10",
+    "replayed": true,
+    "gap": null,
+    "overflow": false
+  },
+  "diagnostics": [],
+  "createdAt": "2026-06-22T00:00:04.000Z"
+}
