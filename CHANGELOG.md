@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.37.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.36.0...skenion-contracts-v0.37.0) (2026-06-21)
+
+
+### Features
+
+* **runtime-wire:** add session profile contracts ([#107](https://github.com/echovisionlab/skenion-contracts/issues/107)) ([faf8193](https://github.com/echovisionlab/skenion-contracts/commit/faf8193550d6149400a9172f00ca78d82c092ebc))
+
 ## [0.36.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.35.0...skenion-contracts-v0.36.0) (2026-06-21)
 
 
