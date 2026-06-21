@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.33.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.32.0...skenion-contracts-v0.33.0) (2026-06-21)
+
+
+### Features
+
+* **contracts:** model runtime IO and object surfaces ([36e13b6](https://github.com/echovisionlab/skenion-contracts/commit/36e13b65f2e08e153fb71cf24784489b47e3b7b0))
+
 ## [0.32.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.31.0...skenion-contracts-v0.32.0) (2026-06-20)
 
 
