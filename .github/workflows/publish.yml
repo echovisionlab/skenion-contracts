@@ -4,11 +4,14 @@ on:
   release:
     types:
       - published
-  workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
+
+concurrency:
+  group: publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -34,6 +37,13 @@ jobs:
         run: |
           version="$(node -p "require('./packages/ts/package.json').version")"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
+      - run: |
+          expected="skenion-contracts-v${{ steps.package.outputs.version }}"
+          actual="${{ github.event.release.tag_name }}"
+          if [[ "${actual}" != "${expected}" ]]; then
+            echo "release tag ${actual} does not match package version ${expected}" >&2
+            exit 1
+          fi
       - id: registry
         run: |
           if npm view "@skenion/contracts@${{ steps.package.outputs.version }}" version >/dev/null 2>&1; then
@@ -63,6 +73,13 @@ jobs:
         run: |
           version="$(cargo metadata --manifest-path packages/rust/Cargo.toml --no-deps --format-version 1 | python3 -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
+      - run: |
+          expected="skenion-contracts-v${{ steps.package.outputs.version }}"
+          actual="${{ github.event.release.tag_name }}"
+          if [[ "${actual}" != "${expected}" ]]; then
+            echo "release tag ${actual} does not match crate version ${expected}" >&2
+            exit 1
+          fi
       - id: registry
         run: |
           if curl --fail --silent "https://crates.io/api/v1/crates/skenion-contracts/${{ steps.package.outputs.version }}" >/dev/null; then
