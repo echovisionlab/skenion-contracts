@@ -1,0 +1,21 @@
+{
+  "schema": "skenion.runtime.collaboration.presence",
+  "schemaVersion": "0.1.0",
+  "sessionId": "session-collab-a",
+  "participantId": "participant-a",
+  "presence": {
+    "state": "active",
+    "displayName": "Ada",
+    "color": "#4b7bec",
+    "capabilities": ["graph-edit", "presence", "selection"],
+    "connectionId": "conn-a",
+    "clientWindowId": "window-a"
+  },
+  "authSubject": {
+    "kind": "user",
+    "subjectId": "user-123",
+    "issuer": "local-dev"
+  },
+  "updatedAt": "2026-06-22T00:00:02.000Z",
+  "expiresAt": "2026-06-22T00:00:17.000Z"
+}

@@ -18,6 +18,7 @@ import {
   objectTextParseResultV01Schema,
   projectV01Schema,
   projectV02Schema,
+  runtimeCollaborationV0Schema,
   runtimeOperationV0Schema,
   runtimeSessionV0Schema,
   shaderInterfaceV01Schema,
@@ -52,6 +53,15 @@ import type {
   PortSpecV02,
   ProjectDocumentV01,
   ProjectDocumentV02,
+  RuntimeCollaborationAuthSubject,
+  RuntimeCollaborationCausalMetadata,
+  RuntimeCollaborationEventEnvelope,
+  RuntimeCollaborationOperationBatch,
+  RuntimeCollaborationOperationEnvelope,
+  RuntimeCollaborationOperationPayload,
+  RuntimeCollaborationOperationResult,
+  RuntimeCollaborationPresenceEnvelope,
+  RuntimeCollaborationSelectionEnvelope,
   RuntimeOperationEnvelope,
   RuntimeSessionEvent,
   RuntimeSessionInfoResponse,
@@ -79,6 +89,37 @@ const graphV01Validator = ajv.compile(graphV01Schema);
 const graphV02Validator = ajv.compile(graphV02Schema);
 const graphFragmentV02Validator = ajv.compile(graphFragmentV02Schema);
 const runtimeOperationV0Validator = ajv.compile(runtimeOperationV0Schema);
+ajv.compile(runtimeCollaborationV0Schema);
+const runtimeCollaborationOperationEnvelopeValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationEnvelope"
+});
+const runtimeCollaborationOperationBatchValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatch"
+});
+const runtimeCollaborationOperationResultValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-result.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationResult"
+});
+const runtimeCollaborationPresenceEnvelopeValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-presence.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationPresenceEnvelope"
+});
+const runtimeCollaborationSelectionEnvelopeValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-selection.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationSelectionEnvelope"
+});
+const runtimeCollaborationEventEnvelopeValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-event.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationEventEnvelope"
+});
 const runtimeSessionInfoResponseValidator = ajv.compile(runtimeSessionV0Schema);
 const runtimeSessionEventValidator = ajv.compile({
   $schema: "https://json-schema.org/draft/2020-12/schema",
@@ -982,6 +1023,120 @@ export function validateRuntimeOperationEnvelope(
   return { ok: true, value: envelope };
 }
 
+export function validateRuntimeCollaborationOperationEnvelope(
+  document: unknown
+): ValidationResult<RuntimeCollaborationOperationEnvelope> {
+  if (!runtimeCollaborationOperationEnvelopeValidator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeCollaborationOperationEnvelopeValidator.errors as ErrorObject[])
+    };
+  }
+
+  const envelope = document as RuntimeCollaborationOperationEnvelope;
+  const errors = validateRuntimeCollaborationOperationEnvelopeSemantics(envelope);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: envelope };
+}
+
+export function validateRuntimeCollaborationOperationBatch(
+  document: unknown
+): ValidationResult<RuntimeCollaborationOperationBatch> {
+  if (!runtimeCollaborationOperationBatchValidator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeCollaborationOperationBatchValidator.errors as ErrorObject[])
+    };
+  }
+
+  const batch = document as RuntimeCollaborationOperationBatch;
+  const errors = validateRuntimeCollaborationOperationBatchSemantics(batch);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: batch };
+}
+
+export function validateRuntimeCollaborationOperationResult(
+  document: unknown
+): ValidationResult<RuntimeCollaborationOperationResult> {
+  if (!runtimeCollaborationOperationResultValidator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeCollaborationOperationResultValidator.errors as ErrorObject[])
+    };
+  }
+
+  const result = document as RuntimeCollaborationOperationResult;
+  const errors = validateRuntimeCollaborationOperationResultSemantics(result);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: result };
+}
+
+export function validateRuntimeCollaborationPresenceEnvelope(
+  document: unknown
+): ValidationResult<RuntimeCollaborationPresenceEnvelope> {
+  if (!runtimeCollaborationPresenceEnvelopeValidator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeCollaborationPresenceEnvelopeValidator.errors as ErrorObject[])
+    };
+  }
+
+  const presence = document as RuntimeCollaborationPresenceEnvelope;
+  const errors = validateRuntimeCollaborationPresenceSemantics(presence);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: presence };
+}
+
+export function validateRuntimeCollaborationSelectionEnvelope(
+  document: unknown
+): ValidationResult<RuntimeCollaborationSelectionEnvelope> {
+  if (!runtimeCollaborationSelectionEnvelopeValidator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeCollaborationSelectionEnvelopeValidator.errors as ErrorObject[])
+    };
+  }
+
+  const selection = document as RuntimeCollaborationSelectionEnvelope;
+  const errors = validateRuntimeCollaborationSelectionSemantics(selection);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: selection };
+}
+
+export function validateRuntimeCollaborationEventEnvelope(
+  document: unknown
+): ValidationResult<RuntimeCollaborationEventEnvelope> {
+  if (!runtimeCollaborationEventEnvelopeValidator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeCollaborationEventEnvelopeValidator.errors as ErrorObject[])
+    };
+  }
+
+  const event = document as RuntimeCollaborationEventEnvelope;
+  const errors = validateRuntimeCollaborationEventSemantics(event);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: event };
+}
+
 export function validateRuntimeSessionInfoResponse(
   document: unknown
 ): ValidationResult<RuntimeSessionInfoResponse> {
@@ -1016,6 +1171,170 @@ function validateRuntimeSessionEventSemantics(event: RuntimeSessionEvent): strin
   if (event.sessionRevision !== event.snapshot.sessionRevision) {
     errors.push("sessionRevision must match snapshot.sessionRevision");
   }
+  return errors;
+}
+
+function validateRuntimeCollaborationCausality(
+  causal: RuntimeCollaborationCausalMetadata,
+  label: string
+): string[] {
+  const vectorValues = Object.values(causal.vector);
+  const maxVector = vectorValues.reduce((max, value) => Math.max(max, value), 0);
+  return causal.baseSequence < maxVector
+    ? [`${label} baseSequence must be greater than or equal to the causal vector maximum`]
+    : [];
+}
+
+function validateRuntimeCollaborationAuthSeparation(
+  participantId: string,
+  authSubject: RuntimeCollaborationAuthSubject | undefined,
+  label: string
+): string[] {
+  if (authSubject?.subjectId && authSubject.subjectId === participantId) {
+    return [`${label} participantId must not mirror auth subject id`];
+  }
+  return [];
+}
+
+function validateRuntimeCollaborationExpiry(
+  updatedAt: string,
+  expiresAt: string,
+  label: string
+): string[] {
+  return expiresAt <= updatedAt
+    ? [`${label} expiresAt must be later than updatedAt`]
+    : [];
+}
+
+function validateRuntimeCollaborationPayload(
+  payload: RuntimeCollaborationOperationPayload,
+  participantId: string
+): string[] {
+  if (payload.kind === "changeSet") {
+    return duplicateErrors(
+      payload.changes.map((change) => change.changeId),
+      "collaboration change id"
+    );
+  }
+
+  if (payload.kind === "pasteGraphFragment") {
+    const requestResult = validatePasteGraphFragmentRequest(payload.request);
+    return requestResult.ok ? [] : requestResult.errors;
+  }
+
+  if (payload.scope.participantId !== participantId) {
+    return ["undoRedo scope participantId must match operation participantId"];
+  }
+  return [];
+}
+
+function validateRuntimeCollaborationOperationEnvelopeSemantics(
+  envelope: RuntimeCollaborationOperationEnvelope
+): string[] {
+  const errors = [
+    ...validateRuntimeCollaborationCausality(envelope.causal, "operation causal"),
+    ...validateRuntimeCollaborationAuthSeparation(
+      envelope.participantId,
+      envelope.authSubject,
+      "operation"
+    ),
+    ...validateRuntimeCollaborationPayload(envelope.payload, envelope.participantId)
+  ];
+
+  if (!(envelope.participantId in envelope.causal.vector)) {
+    errors.push("operation causal vector must include participantId");
+  }
+
+  return errors;
+}
+
+function validateRuntimeCollaborationOperationBatchSemantics(
+  batch: RuntimeCollaborationOperationBatch
+): string[] {
+  const errors = duplicateErrors(
+    batch.operations.map((operation) => operation.idempotencyKey),
+    "collaboration idempotency key"
+  );
+
+  for (const operation of batch.operations) {
+    if (operation.sessionId !== batch.sessionId) {
+      errors.push("collaboration batch operation sessionId must match batch sessionId");
+    }
+    errors.push(...validateRuntimeCollaborationOperationEnvelopeSemantics(operation));
+  }
+
+  return errors;
+}
+
+function validateRuntimeCollaborationOperationResultSemantics(
+  result: RuntimeCollaborationOperationResult
+): string[] {
+  const errors = validateRuntimeCollaborationCausality(result.causal, "operation result causal");
+  const hasAck = result.ack !== undefined;
+  const hasNack = result.nack !== undefined;
+  const hasRebase = result.rebase !== undefined;
+
+  if ((result.status === "accepted" || result.status === "rebased") && !hasAck) {
+    errors.push("accepted or rebased collaboration result must include ack");
+  }
+  if (result.status === "accepted" && (hasNack || hasRebase)) {
+    errors.push("accepted collaboration result must not include nack or rebase");
+  }
+  if ((result.status === "duplicate" || result.status === "rejected") && !hasNack) {
+    errors.push("duplicate or rejected collaboration result must include nack");
+  }
+  if (result.status === "duplicate" && result.nack?.reason !== "duplicate-idempotency-key") {
+    errors.push("duplicate collaboration result nack reason must be duplicate-idempotency-key");
+  }
+  if (result.status === "rebased" && !hasRebase) {
+    errors.push("rebased collaboration result must include rebase metadata");
+  }
+  if (result.rebase) {
+    errors.push(
+      ...validateRuntimeCollaborationCausality(result.rebase.from, "rebase from causal"),
+      ...validateRuntimeCollaborationCausality(result.rebase.to, "rebase to causal")
+    );
+  }
+
+  return errors;
+}
+
+function validateRuntimeCollaborationPresenceSemantics(
+  presence: RuntimeCollaborationPresenceEnvelope
+): string[] {
+  return [
+    ...validateRuntimeCollaborationAuthSeparation(
+      presence.participantId,
+      presence.authSubject,
+      "presence"
+    ),
+    ...validateRuntimeCollaborationExpiry(
+      presence.updatedAt,
+      presence.expiresAt,
+      "presence"
+    )
+  ];
+}
+
+function validateRuntimeCollaborationSelectionSemantics(
+  selection: RuntimeCollaborationSelectionEnvelope
+): string[] {
+  return validateRuntimeCollaborationExpiry(
+    selection.updatedAt,
+    selection.expiresAt,
+    "selection"
+  );
+}
+
+function validateRuntimeCollaborationEventSemantics(
+  event: RuntimeCollaborationEventEnvelope
+): string[] {
+  const errors = validateRuntimeCollaborationCausality(event.causal, "collaboration event causal");
+
+  if (event.replay.gap && event.replay.gap.expectedSequence >= event.replay.gap.actualSequence) {
+    errors.push("collaboration event replay gap expectedSequence must be less than actualSequence");
+  }
+
   return errors;
 }
 

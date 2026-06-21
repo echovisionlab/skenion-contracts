@@ -10,9 +10,14 @@ use super::{
     GraphFragmentV02, GraphFragmentValidationResultV02, GraphValidationDiagnosticV02,
     GraphValidationResultV02, MergePolicyV02, NodeDefinitionManifestV02, PasteGraphFragmentRequest,
     PasteGraphFragmentResponse, PatchDefinitionV02, PortDirectionV02, PortSpecV02,
-    ProjectDocumentV02, RuntimeConnectionProfile, RuntimeConnectionProfileMode, RuntimeHistory,
-    RuntimeHistoryEntry, RuntimeMutationRequest, RuntimeOperationEnvelope, RuntimeOwnershipMode,
-    RuntimeSessionEvent, RuntimeSessionInfoResponse, RuntimeSessionSnapshot,
+    ProjectDocumentV02, RuntimeCollaborationAuthSubject, RuntimeCollaborationCausalMetadata,
+    RuntimeCollaborationChange, RuntimeCollaborationEventEnvelope, RuntimeCollaborationNackReason,
+    RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationEnvelope,
+    RuntimeCollaborationOperationPayload, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationOperationStatus, RuntimeCollaborationPresenceEnvelope,
+    RuntimeCollaborationSelectionEnvelope, RuntimeConnectionProfile, RuntimeConnectionProfileMode,
+    RuntimeHistory, RuntimeHistoryEntry, RuntimeMutationRequest, RuntimeOperationEnvelope,
+    RuntimeOwnershipMode, RuntimeSessionEvent, RuntimeSessionInfoResponse, RuntimeSessionSnapshot,
     RuntimeViewPatchOperation, derive_patch_contract_v02,
 };
 use crate::v0_1::{
@@ -843,6 +848,370 @@ pub fn validate_paste_graph_fragment_request(
         .and_then(|options| options.outside_endpoint_policy)
         .unwrap_or_default();
     validate_graph_fragment_with_policy(&request.fragment, outside_endpoint_policy)
+}
+
+fn validate_runtime_collaboration_causality(
+    causal: &RuntimeCollaborationCausalMetadata,
+    label: &str,
+) -> Vec<ValidationErrorV02> {
+    let max_vector = causal.vector.values().copied().max().unwrap_or(0);
+    if causal.base_sequence < max_vector {
+        vec![ValidationErrorV02::new(format!(
+            "{label} baseSequence must be greater than or equal to the causal vector maximum"
+        ))]
+    } else {
+        Vec::new()
+    }
+}
+
+fn validate_runtime_collaboration_auth_separation(
+    participant_id: &str,
+    auth_subject: Option<&RuntimeCollaborationAuthSubject>,
+    label: &str,
+) -> Vec<ValidationErrorV02> {
+    if auth_subject
+        .and_then(|subject| subject.subject_id.as_deref())
+        .is_some_and(|subject_id| subject_id == participant_id)
+    {
+        vec![ValidationErrorV02::new(format!(
+            "{label} participantId must not mirror auth subject id"
+        ))]
+    } else {
+        Vec::new()
+    }
+}
+
+fn validate_runtime_collaboration_expiry(
+    updated_at: &str,
+    expires_at: &str,
+    label: &str,
+) -> Vec<ValidationErrorV02> {
+    if expires_at <= updated_at {
+        vec![ValidationErrorV02::new(format!(
+            "{label} expiresAt must be later than updatedAt"
+        ))]
+    } else {
+        Vec::new()
+    }
+}
+
+fn runtime_collaboration_change_id(change: &RuntimeCollaborationChange) -> &str {
+    match change {
+        RuntimeCollaborationChange::NodeAdd { change_id, .. }
+        | RuntimeCollaborationChange::NodeMove { change_id, .. }
+        | RuntimeCollaborationChange::NodeDelete { change_id, .. }
+        | RuntimeCollaborationChange::EdgeConnect { change_id, .. }
+        | RuntimeCollaborationChange::EdgeDisconnect { change_id, .. } => change_id,
+    }
+}
+
+fn validate_runtime_collaboration_payload(
+    payload: &RuntimeCollaborationOperationPayload,
+    participant_id: &str,
+) -> Vec<ValidationErrorV02> {
+    match payload {
+        RuntimeCollaborationOperationPayload::ChangeSet { changes, .. } => duplicate_errors(
+            changes.iter().map(runtime_collaboration_change_id),
+            "collaboration change id",
+        ),
+        RuntimeCollaborationOperationPayload::PasteGraphFragment { request, .. } => {
+            match validate_paste_graph_fragment_request(request) {
+                Ok(_) => Vec::new(),
+                Err(report) => report.errors().to_vec(),
+            }
+        }
+        RuntimeCollaborationOperationPayload::UndoRedo { scope, .. } => {
+            if scope.participant_id != participant_id {
+                vec![ValidationErrorV02::new(
+                    "undoRedo scope participantId must match operation participantId",
+                )]
+            } else {
+                Vec::new()
+            }
+        }
+    }
+}
+
+fn validate_runtime_collaboration_operation_envelope_semantics(
+    envelope: &RuntimeCollaborationOperationEnvelope,
+) -> Vec<ValidationErrorV02> {
+    let mut errors = Vec::new();
+    errors.extend(validate_runtime_collaboration_causality(
+        &envelope.causal,
+        "operation causal",
+    ));
+    errors.extend(validate_runtime_collaboration_auth_separation(
+        &envelope.participant_id,
+        envelope.auth_subject.as_ref(),
+        "operation",
+    ));
+    errors.extend(validate_runtime_collaboration_payload(
+        &envelope.payload,
+        &envelope.participant_id,
+    ));
+
+    if !envelope
+        .causal
+        .vector
+        .contains_key(&envelope.participant_id)
+    {
+        errors.push(ValidationErrorV02::new(
+            "operation causal vector must include participantId",
+        ));
+    }
+
+    errors
+}
+
+pub fn validate_runtime_collaboration_operation_envelope(
+    envelope: &RuntimeCollaborationOperationEnvelope,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if envelope.schema != "skenion.runtime.collaboration.operation" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.collaboration.operation, found {}",
+            envelope.schema
+        )));
+    }
+    if envelope.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            envelope.schema_version
+        )));
+    }
+    errors.extend(validate_runtime_collaboration_operation_envelope_semantics(
+        envelope,
+    ));
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
+pub fn validate_runtime_collaboration_operation_batch(
+    batch: &RuntimeCollaborationOperationBatch,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if batch.schema != "skenion.runtime.collaboration.operation-batch" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.collaboration.operation-batch, found {}",
+            batch.schema
+        )));
+    }
+    if batch.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            batch.schema_version
+        )));
+    }
+    errors.extend(duplicate_errors(
+        batch
+            .operations
+            .iter()
+            .map(|operation| operation.idempotency_key.as_str()),
+        "collaboration idempotency key",
+    ));
+    for operation in &batch.operations {
+        if operation.session_id != batch.session_id {
+            errors.push(ValidationErrorV02::new(
+                "collaboration batch operation sessionId must match batch sessionId",
+            ));
+        }
+        errors.extend(validate_runtime_collaboration_operation_envelope_semantics(
+            operation,
+        ));
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
+pub fn validate_runtime_collaboration_operation_result(
+    result: &RuntimeCollaborationOperationResult,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if result.schema != "skenion.runtime.collaboration.operation-result" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.collaboration.operation-result, found {}",
+            result.schema
+        )));
+    }
+    if result.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            result.schema_version
+        )));
+    }
+
+    errors.extend(validate_runtime_collaboration_causality(
+        &result.causal,
+        "operation result causal",
+    ));
+
+    let has_ack = result.ack.is_some();
+    let has_nack = result.nack.is_some();
+    let has_rebase = result.rebase.is_some();
+    if matches!(
+        result.status,
+        RuntimeCollaborationOperationStatus::Accepted
+            | RuntimeCollaborationOperationStatus::Rebased
+    ) && !has_ack
+    {
+        errors.push(ValidationErrorV02::new(
+            "accepted or rebased collaboration result must include ack",
+        ));
+    }
+    if result.status == RuntimeCollaborationOperationStatus::Accepted && (has_nack || has_rebase) {
+        errors.push(ValidationErrorV02::new(
+            "accepted collaboration result must not include nack or rebase",
+        ));
+    }
+    if matches!(
+        result.status,
+        RuntimeCollaborationOperationStatus::Duplicate
+            | RuntimeCollaborationOperationStatus::Rejected
+    ) && !has_nack
+    {
+        errors.push(ValidationErrorV02::new(
+            "duplicate or rejected collaboration result must include nack",
+        ));
+    }
+    if result.status == RuntimeCollaborationOperationStatus::Duplicate
+        && !result.nack.as_ref().is_some_and(|nack| {
+            nack.reason == RuntimeCollaborationNackReason::DuplicateIdempotencyKey
+        })
+    {
+        errors.push(ValidationErrorV02::new(
+            "duplicate collaboration result nack reason must be duplicate-idempotency-key",
+        ));
+    }
+    if result.status == RuntimeCollaborationOperationStatus::Rebased && !has_rebase {
+        errors.push(ValidationErrorV02::new(
+            "rebased collaboration result must include rebase metadata",
+        ));
+    }
+    if let Some(rebase) = &result.rebase {
+        errors.extend(validate_runtime_collaboration_causality(
+            &rebase.from,
+            "rebase from causal",
+        ));
+        errors.extend(validate_runtime_collaboration_causality(
+            &rebase.to,
+            "rebase to causal",
+        ));
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
+pub fn validate_runtime_collaboration_presence_envelope(
+    presence: &RuntimeCollaborationPresenceEnvelope,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if presence.schema != "skenion.runtime.collaboration.presence" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.collaboration.presence, found {}",
+            presence.schema
+        )));
+    }
+    if presence.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            presence.schema_version
+        )));
+    }
+    errors.extend(validate_runtime_collaboration_auth_separation(
+        &presence.participant_id,
+        presence.auth_subject.as_ref(),
+        "presence",
+    ));
+    errors.extend(validate_runtime_collaboration_expiry(
+        &presence.updated_at,
+        &presence.expires_at,
+        "presence",
+    ));
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
+pub fn validate_runtime_collaboration_selection_envelope(
+    selection: &RuntimeCollaborationSelectionEnvelope,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if selection.schema != "skenion.runtime.collaboration.selection" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.collaboration.selection, found {}",
+            selection.schema
+        )));
+    }
+    if selection.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            selection.schema_version
+        )));
+    }
+    errors.extend(validate_runtime_collaboration_expiry(
+        &selection.updated_at,
+        &selection.expires_at,
+        "selection",
+    ));
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
+pub fn validate_runtime_collaboration_event_envelope(
+    event: &RuntimeCollaborationEventEnvelope,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if event.schema != "skenion.runtime.collaboration.event" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.collaboration.event, found {}",
+            event.schema
+        )));
+    }
+    if event.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            event.schema_version
+        )));
+    }
+    errors.extend(validate_runtime_collaboration_causality(
+        &event.causal,
+        "collaboration event causal",
+    ));
+    if event
+        .replay
+        .gap
+        .as_ref()
+        .is_some_and(|gap| gap.expected_sequence >= gap.actual_sequence)
+    {
+        errors.push(ValidationErrorV02::new(
+            "collaboration event replay gap expectedSequence must be less than actualSequence",
+        ));
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
 }
 
 pub fn validate_runtime_operation_envelope(

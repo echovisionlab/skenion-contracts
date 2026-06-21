@@ -496,6 +496,472 @@ pub struct PasteGraphFragmentResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationCausalMetadata {
+    pub base_revision: String,
+    pub base_sequence: u64,
+    pub vector: BTreeMap<String, u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub observed_operation_ids: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeCollaborationAuthSubjectKind {
+    Anonymous,
+    User,
+    Service,
+    Deferred,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationAuthSubject {
+    pub kind: RuntimeCollaborationAuthSubjectKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub issuer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationParticipant {
+    pub participant_id: String,
+    pub session_id: String,
+    pub joined_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_subject: Option<RuntimeCollaborationAuthSubject>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationCanvasPosition {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(tag = "op", rename_all_fields = "camelCase")]
+pub enum RuntimeCollaborationChange {
+    #[serde(rename = "node.add")]
+    NodeAdd {
+        change_id: String,
+        node: Box<GraphNodeV02>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        view: Option<RuntimeCollaborationCanvasPosition>,
+    },
+    #[serde(rename = "node.move")]
+    NodeMove {
+        change_id: String,
+        node_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        from: Option<RuntimeCollaborationCanvasPosition>,
+        to: RuntimeCollaborationCanvasPosition,
+    },
+    #[serde(rename = "node.delete")]
+    NodeDelete {
+        change_id: String,
+        node_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        tombstone_id: Option<String>,
+    },
+    #[serde(rename = "edge.connect")]
+    EdgeConnect {
+        change_id: String,
+        edge: Box<EdgeSpecV02>,
+    },
+    #[serde(rename = "edge.disconnect")]
+    EdgeDisconnect { change_id: String, edge_id: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeCollaborationUndoRedoAction {
+    Undo,
+    Redo,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeCollaborationUndoScopeKind {
+    Participant,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationUndoScope {
+    pub kind: RuntimeCollaborationUndoScopeKind,
+    pub participant_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum RuntimeCollaborationOperationPayload {
+    ChangeSet {
+        target: GraphTargetRef,
+        changes: Vec<RuntimeCollaborationChange>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        undo_group_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+    },
+    PasteGraphFragment {
+        request: Box<PasteGraphFragmentRequest>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        undo_group_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+    },
+    UndoRedo {
+        action: RuntimeCollaborationUndoRedoAction,
+        scope: RuntimeCollaborationUndoScope,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        subject_operation_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        undo_group_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        max_operations: Option<u64>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationOperationEnvelope {
+    pub schema: String,
+    pub schema_version: String,
+    pub operation_id: String,
+    pub session_id: String,
+    pub participant_id: String,
+    pub idempotency_key: String,
+    pub causal: RuntimeCollaborationCausalMetadata,
+    pub payload: RuntimeCollaborationOperationPayload,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_subject: Option<RuntimeCollaborationAuthSubject>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correlation_id: Option<String>,
+    pub submitted_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationOperationBatch {
+    pub schema: String,
+    pub schema_version: String,
+    pub session_id: String,
+    pub operations: Vec<RuntimeCollaborationOperationEnvelope>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub submitted_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationOperationDiagnostic {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub participant_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idempotency_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actual_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_sequence: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actual_sequence: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationServerClock {
+    pub revision: String,
+    pub sequence: u64,
+    pub vector: BTreeMap<String, u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationAck {
+    pub sequence: u64,
+    pub revision: String,
+    pub server_clock: RuntimeCollaborationServerClock,
+    pub applied_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RuntimeCollaborationNackReason {
+    BaseRevisionMismatch,
+    CausalityGap,
+    DuplicateIdempotencyKey,
+    InvalidOperation,
+    ParticipantExpired,
+    UnsupportedOperation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationNack {
+    pub reason: RuntimeCollaborationNackReason,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub retryable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostics: Option<Vec<RuntimeCollaborationOperationDiagnostic>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationConflict {
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub change_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edge_ids: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationRebase {
+    pub from: RuntimeCollaborationCausalMetadata,
+    pub to: RuntimeCollaborationCausalMetadata,
+    pub strategy: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transformed_payload: Option<RuntimeCollaborationOperationPayload>,
+    pub conflicts: Vec<RuntimeCollaborationConflict>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeCollaborationOperationStatus {
+    Accepted,
+    Duplicate,
+    Rejected,
+    Rebased,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationOperationResult {
+    pub schema: String,
+    pub schema_version: String,
+    pub session_id: String,
+    pub operation_id: String,
+    pub participant_id: String,
+    pub idempotency_key: String,
+    pub status: RuntimeCollaborationOperationStatus,
+    pub causal: RuntimeCollaborationCausalMetadata,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ack: Option<RuntimeCollaborationAck>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nack: Option<RuntimeCollaborationNack>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rebase: Option<RuntimeCollaborationRebase>,
+    pub diagnostics: Vec<RuntimeCollaborationOperationDiagnostic>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeCollaborationPresenceState {
+    Joined,
+    Active,
+    Idle,
+    Away,
+    Left,
+    Expired,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationPresence {
+    pub state: RuntimeCollaborationPresenceState,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub connection_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_window_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationPresenceEnvelope {
+    pub schema: String,
+    pub schema_version: String,
+    pub session_id: String,
+    pub participant_id: String,
+    pub presence: RuntimeCollaborationPresence,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_subject: Option<RuntimeCollaborationAuthSubject>,
+    pub updated_at: String,
+    pub expires_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationPortEndpoint {
+    pub node_id: String,
+    pub port_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationTextPosition {
+    pub node_id: String,
+    pub field: String,
+    pub offset: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "lowercase",
+    rename_all_fields = "camelCase"
+)]
+pub enum RuntimeCollaborationSelectionRange {
+    Nodes {
+        node_ids: Vec<String>,
+    },
+    Edges {
+        edge_ids: Vec<String>,
+    },
+    Ports {
+        endpoints: Vec<RuntimeCollaborationPortEndpoint>,
+    },
+    Text {
+        anchor: RuntimeCollaborationTextPosition,
+        focus: RuntimeCollaborationTextPosition,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationSelection {
+    pub ranges: Vec<RuntimeCollaborationSelectionRange>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active_range_index: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "lowercase",
+    rename_all_fields = "camelCase"
+)]
+pub enum RuntimeCollaborationCursor {
+    Canvas {
+        x: f64,
+        y: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        client_window_id: Option<String>,
+    },
+    Node {
+        node_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        port_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        client_window_id: Option<String>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationSelectionEnvelope {
+    pub schema: String,
+    pub schema_version: String,
+    pub session_id: String,
+    pub participant_id: String,
+    pub target: GraphTargetRef,
+    pub selection: RuntimeCollaborationSelection,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<RuntimeCollaborationCursor>,
+    pub updated_at: String,
+    pub expires_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum RuntimeCollaborationEventPayload {
+    OperationResult {
+        result: Box<RuntimeCollaborationOperationResult>,
+    },
+    Presence {
+        presence: Box<RuntimeCollaborationPresenceEnvelope>,
+    },
+    Selection {
+        selection: Box<RuntimeCollaborationSelectionEnvelope>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCollaborationEventEnvelope {
+    pub schema: String,
+    pub schema_version: String,
+    pub event_id: String,
+    pub session_id: String,
+    pub sequence: u64,
+    pub causal: RuntimeCollaborationCausalMetadata,
+    pub kind: String,
+    pub payload: RuntimeCollaborationEventPayload,
+    pub replay: RuntimeEventReplayMetadata,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum RuntimeSessionEventKind {
     Snapshot,

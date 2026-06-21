@@ -1,0 +1,26 @@
+{
+  "schema": "skenion.runtime.collaboration.operation",
+  "schemaVersion": "0.1.0",
+  "operationId": "op-invalid-window-id",
+  "sessionId": "session-collab-a",
+  "participantId": "participant-a",
+  "idempotencyKey": "session-collab-a:participant-a:invalid-window",
+  "causal": {
+    "baseRevision": "root-rev-6",
+    "baseSequence": 6,
+    "vector": {
+      "participant-a": 4
+    }
+  },
+  "payload": {
+    "kind": "undoRedo",
+    "action": "undo",
+    "scope": {
+      "kind": "participant",
+      "participantId": "participant-a"
+    },
+    "maxOperations": 1
+  },
+  "clientWindowId": "window-a",
+  "submittedAt": "2026-06-22T00:01:05.000Z"
+}

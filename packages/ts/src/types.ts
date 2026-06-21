@@ -1227,6 +1227,309 @@ export interface PasteGraphFragmentResponse {
   diagnostics: RuntimeOperationDiagnostic[];
 }
 
+export interface RuntimeCollaborationCausalMetadata {
+  baseRevision: string;
+  baseSequence: number;
+  vector: Record<string, number>;
+  observedOperationIds?: string[];
+}
+
+export type RuntimeCollaborationAuthSubjectKind = "anonymous" | "user" | "service" | "deferred";
+
+export interface RuntimeCollaborationAuthSubject {
+  kind: RuntimeCollaborationAuthSubjectKind;
+  subjectId?: string;
+  issuer?: string;
+  displayName?: string;
+}
+
+export interface RuntimeCollaborationParticipant {
+  participantId: string;
+  sessionId: string;
+  joinedAt: string;
+  displayName?: string;
+  color?: string;
+  capabilities?: string[];
+  authSubject?: RuntimeCollaborationAuthSubject;
+}
+
+export interface RuntimeCollaborationCanvasPosition {
+  x: number;
+  y: number;
+}
+
+export type RuntimeCollaborationChange =
+  | {
+      op: "node.add";
+      changeId: string;
+      node: GraphNodeV02;
+      view?: RuntimeCollaborationCanvasPosition;
+    }
+  | {
+      op: "node.move";
+      changeId: string;
+      nodeId: string;
+      from?: RuntimeCollaborationCanvasPosition;
+      to: RuntimeCollaborationCanvasPosition;
+    }
+  | {
+      op: "node.delete";
+      changeId: string;
+      nodeId: string;
+      tombstoneId?: string;
+    }
+  | {
+      op: "edge.connect";
+      changeId: string;
+      edge: EdgeSpecV02;
+    }
+  | {
+      op: "edge.disconnect";
+      changeId: string;
+      edgeId: string;
+    };
+
+export interface RuntimeCollaborationChangeSetPayload {
+  kind: "changeSet";
+  target: GraphTargetRef;
+  changes: RuntimeCollaborationChange[];
+  undoGroupId?: string;
+  description?: string;
+}
+
+export interface RuntimeCollaborationPasteGraphFragmentPayload {
+  kind: "pasteGraphFragment";
+  request: PasteGraphFragmentRequest;
+  undoGroupId?: string;
+  description?: string;
+}
+
+export type RuntimeCollaborationUndoRedoAction = "undo" | "redo";
+
+export interface RuntimeCollaborationUndoScope {
+  kind: "participant";
+  participantId: string;
+}
+
+export interface RuntimeCollaborationUndoRedoPayload {
+  kind: "undoRedo";
+  action: RuntimeCollaborationUndoRedoAction;
+  scope: RuntimeCollaborationUndoScope;
+  subjectOperationId?: string;
+  undoGroupId?: string;
+  maxOperations?: number;
+}
+
+export type RuntimeCollaborationOperationPayload =
+  | RuntimeCollaborationChangeSetPayload
+  | RuntimeCollaborationPasteGraphFragmentPayload
+  | RuntimeCollaborationUndoRedoPayload;
+
+export interface RuntimeCollaborationOperationEnvelope {
+  schema: "skenion.runtime.collaboration.operation";
+  schemaVersion: "0.1.0";
+  operationId: string;
+  sessionId: string;
+  participantId: string;
+  idempotencyKey: string;
+  causal: RuntimeCollaborationCausalMetadata;
+  payload: RuntimeCollaborationOperationPayload;
+  authSubject?: RuntimeCollaborationAuthSubject;
+  correlationId?: string;
+  submittedAt: string;
+}
+
+export interface RuntimeCollaborationOperationBatch {
+  schema: "skenion.runtime.collaboration.operation-batch";
+  schemaVersion: "0.1.0";
+  sessionId: string;
+  operations: RuntimeCollaborationOperationEnvelope[];
+  submittedAt?: string;
+}
+
+export type RuntimeCollaborationOperationDiagnosticSeverity = "error" | "warning" | "info";
+
+export type RuntimeCollaborationOperationDiagnosticCode =
+  | "base-revision-mismatch"
+  | "causality-gap"
+  | "duplicate-idempotency-key"
+  | "idempotent-replay"
+  | "invalid-operation"
+  | "operation-rebased"
+  | "participant-expired"
+  | "participant-mismatch"
+  | "presence-expired"
+  | "selection-expired"
+  | "unsupported-operation";
+
+export interface RuntimeCollaborationOperationDiagnostic {
+  severity: RuntimeCollaborationOperationDiagnosticSeverity;
+  code: RuntimeCollaborationOperationDiagnosticCode;
+  message: string;
+  path?: string;
+  participantId?: string;
+  operationId?: string;
+  idempotencyKey?: string;
+  expectedRevision?: string;
+  actualRevision?: string;
+  expectedSequence?: number;
+  actualSequence?: number;
+}
+
+export interface RuntimeCollaborationServerClock {
+  revision: string;
+  sequence: number;
+  vector: Record<string, number>;
+}
+
+export interface RuntimeCollaborationAck {
+  sequence: number;
+  revision: string;
+  serverClock: RuntimeCollaborationServerClock;
+  appliedAt: string;
+}
+
+export type RuntimeCollaborationNackReason =
+  | "base-revision-mismatch"
+  | "causality-gap"
+  | "duplicate-idempotency-key"
+  | "invalid-operation"
+  | "participant-expired"
+  | "unsupported-operation";
+
+export interface RuntimeCollaborationNack {
+  reason: RuntimeCollaborationNackReason;
+  retryable?: boolean;
+  diagnostics?: RuntimeCollaborationOperationDiagnostic[];
+}
+
+export interface RuntimeCollaborationConflict {
+  code: string;
+  message: string;
+  changeIds?: string[];
+  nodeIds?: string[];
+  edgeIds?: string[];
+}
+
+export interface RuntimeCollaborationRebase {
+  from: RuntimeCollaborationCausalMetadata;
+  to: RuntimeCollaborationCausalMetadata;
+  strategy: "ot-transform" | "crdt-merge" | "server-reject";
+  transformedPayload?: RuntimeCollaborationOperationPayload;
+  conflicts: RuntimeCollaborationConflict[];
+}
+
+export type RuntimeCollaborationOperationStatus =
+  | "accepted"
+  | "duplicate"
+  | "rejected"
+  | "rebased";
+
+export interface RuntimeCollaborationOperationResult {
+  schema: "skenion.runtime.collaboration.operation-result";
+  schemaVersion: "0.1.0";
+  sessionId: string;
+  operationId: string;
+  participantId: string;
+  idempotencyKey: string;
+  status: RuntimeCollaborationOperationStatus;
+  causal: RuntimeCollaborationCausalMetadata;
+  ack?: RuntimeCollaborationAck;
+  nack?: RuntimeCollaborationNack;
+  rebase?: RuntimeCollaborationRebase;
+  diagnostics: RuntimeCollaborationOperationDiagnostic[];
+  createdAt: string;
+}
+
+export type RuntimeCollaborationPresenceState =
+  | "joined"
+  | "active"
+  | "idle"
+  | "away"
+  | "left"
+  | "expired";
+
+export interface RuntimeCollaborationPresence {
+  state: RuntimeCollaborationPresenceState;
+  displayName?: string;
+  color?: string;
+  statusText?: string;
+  capabilities?: string[];
+  connectionId?: string;
+  clientWindowId?: string;
+}
+
+export interface RuntimeCollaborationPresenceEnvelope {
+  schema: "skenion.runtime.collaboration.presence";
+  schemaVersion: "0.1.0";
+  sessionId: string;
+  participantId: string;
+  presence: RuntimeCollaborationPresence;
+  authSubject?: RuntimeCollaborationAuthSubject;
+  updatedAt: string;
+  expiresAt: string;
+}
+
+export interface RuntimeCollaborationPortEndpoint {
+  nodeId: string;
+  portId: string;
+}
+
+export interface RuntimeCollaborationTextPosition {
+  nodeId: string;
+  field: string;
+  offset: number;
+}
+
+export type RuntimeCollaborationSelectionRange =
+  | { kind: "nodes"; nodeIds: string[] }
+  | { kind: "edges"; edgeIds: string[] }
+  | { kind: "ports"; endpoints: RuntimeCollaborationPortEndpoint[] }
+  | {
+      kind: "text";
+      anchor: RuntimeCollaborationTextPosition;
+      focus: RuntimeCollaborationTextPosition;
+    };
+
+export interface RuntimeCollaborationSelection {
+  ranges: RuntimeCollaborationSelectionRange[];
+  activeRangeIndex?: number;
+}
+
+export type RuntimeCollaborationCursor =
+  | { kind: "canvas"; x: number; y: number; clientWindowId?: string }
+  | { kind: "node"; nodeId: string; portId?: string; clientWindowId?: string };
+
+export interface RuntimeCollaborationSelectionEnvelope {
+  schema: "skenion.runtime.collaboration.selection";
+  schemaVersion: "0.1.0";
+  sessionId: string;
+  participantId: string;
+  target: GraphTargetRef;
+  selection: RuntimeCollaborationSelection;
+  cursor?: RuntimeCollaborationCursor;
+  updatedAt: string;
+  expiresAt: string;
+}
+
+export type RuntimeCollaborationEventPayload =
+  | { kind: "operationResult"; result: RuntimeCollaborationOperationResult }
+  | { kind: "presence"; presence: RuntimeCollaborationPresenceEnvelope }
+  | { kind: "selection"; selection: RuntimeCollaborationSelectionEnvelope };
+
+export interface RuntimeCollaborationEventEnvelope {
+  schema: "skenion.runtime.collaboration.event";
+  schemaVersion: "0.1.0";
+  eventId: string;
+  sessionId: string;
+  sequence: number;
+  causal: RuntimeCollaborationCausalMetadata;
+  kind: "operation-result" | "presence" | "selection";
+  payload: RuntimeCollaborationEventPayload;
+  replay: RuntimeEventReplayMetadata;
+  createdAt: string;
+}
+
 export interface ProjectMetadataV02 {
   title?: string;
   description?: string;

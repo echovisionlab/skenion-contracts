@@ -1,0 +1,13 @@
+{
+  "schema": "skenion.runtime.collaboration.presence",
+  "schemaVersion": "0.1.0",
+  "sessionId": "session-collab-a",
+  "participantId": "participant-a",
+  "presence": {
+    "state": "active",
+    "connectionId": "conn-a",
+    "clientWindowId": "window-a"
+  },
+  "updatedAt": "2026-06-22T00:02:00.000Z",
+  "expiresAt": "2026-06-22T00:01:59.000Z"
+}

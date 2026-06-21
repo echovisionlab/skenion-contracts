@@ -4,13 +4,20 @@ use skenion_contracts::{
     GraphDocumentV01, GraphDocumentV02, GraphFragmentOutsideEndpointPolicyV02, GraphFragmentV02,
     GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01, NodeDefinitionManifestV01,
     NodeDefinitionManifestV02, ObjectTextParseResultV01, PasteGraphFragmentResponse,
-    ProjectDocumentV02, RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionInfoResponse,
+    ProjectDocumentV02, RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
+    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationPresenceEnvelope, RuntimeCollaborationSelectionEnvelope,
+    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionInfoResponse,
     analyze_graph_fragment_v02, parse_object_text_v01, validate_graph_document_v01,
     validate_graph_document_v02, validate_graph_fragment_v02, validate_node_definition_v01,
     validate_node_definition_v02, validate_object_text_parse_result_v01,
     validate_paste_graph_fragment_response, validate_project_document_v02,
-    validate_runtime_operation_envelope, validate_runtime_session_event,
-    validate_runtime_session_info_response,
+    validate_runtime_collaboration_event_envelope, validate_runtime_collaboration_operation_batch,
+    validate_runtime_collaboration_operation_envelope,
+    validate_runtime_collaboration_operation_result,
+    validate_runtime_collaboration_presence_envelope,
+    validate_runtime_collaboration_selection_envelope, validate_runtime_operation_envelope,
+    validate_runtime_session_event, validate_runtime_session_info_response,
 };
 
 fn collect_json_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
@@ -126,6 +133,131 @@ fn validates_runtime_operation_fixtures() {
                     .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
                 validate_paste_graph_fragment_response(&response)
                     .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            other => panic!("{} has unexpected schema {other:?}", file.display()),
+        }
+    }
+}
+
+#[test]
+fn validates_runtime_collaboration_fixtures() {
+    for file in fixture_files("../../fixtures/runtime-collaboration/v0/valid") {
+        let document = fs::read(&file).expect("fixture should be readable");
+        let value: serde_json::Value =
+            serde_json::from_slice(&document).expect("runtime collaboration fixture should parse");
+        match value.get("schema").and_then(serde_json::Value::as_str) {
+            Some("skenion.runtime.collaboration.operation") => {
+                let operation: RuntimeCollaborationOperationEnvelope =
+                    serde_json::from_value(value)
+                        .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_runtime_collaboration_operation_envelope(&operation)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            Some("skenion.runtime.collaboration.operation-batch") => {
+                let batch: RuntimeCollaborationOperationBatch = serde_json::from_value(value)
+                    .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_runtime_collaboration_operation_batch(&batch)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            Some("skenion.runtime.collaboration.operation-result") => {
+                let result: RuntimeCollaborationOperationResult = serde_json::from_value(value)
+                    .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_runtime_collaboration_operation_result(&result)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            Some("skenion.runtime.collaboration.presence") => {
+                let presence: RuntimeCollaborationPresenceEnvelope = serde_json::from_value(value)
+                    .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_runtime_collaboration_presence_envelope(&presence)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            Some("skenion.runtime.collaboration.selection") => {
+                let selection: RuntimeCollaborationSelectionEnvelope =
+                    serde_json::from_value(value)
+                        .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_runtime_collaboration_selection_envelope(&selection)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            Some("skenion.runtime.collaboration.event") => {
+                let event: RuntimeCollaborationEventEnvelope = serde_json::from_value(value)
+                    .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_runtime_collaboration_event_envelope(&event)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            other => panic!("{} has unexpected schema {other:?}", file.display()),
+        }
+    }
+
+    for file in fixture_files("../../fixtures/runtime-collaboration/v0/invalid") {
+        let document = fs::read(&file).expect("fixture should be readable");
+        let value: serde_json::Value = serde_json::from_slice(&document)
+            .expect("invalid runtime collaboration fixture should parse as json");
+        match value.get("schema").and_then(serde_json::Value::as_str) {
+            Some("skenion.runtime.collaboration.operation") => {
+                if let Ok(operation) =
+                    serde_json::from_value::<RuntimeCollaborationOperationEnvelope>(value)
+                {
+                    assert!(
+                        validate_runtime_collaboration_operation_envelope(&operation).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
+            }
+            Some("skenion.runtime.collaboration.operation-batch") => {
+                if let Ok(batch) =
+                    serde_json::from_value::<RuntimeCollaborationOperationBatch>(value)
+                {
+                    assert!(
+                        validate_runtime_collaboration_operation_batch(&batch).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
+            }
+            Some("skenion.runtime.collaboration.operation-result") => {
+                if let Ok(result) =
+                    serde_json::from_value::<RuntimeCollaborationOperationResult>(value)
+                {
+                    assert!(
+                        validate_runtime_collaboration_operation_result(&result).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
+            }
+            Some("skenion.runtime.collaboration.presence") => {
+                if let Ok(presence) =
+                    serde_json::from_value::<RuntimeCollaborationPresenceEnvelope>(value)
+                {
+                    assert!(
+                        validate_runtime_collaboration_presence_envelope(&presence).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
+            }
+            Some("skenion.runtime.collaboration.selection") => {
+                if let Ok(selection) =
+                    serde_json::from_value::<RuntimeCollaborationSelectionEnvelope>(value)
+                {
+                    assert!(
+                        validate_runtime_collaboration_selection_envelope(&selection).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
+            }
+            Some("skenion.runtime.collaboration.event") => {
+                if let Ok(event) =
+                    serde_json::from_value::<RuntimeCollaborationEventEnvelope>(value)
+                {
+                    assert!(
+                        validate_runtime_collaboration_event_envelope(&event).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
             }
             other => panic!("{} has unexpected schema {other:?}", file.display()),
         }

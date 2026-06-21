@@ -1,0 +1,39 @@
+{
+  "schema": "skenion.runtime.collaboration.operation-result",
+  "schemaVersion": "0.1.0",
+  "sessionId": "session-collab-a",
+  "operationId": "op-collab-change-1-retry",
+  "participantId": "participant-a",
+  "idempotencyKey": "session-collab-a:participant-a:0001",
+  "status": "duplicate",
+  "causal": {
+    "baseRevision": "root-rev-6",
+    "baseSequence": 6,
+    "vector": {
+      "participant-a": 4,
+      "participant-b": 2
+    }
+  },
+  "nack": {
+    "reason": "duplicate-idempotency-key",
+    "retryable": false,
+    "diagnostics": [
+      {
+        "severity": "info",
+        "code": "duplicate-idempotency-key",
+        "message": "idempotency key was already applied in this session",
+        "idempotencyKey": "session-collab-a:participant-a:0001",
+        "operationId": "op-collab-change-1"
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "info",
+      "code": "idempotent-replay",
+      "message": "duplicate submit was not applied again",
+      "idempotencyKey": "session-collab-a:participant-a:0001"
+    }
+  ],
+  "createdAt": "2026-06-22T00:00:00.075Z"
+}

@@ -5,17 +5,17 @@ use skenion_contracts::{
     GraphFragmentOutsideEndpointPolicyV02, GraphFragmentV02, GraphPatchOperationV01, GraphPatchV01,
     MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01,
     NodeDefinitionManifestV02, NumberRangeV01, ObjectTextParseResultV01, ProjectDocumentV02,
-    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
-    RuntimeSessionInfoResponse, StringOrStringsV01, analyze_graph_document_v02,
-    analyze_graph_fragment_v02, apply_graph_patch_v01, apply_midi_clock_message_v01,
-    compatible_data_types_v01, derive_patch_contract_v02, derive_patch_contracts_v02,
-    invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01,
-    parse_object_text_v01, plan_audio_clock_bridge_v01, type_label_v01,
-    validate_graph_document_v01, validate_graph_document_v02, validate_graph_fragment_v02,
-    validate_node_definition_v01, validate_node_definition_v02,
+    RuntimeCollaborationOperationEnvelope, RuntimeOperationEnvelope, RuntimeSessionEvent,
+    RuntimeSessionEventKind, RuntimeSessionInfoResponse, StringOrStringsV01,
+    analyze_graph_document_v02, analyze_graph_fragment_v02, apply_graph_patch_v01,
+    apply_midi_clock_message_v01, compatible_data_types_v01, derive_patch_contract_v02,
+    derive_patch_contracts_v02, invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01,
+    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
+    type_label_v01, validate_graph_document_v01, validate_graph_document_v02,
+    validate_graph_fragment_v02, validate_node_definition_v01, validate_node_definition_v02,
     validate_object_text_parse_result_v01, validate_project_document_v02,
-    validate_runtime_operation_envelope, validate_runtime_session_event,
-    validate_runtime_session_info_response,
+    validate_runtime_collaboration_operation_envelope, validate_runtime_operation_envelope,
+    validate_runtime_session_event, validate_runtime_session_info_response,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -126,6 +126,37 @@ fn parses_public_graph_fragment_paste_contracts() {
         analyze_graph_fragment_v02(fragment, GraphFragmentOutsideEndpointPolicyV02::Reject);
     assert!(analysis.ok);
     validate_graph_fragment_v02(fragment).expect("fragment should validate");
+}
+
+#[test]
+fn parses_public_collaboration_operation_contract() {
+    let operation: RuntimeCollaborationOperationEnvelope = serde_json::from_str(
+        r#"{
+          "schema": "skenion.runtime.collaboration.operation",
+          "schemaVersion": "0.1.0",
+          "operationId": "op-public-collab",
+          "sessionId": "session-a",
+          "participantId": "participant-a",
+          "idempotencyKey": "session-a:participant-a:1",
+          "causal": {
+            "baseRevision": "root-rev-1",
+            "baseSequence": 1,
+            "vector": { "participant-a": 1 }
+          },
+          "payload": {
+            "kind": "undoRedo",
+            "action": "undo",
+            "scope": { "kind": "participant", "participantId": "participant-a" },
+            "maxOperations": 1
+          },
+          "submittedAt": "2026-06-22T00:00:00.000Z"
+        }"#,
+    )
+    .expect("collaboration operation should parse");
+
+    validate_runtime_collaboration_operation_envelope(&operation)
+        .expect("collaboration operation should validate");
+    assert_eq!(operation.participant_id, "participant-a");
 }
 
 #[test]

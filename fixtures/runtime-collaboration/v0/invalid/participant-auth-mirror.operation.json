@@ -1,0 +1,29 @@
+{
+  "schema": "skenion.runtime.collaboration.operation",
+  "schemaVersion": "0.1.0",
+  "operationId": "op-invalid-auth-mirror",
+  "sessionId": "session-collab-a",
+  "participantId": "user-123",
+  "idempotencyKey": "session-collab-a:user-123:invalid-auth",
+  "causal": {
+    "baseRevision": "root-rev-6",
+    "baseSequence": 6,
+    "vector": {
+      "user-123": 1
+    }
+  },
+  "payload": {
+    "kind": "undoRedo",
+    "action": "undo",
+    "scope": {
+      "kind": "participant",
+      "participantId": "user-123"
+    },
+    "maxOperations": 1
+  },
+  "authSubject": {
+    "kind": "user",
+    "subjectId": "user-123"
+  },
+  "submittedAt": "2026-06-22T00:01:01.000Z"
+}

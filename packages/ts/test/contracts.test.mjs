@@ -30,6 +30,7 @@ import {
   planConversion,
   projectV01Schema,
   projectV02Schema,
+  runtimeCollaborationV0Schema,
   runtimeOperationV0Schema,
   runtimeSessionV0Schema,
   parseObjectTextV01,
@@ -62,6 +63,12 @@ import {
   validatePasteGraphFragmentResponse,
   validateProjectDocument,
   validateProjectDocumentV02,
+  validateRuntimeCollaborationEventEnvelope,
+  validateRuntimeCollaborationOperationBatch,
+  validateRuntimeCollaborationOperationEnvelope,
+  validateRuntimeCollaborationOperationResult,
+  validateRuntimeCollaborationPresenceEnvelope,
+  validateRuntimeCollaborationSelectionEnvelope,
   validateRuntimeOperationEnvelope,
   validateRuntimeSessionEvent,
   validateRuntimeSessionInfoResponse,
@@ -100,6 +107,10 @@ test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(extensionManifestV01Schema.properties.schema.const, "skenion.extension.manifest");
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(runtimeSessionV0Schema.properties.schema.const, "skenion.runtime.session.info");
+  assert.equal(
+    runtimeCollaborationV0Schema.$defs.runtimeCollaborationOperationEnvelope.properties.schema.const,
+    "skenion.runtime.collaboration.operation"
+  );
   assert.equal(controlMessageV01Schema.properties.selector.type, "string");
   assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
     "interface-analysis",
@@ -275,6 +286,12 @@ test("documents runtime IO discovery HTTP API", async () => {
     "RuntimeOperationEnvelope",
     "PasteGraphFragmentRequest",
     "PasteGraphFragmentResponse",
+    "RuntimeCollaborationOperationEnvelope",
+    "RuntimeCollaborationOperationBatch",
+    "RuntimeCollaborationOperationResult",
+    "RuntimeCollaborationPresenceEnvelope",
+    "RuntimeCollaborationSelectionEnvelope",
+    "RuntimeCollaborationEventEnvelope",
     "GraphTargetRef",
     "PatchPath",
     "IdRemapResult",
@@ -1438,6 +1455,212 @@ test("validates session-addressed paste operation contracts", async () => {
   invalidResponse.diagnostics[0].code = "not-a-contract-code";
   assert.equal(validatePasteGraphFragmentResponse(invalidResponse).ok, false);
   assert.equal(isPasteGraphFragmentResponse(invalidResponse), false);
+});
+
+function validateCollaborationDocument(document) {
+  switch (document.schema) {
+    case "skenion.runtime.collaboration.operation":
+      return validateRuntimeCollaborationOperationEnvelope(document);
+    case "skenion.runtime.collaboration.operation-batch":
+      return validateRuntimeCollaborationOperationBatch(document);
+    case "skenion.runtime.collaboration.operation-result":
+      return validateRuntimeCollaborationOperationResult(document);
+    case "skenion.runtime.collaboration.presence":
+      return validateRuntimeCollaborationPresenceEnvelope(document);
+    case "skenion.runtime.collaboration.selection":
+      return validateRuntimeCollaborationSelectionEnvelope(document);
+    case "skenion.runtime.collaboration.event":
+      return validateRuntimeCollaborationEventEnvelope(document);
+    default:
+      return { ok: false, errors: [`unexpected collaboration schema ${document.schema}`] };
+  }
+}
+
+test("validates realtime collaboration operation, presence, causality, and undo contracts", async () => {
+  assert.equal(
+    runtimeCollaborationV0Schema.$defs.runtimeCollaborationOperationEnvelope.required.includes("idempotencyKey"),
+    true
+  );
+  assert.equal(
+    runtimeCollaborationV0Schema.$defs.runtimeCollaborationPresenceEnvelope.properties.presence.$ref,
+    "#/$defs/runtimeCollaborationPresence"
+  );
+
+  for (const fixture of await fixtureFiles("fixtures/runtime-collaboration/v0/valid")) {
+    const document = await readJson(fixture);
+    const result = validateCollaborationDocument(document);
+
+    assert.equal(result.ok, true, fixture);
+  }
+
+  for (const fixture of await fixtureFiles("fixtures/runtime-collaboration/v0/invalid")) {
+    const document = await readJson(fixture);
+    const result = validateCollaborationDocument(document);
+
+    assert.equal(result.ok, false, fixture);
+  }
+
+  const changeSet = await readJson("fixtures/runtime-collaboration/v0/valid/change-set.operation.json");
+  assert.equal(validateRuntimeCollaborationOperationEnvelope(changeSet).ok, true);
+  assert.deepEqual(changeSet.payload.changes.map((change) => change.op), [
+    "node.add",
+    "node.move",
+    "edge.connect",
+    "node.delete"
+  ]);
+  assert.notEqual(changeSet.participantId, changeSet.authSubject.subjectId);
+  assert.equal("clientWindowId" in changeSet, false);
+
+  const invalidPastePayload = await readJson("fixtures/runtime-collaboration/v0/valid/paste-fragment.operation.json");
+  invalidPastePayload.payload.request.fragment = await readJson(
+    "fixtures/graph-fragment/v0.2/invalid/outside-endpoint.fragment.json"
+  );
+  const invalidPastePayloadResult = validateRuntimeCollaborationOperationEnvelope(invalidPastePayload);
+  assert.equal(invalidPastePayloadResult.ok, false);
+  assert.match(invalidPastePayloadResult.errors.join("\n"), /fragment-edge-outside-selection/);
+
+  const duplicateResult = await readJson(
+    "fixtures/runtime-collaboration/v0/valid/duplicate-idempotency.operation-result.json"
+  );
+  assert.equal(validateRuntimeCollaborationOperationResult(duplicateResult).ok, true);
+  assert.equal(duplicateResult.status, "duplicate");
+  assert.equal(duplicateResult.nack.reason, "duplicate-idempotency-key");
+
+  const duplicateBatch = await readJson(
+    "fixtures/runtime-collaboration/v0/invalid/duplicate-idempotency.operation-batch.json"
+  );
+  const duplicateBatchResult = validateRuntimeCollaborationOperationBatch(duplicateBatch);
+  assert.equal(duplicateBatchResult.ok, false);
+  assert.match(duplicateBatchResult.errors.join("\n"), /duplicate collaboration idempotency key/);
+
+  const invalidBatchShape = structuredClone(duplicateBatch);
+  delete invalidBatchShape.operations;
+  assert.equal(validateRuntimeCollaborationOperationBatch(invalidBatchShape).ok, false);
+
+  const sessionMismatchBatch = await readJson("fixtures/runtime-collaboration/v0/valid/operation-batch.json");
+  sessionMismatchBatch.operations[0].sessionId = "session-other";
+  const sessionMismatchBatchResult = validateRuntimeCollaborationOperationBatch(sessionMismatchBatch);
+  assert.equal(sessionMismatchBatchResult.ok, false);
+  assert.match(sessionMismatchBatchResult.errors.join("\n"), /sessionId must match/);
+
+  const staleCausal = await readJson("fixtures/runtime-collaboration/v0/invalid/stale-causal-vector.operation.json");
+  const staleCausalResult = validateRuntimeCollaborationOperationEnvelope(staleCausal);
+  assert.equal(staleCausalResult.ok, false);
+  assert.match(staleCausalResult.errors.join("\n"), /causal vector maximum/);
+
+  const missingParticipantVector = await readJson("fixtures/runtime-collaboration/v0/valid/participant-undo.operation.json");
+  missingParticipantVector.causal.vector = { "participant-b": 2 };
+  const missingParticipantVectorResult = validateRuntimeCollaborationOperationEnvelope(missingParticipantVector);
+  assert.equal(missingParticipantVectorResult.ok, false);
+  assert.match(missingParticipantVectorResult.errors.join("\n"), /must include participantId/);
+
+  const presence = await readJson("fixtures/runtime-collaboration/v0/valid/active.presence.json");
+  assert.equal(validateRuntimeCollaborationPresenceEnvelope(presence).ok, true);
+  assert.equal(presence.updatedAt < presence.expiresAt, true);
+  assert.notEqual(presence.participantId, presence.authSubject.subjectId);
+
+  const deferredAuthPresence = structuredClone(presence);
+  deferredAuthPresence.authSubject = { kind: "deferred" };
+  assert.equal(validateRuntimeCollaborationPresenceEnvelope(deferredAuthPresence).ok, true);
+
+  const invalidPresenceShape = structuredClone(presence);
+  delete invalidPresenceShape.expiresAt;
+  assert.equal(validateRuntimeCollaborationPresenceEnvelope(invalidPresenceShape).ok, false);
+
+  const selection = await readJson("fixtures/runtime-collaboration/v0/valid/remote-selection.selection.json");
+  assert.equal(validateRuntimeCollaborationSelectionEnvelope(selection).ok, true);
+  assert.deepEqual(selection.selection.ranges.map((range) => range.kind), ["nodes", "edges", "text"]);
+  assert.deepEqual(selection.selection.ranges[2].anchor, {
+    nodeId: "message-1",
+    field: "text",
+    offset: 0
+  });
+  assert.equal(selection.cursor.clientWindowId, "window-b");
+
+  const undo = await readJson("fixtures/runtime-collaboration/v0/valid/participant-undo.operation.json");
+  assert.equal(validateRuntimeCollaborationOperationEnvelope(undo).ok, true);
+  assert.equal(undo.payload.scope.kind, "participant");
+  assert.equal(undo.payload.scope.participantId, undo.participantId);
+
+  const undoMismatch = await readJson("fixtures/runtime-collaboration/v0/invalid/undo-scope-mismatch.operation.json");
+  const undoMismatchResult = validateRuntimeCollaborationOperationEnvelope(undoMismatch);
+  assert.equal(undoMismatchResult.ok, false);
+  assert.match(undoMismatchResult.errors.join("\n"), /scope participantId/);
+
+  const rebase = await readJson("fixtures/runtime-collaboration/v0/valid/rebased.operation-result.json");
+  assert.equal(validateRuntimeCollaborationOperationResult(rebase).ok, true);
+  assert.equal(rebase.status, "rebased");
+  assert.equal(rebase.rebase.strategy, "ot-transform");
+  assert.equal(rebase.rebase.transformedPayload.kind, "changeSet");
+
+  const extraWindow = await readJson("fixtures/runtime-collaboration/v0/invalid/extra-client-window.operation.json");
+  const extraWindowResult = validateRuntimeCollaborationOperationEnvelope(extraWindow);
+  assert.equal(extraWindowResult.ok, false);
+  assert.match(extraWindowResult.errors.join("\n"), /must NOT have additional properties/);
+
+  const missingRanges = await readJson("fixtures/runtime-collaboration/v0/invalid/selection-missing-ranges.selection.json");
+  const missingRangesResult = validateRuntimeCollaborationSelectionEnvelope(missingRanges);
+  assert.equal(missingRangesResult.ok, false);
+  assert.match(missingRangesResult.errors.join("\n"), /ranges/);
+
+  const expiredSelection = structuredClone(selection);
+  expiredSelection.expiresAt = "2026-06-22T00:00:02.000Z";
+  const expiredSelectionResult = validateRuntimeCollaborationSelectionEnvelope(expiredSelection);
+  assert.equal(expiredSelectionResult.ok, false);
+  assert.match(expiredSelectionResult.errors.join("\n"), /selection expiresAt/);
+
+  const event = await readJson("fixtures/runtime-collaboration/v0/valid/operation-result.event.json");
+  assert.equal(validateRuntimeCollaborationEventEnvelope(event).ok, true);
+  assert.equal(event.replay.cursor, "6");
+
+  const validGapEvent = structuredClone(event);
+  validGapEvent.replay.gap = {
+    expectedSequence: 4,
+    actualSequence: 6,
+    reason: "unknown"
+  };
+  validGapEvent.replay.replayed = true;
+  assert.equal(validateRuntimeCollaborationEventEnvelope(validGapEvent).ok, true);
+
+  const invalidEventShape = structuredClone(event);
+  delete invalidEventShape.replay;
+  assert.equal(validateRuntimeCollaborationEventEnvelope(invalidEventShape).ok, false);
+
+  const invalidEvent = await readJson("fixtures/runtime-collaboration/v0/invalid/event-replay-gap-order.event.json");
+  const invalidEventResult = validateRuntimeCollaborationEventEnvelope(invalidEvent);
+  assert.equal(invalidEventResult.ok, false);
+  assert.match(invalidEventResult.errors.join("\n"), /replay gap expectedSequence/);
+
+  const invalidResultShape = structuredClone(duplicateResult);
+  delete invalidResultShape.status;
+  assert.equal(validateRuntimeCollaborationOperationResult(invalidResultShape).ok, false);
+
+  const acceptedWithNack = await readJson("fixtures/runtime-collaboration/v0/valid/accepted.operation-result.json");
+  acceptedWithNack.nack = {
+    reason: "invalid-operation"
+  };
+  const acceptedWithNackResult = validateRuntimeCollaborationOperationResult(acceptedWithNack);
+  assert.equal(acceptedWithNackResult.ok, false);
+  assert.match(acceptedWithNackResult.errors.join("\n"), /must not include nack/);
+
+  const rejectedMissingNack = structuredClone(duplicateResult);
+  rejectedMissingNack.status = "rejected";
+  delete rejectedMissingNack.nack;
+  const rejectedMissingNackResult = validateRuntimeCollaborationOperationResult(rejectedMissingNack);
+  assert.equal(rejectedMissingNackResult.ok, false);
+  assert.match(rejectedMissingNackResult.errors.join("\n"), /must include nack/);
+
+  const duplicateWrongReason = structuredClone(duplicateResult);
+  duplicateWrongReason.nack.reason = "invalid-operation";
+  const duplicateWrongReasonResult = validateRuntimeCollaborationOperationResult(duplicateWrongReason);
+  assert.equal(duplicateWrongReasonResult.ok, false);
+  assert.match(duplicateWrongReasonResult.errors.join("\n"), /duplicate-idempotency-key/);
+
+  const rebasedMissingRebase = structuredClone(rebase);
+  delete rebasedMissingRebase.rebase;
+  const rebasedMissingRebaseResult = validateRuntimeCollaborationOperationResult(rebasedMissingRebase);
+  assert.equal(rebasedMissingRebaseResult.ok, false);
+  assert.match(rebasedMissingRebaseResult.errors.join("\n"), /must include rebase metadata/);
 });
 
 test("runtime session events are session-addressed", () => {

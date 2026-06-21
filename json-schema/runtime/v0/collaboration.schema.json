@@ -1,0 +1,984 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json",
+  "title": "Skenion Runtime Collaboration Contracts v0",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/runtimeCollaborationOperationEnvelope"
+    },
+    {
+      "$ref": "#/$defs/runtimeCollaborationOperationBatch"
+    },
+    {
+      "$ref": "#/$defs/runtimeCollaborationOperationResult"
+    },
+    {
+      "$ref": "#/$defs/runtimeCollaborationPresenceEnvelope"
+    },
+    {
+      "$ref": "#/$defs/runtimeCollaborationSelectionEnvelope"
+    },
+    {
+      "$ref": "#/$defs/runtimeCollaborationEventEnvelope"
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stringIdArray": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "causalVector": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "runtimeCollaborationCausalMetadata": {
+      "type": "object",
+      "required": ["baseRevision", "baseSequence", "vector"],
+      "properties": {
+        "baseRevision": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "baseSequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vector": {
+          "$ref": "#/$defs/causalVector"
+        },
+        "observedOperationIds": {
+          "$ref": "#/$defs/stringIdArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationAuthSubject": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["anonymous", "user", "service", "deferred"]
+        },
+        "subjectId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "issuer": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationParticipant": {
+      "type": "object",
+      "required": ["participantId", "sessionId", "joinedAt"],
+      "properties": {
+        "participantId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "joinedAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "uniqueItems": true
+        },
+        "authSubject": {
+          "$ref": "#/$defs/runtimeCollaborationAuthSubject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "canvasPosition": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationChange": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["op", "changeId", "node"],
+          "properties": {
+            "op": {
+              "const": "node.add"
+            },
+            "changeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "node": {
+              "$ref": "https://skenion.dev/schemas/graph/v0.2/graph.schema.json#/$defs/node"
+            },
+            "view": {
+              "$ref": "#/$defs/canvasPosition"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["op", "changeId", "nodeId", "to"],
+          "properties": {
+            "op": {
+              "const": "node.move"
+            },
+            "changeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "nodeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "from": {
+              "$ref": "#/$defs/canvasPosition"
+            },
+            "to": {
+              "$ref": "#/$defs/canvasPosition"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["op", "changeId", "nodeId"],
+          "properties": {
+            "op": {
+              "const": "node.delete"
+            },
+            "changeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "nodeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "tombstoneId": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["op", "changeId", "edge"],
+          "properties": {
+            "op": {
+              "const": "edge.connect"
+            },
+            "changeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "edge": {
+              "$ref": "https://skenion.dev/schemas/graph/v0.2/graph.schema.json#/$defs/edge"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["op", "changeId", "edgeId"],
+          "properties": {
+            "op": {
+              "const": "edge.disconnect"
+            },
+            "changeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "edgeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "runtimeCollaborationChangeSetPayload": {
+      "type": "object",
+      "required": ["kind", "target", "changes"],
+      "properties": {
+        "kind": {
+          "const": "changeSet"
+        },
+        "target": {
+          "$ref": "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/graphTargetRef"
+        },
+        "changes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/runtimeCollaborationChange"
+          }
+        },
+        "undoGroupId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationPasteGraphFragmentPayload": {
+      "type": "object",
+      "required": ["kind", "request"],
+      "properties": {
+        "kind": {
+          "const": "pasteGraphFragment"
+        },
+        "request": {
+          "$ref": "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentRequest"
+        },
+        "undoGroupId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationUndoScope": {
+      "type": "object",
+      "required": ["kind", "participantId"],
+      "properties": {
+        "kind": {
+          "const": "participant"
+        },
+        "participantId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationUndoRedoPayload": {
+      "type": "object",
+      "required": ["kind", "action", "scope"],
+      "properties": {
+        "kind": {
+          "const": "undoRedo"
+        },
+        "action": {
+          "enum": ["undo", "redo"]
+        },
+        "scope": {
+          "$ref": "#/$defs/runtimeCollaborationUndoScope"
+        },
+        "subjectOperationId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "undoGroupId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "maxOperations": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationOperationPayload": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/runtimeCollaborationChangeSetPayload"
+        },
+        {
+          "$ref": "#/$defs/runtimeCollaborationPasteGraphFragmentPayload"
+        },
+        {
+          "$ref": "#/$defs/runtimeCollaborationUndoRedoPayload"
+        }
+      ]
+    },
+    "runtimeCollaborationOperationEnvelope": {
+      "type": "object",
+      "required": [
+        "schema",
+        "schemaVersion",
+        "operationId",
+        "sessionId",
+        "participantId",
+        "idempotencyKey",
+        "causal",
+        "payload",
+        "submittedAt"
+      ],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.collaboration.operation"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "operationId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "participantId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "causal": {
+          "$ref": "#/$defs/runtimeCollaborationCausalMetadata"
+        },
+        "payload": {
+          "$ref": "#/$defs/runtimeCollaborationOperationPayload"
+        },
+        "authSubject": {
+          "$ref": "#/$defs/runtimeCollaborationAuthSubject"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "submittedAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationOperationBatch": {
+      "type": "object",
+      "required": ["schema", "schemaVersion", "sessionId", "operations"],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.collaboration.operation-batch"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/runtimeCollaborationOperationEnvelope"
+          }
+        },
+        "submittedAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationOperationDiagnostic": {
+      "type": "object",
+      "required": ["severity", "code", "message"],
+      "properties": {
+        "severity": {
+          "enum": ["error", "warning", "info"]
+        },
+        "code": {
+          "enum": [
+            "base-revision-mismatch",
+            "causality-gap",
+            "duplicate-idempotency-key",
+            "idempotent-replay",
+            "invalid-operation",
+            "operation-rebased",
+            "participant-expired",
+            "participant-mismatch",
+            "presence-expired",
+            "selection-expired",
+            "unsupported-operation"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "participantId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "operationId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "expectedRevision": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "actualRevision": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "expectedSequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actualSequence": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationServerClock": {
+      "type": "object",
+      "required": ["revision", "sequence", "vector"],
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vector": {
+          "$ref": "#/$defs/causalVector"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationAck": {
+      "type": "object",
+      "required": ["sequence", "revision", "serverClock", "appliedAt"],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revision": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "serverClock": {
+          "$ref": "#/$defs/runtimeCollaborationServerClock"
+        },
+        "appliedAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationNack": {
+      "type": "object",
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "enum": [
+            "base-revision-mismatch",
+            "causality-gap",
+            "duplicate-idempotency-key",
+            "invalid-operation",
+            "participant-expired",
+            "unsupported-operation"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeCollaborationOperationDiagnostic"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationConflict": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "message": {
+          "type": "string"
+        },
+        "changeIds": {
+          "$ref": "#/$defs/stringIdArray"
+        },
+        "nodeIds": {
+          "$ref": "#/$defs/stringIdArray"
+        },
+        "edgeIds": {
+          "$ref": "#/$defs/stringIdArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationRebase": {
+      "type": "object",
+      "required": ["from", "to", "strategy", "conflicts"],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/runtimeCollaborationCausalMetadata"
+        },
+        "to": {
+          "$ref": "#/$defs/runtimeCollaborationCausalMetadata"
+        },
+        "strategy": {
+          "enum": ["ot-transform", "crdt-merge", "server-reject"]
+        },
+        "transformedPayload": {
+          "$ref": "#/$defs/runtimeCollaborationOperationPayload"
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeCollaborationConflict"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationOperationResult": {
+      "type": "object",
+      "required": [
+        "schema",
+        "schemaVersion",
+        "sessionId",
+        "operationId",
+        "participantId",
+        "idempotencyKey",
+        "status",
+        "causal",
+        "diagnostics",
+        "createdAt"
+      ],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.collaboration.operation-result"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "operationId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "participantId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "status": {
+          "enum": ["accepted", "duplicate", "rejected", "rebased"]
+        },
+        "causal": {
+          "$ref": "#/$defs/runtimeCollaborationCausalMetadata"
+        },
+        "ack": {
+          "$ref": "#/$defs/runtimeCollaborationAck"
+        },
+        "nack": {
+          "$ref": "#/$defs/runtimeCollaborationNack"
+        },
+        "rebase": {
+          "$ref": "#/$defs/runtimeCollaborationRebase"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeCollaborationOperationDiagnostic"
+          }
+        },
+        "createdAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationPresenceState": {
+      "enum": ["joined", "active", "idle", "away", "left", "expired"]
+    },
+    "runtimeCollaborationPresence": {
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/runtimeCollaborationPresenceState"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "statusText": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "uniqueItems": true
+        },
+        "connectionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "clientWindowId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationPresenceEnvelope": {
+      "type": "object",
+      "required": [
+        "schema",
+        "schemaVersion",
+        "sessionId",
+        "participantId",
+        "presence",
+        "updatedAt",
+        "expiresAt"
+      ],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.collaboration.presence"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "participantId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "presence": {
+          "$ref": "#/$defs/runtimeCollaborationPresence"
+        },
+        "authSubject": {
+          "$ref": "#/$defs/runtimeCollaborationAuthSubject"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationPortEndpoint": {
+      "type": "object",
+      "required": ["nodeId", "portId"],
+      "properties": {
+        "nodeId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "portId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationTextPosition": {
+      "type": "object",
+      "required": ["nodeId", "field", "offset"],
+      "properties": {
+        "nodeId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "field": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationSelectionRange": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "nodeIds"],
+          "properties": {
+            "kind": {
+              "const": "nodes"
+            },
+            "nodeIds": {
+              "$ref": "#/$defs/stringIdArray"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "edgeIds"],
+          "properties": {
+            "kind": {
+              "const": "edges"
+            },
+            "edgeIds": {
+              "$ref": "#/$defs/stringIdArray"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "endpoints"],
+          "properties": {
+            "kind": {
+              "const": "ports"
+            },
+            "endpoints": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/runtimeCollaborationPortEndpoint"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "anchor", "focus"],
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "anchor": {
+              "$ref": "#/$defs/runtimeCollaborationTextPosition"
+            },
+            "focus": {
+              "$ref": "#/$defs/runtimeCollaborationTextPosition"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "runtimeCollaborationSelection": {
+      "type": "object",
+      "required": ["ranges"],
+      "properties": {
+        "ranges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeCollaborationSelectionRange"
+          }
+        },
+        "activeRangeIndex": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationCursor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "x", "y"],
+          "properties": {
+            "kind": {
+              "const": "canvas"
+            },
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "clientWindowId": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "nodeId"],
+          "properties": {
+            "kind": {
+              "const": "node"
+            },
+            "nodeId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "portId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "clientWindowId": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "runtimeCollaborationSelectionEnvelope": {
+      "type": "object",
+      "required": [
+        "schema",
+        "schemaVersion",
+        "sessionId",
+        "participantId",
+        "target",
+        "selection",
+        "updatedAt",
+        "expiresAt"
+      ],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.collaboration.selection"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "participantId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "target": {
+          "$ref": "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/graphTargetRef"
+        },
+        "selection": {
+          "$ref": "#/$defs/runtimeCollaborationSelection"
+        },
+        "cursor": {
+          "$ref": "#/$defs/runtimeCollaborationCursor"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCollaborationEventPayload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "result"],
+          "properties": {
+            "kind": {
+              "const": "operationResult"
+            },
+            "result": {
+              "$ref": "#/$defs/runtimeCollaborationOperationResult"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "presence"],
+          "properties": {
+            "kind": {
+              "const": "presence"
+            },
+            "presence": {
+              "$ref": "#/$defs/runtimeCollaborationPresenceEnvelope"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "selection"],
+          "properties": {
+            "kind": {
+              "const": "selection"
+            },
+            "selection": {
+              "$ref": "#/$defs/runtimeCollaborationSelectionEnvelope"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "runtimeCollaborationEventEnvelope": {
+      "type": "object",
+      "required": [
+        "schema",
+        "schemaVersion",
+        "eventId",
+        "sessionId",
+        "sequence",
+        "causal",
+        "kind",
+        "payload",
+        "replay",
+        "createdAt"
+      ],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.collaboration.event"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "eventId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "causal": {
+          "$ref": "#/$defs/runtimeCollaborationCausalMetadata"
+        },
+        "kind": {
+          "enum": ["operation-result", "presence", "selection"]
+        },
+        "payload": {
+          "$ref": "#/$defs/runtimeCollaborationEventPayload"
+        },
+        "replay": {
+          "$ref": "https://skenion.dev/schemas/runtime/v0/session.schema.json#/$defs/runtimeEventReplayMetadata"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

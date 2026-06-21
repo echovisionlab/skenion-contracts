@@ -1,0 +1,17 @@
+{
+  "schema": "skenion.runtime.collaboration.selection",
+  "schemaVersion": "0.1.0",
+  "sessionId": "session-collab-a",
+  "participantId": "participant-b",
+  "target": {
+    "path": {
+      "kind": "root"
+    },
+    "baseRevision": "root-rev-7"
+  },
+  "selection": {
+    "activeRangeIndex": 0
+  },
+  "updatedAt": "2026-06-22T00:02:01.000Z",
+  "expiresAt": "2026-06-22T00:02:06.000Z"
+}

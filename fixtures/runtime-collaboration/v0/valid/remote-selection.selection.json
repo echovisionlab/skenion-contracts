@@ -1,0 +1,46 @@
+{
+  "schema": "skenion.runtime.collaboration.selection",
+  "schemaVersion": "0.1.0",
+  "sessionId": "session-collab-a",
+  "participantId": "participant-b",
+  "target": {
+    "path": {
+      "kind": "root"
+    },
+    "baseRevision": "root-rev-7"
+  },
+  "selection": {
+    "ranges": [
+      {
+        "kind": "nodes",
+        "nodeIds": ["source", "gain"]
+      },
+      {
+        "kind": "edges",
+        "edgeIds": ["edge-source-gain"]
+      },
+      {
+        "kind": "text",
+        "anchor": {
+          "nodeId": "message-1",
+          "field": "text",
+          "offset": 0
+        },
+        "focus": {
+          "nodeId": "message-1",
+          "field": "text",
+          "offset": 5
+        }
+      }
+    ],
+    "activeRangeIndex": 2
+  },
+  "cursor": {
+    "kind": "canvas",
+    "x": 512,
+    "y": 256,
+    "clientWindowId": "window-b"
+  },
+  "updatedAt": "2026-06-22T00:00:03.000Z",
+  "expiresAt": "2026-06-22T00:00:08.000Z"
+}

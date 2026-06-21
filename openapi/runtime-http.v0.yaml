@@ -268,15 +268,65 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RuntimeOperationEnvelope"
+              oneOf:
+                - $ref: "#/components/schemas/RuntimeOperationEnvelope"
+                - $ref: "#/components/schemas/RuntimeCollaborationOperationEnvelope"
+                - $ref: "#/components/schemas/RuntimeCollaborationOperationBatch"
       responses:
         "200":
-          description: Operation response for the requested session. pasteGraphFragment returns id remaps, revisions, history entry id, and diagnostics.
+          description: Operation response for the requested session. Collaboration operations return ack/nack/rebase status; pasteGraphFragment returns id remaps, revisions, history entry id, and diagnostics.
           content:
             application/json:
               schema:
                 oneOf:
                   - $ref: "#/components/schemas/PasteGraphFragmentResponse"
+                  - $ref: "#/components/schemas/RuntimeCollaborationOperationResult"
+  /v0/sessions/{sessionId}/collaboration/presence:
+    post:
+      summary: Update participant presence for a Runtime collaboration session.
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuntimeCollaborationPresenceEnvelope"
+      responses:
+        "200":
+          description: Presence update accepted for fan-out through the collaboration event stream.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeCollaborationPresenceEnvelope"
+  /v0/sessions/{sessionId}/collaboration/selection:
+    post:
+      summary: Update remote selection and cursor state for a Runtime collaboration session.
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuntimeCollaborationSelectionEnvelope"
+      responses:
+        "200":
+          description: Selection update accepted for fan-out through the collaboration event stream.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeCollaborationSelectionEnvelope"
   /v0/session/history:
     get:
       summary: Compatibility/default-session alias: return mutation history.
@@ -1195,6 +1245,18 @@ components:
       $ref: "../json-schema/runtime/v0/operation.schema.json#/$defs/runtimeOperationDiagnostic"
     PasteGraphFragmentResponse:
       $ref: "../json-schema/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
+    RuntimeCollaborationOperationEnvelope:
+      $ref: "../json-schema/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationEnvelope"
+    RuntimeCollaborationOperationBatch:
+      $ref: "../json-schema/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatch"
+    RuntimeCollaborationOperationResult:
+      $ref: "../json-schema/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationResult"
+    RuntimeCollaborationPresenceEnvelope:
+      $ref: "../json-schema/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationPresenceEnvelope"
+    RuntimeCollaborationSelectionEnvelope:
+      $ref: "../json-schema/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationSelectionEnvelope"
+    RuntimeCollaborationEventEnvelope:
+      $ref: "../json-schema/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationEventEnvelope"
     RuntimeViewPatch:
       type: object
       required:
