@@ -4,6 +4,11 @@ version = "0.33.0"
 edition = "2024"
 description = "Rust contract types and validators for Skenion"
 license = "Apache-2.0"
+repository = "https://github.com/echovisionlab/skenion-contracts"
+homepage = "https://github.com/echovisionlab/skenion-contracts"
+readme = "README.md"
+keywords = ["skenion", "contracts", "schema", "runtime"]
+categories = ["data-structures", "development-tools"]
 
 [lib]
 name = "skenion_contracts"
