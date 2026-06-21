@@ -1813,6 +1813,198 @@ mod tests {
         .expect("session event should parse")
     }
 
+    fn runtime_session_mutation_event(
+        mutation: serde_json::Value,
+        inverse_mutation: serde_json::Value,
+    ) -> serde_json::Value {
+        json!({
+            "schema": "skenion.runtime.session.event",
+            "schemaVersion": "0.1.0",
+            "id": "event-mutate",
+            "sessionId": "session-a",
+            "sequence": 2,
+            "sessionRevision": 2,
+            "kind": "mutate",
+            "snapshot": { "sessionRevision": 2, "viewRevision": 2, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
+            "history": {
+                "schema": "skenion.runtime.history",
+                "schemaVersion": "0.1.0",
+                "entries": [
+                    {
+                        "id": "history-2",
+                        "sequence": 2,
+                        "kind": "apply",
+                        "mutation": mutation,
+                        "inverseMutation": inverse_mutation,
+                        "clientId": "studio-main",
+                        "createdAt": "2026-06-22T00:00:02.000Z"
+                    }
+                ],
+                "canUndo": true,
+                "canRedo": false,
+                "undoDepth": 1,
+                "redoDepth": 0
+            },
+            "replay": {
+                "cursor": "2",
+                "previousCursor": "1",
+                "replayed": false,
+                "gap": null,
+                "overflow": false
+            },
+            "diagnostics": [],
+            "createdAt": "2026-06-22T00:00:02.000Z"
+        })
+    }
+
+    fn runtime_graph_patch_mutation(extra_operation_key: bool) -> serde_json::Value {
+        let mut operation = json!({
+            "op": "setNodeParam",
+            "nodeId": "value_1",
+            "key": "value",
+            "value": 0.5
+        });
+        if extra_operation_key {
+            operation["unexpected"] = json!(true);
+        }
+        json!({
+            "graphPatch": {
+                "schema": "skenion.graph.patch",
+                "schemaVersion": "0.1.0",
+                "id": "patch-runtime",
+                "baseRevision": "1",
+                "ops": [operation]
+            }
+        })
+    }
+
+    fn runtime_view_patch_mutation(extra_operation_key: bool) -> serde_json::Value {
+        let mut operation = json!({
+            "op": "setNodeView",
+            "nodeId": "value_1",
+            "view": { "x": 0, "y": 0 }
+        });
+        if extra_operation_key {
+            operation["unexpected"] = json!(true);
+        }
+        json!({
+            "viewPatch": {
+                "baseViewRevision": 1,
+                "ops": [operation]
+            }
+        })
+    }
+
+    #[test]
+    fn rejects_extra_nested_runtime_patch_operation_keys_at_parse_boundary() {
+        serde_json::from_value::<RuntimeSessionEvent>(runtime_session_mutation_event(
+            json!({}),
+            json!({}),
+        ))
+        .expect("empty mutation requests should parse");
+
+        let graph_null = runtime_session_mutation_event(
+            json!({ "graphPatch": null }),
+            runtime_view_patch_mutation(false),
+        );
+        let graph_null_error = serde_json::from_value::<RuntimeSessionEvent>(graph_null)
+            .expect_err("explicit null graphPatch should fail");
+        assert!(
+            graph_null_error
+                .to_string()
+                .contains("graphPatch must be an object")
+        );
+
+        let graph_without_ops = runtime_session_mutation_event(
+            json!({
+                "graphPatch": {
+                    "schema": "skenion.graph.patch",
+                    "schemaVersion": "0.1.0",
+                    "id": "patch-without-ops",
+                    "baseRevision": "1"
+                }
+            }),
+            runtime_view_patch_mutation(false),
+        );
+        let graph_without_ops_error =
+            serde_json::from_value::<RuntimeSessionEvent>(graph_without_ops)
+                .expect_err("graphPatch without ops should fail after strict key scan");
+        assert!(
+            graph_without_ops_error
+                .to_string()
+                .contains("missing field `ops`")
+        );
+
+        let graph_non_object_op = runtime_session_mutation_event(
+            json!({
+                "graphPatch": {
+                    "schema": "skenion.graph.patch",
+                    "schemaVersion": "0.1.0",
+                    "id": "patch-non-object-op",
+                    "baseRevision": "1",
+                    "ops": [null]
+                }
+            }),
+            runtime_view_patch_mutation(false),
+        );
+        serde_json::from_value::<RuntimeSessionEvent>(graph_non_object_op)
+            .expect_err("non-object graphPatch operation should fail");
+
+        let graph_missing_op = runtime_session_mutation_event(
+            json!({
+                "graphPatch": {
+                    "schema": "skenion.graph.patch",
+                    "schemaVersion": "0.1.0",
+                    "id": "patch-missing-op",
+                    "baseRevision": "1",
+                    "ops": [{ "nodeId": "value_1" }]
+                }
+            }),
+            runtime_view_patch_mutation(false),
+        );
+        serde_json::from_value::<RuntimeSessionEvent>(graph_missing_op)
+            .expect_err("graphPatch operation without op discriminator should fail");
+
+        let graph_unknown_op = runtime_session_mutation_event(
+            json!({
+                "graphPatch": {
+                    "schema": "skenion.graph.patch",
+                    "schemaVersion": "0.1.0",
+                    "id": "patch-unknown-op",
+                    "baseRevision": "1",
+                    "ops": [{ "op": "unsupported" }]
+                }
+            }),
+            runtime_view_patch_mutation(false),
+        );
+        serde_json::from_value::<RuntimeSessionEvent>(graph_unknown_op)
+            .expect_err("unsupported graphPatch operation should fail");
+
+        let graph_extra = runtime_session_mutation_event(
+            runtime_graph_patch_mutation(true),
+            runtime_view_patch_mutation(false),
+        );
+        let graph_error = serde_json::from_value::<RuntimeSessionEvent>(graph_extra)
+            .expect_err("extra nested graphPatch operation key should fail");
+        assert!(
+            graph_error
+                .to_string()
+                .contains("graphPatch ops[0] contains unknown field unexpected")
+        );
+
+        let view_extra = runtime_session_mutation_event(
+            runtime_graph_patch_mutation(false),
+            runtime_view_patch_mutation(true),
+        );
+        let view_error = serde_json::from_value::<RuntimeSessionEvent>(view_extra)
+            .expect_err("extra nested viewPatch operation key should fail");
+        assert!(
+            view_error
+                .to_string()
+                .contains("unknown field `unexpected`")
+        );
+    }
+
     #[test]
     fn validates_basic_graph_and_serializes_optional_fields_as_absent() {
         let mut graph = base_graph();

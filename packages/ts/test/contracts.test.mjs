@@ -162,6 +162,7 @@ test("validates runtime session profile and replay fixtures", async () => {
 
   const invalidEventFixtures = [
     "fixtures/runtime-session/v0/invalid/missing-replay.session-event.json",
+    "fixtures/runtime-session/v0/invalid/extra-operation-keys.session-event.json",
     "fixtures/runtime-session/v0/invalid/empty-replay-cursor.session-event.json",
     "fixtures/runtime-session/v0/invalid/replay-additional-property.session-event.json",
     "fixtures/runtime-session/v0/invalid/replay-gap-order.session-event.json",

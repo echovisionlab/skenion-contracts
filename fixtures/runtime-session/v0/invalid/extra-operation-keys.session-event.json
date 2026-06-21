@@ -1,0 +1,76 @@
+{
+  "schema": "skenion.runtime.session.event",
+  "schemaVersion": "0.1.0",
+  "id": "event-extra-operation-keys",
+  "sessionId": "session-a",
+  "sequence": 13,
+  "sessionRevision": 11,
+  "kind": "mutate",
+  "snapshot": {
+    "sessionRevision": 11,
+    "viewRevision": 4,
+    "controlRevision": 4,
+    "project": null,
+    "diagnostics": [],
+    "plan": null
+  },
+  "history": {
+    "schema": "skenion.runtime.history",
+    "schemaVersion": "0.1.0",
+    "entries": [
+      {
+        "id": "history-11",
+        "sequence": 11,
+        "kind": "apply",
+        "mutation": {
+          "graphPatch": {
+            "schema": "skenion.graph.patch",
+            "schemaVersion": "0.1.0",
+            "id": "patch-extra-operation-key",
+            "baseRevision": "10",
+            "ops": [
+              {
+                "op": "setNodeParam",
+                "nodeId": "value_1",
+                "key": "value",
+                "value": 0.5,
+                "unexpected": true
+              }
+            ]
+          }
+        },
+        "inverseMutation": {
+          "viewPatch": {
+            "baseViewRevision": 4,
+            "ops": [
+              {
+                "op": "setNodeView",
+                "nodeId": "value_1",
+                "view": {
+                  "x": 0,
+                  "y": 0
+                },
+                "unexpected": true
+              }
+            ]
+          }
+        },
+        "clientId": "studio-main",
+        "createdAt": "2026-06-22T00:00:06.000Z"
+      }
+    ],
+    "canUndo": true,
+    "canRedo": false,
+    "undoDepth": 1,
+    "redoDepth": 0
+  },
+  "replay": {
+    "cursor": "13",
+    "previousCursor": "12",
+    "replayed": true,
+    "gap": null,
+    "overflow": false
+  },
+  "diagnostics": [],
+  "createdAt": "2026-06-22T00:00:06.000Z"
+}

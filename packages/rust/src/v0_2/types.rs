@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
@@ -614,7 +614,11 @@ pub struct RuntimeSessionSnapshot {
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeMutationRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_runtime_graph_patch_v01",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub graph_patch: Option<GraphPatchV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub view_patch: Option<RuntimeViewPatch>,
@@ -622,6 +626,54 @@ pub struct RuntimeMutationRequest {
     pub client_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+}
+
+fn deserialize_runtime_graph_patch_v01<'de, D>(
+    deserializer: D,
+) -> Result<Option<GraphPatchV01>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    if value.is_null() {
+        return Err(de::Error::custom("graphPatch must be an object"));
+    }
+    validate_runtime_graph_patch_operation_keys(&value).map_err(de::Error::custom)?;
+    serde_json::from_value(value)
+        .map(Some)
+        .map_err(de::Error::custom)
+}
+
+fn validate_runtime_graph_patch_operation_keys(value: &Value) -> Result<(), String> {
+    let Some(ops) = value.get("ops").and_then(Value::as_array) else {
+        return Ok(());
+    };
+    for (index, operation) in ops.iter().enumerate() {
+        let Some(operation) = operation.as_object() else {
+            continue;
+        };
+        let Some(op) = operation.get("op").and_then(Value::as_str) else {
+            continue;
+        };
+        let allowed_keys: &[&str] = match op {
+            "addNode" => &["op", "node"],
+            "removeNode" => &["op", "nodeId"],
+            "replaceNode" => &["op", "nodeId", "node", "edgePolicy"],
+            "setNodeParams" => &["op", "nodeId", "params"],
+            "setNodeParam" => &["op", "nodeId", "key", "value"],
+            "addEdge" | "removeEdge" => &["op", "edge"],
+            "replaceNodeInterface" => &["op", "nodeId", "ports", "edgePolicy"],
+            _ => continue,
+        };
+        for key in operation.keys() {
+            if !allowed_keys.contains(&key.as_str()) {
+                return Err(format!(
+                    "graphPatch ops[{index}] contains unknown field {key}"
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -632,7 +684,7 @@ pub struct RuntimeViewPatch {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(tag = "op")]
+#[serde(deny_unknown_fields, tag = "op")]
 pub enum RuntimeViewPatchOperation {
     #[serde(rename = "setNodeView")]
     SetNodeView {
