@@ -114,14 +114,6 @@ fn input_max_connections(port: &PortSpecV02) -> u64 {
     }
 }
 
-fn input_max_connections_label(port: &PortSpecV02) -> String {
-    match port.max_connections {
-        Some(Some(max_connections)) => max_connections.to_string(),
-        Some(None) => "unlimited".to_owned(),
-        None => "1".to_owned(),
-    }
-}
-
 fn merge_policy_for(port: &PortSpecV02) -> MergePolicyV02 {
     port.merge_policy.clone().unwrap_or(MergePolicyV02::Forbid)
 }
@@ -494,14 +486,15 @@ pub fn analyze_graph_document_v02(graph: &GraphDocumentV02) -> GraphValidationRe
                 None,
             );
         }
-        if connected_edges.len() as u64 > input_max_connections(port) {
+        let max_connections = input_max_connections(port);
+        if connected_edges.len() as u64 > max_connections {
             diagnostic(
                 &mut diagnostics,
                 "error",
                 "fan-in-cardinality",
                 format!(
                     "input {key} accepts at most {} connection(s)",
-                    input_max_connections_label(port)
+                    max_connections
                 ),
                 None,
                 None,
@@ -857,7 +850,20 @@ mod tests {
 
     #[test]
     fn validates_basic_graph_and_serializes_optional_fields_as_absent() {
-        let graph = base_graph();
+        let mut graph = base_graph();
+        graph.nodes[0].port_groups = Some(vec![super::super::PortGroupSpecV02 {
+            id: "outputs".to_owned(),
+            direction: PortDirectionV02::Output,
+            port_type: "value.number".to_owned(),
+            min_ports: 1,
+            label: Some("Outputs".to_owned()),
+            rate: None,
+            max_ports: Some(2),
+            ordered: Some(true),
+            port_id_pattern: Some("out_{index}".to_owned()),
+            create_label: Some("Add output".to_owned()),
+            default_port_spec: None,
+        }]);
         let result = validate_graph_document_v02(&graph).expect("graph should validate");
         assert!(result.ok);
         assert!(result.diagnostics.is_empty());
@@ -923,6 +929,25 @@ mod tests {
             },
             target: EdgeEndpointV02 {
                 node_id: "missing".to_owned(),
+                port_id: "in".to_owned(),
+            },
+            resolved_type: None,
+            order: None,
+            enabled: None,
+            adapter: None,
+            feedback: None,
+            style_override: None,
+            label: None,
+            description: None,
+        });
+        graph.edges.push(EdgeSpecV02 {
+            id: "edge_missing_source_node".to_owned(),
+            source: EdgeEndpointV02 {
+                node_id: "missing".to_owned(),
+                port_id: "out".to_owned(),
+            },
+            target: EdgeEndpointV02 {
+                node_id: "target".to_owned(),
                 port_id: "in".to_owned(),
             },
             resolved_type: None,
@@ -1247,6 +1272,20 @@ mod tests {
 
         let ambiguous = validate_graph_document_v02(&graph).expect_err("cycle should fail");
         assert!(ambiguous.to_string().contains("ambiguous-algebraic-loop"));
+
+        let mut control_cycle = graph.clone();
+        for node in &mut control_cycle.nodes {
+            for port in &mut node.ports {
+                port.port_type = "control.number".to_owned();
+            }
+        }
+        let control_ambiguous =
+            validate_graph_document_v02(&control_cycle).expect_err("control cycle should fail");
+        assert!(
+            control_ambiguous
+                .to_string()
+                .contains("ambiguous-algebraic-loop")
+        );
 
         graph.edges[1].feedback = Some(FeedbackPolicyV02 {
             enabled: true,

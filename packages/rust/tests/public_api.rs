@@ -6,10 +6,10 @@ use skenion_contracts::{
     MidiClockSnapshotV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02, NumberRangeV01,
     ObjectTextParseResultV01, ProjectDocumentV02, StringOrStringsV01, analyze_graph_document_v02,
     apply_graph_patch_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
-    derive_patch_contract_v02, invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01,
-    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
-    type_label_v01, validate_graph_document_v01, validate_graph_document_v02,
-    validate_node_definition_v01, validate_node_definition_v02,
+    derive_patch_contract_v02, derive_patch_contracts_v02, invert_graph_patch_v01,
+    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
+    plan_audio_clock_bridge_v01, type_label_v01, validate_graph_document_v01,
+    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
     validate_object_text_parse_result_v01, validate_project_document_v02,
 };
 
@@ -724,4 +724,234 @@ fn validates_public_v02_project_and_derived_patch_contracts() {
     );
     assert_eq!(contract.ports[0].boundary_node_id, "left_in");
     assert_eq!(contract.ports[0].boundary_port_id, "out");
+}
+
+#[test]
+fn derives_public_v02_patch_contract_fallback_port_ids() {
+    let project: ProjectDocumentV02 = serde_json::from_str(
+        r#"{
+          "schema": "skenion.project",
+          "schemaVersion": "0.2.0",
+          "id": "project-fallback-boundaries",
+          "revision": "1",
+          "graph": {
+            "schema": "skenion.graph",
+            "schemaVersion": "0.2.0",
+            "id": "root",
+            "revision": "1",
+            "nodes": [],
+            "edges": []
+          },
+          "viewState": {
+            "schema": "skenion.view-state",
+            "schemaVersion": "0.1.0",
+            "canvas": { "nodes": {} }
+          },
+          "patchLibrary": [
+            {
+              "id": "fallbacks",
+              "revision": "1",
+              "graph": {
+                "schema": "skenion.graph",
+                "schemaVersion": "0.2.0",
+                "id": "patch-fallbacks",
+                "revision": "1",
+                "nodes": [
+                  {
+                    "id": "fallback_input",
+                    "kind": "core.inlet",
+                    "kindVersion": "0.2.0",
+                    "params": {},
+                    "ports": [
+                      { "id": "out", "direction": "output", "type": "number.float" }
+                    ]
+                  },
+                  {
+                    "id": "multi_input",
+                    "kind": "core.inlet",
+                    "kindVersion": "0.2.0",
+                    "params": {},
+                    "ports": [
+                      { "id": "first", "direction": "output", "type": "number.float" },
+                      { "id": "second", "direction": "output", "type": "number.float" }
+                    ]
+                  },
+                  {
+                    "id": "fallback_output",
+                    "kind": "core.outlet",
+                    "kindVersion": "0.2.0",
+                    "params": {},
+                    "ports": [
+                      { "id": "in", "direction": "input", "type": "number.float" }
+                    ]
+                  }
+                ],
+                "edges": []
+              }
+            }
+          ]
+        }"#,
+    )
+    .expect("v0.2 project should parse");
+
+    validate_project_document_v02(&project).expect("v0.2 project should validate");
+
+    let contracts = derive_patch_contracts_v02(&project);
+    let port_labels: Vec<String> = contracts[0]
+        .ports
+        .iter()
+        .map(|port| {
+            format!(
+                "{}:{:?}:{}:{}",
+                port.port.id, port.port.direction, port.boundary_node_id, port.boundary_port_id
+            )
+        })
+        .collect();
+
+    assert_eq!(
+        port_labels,
+        vec![
+            "fallback_input:Input:fallback_input:out",
+            "first:Input:multi_input:first",
+            "second:Input:multi_input:second",
+            "fallback_output:Output:fallback_output:in"
+        ]
+    );
+}
+
+#[test]
+fn reports_public_v02_project_and_patch_definition_errors() {
+    let project: ProjectDocumentV02 = serde_json::from_value(serde_json::json!({
+        "schema": "wrong.project",
+        "schemaVersion": "9.9.9",
+        "id": "",
+        "revision": "",
+        "graph": {
+            "schema": "wrong.graph",
+            "schemaVersion": "9.9.9",
+            "id": "root",
+            "revision": "1",
+            "nodes": [
+                {
+                    "id": "source",
+                    "kind": "core.value",
+                    "kindVersion": "0.2.0",
+                    "params": {},
+                    "ports": [
+                        { "id": "out", "direction": "output", "type": "value.number" }
+                    ]
+                },
+                {
+                    "id": "target",
+                    "kind": "render.output",
+                    "kindVersion": "0.2.0",
+                    "params": {},
+                    "ports": [
+                        { "id": "in", "direction": "input", "type": "render.frame" }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "id": "edge_root_bad",
+                    "source": { "nodeId": "source", "portId": "out" },
+                    "target": { "nodeId": "target", "portId": "in" }
+                }
+            ]
+        },
+        "viewState": {
+            "schema": "skenion.view-state",
+            "schemaVersion": "0.1.0",
+            "canvas": {
+                "nodes": {
+                    "missing_root_view": { "x": 0, "y": 0 }
+                }
+            }
+        },
+        "patchLibrary": [
+            {
+                "id": "",
+                "revision": "",
+                "graph": {
+                    "schema": "wrong.patch.graph",
+                    "schemaVersion": "9.9.9",
+                    "id": "patch",
+                    "revision": "1",
+                    "nodes": [
+                        {
+                            "id": "inlet_a",
+                            "kind": "core.inlet",
+                            "kindVersion": "0.2.0",
+                            "params": { "portId": "same" },
+                            "ports": [
+                                { "id": "out", "direction": "output", "type": "value.number" }
+                            ]
+                        },
+                        {
+                            "id": "inlet_b",
+                            "kind": "core.inlet",
+                            "kindVersion": "0.2.0",
+                            "params": { "portId": "same" },
+                            "ports": [
+                                { "id": "out", "direction": "output", "type": "value.number" }
+                            ]
+                        },
+                        {
+                            "id": "sink",
+                            "kind": "render.output",
+                            "kindVersion": "0.2.0",
+                            "params": {},
+                            "ports": [
+                                { "id": "in", "direction": "input", "type": "render.frame" }
+                            ]
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "id": "edge_patch_bad",
+                            "source": { "nodeId": "inlet_a", "portId": "out" },
+                            "target": { "nodeId": "sink", "portId": "in" }
+                        }
+                    ]
+                },
+                "viewState": {
+                    "schema": "skenion.view-state",
+                    "schemaVersion": "0.1.0",
+                    "canvas": {
+                        "nodes": {
+                            "missing_patch_view": { "x": 0, "y": 0 }
+                        }
+                    }
+                }
+            }
+        ]
+    }))
+    .expect("invalid project should still parse");
+
+    let report =
+        validate_project_document_v02(&project).expect_err("project should fail validation");
+    let text = report.to_string();
+
+    for expected in [
+        "expected schema skenion.project, found wrong.project",
+        "expected schemaVersion 0.2.0, found 9.9.9",
+        "project id must not be empty",
+        "project revision must not be empty",
+        "root graph expected schema skenion.graph, found wrong.graph",
+        "root graph expected schemaVersion 0.2.0, found 9.9.9",
+        "root graph incompatible-type",
+        "viewState references missing graph node: missing_root_view",
+        "patch id must not be empty",
+        "patch revision must not be empty",
+        "patch  graph expected schema skenion.graph, found wrong.patch.graph",
+        "patch  graph expected schemaVersion 0.2.0, found 9.9.9",
+        "patch  graph incompatible-type",
+        "patch  viewState references missing graph node: missing_patch_view",
+        "duplicate boundary port id on patch : same",
+    ] {
+        assert!(
+            text.contains(expected),
+            "{expected:?} should appear in {text:?}"
+        );
+    }
 }
