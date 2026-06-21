@@ -7,6 +7,7 @@ import type {
 import {
   controlMessageV01Schema,
   extensionManifestV01Schema,
+  graphFragmentV02Schema,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -17,6 +18,7 @@ import {
   objectTextParseResultV01Schema,
   projectV01Schema,
   projectV02Schema,
+  runtimeOperationV0Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
@@ -30,6 +32,10 @@ import type {
   GraphCycleValidationV02,
   GraphDocumentV01,
   GraphDocumentV02,
+  GraphFragmentDiagnosticV02,
+  GraphFragmentValidationOptionsV02,
+  GraphFragmentValidationResultV02,
+  GraphFragmentV02,
   GraphPatchEventV01,
   GraphPatchHistoryV01,
   GraphPatchV01,
@@ -39,10 +45,13 @@ import type {
   NodeDefinitionManifestV02,
   ObjectTextParseResultV01,
   PatchDefinitionV02,
+  PasteGraphFragmentRequest,
+  PasteGraphFragmentResponse,
   PortV01,
   PortSpecV02,
   ProjectDocumentV01,
   ProjectDocumentV02,
+  RuntimeOperationEnvelope,
   ShaderInterfaceV01,
   ValidationResult,
   ViewStateV01
@@ -55,11 +64,25 @@ const Ajv2020 = Ajv2020Runtime as unknown as new (opts?: Options) => {
   addSchema(schema: unknown): unknown;
 };
 const ajv = new Ajv2020({ allErrors: true });
+ajv.addSchema(graphV02Schema);
+ajv.addSchema(graphFragmentV02Schema);
 ajv.addSchema(graphPatchV01Schema);
 ajv.addSchema(graphPatchEventV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphV02Validator = ajv.compile(graphV02Schema);
+const graphFragmentV02Validator = ajv.compile(graphFragmentV02Schema);
+const runtimeOperationV0Validator = ajv.compile(runtimeOperationV0Schema);
+const pasteGraphFragmentRequestValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-request.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentRequest"
+});
+const pasteGraphFragmentResponseValidator = ajv.compile({
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-response.schema.json",
+  $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
+});
 const graphPatchV01Validator = ajv.compile(graphPatchV01Schema);
 const graphPatchEventV01Validator = ajv.compile(graphPatchEventV01Schema);
 const graphPatchHistoryV01Validator = ajv.compile(graphPatchHistoryV01Schema);
@@ -308,6 +331,147 @@ function isControlMessagePortType(type: string): boolean {
     "color",
     "string"
   ].includes(type);
+}
+
+function fragmentDiagnostic(
+  diagnostics: GraphFragmentDiagnosticV02[],
+  severity: GraphFragmentDiagnosticV02["severity"],
+  code: string,
+  message: string,
+  refs: Pick<GraphFragmentDiagnosticV02, "nodes" | "edges"> = {}
+): void {
+  diagnostics.push({ severity, code, message, ...refs });
+}
+
+function analyzeFragmentSemantics(
+  fragment: GraphFragmentV02,
+  options: GraphFragmentValidationOptionsV02
+): GraphFragmentValidationResultV02 {
+  const diagnostics: GraphFragmentDiagnosticV02[] = [];
+  const omittedEdgeIds: string[] = [];
+  const outsideEndpointPolicy = options.outsideEndpointPolicy ?? "reject";
+  const nodeIds = new Set<string>();
+  const edgeIds = new Set<string>();
+  const ports = new Map<string, PortSpecV02>();
+
+  for (const node of fragment.nodes) {
+    if (nodeIds.has(node.id)) {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "duplicate-node-id",
+        `duplicate node id: ${node.id}`,
+        { nodes: [node.id] }
+      );
+    }
+    nodeIds.add(node.id);
+
+    const portIds = new Set<string>();
+    for (const port of node.ports) {
+      if (portIds.has(port.id)) {
+        fragmentDiagnostic(
+          diagnostics,
+          "error",
+          "duplicate-port-id",
+          `duplicate port id on ${node.id}: ${port.id}`,
+          { nodes: [node.id] }
+        );
+      }
+      portIds.add(port.id);
+      ports.set(portSpecKey(node.id, port.id), port);
+    }
+  }
+
+  for (const edge of fragment.edges) {
+    if (edgeIds.has(edge.id)) {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "duplicate-edge-id",
+        `duplicate edge id: ${edge.id}`,
+        { edges: [edge.id] }
+      );
+    }
+    edgeIds.add(edge.id);
+
+    const sourceNodeMissing = !nodeIds.has(edge.source.nodeId);
+    const targetNodeMissing = !nodeIds.has(edge.target.nodeId);
+    if (sourceNodeMissing || targetNodeMissing) {
+      const severity = outsideEndpointPolicy === "omit" ? "warning" : "error";
+      if (outsideEndpointPolicy === "omit") {
+        omittedEdgeIds.push(edge.id);
+      }
+      fragmentDiagnostic(
+        diagnostics,
+        severity,
+        "fragment-edge-outside-selection",
+        `edge ${edge.id} references an endpoint outside the graph fragment`,
+        { edges: [edge.id] }
+      );
+      continue;
+    }
+
+    const sourceKey = portSpecKey(edge.source.nodeId, edge.source.portId);
+    const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
+    const source = ports.get(sourceKey);
+    const target = ports.get(targetKey);
+
+    if (!source) {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "missing-source-port",
+        `edge ${edge.id} references missing source port ${sourceKey}`,
+        { edges: [edge.id] }
+      );
+    }
+    if (!target) {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "missing-target-port",
+        `edge ${edge.id} references missing target port ${targetKey}`,
+        { edges: [edge.id] }
+      );
+    }
+    if (!source || !target) {
+      continue;
+    }
+
+    if (source.direction !== "output") {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "invalid-source-direction",
+        `edge ${edge.id} source ${sourceKey} is not an output port`,
+        { edges: [edge.id] }
+      );
+    }
+    if (target.direction !== "input") {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "invalid-target-direction",
+        `edge ${edge.id} target ${targetKey} is not an input port`,
+        { edges: [edge.id] }
+      );
+    }
+    if (!portTypeAccepts(source, target)) {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "incompatible-type",
+        `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}`,
+        { edges: [edge.id] }
+      );
+    }
+  }
+
+  return {
+    ok: diagnostics.every((entry) => entry.severity !== "error"),
+    diagnostics,
+    omittedEdgeIds
+  };
 }
 
 function portFamily(type: string): string {
@@ -615,6 +779,30 @@ export function validateGraphDocumentV02(document: unknown): ValidationResult<Gr
   return { ok: true, value: graph };
 }
 
+export function analyzeGraphFragmentV02(
+  fragment: GraphFragmentV02,
+  options: GraphFragmentValidationOptionsV02 = {}
+): GraphFragmentValidationResultV02 {
+  return analyzeFragmentSemantics(fragment, options);
+}
+
+export function validateGraphFragmentV02(
+  document: unknown,
+  options: GraphFragmentValidationOptionsV02 = {}
+): ValidationResult<GraphFragmentV02> {
+  if (!graphFragmentV02Validator(document)) {
+    return { ok: false, errors: schemaErrors(graphFragmentV02Validator.errors as ErrorObject[]) };
+  }
+
+  const fragment = document as GraphFragmentV02;
+  const result = analyzeGraphFragmentV02(fragment, options);
+  if (!result.ok) {
+    return { ok: false, errors: result.diagnostics.map((entry) => `${entry.code}: ${entry.message}`) };
+  }
+
+  return { ok: true, value: fragment };
+}
+
 export function validateGraphPatch(document: unknown): ValidationResult<GraphPatchV01> {
   if (!graphPatchV01Validator(document)) {
     return { ok: false, errors: schemaErrors(graphPatchV01Validator.errors as ErrorObject[]) };
@@ -764,4 +952,48 @@ export function validateProjectDocumentV02(
   }
 
   return { ok: true, value: project };
+}
+
+export function validateRuntimeOperationEnvelope(
+  document: unknown
+): ValidationResult<RuntimeOperationEnvelope> {
+  if (!runtimeOperationV0Validator(document)) {
+    return { ok: false, errors: schemaErrors(runtimeOperationV0Validator.errors as ErrorObject[]) };
+  }
+
+  const envelope = document as RuntimeOperationEnvelope;
+  const requestResult = validatePasteGraphFragmentRequest(envelope.request);
+  if (!requestResult.ok) {
+    return { ok: false, errors: requestResult.errors };
+  }
+
+  return { ok: true, value: envelope };
+}
+
+export function validatePasteGraphFragmentRequest(
+  document: unknown
+): ValidationResult<PasteGraphFragmentRequest> {
+  if (!pasteGraphFragmentRequestValidator(document)) {
+    return { ok: false, errors: schemaErrors(pasteGraphFragmentRequestValidator.errors as ErrorObject[]) };
+  }
+
+  const request = document as PasteGraphFragmentRequest;
+  const fragmentResult = validateGraphFragmentV02(request.fragment, {
+    outsideEndpointPolicy: request.options?.outsideEndpointPolicy
+  });
+  if (!fragmentResult.ok) {
+    return { ok: false, errors: fragmentResult.errors };
+  }
+
+  return { ok: true, value: request };
+}
+
+export function validatePasteGraphFragmentResponse(
+  document: unknown
+): ValidationResult<PasteGraphFragmentResponse> {
+  if (!pasteGraphFragmentResponseValidator(document)) {
+    return { ok: false, errors: schemaErrors(pasteGraphFragmentResponseValidator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as PasteGraphFragmentResponse };
 }

@@ -6,9 +6,11 @@ use std::{
 
 use super::{
     CycleValidationV02, EdgeSpecV02, FeedbackBoundaryV02, GraphCycleValidationV02,
-    GraphDocumentV02, GraphValidationDiagnosticV02, GraphValidationResultV02, MergePolicyV02,
-    NodeDefinitionManifestV02, PatchDefinitionV02, PortDirectionV02, PortSpecV02,
-    ProjectDocumentV02, derive_patch_contract_v02,
+    GraphDocumentV02, GraphFragmentDiagnosticV02, GraphFragmentOutsideEndpointPolicyV02,
+    GraphFragmentV02, GraphFragmentValidationResultV02, GraphValidationDiagnosticV02,
+    GraphValidationResultV02, MergePolicyV02, NodeDefinitionManifestV02, PasteGraphFragmentRequest,
+    PasteGraphFragmentResponse, PatchDefinitionV02, PortDirectionV02, PortSpecV02,
+    ProjectDocumentV02, RuntimeOperationEnvelope, derive_patch_contract_v02,
 };
 use crate::v0_1::ViewStateV01;
 
@@ -91,6 +93,23 @@ fn diagnostic(
     });
 }
 
+fn fragment_diagnostic(
+    diagnostics: &mut Vec<GraphFragmentDiagnosticV02>,
+    severity: &str,
+    code: &str,
+    message: impl Into<String>,
+    nodes: Option<Vec<String>>,
+    edges: Option<Vec<String>>,
+) {
+    diagnostics.push(GraphFragmentDiagnosticV02 {
+        severity: severity.to_owned(),
+        code: code.to_owned(),
+        message: message.into(),
+        nodes,
+        edges,
+    });
+}
+
 fn port_key(node_id: &str, port_id: &str) -> String {
     format!("{node_id}:{port_id}")
 }
@@ -141,6 +160,159 @@ fn is_control_message_port_type(port_type: &str) -> bool {
             | "color"
             | "string"
     )
+}
+
+pub fn analyze_graph_fragment_v02(
+    fragment: &GraphFragmentV02,
+    outside_endpoint_policy: GraphFragmentOutsideEndpointPolicyV02,
+) -> GraphFragmentValidationResultV02 {
+    let mut diagnostics = Vec::new();
+    let mut omitted_edge_ids = Vec::new();
+    let mut node_ids = HashSet::new();
+    let mut edge_ids = HashSet::new();
+    let mut ports = HashMap::new();
+
+    for node in &fragment.nodes {
+        if !node_ids.insert(node.id.clone()) {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "duplicate-node-id",
+                format!("duplicate node id: {}", node.id),
+                Some(vec![node.id.clone()]),
+                None,
+            );
+        }
+
+        let mut port_ids = HashSet::new();
+        for port in &node.ports {
+            if !port_ids.insert(port.id.clone()) {
+                fragment_diagnostic(
+                    &mut diagnostics,
+                    "error",
+                    "duplicate-port-id",
+                    format!("duplicate port id on {}: {}", node.id, port.id),
+                    Some(vec![node.id.clone()]),
+                    None,
+                );
+            }
+            ports.insert(port_key(&node.id, &port.id), port.clone());
+        }
+    }
+
+    for edge in &fragment.edges {
+        if !edge_ids.insert(edge.id.clone()) {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "duplicate-edge-id",
+                format!("duplicate edge id: {}", edge.id),
+                None,
+                Some(vec![edge.id.clone()]),
+            );
+        }
+
+        let source_node_missing = !node_ids.contains(&edge.source.node_id);
+        let target_node_missing = !node_ids.contains(&edge.target.node_id);
+        if source_node_missing || target_node_missing {
+            let severity = if outside_endpoint_policy == GraphFragmentOutsideEndpointPolicyV02::Omit
+            {
+                omitted_edge_ids.push(edge.id.clone());
+                "warning"
+            } else {
+                "error"
+            };
+            fragment_diagnostic(
+                &mut diagnostics,
+                severity,
+                "fragment-edge-outside-selection",
+                format!(
+                    "edge {} references an endpoint outside the graph fragment",
+                    edge.id
+                ),
+                None,
+                Some(vec![edge.id.clone()]),
+            );
+            continue;
+        }
+
+        let source_key = port_key(&edge.source.node_id, &edge.source.port_id);
+        let target_key = port_key(&edge.target.node_id, &edge.target.port_id);
+        let source = ports.get(&source_key);
+        let target = ports.get(&target_key);
+
+        if source.is_none() {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "missing-source-port",
+                format!(
+                    "edge {} references missing source port {source_key}",
+                    edge.id
+                ),
+                None,
+                Some(vec![edge.id.clone()]),
+            );
+        }
+        if target.is_none() {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "missing-target-port",
+                format!(
+                    "edge {} references missing target port {target_key}",
+                    edge.id
+                ),
+                None,
+                Some(vec![edge.id.clone()]),
+            );
+        }
+        let (Some(source), Some(target)) = (source, target) else {
+            continue;
+        };
+
+        if source.direction != PortDirectionV02::Output {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "invalid-source-direction",
+                format!("edge {} source {source_key} is not an output port", edge.id),
+                None,
+                Some(vec![edge.id.clone()]),
+            );
+        }
+        if target.direction != PortDirectionV02::Input {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "invalid-target-direction",
+                format!("edge {} target {target_key} is not an input port", edge.id),
+                None,
+                Some(vec![edge.id.clone()]),
+            );
+        }
+        if !accepts(source, target) {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "incompatible-type",
+                format!(
+                    "edge {} cannot connect {source_key} {} to {target_key} {}",
+                    edge.id, source.port_type, target.port_type
+                ),
+                None,
+                Some(vec![edge.id.clone()]),
+            );
+        }
+    }
+
+    GraphFragmentValidationResultV02 {
+        ok: diagnostics
+            .iter()
+            .all(|diagnostic| diagnostic.severity != "error"),
+        diagnostics,
+        omitted_edge_ids,
+    }
 }
 
 fn port_family(port_type: &str) -> &str {
@@ -613,6 +785,127 @@ pub fn validate_graph_document_v02(
     }
 }
 
+fn validate_graph_fragment_with_policy(
+    fragment: &GraphFragmentV02,
+    outside_endpoint_policy: GraphFragmentOutsideEndpointPolicyV02,
+) -> Result<GraphFragmentValidationResultV02, ValidationReportV02> {
+    let mut errors = Vec::new();
+    if fragment.schema != "skenion.graph.fragment" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.graph.fragment, found {}",
+            fragment.schema
+        )));
+    }
+    if fragment.schema_version != "0.2.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.2.0, found {}",
+            fragment.schema_version
+        )));
+    }
+
+    let result = analyze_graph_fragment_v02(fragment, outside_endpoint_policy);
+    for diagnostic in result
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.severity == "error")
+    {
+        errors.push(ValidationErrorV02::new(format!(
+            "{}: {}",
+            diagnostic.code, diagnostic.message
+        )));
+    }
+
+    if errors.is_empty() {
+        Ok(result)
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
+pub fn validate_graph_fragment_v02(
+    fragment: &GraphFragmentV02,
+) -> Result<GraphFragmentValidationResultV02, ValidationReportV02> {
+    validate_graph_fragment_with_policy(fragment, GraphFragmentOutsideEndpointPolicyV02::Reject)
+}
+
+pub fn validate_paste_graph_fragment_request(
+    request: &PasteGraphFragmentRequest,
+) -> Result<GraphFragmentValidationResultV02, ValidationReportV02> {
+    let outside_endpoint_policy = request
+        .options
+        .as_ref()
+        .and_then(|options| options.outside_endpoint_policy)
+        .unwrap_or_default();
+    validate_graph_fragment_with_policy(&request.fragment, outside_endpoint_policy)
+}
+
+pub fn validate_runtime_operation_envelope(
+    envelope: &RuntimeOperationEnvelope,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if envelope.schema != "skenion.runtime.operation" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.operation, found {}",
+            envelope.schema
+        )));
+    }
+    if envelope.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            envelope.schema_version
+        )));
+    }
+    if envelope.kind != "pasteGraphFragment" {
+        errors.push(ValidationErrorV02::new(format!(
+            "unsupported runtime operation kind: {}",
+            envelope.kind
+        )));
+    }
+    if let Err(report) = validate_paste_graph_fragment_request(&envelope.request) {
+        errors.extend(report.errors().iter().cloned());
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
+pub fn validate_paste_graph_fragment_response(
+    response: &PasteGraphFragmentResponse,
+) -> Result<(), ValidationReportV02> {
+    let mut errors = Vec::new();
+    if response.schema != "skenion.runtime.paste-graph-fragment.response" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schema skenion.runtime.paste-graph-fragment.response, found {}",
+            response.schema
+        )));
+    }
+    if response.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            response.schema_version
+        )));
+    }
+    if response.applied && !response.ok {
+        errors.push(ValidationErrorV02::new(
+            "paste response cannot be applied when ok is false",
+        ));
+    }
+    if response.applied && response.revision_after.is_none() {
+        errors.push(ValidationErrorV02::new(
+            "applied paste response must include revisionAfter",
+        ));
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV02::new(errors))
+    }
+}
+
 pub fn validate_node_definition_v02(
     definition: &NodeDefinitionManifestV02,
 ) -> Result<(), ValidationReportV02> {
@@ -799,8 +1092,14 @@ pub fn validate_project_document_v02(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::v0_2::{EdgeEndpointV02, FeedbackPolicyV02, GraphNodeV02};
+    use crate::v0_2::{
+        EdgeEndpointV02, FeedbackPolicyV02, GraphFragmentV02, GraphNodeV02, GraphTargetRef,
+        IdConflictPolicy, IdRemapResult, PasteGraphFragmentOptions, PasteGraphFragmentRequest,
+        PasteGraphFragmentResponse, PatchPath, RuntimeOperationDiagnostic,
+        RuntimeOperationEnvelope,
+    };
     use serde_json::json;
+    use std::collections::BTreeMap;
 
     fn graph(json: &str) -> GraphDocumentV02 {
         serde_json::from_str(json).expect("graph should parse")
@@ -848,6 +1147,50 @@ mod tests {
         )
     }
 
+    fn base_fragment() -> GraphFragmentV02 {
+        let graph = base_graph();
+        GraphFragmentV02 {
+            schema: "skenion.graph.fragment".to_owned(),
+            schema_version: "0.2.0".to_owned(),
+            id: Some("fragment".to_owned()),
+            nodes: graph.nodes,
+            edges: graph.edges,
+            view: None,
+            omitted_edges: None,
+            metadata: None,
+        }
+    }
+
+    fn root_target() -> GraphTargetRef {
+        GraphTargetRef {
+            path: PatchPath::Root,
+            base_revision: "1".to_owned(),
+            target_revision: None,
+        }
+    }
+
+    fn paste_request(fragment: GraphFragmentV02) -> PasteGraphFragmentRequest {
+        PasteGraphFragmentRequest {
+            target: root_target(),
+            fragment,
+            placement: None,
+            options: None,
+        }
+    }
+
+    fn runtime_operation(fragment: GraphFragmentV02) -> RuntimeOperationEnvelope {
+        RuntimeOperationEnvelope {
+            schema: "skenion.runtime.operation".to_owned(),
+            schema_version: "0.1.0".to_owned(),
+            id: "operation".to_owned(),
+            kind: "pasteGraphFragment".to_owned(),
+            request: paste_request(fragment),
+            attribution: None,
+            correlation_id: None,
+            created_at: None,
+        }
+    }
+
     #[test]
     fn validates_basic_graph_and_serializes_optional_fields_as_absent() {
         let mut graph = base_graph();
@@ -870,6 +1213,189 @@ mod tests {
 
         let serialized = serde_json::to_string(&graph).expect("graph should serialize");
         assert!(!serialized.contains("null"));
+    }
+
+    #[test]
+    fn validates_graph_fragment_policy_and_semantic_branches() {
+        let fragment = base_fragment();
+        let valid = validate_graph_fragment_v02(&fragment).expect("fragment should validate");
+        assert!(valid.ok);
+
+        let mut schema_invalid = fragment.clone();
+        schema_invalid.schema = "wrong".to_owned();
+        schema_invalid.schema_version = "9.9.9".to_owned();
+        let schema_report =
+            validate_graph_fragment_v02(&schema_invalid).expect_err("schema should fail");
+        assert!(schema_report.to_string().contains("skenion.graph.fragment"));
+        assert!(schema_report.to_string().contains("0.2.0"));
+
+        let mut duplicate_node = fragment.clone();
+        duplicate_node.nodes.push(duplicate_node.nodes[0].clone());
+        assert!(
+            validate_graph_fragment_v02(&duplicate_node)
+                .expect_err("duplicate node should fail")
+                .to_string()
+                .contains("duplicate-node-id")
+        );
+
+        let mut duplicate_port = fragment.clone();
+        let cloned_port = duplicate_port.nodes[0].ports[0].clone();
+        duplicate_port.nodes[0].ports.push(cloned_port);
+        assert!(
+            validate_graph_fragment_v02(&duplicate_port)
+                .expect_err("duplicate port should fail")
+                .to_string()
+                .contains("duplicate-port-id")
+        );
+
+        let mut duplicate_edge = fragment.clone();
+        duplicate_edge.edges.push(duplicate_edge.edges[0].clone());
+        assert!(
+            validate_graph_fragment_v02(&duplicate_edge)
+                .expect_err("duplicate edge should fail")
+                .to_string()
+                .contains("duplicate-edge-id")
+        );
+
+        let mut outside = fragment.clone();
+        outside.edges[0].target.node_id = "outside".to_owned();
+        assert!(
+            validate_graph_fragment_v02(&outside)
+                .expect_err("outside endpoint should fail")
+                .to_string()
+                .contains("fragment-edge-outside-selection")
+        );
+        let omitted =
+            analyze_graph_fragment_v02(&outside, GraphFragmentOutsideEndpointPolicyV02::Omit);
+        assert!(omitted.ok);
+        assert_eq!(omitted.omitted_edge_ids, vec!["edge_source_target"]);
+
+        let mut missing_source = fragment.clone();
+        missing_source.edges[0].source.port_id = "missing".to_owned();
+        assert!(
+            validate_graph_fragment_v02(&missing_source)
+                .expect_err("missing source should fail")
+                .to_string()
+                .contains("missing-source-port")
+        );
+
+        let mut missing_target = fragment.clone();
+        missing_target.edges[0].target.port_id = "missing".to_owned();
+        assert!(
+            validate_graph_fragment_v02(&missing_target)
+                .expect_err("missing target should fail")
+                .to_string()
+                .contains("missing-target-port")
+        );
+
+        let mut invalid_source_direction = fragment.clone();
+        invalid_source_direction.nodes[0].ports[0].direction = PortDirectionV02::Input;
+        assert!(
+            validate_graph_fragment_v02(&invalid_source_direction)
+                .expect_err("input source should fail")
+                .to_string()
+                .contains("invalid-source-direction")
+        );
+
+        let mut invalid_target_direction = fragment.clone();
+        invalid_target_direction.nodes[1].ports[0].direction = PortDirectionV02::Output;
+        assert!(
+            validate_graph_fragment_v02(&invalid_target_direction)
+                .expect_err("output target should fail")
+                .to_string()
+                .contains("invalid-target-direction")
+        );
+
+        let mut incompatible = fragment;
+        incompatible.nodes[1].ports[0].port_type = "string".to_owned();
+        assert!(
+            validate_graph_fragment_v02(&incompatible)
+                .expect_err("incompatible edge should fail")
+                .to_string()
+                .contains("incompatible-type")
+        );
+    }
+
+    #[test]
+    fn validates_runtime_operation_and_paste_response_branches() {
+        let fragment = base_fragment();
+        let operation = runtime_operation(fragment.clone());
+        validate_runtime_operation_envelope(&operation).expect("operation should validate");
+        validate_paste_graph_fragment_request(&operation.request)
+            .expect("paste request should validate");
+
+        let mut outside_operation = runtime_operation(fragment);
+        outside_operation.request.fragment.edges[0].target.node_id = "outside".to_owned();
+        assert!(
+            validate_runtime_operation_envelope(&outside_operation)
+                .expect_err("outside endpoint should fail by default")
+                .to_string()
+                .contains("fragment-edge-outside-selection")
+        );
+        outside_operation.request.options = Some(PasteGraphFragmentOptions {
+            outside_endpoint_policy: Some(GraphFragmentOutsideEndpointPolicyV02::Omit),
+            id_conflict_policy: Some(IdConflictPolicy::Remap),
+            preserve_relative_positions: Some(true),
+        });
+        let omit_result = validate_runtime_operation_envelope(&outside_operation);
+        assert!(omit_result.is_ok());
+
+        let mut invalid_operation = outside_operation;
+        invalid_operation.schema = "wrong".to_owned();
+        invalid_operation.schema_version = "9.9.9".to_owned();
+        invalid_operation.kind = "loadProject".to_owned();
+        let invalid_report = validate_runtime_operation_envelope(&invalid_operation)
+            .expect_err("invalid operation should fail");
+        let invalid_text = invalid_report.to_string();
+        assert!(invalid_text.contains("skenion.runtime.operation"));
+        assert!(invalid_text.contains("0.1.0"));
+        assert!(invalid_text.contains("unsupported runtime operation kind"));
+
+        let response = PasteGraphFragmentResponse {
+            schema: "skenion.runtime.paste-graph-fragment.response".to_owned(),
+            schema_version: "0.1.0".to_owned(),
+            ok: true,
+            applied: true,
+            conflict: false,
+            target: root_target(),
+            revision_before: "1".to_owned(),
+            revision_after: Some("2".to_owned()),
+            history_entry_id: Some("history".to_owned()),
+            id_remap: IdRemapResult {
+                node_id_map: BTreeMap::from([("source".to_owned(), "source_2".to_owned())]),
+                edge_id_map: BTreeMap::from([(
+                    "edge_source_target".to_owned(),
+                    "edge_source_target_2".to_owned(),
+                )]),
+                omitted_edge_ids: Vec::new(),
+            },
+            diagnostics: vec![RuntimeOperationDiagnostic {
+                severity: "info".to_owned(),
+                code: "operation-rebased".to_owned(),
+                message: "rebased".to_owned(),
+                path: None,
+                target: None,
+                expected_revision: Some("1".to_owned()),
+                actual_revision: Some("1".to_owned()),
+                duplicates: None,
+                nodes: None,
+                edges: None,
+            }],
+        };
+        validate_paste_graph_fragment_response(&response).expect("response should validate");
+
+        let mut invalid_response = response;
+        invalid_response.schema = "wrong".to_owned();
+        invalid_response.schema_version = "9.9.9".to_owned();
+        invalid_response.ok = false;
+        invalid_response.revision_after = None;
+        let response_report = validate_paste_graph_fragment_response(&invalid_response)
+            .expect_err("invalid response should fail");
+        let response_text = response_report.to_string();
+        assert!(response_text.contains("paste-graph-fragment"));
+        assert!(response_text.contains("0.1.0"));
+        assert!(response_text.contains("cannot be applied"));
+        assert!(response_text.contains("revisionAfter"));
     }
 
     #[test]

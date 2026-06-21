@@ -1,0 +1,48 @@
+{
+  "schema": "skenion.runtime.operation",
+  "schemaVersion": "0.1.0",
+  "id": "op-paste-project-patch",
+  "kind": "pasteGraphFragment",
+  "request": {
+    "target": {
+      "path": {
+        "kind": "project-patch-definition",
+        "patchId": "voice"
+      },
+      "baseRevision": "voice-rev-3"
+    },
+    "fragment": {
+      "schema": "skenion.graph.fragment",
+      "schemaVersion": "0.2.0",
+      "nodes": [
+        {
+          "id": "inlet",
+          "kind": "core.inlet",
+          "kindVersion": "0.2.0",
+          "params": {
+            "portId": "pitch"
+          },
+          "ports": [
+            {
+              "id": "out",
+              "direction": "output",
+              "type": "number.float",
+              "rate": "control",
+              "description": "Pitch control input."
+            }
+          ]
+        }
+      ],
+      "edges": []
+    },
+    "placement": {
+      "kind": "anchor",
+      "nodeId": "existing-node",
+      "offsetX": 40,
+      "offsetY": 0
+    }
+  },
+  "attribution": {
+    "clientId": "studio-window-a"
+  }
+}

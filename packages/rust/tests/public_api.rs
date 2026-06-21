@@ -2,15 +2,18 @@ use skenion_contracts::{
     ApplyPatchErrorV01, AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01,
     AudioClockDomainV01, ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, DataFlowV01,
     DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01, GraphDocumentV02,
-    GraphPatchOperationV01, GraphPatchV01, MidiClockMessageKindV01, MidiClockMessageV01,
-    MidiClockSnapshotV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02, NumberRangeV01,
-    ObjectTextParseResultV01, ProjectDocumentV02, StringOrStringsV01, analyze_graph_document_v02,
-    apply_graph_patch_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
-    derive_patch_contract_v02, derive_patch_contracts_v02, invert_graph_patch_v01,
-    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
-    plan_audio_clock_bridge_v01, type_label_v01, validate_graph_document_v01,
-    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
+    GraphFragmentOutsideEndpointPolicyV02, GraphFragmentV02, GraphPatchOperationV01, GraphPatchV01,
+    MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01,
+    NodeDefinitionManifestV02, NumberRangeV01, ObjectTextParseResultV01, ProjectDocumentV02,
+    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind, StringOrStringsV01,
+    analyze_graph_document_v02, analyze_graph_fragment_v02, apply_graph_patch_v01,
+    apply_midi_clock_message_v01, compatible_data_types_v01, derive_patch_contract_v02,
+    derive_patch_contracts_v02, invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01,
+    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
+    type_label_v01, validate_graph_document_v01, validate_graph_document_v02,
+    validate_graph_fragment_v02, validate_node_definition_v01, validate_node_definition_v02,
     validate_object_text_parse_result_v01, validate_project_document_v02,
+    validate_runtime_operation_envelope,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -75,6 +78,74 @@ fn serializes_optional_contract_fields_as_absent() {
     assert!(!serialized_graph.contains("null"));
     assert!(serialized_graph.contains(r#""dataKind":"number.float""#));
     assert!(validate_graph_document_v01(&graph).is_ok());
+}
+
+#[test]
+fn parses_public_graph_fragment_paste_contracts() {
+    let operation: RuntimeOperationEnvelope = serde_json::from_str(
+        r#"{
+          "schema": "skenion.runtime.operation",
+          "schemaVersion": "0.1.0",
+          "id": "op-public-paste",
+          "kind": "pasteGraphFragment",
+          "request": {
+            "target": {
+              "path": { "kind": "root" },
+              "baseRevision": "1"
+            },
+            "fragment": {
+              "schema": "skenion.graph.fragment",
+              "schemaVersion": "0.2.0",
+              "nodes": [
+                {
+                  "id": "source",
+                  "kind": "core.float",
+                  "kindVersion": "0.2.0",
+                  "params": {},
+                  "ports": [
+                    { "id": "out", "direction": "output", "type": "number.float" }
+                  ]
+                }
+              ],
+              "edges": []
+            }
+          },
+          "correlationId": "public-test"
+        }"#,
+    )
+    .expect("operation should parse");
+
+    validate_runtime_operation_envelope(&operation).expect("operation should validate");
+    assert!(operation.attribution.is_none());
+    assert_eq!(operation.request.target.base_revision, "1");
+
+    let fragment: &GraphFragmentV02 = &operation.request.fragment;
+    let analysis =
+        analyze_graph_fragment_v02(fragment, GraphFragmentOutsideEndpointPolicyV02::Reject);
+    assert!(analysis.ok);
+    validate_graph_fragment_v02(fragment).expect("fragment should validate");
+}
+
+#[test]
+fn parses_public_session_addressed_runtime_event() {
+    let event: RuntimeSessionEvent = serde_json::from_str(
+        r#"{
+          "schema": "skenion.runtime.session.event",
+          "schemaVersion": "0.1.0",
+          "id": "event-1",
+          "sessionId": "session-a",
+          "sequence": 1,
+          "kind": "snapshot",
+          "snapshot": { "sessionRevision": 1 },
+          "history": { "entries": [] },
+          "diagnostics": [],
+          "createdAt": "2026-06-21T00:00:00.000Z"
+        }"#,
+    )
+    .expect("session event should parse");
+
+    assert_eq!(event.session_id, "session-a");
+    assert_eq!(event.kind, RuntimeSessionEventKind::Snapshot);
 }
 
 #[test]

@@ -1,0 +1,40 @@
+{
+  "schema": "skenion.runtime.operation",
+  "schemaVersion": "0.1.0",
+  "id": "op-paste-help-working-copy",
+  "kind": "pasteGraphFragment",
+  "request": {
+    "target": {
+      "path": {
+        "kind": "help-working-copy",
+        "workingCopyId": "help-core-float-window-1",
+        "sourcePackageId": "skenion/core",
+        "sourcePatchId": "core.float.help"
+      },
+      "baseRevision": "help-copy-rev-1"
+    },
+    "fragment": {
+      "schema": "skenion.graph.fragment",
+      "schemaVersion": "0.2.0",
+      "nodes": [
+        {
+          "id": "comment",
+          "kind": "core.comment",
+          "kindVersion": "0.2.0",
+          "params": {
+            "text": "Try changing the value."
+          },
+          "ports": [
+            {
+              "id": "in",
+              "direction": "input",
+              "type": "message.any",
+              "rate": "event"
+            }
+          ]
+        }
+      ],
+      "edges": []
+    }
+  }
+}

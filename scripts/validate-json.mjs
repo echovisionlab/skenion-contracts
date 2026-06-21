@@ -808,6 +808,58 @@ function validateGraphV02Semantics(file, graph) {
   }
 }
 
+function validateGraphFragmentV02Semantics(file, fragment) {
+  duplicateCheck(
+    file,
+    fragment.nodes.map((node) => node.id),
+    "node id"
+  );
+
+  const nodeIds = new Set(fragment.nodes.map((node) => node.id));
+  const ports = new Map();
+  for (const node of fragment.nodes) {
+    duplicateCheck(
+      file,
+      node.ports.map((port) => port.id),
+      `port id on ${node.id}`
+    );
+    for (const port of node.ports) {
+      ports.set(portSpecKey(node.id, port.id), port);
+    }
+  }
+
+  duplicateCheck(
+    file,
+    fragment.edges.map((edge) => edge.id),
+    "edge id"
+  );
+  for (const edge of fragment.edges) {
+    if (!nodeIds.has(edge.source.nodeId) || !nodeIds.has(edge.target.nodeId)) {
+      fail(file, `edge ${edge.id} references an endpoint outside the graph fragment`);
+    }
+
+    const sourceKey = portSpecKey(edge.source.nodeId, edge.source.portId);
+    const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
+    const source = ports.get(sourceKey);
+    const target = ports.get(targetKey);
+    if (!source) {
+      fail(file, `edge ${edge.id} references missing source port ${sourceKey}`);
+    }
+    if (!target) {
+      fail(file, `edge ${edge.id} references missing target port ${targetKey}`);
+    }
+    if (source.direction !== "output") {
+      fail(file, `edge ${edge.id} source ${sourceKey} is not an output port`);
+    }
+    if (target.direction !== "input") {
+      fail(file, `edge ${edge.id} target ${targetKey} is not an input port`);
+    }
+    if (!portTypeAccepts(source, target)) {
+      fail(file, `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}`);
+    }
+  }
+}
+
 function validateNodeDefinitionV02Semantics(file, definition) {
   duplicateCheck(
     file,
@@ -837,6 +889,15 @@ function selectValidator(file, document, validators) {
   }
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.2.0") {
     return validators.graphV02;
+  }
+  if (document.schema === "skenion.graph.fragment" && document.schemaVersion === "0.2.0") {
+    return validators.graphFragmentV02;
+  }
+  if (document.schema === "skenion.runtime.operation" && document.schemaVersion === "0.1.0") {
+    return validators.runtimeOperationV0;
+  }
+  if (document.schema === "skenion.runtime.paste-graph-fragment.response" && document.schemaVersion === "0.1.0") {
+    return validators.pasteGraphFragmentResponse;
   }
   if (document.schema === "skenion.view-state" && document.schemaVersion === "0.1.0") {
     return validators.viewStateV01;
@@ -890,6 +951,12 @@ function validateDocument(file, document, validators) {
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.2.0") {
     validateGraphV02Semantics(file, document);
   }
+  if (document.schema === "skenion.graph.fragment" && document.schemaVersion === "0.2.0") {
+    validateGraphFragmentV02Semantics(file, document);
+  }
+  if (document.schema === "skenion.runtime.operation" && document.schemaVersion === "0.1.0") {
+    validateGraphFragmentV02Semantics(file, document.request.fragment);
+  }
   if (document.schema === "skenion.project" && document.schemaVersion === "0.1.0") {
     validateProjectV01Semantics(file, document);
   }
@@ -914,12 +981,17 @@ await readFile("openapi/runtime-http.v0.yaml", "utf8");
 const ajv = new Ajv2020({ allErrors: true });
 const graphV01Schema = await readJson("json-schema/graph/v0.1/graph.schema.json");
 const graphV02Schema = await readJson("json-schema/graph/v0.2/graph.schema.json");
+const graphFragmentV02Schema = await readJson("json-schema/graph/v0.2/fragment.schema.json");
+const runtimeOperationV0Schema = await readJson("json-schema/runtime/v0/operation.schema.json");
 const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.schema.json");
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const projectV02Schema = await readJson("json-schema/project/v0.2/project.schema.json");
 const graphPatchV01Schema = await readJson("json-schema/graph/v0.1/patch.schema.json");
 const graphPatchEventV01Schema = await readJson("json-schema/graph/v0.1/patch-event.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
+ajv.addSchema(graphV02Schema);
+ajv.addSchema(graphFragmentV02Schema);
+ajv.addSchema(runtimeOperationV0Schema);
 ajv.addSchema(graphPatchV01Schema);
 ajv.addSchema(graphPatchEventV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
@@ -928,6 +1000,13 @@ const validators = {
   patchV0: ajv.compile(await readJson("json-schema/graph/v0/patch.schema.json")),
   graphV01: ajv.compile(graphV01Schema),
   graphV02: ajv.compile(graphV02Schema),
+  graphFragmentV02: ajv.compile(graphFragmentV02Schema),
+  runtimeOperationV0: ajv.compile(runtimeOperationV0Schema),
+  pasteGraphFragmentResponse: ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-response.schema.json",
+    $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
+  }),
   viewStateV01: ajv.compile(viewStateV01Schema),
   projectV01: ajv.compile(projectV01Schema),
   projectV02: ajv.compile(projectV02Schema),

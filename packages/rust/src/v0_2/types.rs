@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
-use crate::v0_1::ViewStateV01;
+use crate::v0_1::{CanvasNodeViewV01, ViewStateV01};
 
 fn deserialize_nullable_u64<'de, D>(deserializer: D) -> Result<Option<Option<u64>>, D::Error>
 where
@@ -254,6 +254,274 @@ pub struct GraphDocumentV02 {
     pub edges: Vec<EdgeSpecV02>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cable_styles: Option<CableStyleRegistryV02>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphFragmentViewV02 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nodes: Option<BTreeMap<String, CanvasNodeViewV01>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GraphFragmentOmittedEdgeReasonV02 {
+    OutsideFragment,
+    PolicyOmit,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphFragmentOmittedEdgeV02 {
+    pub id: String,
+    pub source: EdgeEndpointV02,
+    pub target: EdgeEndpointV02,
+    pub reason: GraphFragmentOmittedEdgeReasonV02,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphFragmentV02 {
+    pub schema: String,
+    pub schema_version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub nodes: Vec<GraphNodeV02>,
+    pub edges: Vec<EdgeSpecV02>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view: Option<GraphFragmentViewV02>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub omitted_edges: Option<Vec<GraphFragmentOmittedEdgeV02>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Map<String, Value>>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GraphFragmentOutsideEndpointPolicyV02 {
+    #[default]
+    Reject,
+    Omit,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct GraphFragmentDiagnosticV02 {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nodes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edges: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphFragmentValidationResultV02 {
+    pub ok: bool,
+    pub diagnostics: Vec<GraphFragmentDiagnosticV02>,
+    pub omitted_edge_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
+pub enum PatchPath {
+    Root,
+    ProjectPatchDefinition {
+        patch_id: String,
+    },
+    PackagePatchDefinition {
+        package_id: String,
+        patch_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        version: Option<String>,
+    },
+    EmbeddedPatchInstance {
+        owner_path: Vec<String>,
+        node_id: String,
+    },
+    HelpWorkingCopy {
+        working_copy_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        source_package_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        source_patch_id: Option<String>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphTargetRef {
+    pub path: PatchPath,
+    pub base_revision: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_revision: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
+pub enum PastePlacement {
+    Position {
+        x: f64,
+        y: f64,
+    },
+    Anchor {
+        node_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        offset_x: Option<f64>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        offset_y: Option<f64>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum IdConflictPolicy {
+    Remap,
+    Reject,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PasteGraphFragmentOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outside_endpoint_policy: Option<GraphFragmentOutsideEndpointPolicyV02>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id_conflict_policy: Option<IdConflictPolicy>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preserve_relative_positions: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PasteGraphFragmentRequest {
+    pub target: GraphTargetRef,
+    pub fragment: GraphFragmentV02,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub placement: Option<PastePlacement>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub options: Option<PasteGraphFragmentOptions>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeOperationAttribution {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeOperationEnvelope {
+    pub schema: String,
+    pub schema_version: String,
+    pub id: String,
+    pub kind: String,
+    pub request: PasteGraphFragmentRequest,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attribution: Option<RuntimeOperationAttribution>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correlation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct IdRemapResult {
+    pub node_id_map: BTreeMap<String, String>,
+    pub edge_id_map: BTreeMap<String, String>,
+    pub omitted_edge_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeOperationDiagnostic {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<GraphTargetRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actual_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duplicates: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nodes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edges: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PasteGraphFragmentResponse {
+    pub schema: String,
+    pub schema_version: String,
+    pub ok: bool,
+    pub applied: bool,
+    pub conflict: bool,
+    pub target: GraphTargetRef,
+    pub revision_before: String,
+    pub revision_after: Option<String>,
+    pub history_entry_id: Option<String>,
+    pub id_remap: IdRemapResult,
+    pub diagnostics: Vec<RuntimeOperationDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RuntimeSessionEventKind {
+    Snapshot,
+    Load,
+    Clear,
+    Mutate,
+    Undo,
+    Redo,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSessionEvent {
+    pub schema: String,
+    pub schema_version: String,
+    pub id: String,
+    pub session_id: String,
+    pub sequence: u64,
+    pub kind: RuntimeSessionEventKind,
+    pub snapshot: Value,
+    pub history: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mutation: Option<Value>,
+    pub diagnostics: Vec<Value>,
+    pub created_at: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

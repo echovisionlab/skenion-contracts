@@ -1,11 +1,14 @@
 use std::{fs, path::Path};
 
 use skenion_contracts::{
-    GraphDocumentV01, GraphDocumentV02, GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01,
-    NodeDefinitionManifestV01, NodeDefinitionManifestV02, ObjectTextParseResultV01,
-    ProjectDocumentV02, parse_object_text_v01, validate_graph_document_v01,
-    validate_graph_document_v02, validate_node_definition_v01, validate_node_definition_v02,
-    validate_object_text_parse_result_v01, validate_project_document_v02,
+    GraphDocumentV01, GraphDocumentV02, GraphFragmentOutsideEndpointPolicyV02, GraphFragmentV02,
+    GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01, NodeDefinitionManifestV01,
+    NodeDefinitionManifestV02, ObjectTextParseResultV01, PasteGraphFragmentResponse,
+    ProjectDocumentV02, RuntimeOperationEnvelope, analyze_graph_fragment_v02,
+    parse_object_text_v01, validate_graph_document_v01, validate_graph_document_v02,
+    validate_graph_fragment_v02, validate_node_definition_v01, validate_node_definition_v02,
+    validate_object_text_parse_result_v01, validate_paste_graph_fragment_response,
+    validate_project_document_v02, validate_runtime_operation_envelope,
 };
 
 fn collect_json_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
@@ -72,6 +75,58 @@ fn validates_v02_graph_fixtures() {
             "{} should be invalid",
             file.display()
         );
+    }
+}
+
+#[test]
+fn validates_v02_graph_fragment_fixtures() {
+    for file in fixture_files("../../fixtures/graph-fragment/v0.2/valid") {
+        let fragment: GraphFragmentV02 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .expect("valid graph fragment fixture should parse");
+        let result = validate_graph_fragment_v02(&fragment)
+            .unwrap_or_else(|error| panic!("{} should be valid: {error}", file.display()));
+        assert!(result.ok);
+        assert!(result.omitted_edge_ids.is_empty());
+    }
+
+    for file in fixture_files("../../fixtures/graph-fragment/v0.2/invalid") {
+        let fragment: GraphFragmentV02 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .expect("invalid graph fragment fixture should still parse");
+        assert!(
+            validate_graph_fragment_v02(&fragment).is_err(),
+            "{} should be invalid",
+            file.display()
+        );
+        let omitted =
+            analyze_graph_fragment_v02(&fragment, GraphFragmentOutsideEndpointPolicyV02::Omit);
+        assert!(omitted.ok);
+        assert_eq!(omitted.omitted_edge_ids, vec!["edge-to-outside".to_owned()]);
+    }
+}
+
+#[test]
+fn validates_runtime_operation_fixtures() {
+    for file in fixture_files("../../fixtures/runtime-operation/v0/valid") {
+        let document = fs::read(&file).expect("fixture should be readable");
+        let value: serde_json::Value =
+            serde_json::from_slice(&document).expect("runtime operation fixture should parse");
+        match value.get("schema").and_then(serde_json::Value::as_str) {
+            Some("skenion.runtime.operation") => {
+                let operation: RuntimeOperationEnvelope = serde_json::from_value(value)
+                    .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_runtime_operation_envelope(&operation)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            Some("skenion.runtime.paste-graph-fragment.response") => {
+                let response: PasteGraphFragmentResponse = serde_json::from_value(value)
+                    .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+                validate_paste_graph_fragment_response(&response)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+            }
+            other => panic!("{} has unexpected schema {other:?}", file.display()),
+        }
     }
 }
 

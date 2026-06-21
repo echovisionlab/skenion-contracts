@@ -1,5 +1,6 @@
 import {
   validateExtensionManifestV01,
+  validateGraphFragmentV02,
   validateGraphDocument,
   validateGraphPatch,
   validateViewState
@@ -8,6 +9,12 @@ import type {
   CanvasNodeViewV01,
   ExtensionManifestV01,
   GeneratedShaderSourceMapV01,
+  GraphTargetRef,
+  IdRemapResult,
+  PasteGraphFragmentOptions,
+  PasteGraphFragmentRequest,
+  PasteGraphFragmentResponse,
+  PastePlacement,
   RuntimeApiResponse,
   RuntimeAssetGetResponse,
   RuntimeAssetImportResponse,
@@ -33,6 +40,9 @@ import type {
   RuntimeLogEvent,
   RuntimeLogSnapshotResponse,
   RuntimeMutationRequest,
+  RuntimeOperationAttribution,
+  RuntimeOperationDiagnostic,
+  RuntimeOperationEnvelope,
   RuntimePatchResponse,
   RuntimePreviewStatus,
   RuntimeSessionEvent,
@@ -52,6 +62,18 @@ const SHADER_DIAGNOSTIC_PHASES = new Set([
   "render-frame"
 ]);
 const SHADER_DIAGNOSTIC_SOURCES = new Set(["user", "generated", "runtime"]);
+const RUNTIME_OPERATION_DIAGNOSTIC_CODES = new Set([
+  "base-revision-mismatch",
+  "duplicate-edge-id",
+  "duplicate-node-id",
+  "duplicate-target-path",
+  "fragment-edge-outside-selection",
+  "id-conflict",
+  "invalid-target-path",
+  "operation-rebased",
+  "target-not-found",
+  "unsupported-operation"
+]);
 
 export function isRuntimeHealth(value: unknown): value is RuntimeHealth {
   return isRecord(value) && typeof value.ok === "boolean" && typeof value.service === "string" && typeof value.version === "string";
@@ -140,12 +162,56 @@ export function isRuntimePatchResponse(value: unknown): value is RuntimePatchRes
   );
 }
 
+export function isRuntimeOperationEnvelope(value: unknown): value is RuntimeOperationEnvelope {
+  return (
+    isRecord(value) &&
+    value.schema === "skenion.runtime.operation" &&
+    value.schemaVersion === "0.1.0" &&
+    typeof value.id === "string" &&
+    value.kind === "pasteGraphFragment" &&
+    isPasteGraphFragmentRequest(value.request) &&
+    (value.attribution === undefined || isRuntimeOperationAttribution(value.attribution)) &&
+    (value.correlationId === undefined || typeof value.correlationId === "string") &&
+    (value.createdAt === undefined || typeof value.createdAt === "string")
+  );
+}
+
+export function isPasteGraphFragmentRequest(value: unknown): value is PasteGraphFragmentRequest {
+  const options = isRecord(value) && isPasteGraphFragmentOptions(value.options) ? value.options : undefined;
+  return (
+    isRecord(value) &&
+    isGraphTargetRef(value.target) &&
+    validateGraphFragmentV02(value.fragment, { outsideEndpointPolicy: options?.outsideEndpointPolicy }).ok &&
+    (value.placement === undefined || isPastePlacement(value.placement)) &&
+    (value.options === undefined || options !== undefined)
+  );
+}
+
+export function isPasteGraphFragmentResponse(value: unknown): value is PasteGraphFragmentResponse {
+  return (
+    isRecord(value) &&
+    value.schema === "skenion.runtime.paste-graph-fragment.response" &&
+    value.schemaVersion === "0.1.0" &&
+    typeof value.ok === "boolean" &&
+    typeof value.applied === "boolean" &&
+    typeof value.conflict === "boolean" &&
+    isGraphTargetRef(value.target) &&
+    typeof value.revisionBefore === "string" &&
+    (typeof value.revisionAfter === "string" || value.revisionAfter === null) &&
+    (typeof value.historyEntryId === "string" || value.historyEntryId === null) &&
+    isIdRemapResult(value.idRemap) &&
+    Array.isArray(value.diagnostics) &&
+    value.diagnostics.every(isRuntimeOperationDiagnostic)
+  );
+}
+
 export function isRuntimeSessionEvent(value: unknown): value is RuntimeSessionEvent {
   return (
     isRecord(value) &&
     value.schema === "skenion.runtime.session.event" &&
     typeof value.schemaVersion === "string" &&
     typeof value.id === "string" &&
+    typeof value.sessionId === "string" &&
     typeof value.sequence === "number" &&
     isRuntimeSessionEventKind(value.kind) &&
     isRuntimeSessionSnapshot(value.snapshot) &&
@@ -355,6 +421,114 @@ function isRuntimeSessionEventKind(value: unknown): value is RuntimeSessionEvent
     value === "undo" ||
     value === "redo"
   );
+}
+
+function isGraphTargetRef(value: unknown): value is GraphTargetRef {
+  return (
+    isRecord(value) &&
+    isPatchPath(value.path) &&
+    typeof value.baseRevision === "string" &&
+    (value.targetRevision === undefined || typeof value.targetRevision === "string")
+  );
+}
+
+function isPatchPath(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  if (value.kind === "root") {
+    return true;
+  }
+  if (value.kind === "project-patch-definition") {
+    return typeof value.patchId === "string";
+  }
+  if (value.kind === "package-patch-definition") {
+    return (
+      typeof value.packageId === "string" &&
+      typeof value.patchId === "string" &&
+      (value.version === undefined || typeof value.version === "string")
+    );
+  }
+  if (value.kind === "embedded-patch-instance") {
+    return Array.isArray(value.ownerPath) && value.ownerPath.every((entry) => typeof entry === "string") && typeof value.nodeId === "string";
+  }
+  if (value.kind === "help-working-copy") {
+    return (
+      typeof value.workingCopyId === "string" &&
+      (value.sourcePackageId === undefined || typeof value.sourcePackageId === "string") &&
+      (value.sourcePatchId === undefined || typeof value.sourcePatchId === "string")
+    );
+  }
+  return false;
+}
+
+function isPastePlacement(value: unknown): value is PastePlacement {
+  if (!isRecord(value)) {
+    return false;
+  }
+  if (value.kind === "position") {
+    return typeof value.x === "number" && Number.isFinite(value.x) && typeof value.y === "number" && Number.isFinite(value.y);
+  }
+  if (value.kind === "anchor") {
+    return (
+      typeof value.nodeId === "string" &&
+      (value.offsetX === undefined || (typeof value.offsetX === "number" && Number.isFinite(value.offsetX))) &&
+      (value.offsetY === undefined || (typeof value.offsetY === "number" && Number.isFinite(value.offsetY)))
+    );
+  }
+  return false;
+}
+
+function isPasteGraphFragmentOptions(value: unknown): value is PasteGraphFragmentOptions {
+  return (
+    value === undefined ||
+    (
+      isRecord(value) &&
+      (value.outsideEndpointPolicy === undefined || value.outsideEndpointPolicy === "reject" || value.outsideEndpointPolicy === "omit") &&
+      (value.idConflictPolicy === undefined || value.idConflictPolicy === "remap" || value.idConflictPolicy === "reject") &&
+      (value.preserveRelativePositions === undefined || typeof value.preserveRelativePositions === "boolean")
+    )
+  );
+}
+
+function isRuntimeOperationAttribution(value: unknown): value is RuntimeOperationAttribution {
+  return (
+    isRecord(value) &&
+    (value.actorId === undefined || typeof value.actorId === "string") &&
+    (value.clientId === undefined || typeof value.clientId === "string") &&
+    (value.label === undefined || typeof value.label === "string")
+  );
+}
+
+function isIdRemapResult(value: unknown): value is IdRemapResult {
+  return (
+    isRecord(value) &&
+    isStringRecord(value.nodeIdMap) &&
+    isStringRecord(value.edgeIdMap) &&
+    Array.isArray(value.omittedEdgeIds) &&
+    value.omittedEdgeIds.every((entry) => typeof entry === "string")
+  );
+}
+
+function isRuntimeOperationDiagnostic(value: unknown): value is RuntimeOperationDiagnostic {
+  return (
+    isRecord(value) &&
+    (value.severity === "error" || value.severity === "warning" || value.severity === "info") &&
+    typeof value.code === "string" &&
+    RUNTIME_OPERATION_DIAGNOSTIC_CODES.has(value.code) &&
+    typeof value.message === "string" &&
+    (value.path === undefined || typeof value.path === "string") &&
+    (value.target === undefined || isGraphTargetRef(value.target)) &&
+    (value.expectedRevision === undefined || typeof value.expectedRevision === "string") &&
+    (value.actualRevision === undefined || typeof value.actualRevision === "string") &&
+    (value.duplicates === undefined || (Array.isArray(value.duplicates) && value.duplicates.every((entry) => typeof entry === "string"))) &&
+    (value.nodes === undefined || (Array.isArray(value.nodes) && value.nodes.every((entry) => typeof entry === "string"))) &&
+    (value.edges === undefined || (Array.isArray(value.edges) && value.edges.every((entry) => typeof entry === "string")))
+  );
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return isRecord(value) && Object.values(value).every((entry) => typeof entry === "string");
 }
 
 function isRuntimeControlReadRequest(value: unknown): value is RuntimeControlReadRequest {

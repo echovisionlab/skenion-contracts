@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/runtime/v0/operation.schema.json",
+  "title": "Skenion Runtime Operation Envelope v0",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "id", "kind", "request"],
+  "properties": {
+    "schema": {
+      "const": "skenion.runtime.operation"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "const": "pasteGraphFragment"
+    },
+    "request": {
+      "$ref": "#/$defs/pasteGraphFragmentRequest"
+    },
+    "attribution": {
+      "$ref": "#/$defs/runtimeOperationAttribution"
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "patchPath": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "root"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "patchId"],
+          "properties": {
+            "kind": {
+              "const": "project-patch-definition"
+            },
+            "patchId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "packageId", "patchId"],
+          "properties": {
+            "kind": {
+              "const": "package-patch-definition"
+            },
+            "packageId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "patchId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "ownerPath", "nodeId"],
+          "properties": {
+            "kind": {
+              "const": "embedded-patch-instance"
+            },
+            "ownerPath": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "workingCopyId"],
+          "properties": {
+            "kind": {
+              "const": "help-working-copy"
+            },
+            "workingCopyId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sourcePackageId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sourcePatchId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "graphTargetRef": {
+      "type": "object",
+      "required": ["path", "baseRevision"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/patchPath"
+        },
+        "baseRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetRevision": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "pastePlacement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "x", "y"],
+          "properties": {
+            "kind": {
+              "const": "position"
+            },
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "nodeId"],
+          "properties": {
+            "kind": {
+              "const": "anchor"
+            },
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "offsetX": {
+              "type": "number"
+            },
+            "offsetY": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "pasteGraphFragmentOptions": {
+      "type": "object",
+      "properties": {
+        "outsideEndpointPolicy": {
+          "enum": ["reject", "omit"],
+          "default": "reject"
+        },
+        "idConflictPolicy": {
+          "enum": ["remap", "reject"],
+          "default": "remap"
+        },
+        "preserveRelativePositions": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "pasteGraphFragmentRequest": {
+      "type": "object",
+      "required": ["target", "fragment"],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/graphTargetRef"
+        },
+        "fragment": {
+          "$ref": "https://skenion.dev/schemas/graph/v0.2/fragment.schema.json"
+        },
+        "placement": {
+          "$ref": "#/$defs/pastePlacement"
+        },
+        "options": {
+          "$ref": "#/$defs/pasteGraphFragmentOptions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeOperationAttribution": {
+      "type": "object",
+      "properties": {
+        "actorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "idRemapResult": {
+      "type": "object",
+      "required": ["nodeIdMap", "edgeIdMap", "omittedEdgeIds"],
+      "properties": {
+        "nodeIdMap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "edgeIdMap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "omittedEdgeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeOperationDiagnosticSeverity": {
+      "enum": ["error", "warning", "info"]
+    },
+    "runtimeOperationDiagnostic": {
+      "type": "object",
+      "required": ["severity", "code", "message"],
+      "properties": {
+        "severity": {
+          "$ref": "#/$defs/runtimeOperationDiagnosticSeverity"
+        },
+        "code": {
+          "enum": [
+            "base-revision-mismatch",
+            "duplicate-edge-id",
+            "duplicate-node-id",
+            "duplicate-target-path",
+            "fragment-edge-outside-selection",
+            "id-conflict",
+            "invalid-target-path",
+            "operation-rebased",
+            "target-not-found",
+            "unsupported-operation"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/graphTargetRef"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actualRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duplicates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "pasteGraphFragmentResponse": {
+      "type": "object",
+      "required": [
+        "schema",
+        "schemaVersion",
+        "ok",
+        "applied",
+        "conflict",
+        "target",
+        "revisionBefore",
+        "revisionAfter",
+        "historyEntryId",
+        "idRemap",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.paste-graph-fragment.response"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "conflict": {
+          "type": "boolean"
+        },
+        "target": {
+          "$ref": "#/$defs/graphTargetRef"
+        },
+        "revisionBefore": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revisionAfter": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "historyEntryId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "idRemap": {
+          "$ref": "#/$defs/idRemapResult"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeOperationDiagnostic"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

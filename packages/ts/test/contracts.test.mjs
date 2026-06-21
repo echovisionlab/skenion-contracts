@@ -16,6 +16,7 @@ import {
   getBuiltinNodeDefinition,
   getBuiltinNodeHelp,
   getBuiltinNodeHelpGraph,
+  graphFragmentV02Schema,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -29,6 +30,7 @@ import {
   planConversion,
   projectV01Schema,
   projectV02Schema,
+  runtimeOperationV0Schema,
   parseObjectTextV01,
   representationForDataType,
   representationRegistryV01,
@@ -38,6 +40,7 @@ import {
   analyzeShaderInterfaceV01,
   shaderInterfaceToPortsV01,
   analyzeGraphDocumentV02,
+  analyzeGraphFragmentV02,
   applyMidiClockMessageV01,
   createInitialMidiClockSnapshotV01,
   midiClockSnapshotToClockStateV01,
@@ -50,13 +53,21 @@ import {
   validateObjectTextParseResult,
   validateGraphDocument,
   validateGraphDocumentV02,
+  validateGraphFragmentV02,
   validateNodeDefinition,
   validateNodeDefinitionV02,
   validatePatchDefinitionV02,
+  validatePasteGraphFragmentRequest,
+  validatePasteGraphFragmentResponse,
   validateProjectDocument,
   validateProjectDocumentV02,
+  validateRuntimeOperationEnvelope,
   validateViewState,
-  validateShaderInterface
+  validateShaderInterface,
+  isPasteGraphFragmentRequest,
+  isPasteGraphFragmentResponse,
+  isRuntimeOperationEnvelope,
+  isRuntimeSessionEvent
 } from "../dist/index.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
@@ -134,10 +145,23 @@ test("documents runtime IO discovery HTTP API", async () => {
     "RuntimeIoDeviceListResponse",
     "RuntimeIoDeviceDescriptor",
     "RuntimeIoBindingConfig",
-    "RuntimeIoDiagnostic"
+    "RuntimeIoDiagnostic",
+    "RuntimeOperationEnvelope",
+    "PasteGraphFragmentRequest",
+    "PasteGraphFragmentResponse",
+    "GraphTargetRef",
+    "PatchPath",
+    "IdRemapResult",
+    "RuntimeOperationDiagnostic"
   ]) {
     assert.match(openApi, new RegExp(`\\b${schemaName}:`));
   }
+
+  assert.match(openApi, /\/v0\/sessions\/\{sessionId\}\/operations:/);
+  assert.match(openApi, /\/v0\/sessions\/\{sessionId\}\/events\/stream:/);
+  assert.match(openApi, /Compatibility\/default-session alias/);
+  assert.match(openApi, /sessions\.events\.stream/);
+  assert.match(openApi, /sessionId:/);
 });
 
 test("validates object text parse result fixtures", async () => {
@@ -1140,6 +1164,183 @@ test("exports and validates v0.2 graph and node schemas", async () => {
 
   assert.equal(validateGraphDocumentV02(graph).ok, true);
   assert.equal(validateNodeDefinitionV02(node).ok, true);
+});
+
+test("exports and validates v0.2 graph fragment contracts", async () => {
+  assert.equal(graphFragmentV02Schema.properties.schema.const, "skenion.graph.fragment");
+  assert.equal(graphFragmentV02Schema.properties.schemaVersion.const, "0.2.0");
+
+  const fragment = await readJson("fixtures/graph-fragment/v0.2/valid/internal-edge.fragment.json");
+  const result = validateGraphFragmentV02(fragment);
+  assert.equal(result.ok, true);
+  assert.deepEqual(fragment.edges.map((edge) => edge.id), ["edge-source-sink"]);
+
+  const analysis = analyzeGraphFragmentV02(fragment);
+  assert.equal(analysis.ok, true);
+  assert.deepEqual(analysis.omittedEdgeIds, []);
+
+  const outside = await readJson("fixtures/graph-fragment/v0.2/invalid/outside-endpoint.fragment.json");
+  const rejected = validateGraphFragmentV02(outside);
+  assert.equal(rejected.ok, false);
+  assert.match(rejected.errors.join("\n"), /fragment-edge-outside-selection/);
+
+  const omitted = analyzeGraphFragmentV02(outside, { outsideEndpointPolicy: "omit" });
+  assert.equal(omitted.ok, true);
+  assert.equal(omitted.diagnostics[0].severity, "warning");
+  assert.deepEqual(omitted.omittedEdgeIds, ["edge-to-outside"]);
+
+  const schemaInvalid = structuredClone(fragment);
+  delete schemaInvalid.nodes;
+  assert.equal(validateGraphFragmentV02(schemaInvalid).ok, false);
+
+  const duplicateNode = structuredClone(fragment);
+  duplicateNode.nodes.push(structuredClone(duplicateNode.nodes[0]));
+  assert.match(validateGraphFragmentV02(duplicateNode).errors.join("\n"), /duplicate-node-id/);
+
+  const duplicatePort = structuredClone(fragment);
+  duplicatePort.nodes[0].ports.push(structuredClone(duplicatePort.nodes[0].ports[0]));
+  assert.match(validateGraphFragmentV02(duplicatePort).errors.join("\n"), /duplicate-port-id/);
+
+  const duplicateEdge = structuredClone(fragment);
+  duplicateEdge.edges.push(structuredClone(duplicateEdge.edges[0]));
+  assert.match(validateGraphFragmentV02(duplicateEdge).errors.join("\n"), /duplicate-edge-id/);
+
+  const missingSource = structuredClone(fragment);
+  missingSource.edges[0].source.portId = "missing";
+  assert.match(validateGraphFragmentV02(missingSource).errors.join("\n"), /missing-source-port/);
+
+  const missingTarget = structuredClone(fragment);
+  missingTarget.edges[0].target.portId = "missing";
+  assert.match(validateGraphFragmentV02(missingTarget).errors.join("\n"), /missing-target-port/);
+
+  const badSourceDirection = structuredClone(fragment);
+  badSourceDirection.nodes[0].ports[0].direction = "input";
+  assert.match(validateGraphFragmentV02(badSourceDirection).errors.join("\n"), /invalid-source-direction/);
+
+  const badTargetDirection = structuredClone(fragment);
+  badTargetDirection.nodes[1].ports[0].direction = "output";
+  assert.match(validateGraphFragmentV02(badTargetDirection).errors.join("\n"), /invalid-target-direction/);
+
+  const incompatible = structuredClone(fragment);
+  incompatible.nodes[1].ports[0].type = "string";
+  assert.match(validateGraphFragmentV02(incompatible).errors.join("\n"), /incompatible-type/);
+
+  const acceptsList = structuredClone(fragment);
+  acceptsList.nodes[1].ports[0].type = "number.int";
+  acceptsList.nodes[1].ports[0].accepts = ["number.float"];
+  assert.equal(validateGraphFragmentV02(acceptsList).ok, true);
+
+  const messageAny = structuredClone(fragment);
+  messageAny.nodes[1].ports[0].type = "message.any";
+  assert.equal(validateGraphFragmentV02(messageAny).ok, true);
+});
+
+test("validates session-addressed paste operation contracts", async () => {
+  assert.equal(runtimeOperationV0Schema.properties.schema.const, "skenion.runtime.operation");
+  assert.equal(runtimeOperationV0Schema.$defs.pasteGraphFragmentRequest.required[0], "target");
+
+  const root = await readJson("fixtures/runtime-operation/v0/valid/root-graph-paste.operation.json");
+  const projectPatch = await readJson("fixtures/runtime-operation/v0/valid/project-patch-definition-paste.operation.json");
+  const helpWorkingCopy = await readJson("fixtures/runtime-operation/v0/valid/help-working-copy-paste.operation.json");
+
+  for (const operation of [root, projectPatch, helpWorkingCopy]) {
+    assert.equal(validateRuntimeOperationEnvelope(operation).ok, true);
+    assert.equal(validatePasteGraphFragmentRequest(operation.request).ok, true);
+    assert.equal(isRuntimeOperationEnvelope(operation), true);
+    assert.equal(isPasteGraphFragmentRequest(operation.request), true);
+  }
+
+  assert.equal(root.request.target.path.kind, "root");
+  assert.equal("attribution" in root, false);
+  assert.equal(projectPatch.request.target.path.kind, "project-patch-definition");
+  assert.equal(helpWorkingCopy.request.target.path.kind, "help-working-copy");
+
+  const diagnosticsResponse = await readJson("fixtures/runtime-operation/v0/valid/target-path-diagnostics.response.json");
+  assert.equal(validatePasteGraphFragmentResponse(diagnosticsResponse).ok, true);
+  assert.equal(isPasteGraphFragmentResponse(diagnosticsResponse), true);
+  assert.deepEqual(diagnosticsResponse.diagnostics.map((entry) => entry.code), [
+    "invalid-target-path",
+    "duplicate-target-path"
+  ]);
+  assert.equal(diagnosticsResponse.diagnostics[0].path, "/request/target/path");
+  assert.deepEqual(diagnosticsResponse.idRemap, {
+    nodeIdMap: {},
+    edgeIdMap: {},
+    omittedEdgeIds: []
+  });
+
+  const remapResponse = await readJson("fixtures/runtime-operation/v0/valid/id-remap.response.json");
+  assert.equal(validatePasteGraphFragmentResponse(remapResponse).ok, true);
+  assert.equal(isPasteGraphFragmentResponse(remapResponse), true);
+  assert.deepEqual(remapResponse.idRemap.nodeIdMap, {
+    source: "source_2",
+    sink: "sink_2"
+  });
+  assert.deepEqual(remapResponse.idRemap.edgeIdMap, {
+    "edge-source-sink": "edge-source-sink_2"
+  });
+
+  const invalidEnvelope = structuredClone(root);
+  invalidEnvelope.kind = "loadProject";
+  assert.equal(validateRuntimeOperationEnvelope(invalidEnvelope).ok, false);
+  assert.equal(isRuntimeOperationEnvelope(invalidEnvelope), false);
+
+  const invalidRequest = structuredClone(root.request);
+  delete invalidRequest.target;
+  assert.equal(validatePasteGraphFragmentRequest(invalidRequest).ok, false);
+  assert.equal(isPasteGraphFragmentRequest(invalidRequest), false);
+
+  const outsideFragment = await readJson("fixtures/graph-fragment/v0.2/invalid/outside-endpoint.fragment.json");
+  const defaultOutsideRequest = structuredClone(root.request);
+  defaultOutsideRequest.fragment = outsideFragment;
+  assert.equal(validatePasteGraphFragmentRequest(defaultOutsideRequest).ok, false);
+  const defaultOutsideEnvelope = structuredClone(root);
+  defaultOutsideEnvelope.request = defaultOutsideRequest;
+  assert.equal(validateRuntimeOperationEnvelope(defaultOutsideEnvelope).ok, false);
+
+  const omitOutsideRequest = structuredClone(defaultOutsideRequest);
+  omitOutsideRequest.options = { outsideEndpointPolicy: "omit" };
+  assert.equal(validatePasteGraphFragmentRequest(omitOutsideRequest).ok, true);
+
+  const invalidResponse = structuredClone(diagnosticsResponse);
+  invalidResponse.diagnostics[0].code = "not-a-contract-code";
+  assert.equal(validatePasteGraphFragmentResponse(invalidResponse).ok, false);
+  assert.equal(isPasteGraphFragmentResponse(invalidResponse), false);
+});
+
+test("runtime session events are session-addressed", () => {
+  const event = {
+    schema: "skenion.runtime.session.event",
+    schemaVersion: "0.1.0",
+    id: "event-1",
+    sessionId: "session-a",
+    sequence: 1,
+    kind: "snapshot",
+    snapshot: {
+      sessionRevision: 1,
+      viewRevision: 1,
+      controlRevision: 0,
+      project: null,
+      diagnostics: [],
+      plan: null
+    },
+    history: {
+      schema: "skenion.runtime.history",
+      schemaVersion: "0.1.0",
+      entries: [],
+      canUndo: false,
+      canRedo: false,
+      undoDepth: 0,
+      redoDepth: 0
+    },
+    diagnostics: [],
+    createdAt: "2026-06-21T00:00:00.000Z"
+  };
+
+  assert.equal(isRuntimeSessionEvent(event), true);
+  const missingSession = structuredClone(event);
+  delete missingSession.sessionId;
+  assert.equal(isRuntimeSessionEvent(missingSession), false);
 });
 
 test("exports and validates v0.2 project patch library contracts", async () => {

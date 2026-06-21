@@ -383,6 +383,7 @@ export interface RuntimeSessionEvent {
   schema: "skenion.runtime.session.event";
   schemaVersion: "0.1.0";
   id: string;
+  sessionId: string;
   sequence: number;
   kind: RuntimeSessionEventKind;
   snapshot: RuntimeSessionSnapshot;
@@ -1013,6 +1014,135 @@ export interface GraphDocumentV02 {
   nodes: GraphNodeV02[];
   edges: EdgeSpecV02[];
   cableStyles?: CableStyleRegistryV02;
+}
+
+export interface GraphFragmentViewV02 {
+  nodes?: Record<string, CanvasNodeViewV01>;
+}
+
+export interface GraphFragmentOmittedEdgeV02 {
+  id: string;
+  source: EdgeEndpointV02;
+  target: EdgeEndpointV02;
+  reason: "outside-fragment" | "policy-omit";
+}
+
+export interface GraphFragmentV02 {
+  schema: "skenion.graph.fragment";
+  schemaVersion: "0.2.0";
+  id?: string;
+  nodes: GraphNodeV02[];
+  edges: EdgeSpecV02[];
+  view?: GraphFragmentViewV02;
+  omittedEdges?: GraphFragmentOmittedEdgeV02[];
+  metadata?: Record<string, unknown>;
+}
+
+export type GraphFragmentOutsideEndpointPolicyV02 = "reject" | "omit";
+
+export interface GraphFragmentValidationOptionsV02 {
+  outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV02;
+}
+
+export interface GraphFragmentDiagnosticV02 {
+  severity: "error" | "warning";
+  code: string;
+  message: string;
+  nodes?: string[];
+  edges?: string[];
+}
+
+export interface GraphFragmentValidationResultV02 {
+  ok: boolean;
+  diagnostics: GraphFragmentDiagnosticV02[];
+  omittedEdgeIds: string[];
+}
+
+export type PatchPath =
+  | { kind: "root" }
+  | { kind: "project-patch-definition"; patchId: string }
+  | { kind: "package-patch-definition"; packageId: string; patchId: string; version?: string }
+  | { kind: "embedded-patch-instance"; ownerPath: string[]; nodeId: string }
+  | {
+      kind: "help-working-copy";
+      workingCopyId: string;
+      sourcePackageId?: string;
+      sourcePatchId?: string;
+    };
+
+export interface GraphTargetRef {
+  path: PatchPath;
+  baseRevision: string;
+  targetRevision?: string;
+}
+
+export type PastePlacement =
+  | { kind: "position"; x: number; y: number }
+  | { kind: "anchor"; nodeId: string; offsetX?: number; offsetY?: number };
+
+export interface PasteGraphFragmentOptions {
+  outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV02;
+  idConflictPolicy?: "remap" | "reject";
+  preserveRelativePositions?: boolean;
+}
+
+export interface PasteGraphFragmentRequest {
+  target: GraphTargetRef;
+  fragment: GraphFragmentV02;
+  placement?: PastePlacement;
+  options?: PasteGraphFragmentOptions;
+}
+
+export interface RuntimeOperationAttribution {
+  actorId?: string;
+  clientId?: string;
+  label?: string;
+}
+
+export interface RuntimeOperationEnvelope {
+  schema: "skenion.runtime.operation";
+  schemaVersion: "0.1.0";
+  id: string;
+  kind: "pasteGraphFragment";
+  request: PasteGraphFragmentRequest;
+  attribution?: RuntimeOperationAttribution;
+  correlationId?: string;
+  createdAt?: string;
+}
+
+export interface IdRemapResult {
+  nodeIdMap: Record<string, string>;
+  edgeIdMap: Record<string, string>;
+  omittedEdgeIds: string[];
+}
+
+export type RuntimeOperationDiagnosticSeverity = "error" | "warning" | "info";
+
+export interface RuntimeOperationDiagnostic {
+  severity: RuntimeOperationDiagnosticSeverity;
+  code: string;
+  message: string;
+  path?: string;
+  target?: GraphTargetRef;
+  expectedRevision?: string;
+  actualRevision?: string;
+  duplicates?: string[];
+  nodes?: string[];
+  edges?: string[];
+}
+
+export interface PasteGraphFragmentResponse {
+  schema: "skenion.runtime.paste-graph-fragment.response";
+  schemaVersion: "0.1.0";
+  ok: boolean;
+  applied: boolean;
+  conflict: boolean;
+  target: GraphTargetRef;
+  revisionBefore: string;
+  revisionAfter: string | null;
+  historyEntryId: string | null;
+  idRemap: IdRemapResult;
+  diagnostics: RuntimeOperationDiagnostic[];
 }
 
 export interface ProjectMetadataV02 {
