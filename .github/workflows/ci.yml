@@ -52,6 +52,11 @@ jobs:
           workspaces: packages/rust -> target
           cache-all-crates: "true"
           cache-on-failure: "true"
+      - name: Check Rust lockfile is release-clean
+        run: |
+          cargo metadata --manifest-path packages/rust/Cargo.toml --locked --format-version 1 >/dev/null
+          cargo package --manifest-path packages/rust/Cargo.toml --locked --no-verify
+          git diff --exit-code -- packages/rust/Cargo.lock
       - run: cargo fmt --check --manifest-path packages/rust/Cargo.toml
       - run: cargo clippy --manifest-path packages/rust/Cargo.toml --all-targets --all-features -- -D warnings
       - run: cargo test --manifest-path packages/rust/Cargo.toml --all-targets --all-features
