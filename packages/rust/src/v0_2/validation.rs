@@ -994,6 +994,9 @@ fn runtime_profile_errors(profile: &RuntimeConnectionProfile) -> Vec<ValidationE
         errors.push(ValidationErrorV02::new("endpoint host must not be empty"));
     }
     if let Some(process) = &profile.process {
+        if process.pid == Some(0) {
+            errors.push(ValidationErrorV02::new("process pid must be at least 1"));
+        }
         if process
             .executable_path
             .as_ref()
@@ -2242,6 +2245,7 @@ mod tests {
         invalid_info.profile.endpoint.canonical_url = Some(String::new());
         invalid_info.profile.endpoint.host = Some(String::new());
         if let Some(process) = &mut invalid_info.profile.process {
+            process.pid = Some(0);
             process.executable_path = Some(String::new());
             process.working_directory = Some(String::new());
             process.owner_window_id = Some(String::new());
@@ -2262,6 +2266,7 @@ mod tests {
         assert!(info_error.contains("endpoint url must not be empty"));
         assert!(info_error.contains("endpoint canonicalUrl must not be empty"));
         assert!(info_error.contains("endpoint host must not be empty"));
+        assert!(info_error.contains("process pid must be at least 1"));
         assert!(info_error.contains("process executablePath must not be empty"));
         assert!(info_error.contains("process workingDirectory must not be empty"));
         assert!(info_error.contains("process ownerWindowId must not be empty"));
