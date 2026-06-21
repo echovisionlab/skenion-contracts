@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.1](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.35.0...skenion-contracts-v0.35.1) (2026-06-21)
+
+
+### Bug Fixes
+
+* **ci:** keep Rust release lockfile aligned ([#98](https://github.com/echovisionlab/skenion-contracts/issues/98)) ([be672de](https://github.com/echovisionlab/skenion-contracts/commit/be672de0bc5fa533ace719531781094989a58de3))
+
 ## [0.35.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.34.0...skenion-contracts-v0.35.0) (2026-06-21)
 
 
