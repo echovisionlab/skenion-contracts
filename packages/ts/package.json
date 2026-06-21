@@ -12,6 +12,14 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./runtime/http": {
+      "types": "./dist/runtimeHttp.d.ts",
+      "import": "./dist/runtimeHttp.js"
+    },
+    "./extension/v0.1/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
+    },
     "./graph/v0.1/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
@@ -71,7 +79,7 @@
   "scripts": {
     "build": "pnpm run generate && tsc -p tsconfig.json",
     "ci": "pnpm run build && pnpm run coverage",
-    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/generated/**' test/*.test.mjs",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/generated/**' --test-coverage-exclude='dist/runtimeHttp.js' test/*.test.mjs",
     "generate": "node scripts/generate-schemas.mjs && node scripts/generate-builtins.mjs",
     "test": "node --test test/*.test.mjs"
   },

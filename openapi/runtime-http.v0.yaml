@@ -23,6 +23,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeInfoResponse"
+  /v0/extensions:
+    get:
+      summary: Return discovered runtime extension packages.
+      responses:
+        "200":
+          description: Extension package load status and provided contract surface.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeExtensionListResponse"
   /v0/io/devices:
     get:
       summary: Return currently enumerable runtime IO devices.
@@ -415,7 +425,101 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.events.stream", "session.validate", "session.plan", "session.run", "session.mutate", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.preview.controlState", "session.render.generatedShader", "session.telemetry", "session.telemetry.stream", "runtime.logs", "io.devices", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.events.stream", "session.validate", "session.plan", "session.run", "session.mutate", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.preview.controlState", "session.render.generatedShader", "session.telemetry", "session.telemetry.stream", "runtime.logs", "runtime.extensions", "io.devices", "session.clear"]
+    RuntimeExtensionStatus:
+      type: string
+      enum:
+        - loaded
+        - disabled
+        - failed
+    RuntimeExtensionKind:
+      type: string
+      enum:
+        - core-package
+        - native-runtime
+        - codec
+        - node-pack
+    RuntimeExtensionDescriptor:
+      type: object
+      required:
+        - id
+        - version
+        - kind
+        - runtimeAbiVersion
+        - manifestPath
+        - status
+        - capabilities
+        - providedNodes
+        - providedCodecs
+        - providedTransports
+        - providedHelp
+        - testIds
+        - diagnostics
+      properties:
+        id:
+          type: string
+          minLength: 1
+        version:
+          type: string
+          minLength: 1
+        kind:
+          $ref: "#/components/schemas/RuntimeExtensionKind"
+        runtimeAbiVersion:
+          type: string
+          minLength: 1
+        manifestPath:
+          type: string
+          minLength: 1
+          description: Absolute manifest path reported for local diagnostics.
+        status:
+          $ref: "#/components/schemas/RuntimeExtensionStatus"
+        capabilities:
+          type: array
+          items:
+            type: string
+        providedNodes:
+          type: array
+          items:
+            type: string
+        providedCodecs:
+          type: array
+          items:
+            type: string
+        providedTransports:
+          type: array
+          items:
+            type: string
+        providedHelp:
+          type: array
+          items:
+            type: string
+        testIds:
+          type: array
+          items:
+            type: string
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
+    RuntimeExtensionListResponse:
+      type: object
+      required:
+        - ok
+        - extensions
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        extensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeExtensionDescriptor"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
     RuntimeClockDiagnosticSeverity:
       type: string
       enum:

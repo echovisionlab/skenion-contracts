@@ -6,6 +6,7 @@ import type {
 } from "ajv/dist/2020.js";
 import {
   controlMessageV01Schema,
+  extensionManifestV01Schema,
   graphPatchEventV01Schema,
   graphPatchHistoryV01Schema,
   graphPatchV01Schema,
@@ -23,6 +24,7 @@ import type {
   ControlMessageV01,
   DataTypeV01,
   EdgeSpecV02,
+  ExtensionManifestV01,
   GraphCycleValidationV02,
   GraphDocumentV01,
   GraphDocumentV02,
@@ -51,6 +53,7 @@ const Ajv2020 = Ajv2020Runtime as unknown as new (opts?: Options) => {
 const ajv = new Ajv2020({ allErrors: true });
 ajv.addSchema(graphPatchV01Schema);
 ajv.addSchema(graphPatchEventV01Schema);
+ajv.addSchema(nodeDefinitionV01Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphV02Validator = ajv.compile(graphV02Schema);
 const graphPatchV01Validator = ajv.compile(graphPatchV01Schema);
@@ -63,6 +66,7 @@ const nodeDefinitionV02Validator = ajv.compile(nodeDefinitionV02Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
+const extensionManifestV01Validator = ajv.compile(extensionManifestV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
   return errors.map((error) => {
@@ -619,6 +623,16 @@ export function validateNodeDefinitionV02(
   }
 
   return { ok: true, value: definition };
+}
+
+export function validateExtensionManifestV01(
+  document: unknown
+): ValidationResult<ExtensionManifestV01> {
+  if (!extensionManifestV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(extensionManifestV01Validator.errors as ErrorObject[]) };
+  }
+
+  return { ok: true, value: document as ExtensionManifestV01 };
 }
 
 export function validateShaderInterface(document: unknown): ValidationResult<ShaderInterfaceV01> {
