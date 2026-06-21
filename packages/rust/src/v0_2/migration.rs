@@ -183,3 +183,70 @@ pub fn migrate_project_document_v01_to_v02(project: &ProjectDocumentV01) -> Proj
         help: project.help.clone(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn migrates_v01_flow_rates_and_stable_edge_ids() {
+        let graph: GraphDocumentV01 = serde_json::from_value(json!({
+            "schema": "skenion.graph",
+            "schemaVersion": "0.1.0",
+            "id": "legacy-flow-rates",
+            "revision": "rev_0001",
+            "nodes": [
+                {
+                    "id": "source",
+                    "kind": "core.source",
+                    "kindVersion": "0.1.0",
+                    "params": {},
+                    "ports": [
+                        { "id": "event", "direction": "output", "type": { "flow": "event", "dataKind": "bang" } },
+                        { "id": "signal", "direction": "output", "type": { "flow": "signal", "dataKind": "audio.f32" } },
+                        { "id": "stream", "direction": "output", "type": { "flow": "stream", "dataKind": "video.frame" } },
+                        { "id": "gpu", "direction": "output", "type": { "flow": "resource", "dataKind": "gpu.texture2d" } },
+                        { "id": "resource", "direction": "output", "type": { "flow": "resource", "dataKind": "asset.video" } },
+                        { "id": "value", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "from": { "node": "$$$", "port": "$$$" },
+                    "to": { "node": "$$$", "port": "$$$" }
+                },
+                {
+                    "from": { "node": "$$$", "port": "$$$" },
+                    "to": { "node": "$$$", "port": "$$$" }
+                }
+            ]
+        }))
+        .expect("legacy graph should parse");
+
+        let migrated = migrate_graph_document_v01_to_v02(&graph);
+        let ports = &migrated.nodes[0].ports;
+        let rate_for = |port_id: &str| {
+            ports
+                .iter()
+                .find(|port| port.id == port_id)
+                .and_then(|port| port.rate.as_ref())
+        };
+
+        assert_eq!(rate_for("event"), Some(&PortRateV02::Event));
+        assert_eq!(rate_for("signal"), Some(&PortRateV02::Audio));
+        assert_eq!(rate_for("stream"), Some(&PortRateV02::Render));
+        assert_eq!(rate_for("gpu"), Some(&PortRateV02::Gpu));
+        assert_eq!(rate_for("resource"), Some(&PortRateV02::Resource));
+        assert_eq!(rate_for("value"), Some(&PortRateV02::Control));
+        assert_eq!(
+            migrated.edges[0].id,
+            "edge_endpoint_endpoint_to_endpoint_endpoint"
+        );
+        assert_eq!(
+            migrated.edges[1].id,
+            "edge_endpoint_endpoint_to_endpoint_endpoint_2"
+        );
+    }
+}

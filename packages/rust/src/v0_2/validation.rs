@@ -3955,6 +3955,28 @@ mod tests {
             "severity": "warning"
         }));
         invalid_event.snapshot.plan = Some(json!("opaque-plan"));
+        let graph = serde_json::to_value(base_graph()).expect("base graph should serialize");
+        let mut invalid_snapshot_project: ProjectDocumentV02 = serde_json::from_value(json!({
+            "schema": "skenion.project",
+            "schemaVersion": "0.2.0",
+            "id": "runtime-project",
+            "revision": "1",
+            "graph": graph,
+            "viewState": {
+                "schema": "skenion.view-state",
+                "schemaVersion": "0.1.0",
+                "canvas": {
+                    "nodes": {
+                        "source": { "x": 0, "y": 0 },
+                        "target": { "x": 120, "y": 0 }
+                    }
+                }
+            },
+            "patchLibrary": []
+        }))
+        .expect("snapshot project should parse");
+        invalid_snapshot_project.schema = "wrong".to_owned();
+        invalid_event.snapshot.project = Some(invalid_snapshot_project);
         invalid_event.history.schema = "wrong".to_owned();
         invalid_event.history.schema_version = "9.9.9".to_owned();
         let invalid_runtime_operation = json!({
@@ -4045,6 +4067,7 @@ mod tests {
             "sessionId must not be empty",
             "sequence must be at least 1",
             "createdAt must not be empty",
+            "snapshot project expected schema skenion.project",
             "snapshot diagnostics must include non-empty message",
             "snapshot plan must be an object or null",
             "expected history schema skenion.runtime.history",
