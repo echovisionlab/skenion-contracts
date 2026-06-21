@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.34.0...skenion-contracts-v0.35.0) (2026-06-21)
+
+
+### Features
+
+* **graph-schema:** add v0.2 patch library contracts ([#96](https://github.com/echovisionlab/skenion-contracts/issues/96)) ([73a698f](https://github.com/echovisionlab/skenion-contracts/commit/73a698fab29723a6cb1f7c30bf50ad1fcff9fee2))
+
 ## [0.34.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.33.0...skenion-contracts-v0.34.0) (2026-06-21)
 
 
