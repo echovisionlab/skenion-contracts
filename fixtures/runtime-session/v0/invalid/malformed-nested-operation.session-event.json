@@ -1,7 +1,7 @@
 {
   "schema": "skenion.runtime.session.event",
   "schemaVersion": "0.1.0",
-  "id": "event-malformed-patches",
+  "id": "event-malformed-operation",
   "sessionId": "session-a",
   "sequence": 12,
   "sessionRevision": 10,
@@ -23,8 +23,8 @@
         "sequence": 10,
         "kind": "apply",
         "mutation": {
-          "graphPatch": {
-            "schema": "skenion.graph.patch"
+          "operation": {
+            "schema": "skenion.runtime.operation"
           }
         },
         "inverseMutation": {

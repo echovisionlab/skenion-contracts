@@ -11,6 +11,11 @@ import type {
 import { planConversion } from "./conversion.js";
 import { validateGraphDocument, validateGraphPatch } from "./validate.js";
 
+/**
+ * @deprecated Legacy v0.1 graph patch options retained only for import and
+ * migration tooling. Active graph mutation uses RuntimeOperationEnvelope,
+ * GraphTargetRef, and GraphFragmentV02.
+ */
 export interface ApplyGraphPatchOptions {
   nextRevision?: string;
 }
@@ -114,6 +119,11 @@ function nextRevision(current: string, explicit?: string): string {
   return `${current}+1`;
 }
 
+/**
+ * @deprecated Legacy v0.1 graph patch helper retained only for import and
+ * migration tooling. Active graph mutation uses RuntimeOperationEnvelope,
+ * GraphTargetRef, and GraphFragmentV02.
+ */
 export function applyGraphPatch(
   graph: GraphDocumentV01,
   patch: GraphPatchV01,
@@ -203,6 +213,11 @@ export function applyGraphPatch(
   return { ok: true, graph: nextGraph };
 }
 
+/**
+ * @deprecated Legacy v0.1 graph patch helper retained only for import and
+ * migration tooling. Active graph mutation uses RuntimeOperationEnvelope,
+ * GraphTargetRef, and GraphFragmentV02.
+ */
 export function invertGraphPatch(
   graphBefore: GraphDocumentV01,
   patch: GraphPatchV01
@@ -343,3 +358,6 @@ export function invertGraphPatch(
 
   return { ok: true, inversePatch };
 }
+
+export const applyLegacyGraphPatchV01 = applyGraphPatch;
+export const invertLegacyGraphPatchV01 = invertGraphPatch;

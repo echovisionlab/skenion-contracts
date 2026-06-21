@@ -1,8 +1,8 @@
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
-use crate::v0_1::{CanvasNodeViewV01, GraphPatchV01, ViewStateV01};
+use crate::v0_1::{CanvasNodeViewV01, ViewStateV01};
 
 fn deserialize_nullable_u64<'de, D>(deserializer: D) -> Result<Option<Option<u64>>, D::Error>
 where
@@ -1083,14 +1083,7 @@ pub struct RuntimeConnectionProfile {
     pub process: Option<RuntimeProcessMetadata>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
-pub struct RuntimeProjectSnapshot {
-    pub graph: Value,
-    pub view_state: Value,
-    pub nodes: Vec<Value>,
-}
+pub type RuntimeProjectSnapshot = ProjectDocumentV02;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -1108,66 +1101,14 @@ pub struct RuntimeSessionSnapshot {
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeMutationRequest {
-    #[serde(
-        default,
-        deserialize_with = "deserialize_runtime_graph_patch_v01",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub graph_patch: Option<GraphPatchV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<RuntimeOperationEnvelope>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub view_patch: Option<RuntimeViewPatch>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-}
-
-fn deserialize_runtime_graph_patch_v01<'de, D>(
-    deserializer: D,
-) -> Result<Option<GraphPatchV01>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Value::deserialize(deserializer)?;
-    if value.is_null() {
-        return Err(de::Error::custom("graphPatch must be an object"));
-    }
-    validate_runtime_graph_patch_operation_keys(&value).map_err(de::Error::custom)?;
-    serde_json::from_value(value)
-        .map(Some)
-        .map_err(de::Error::custom)
-}
-
-fn validate_runtime_graph_patch_operation_keys(value: &Value) -> Result<(), String> {
-    let Some(ops) = value.get("ops").and_then(Value::as_array) else {
-        return Ok(());
-    };
-    for (index, operation) in ops.iter().enumerate() {
-        let Some(operation) = operation.as_object() else {
-            continue;
-        };
-        let Some(op) = operation.get("op").and_then(Value::as_str) else {
-            continue;
-        };
-        let allowed_keys: &[&str] = match op {
-            "addNode" => &["op", "node"],
-            "removeNode" => &["op", "nodeId"],
-            "replaceNode" => &["op", "nodeId", "node", "edgePolicy"],
-            "setNodeParams" => &["op", "nodeId", "params"],
-            "setNodeParam" => &["op", "nodeId", "key", "value"],
-            "addEdge" | "removeEdge" => &["op", "edge"],
-            "replaceNodeInterface" => &["op", "nodeId", "ports", "edgePolicy"],
-            _ => continue,
-        };
-        for key in operation.keys() {
-            if !allowed_keys.contains(&key.as_str()) {
-                return Err(format!(
-                    "graphPatch ops[{index}] contains unknown field {key}"
-                ));
-            }
-        }
-    }
-    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -1474,43 +1415,6 @@ pub fn derive_patch_contracts_v02(project: &ProjectDocumentV02) -> Vec<PatchCont
         .iter()
         .map(derive_patch_contract_v02)
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde::de::{self, Visitor};
-
-    struct FailingDeserializer;
-
-    impl<'de> Deserializer<'de> for FailingDeserializer {
-        type Error = de::value::Error;
-
-        fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: Visitor<'de>,
-        {
-            Err(de::Error::custom("forced graphPatch deserializer failure"))
-        }
-
-        serde::forward_to_deserialize_any! {
-            bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes byte_buf option
-            unit unit_struct newtype_struct seq tuple tuple_struct map struct enum identifier
-            ignored_any
-        }
-    }
-
-    #[test]
-    fn propagates_runtime_graph_patch_value_deserializer_errors() {
-        let error = deserialize_runtime_graph_patch_v01(FailingDeserializer)
-            .expect_err("failing deserializer should propagate");
-
-        assert!(
-            error
-                .to_string()
-                .contains("forced graphPatch deserializer failure")
-        );
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]

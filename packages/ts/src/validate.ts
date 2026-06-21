@@ -85,6 +85,8 @@ ajv.addSchema(graphPatchV01Schema);
 ajv.addSchema(graphPatchEventV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(viewStateV01Schema);
+ajv.addSchema(projectV02Schema);
+ajv.addSchema(runtimeOperationV0Schema);
 ajv.addSchema(runtimeSessionV0Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphV02Validator = ajv.compile(graphV02Schema);

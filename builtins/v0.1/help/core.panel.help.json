@@ -10,7 +10,7 @@
     "panel",
     "background"
   ],
-  "runtimeBehavior": "Messages arrive through in. set <hex> updates the runtime panel CSS color text silently. Inspector color edits remain graph patches.",
+  "runtimeBehavior": "Messages arrive through in. set <hex> updates the runtime panel CSS color text silently. Inspector color edits remain saved graph mutations.",
   "relatedNodes": [
     "core.comment",
     "core.message"

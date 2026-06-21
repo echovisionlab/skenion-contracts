@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/project/v0.1/project.schema.json",
-  "title": "Skenion Project Document v0.1",
+  "title": "Skenion Project Document v0.1 (legacy import)",
+  "description": "Frozen legacy project document used only for import and migration fixtures. New authoring/runtime contracts use project v0.2.",
   "type": "object",
   "required": ["schema", "schemaVersion", "id", "revision", "graph", "viewState"],
   "properties": {

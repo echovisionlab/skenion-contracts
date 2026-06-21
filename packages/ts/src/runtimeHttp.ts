@@ -1,9 +1,7 @@
 import {
   validateExtensionManifestV01,
   validateGraphFragmentV02,
-  validateGraphDocument,
-  validateGraphPatch,
-  validateViewState
+  validateProjectDocumentV02
 } from "./validate.js";
 import type {
   CanvasNodeViewV01,
@@ -551,14 +549,7 @@ function isRuntimeSessionSnapshot(value: unknown): value is RuntimeSessionSnapsh
 }
 
 function isRuntimeProjectSnapshot(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    hasOnlyKeys(value, ["graph", "viewState", "nodes"]) &&
-    validateGraphDocument(value.graph).ok &&
-    validateViewState(value.viewState).ok &&
-    Array.isArray(value.nodes) &&
-    value.nodes.every((node) => isRecord(node) && typeof node.id === "string")
-  );
+  return validateProjectDocumentV02(value).ok;
 }
 
 function isRuntimeSessionEventKind(value: unknown): value is RuntimeSessionEventKind {
@@ -888,8 +879,8 @@ function isRuntimeHistoryEntry(value: unknown): boolean {
 function isRuntimeMutationRequest(value: unknown): value is RuntimeMutationRequest {
   return (
     isRecord(value) &&
-    hasOnlyKeys(value, ["graphPatch", "viewPatch", "clientId", "description"]) &&
-    (value.graphPatch === undefined || validateGraphPatch(value.graphPatch).ok) &&
+    hasOnlyKeys(value, ["operation", "viewPatch", "clientId", "description"]) &&
+    (value.operation === undefined || isRuntimeOperationEnvelope(value.operation)) &&
     (value.viewPatch === undefined || isRuntimeViewPatch(value.viewPatch)) &&
     (value.clientId === undefined || isNonEmptyString(value.clientId)) &&
     (value.description === undefined || typeof value.description === "string")

@@ -47,9 +47,9 @@ separate visual inlet ports.
 
 ## Graph Edits Versus Runtime Control
 
-Graph patches edit the artwork. Runtime control events perform the artwork.
+Graph mutation operations edit the artwork. Runtime control events perform the artwork.
 
-Changing `params.value` through a graph patch changes the saved graph document.
+Changing `params.value` through a graph mutation changes the saved graph document.
 Sending a runtime control event changes only the loaded runtime session control
 state. Runtime control events must not be serialized back into the graph as
 patches unless a later user action explicitly edits the graph.
@@ -66,7 +66,7 @@ builtin itself stays unconstrained.
 
 `core.comment` is a persisted graph annotation and runtime text object. It has
 one hot `in` inlet for `event<message.any>`. `set <text>` updates the runtime
-display text silently. Inspector text edits remain graph patches.
+display text silently. Inspector text edits remain saved graph mutations.
 
 `core.message` is the first simple message-box form. It stores message box text
 in graph params and emits a `ControlMessage` selector plus typed atoms when

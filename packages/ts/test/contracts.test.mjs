@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   applyGraphPatch,
+  applyLegacyGraphPatchV01,
   builtinManifestV01,
   builtinNodeHelpGraphsV01,
   builtinNodeHelpV01,
@@ -23,6 +24,9 @@ import {
   graphV01Schema,
   graphV02Schema,
   invertGraphPatch,
+  invertLegacyGraphPatchV01,
+  migrateGraphDocumentV01ToV02,
+  migrateProjectDocumentV01ToV02,
   nodeDefinitionV01Schema,
   nodeDefinitionV02Schema,
   objectTextParseResultV01Schema,
@@ -180,7 +184,7 @@ test("validates runtime session profile and replay fixtures", async () => {
     "fixtures/runtime-session/v0/invalid/replay-gap-order.session-event.json",
     "fixtures/runtime-session/v0/invalid/scalar-plan.session-event.json",
     "fixtures/runtime-session/v0/invalid/nested-mutation-client-id.session-event.json",
-    "fixtures/runtime-session/v0/invalid/malformed-nested-patches.session-event.json"
+    "fixtures/runtime-session/v0/invalid/malformed-nested-operation.session-event.json"
   ];
 
   for (const fixture of invalidEventFixtures) {
@@ -310,9 +314,33 @@ test("documents runtime IO discovery HTTP API", async () => {
   assert.match(openApi, /authPolicy:/);
   assert.match(openApi, /sessions\.events\.stream/);
   assert.match(openApi, /sessionId:/);
-  assert.match(openApi, /RuntimeMutationRequest:[\s\S]*?graphPatch:\n\s+\$ref: "#\/components\/schemas\/RuntimeMutationGraphPatch"/);
-  assert.match(openApi, /RuntimeMutationGraphPatch:\n\s+\$ref: "\.\.\/json-schema\/graph\/v0\.1\/patch\.schema\.json"/);
-  assert.match(openApi, /GraphPatchV01:[\s\S]*?ops:[\s\S]*?additionalProperties: true/);
+  assert.match(openApi, /RuntimeProjectSnapshot:\n\s+\$ref: "#\/components\/schemas\/ProjectDocumentV02"/);
+  assert.match(openApi, /RuntimeMutationRequest:[\s\S]*?operation:\n\s+\$ref: "#\/components\/schemas\/RuntimeOperationEnvelope"/);
+  assert.doesNotMatch(openApi, /RuntimeMutationGraphPatch:/);
+  assert.doesNotMatch(openApi, /GraphDocumentV01:|GraphPatchV01:|GraphPatchEventV01:|GraphPatchHistoryV01:/);
+});
+
+test("runtime protobuf wire uses active runtime operations", async () => {
+  const envelopeProto = await readFile(path.join(repoRoot, "proto/skenion/runtime/v1/envelope.proto"), "utf8");
+
+  assert.match(envelopeProto, /message ApplyRuntimeOperation/);
+  assert.match(envelopeProto, /bytes operation_json = 1;/);
+  assert.match(envelopeProto, /reserved 20;/);
+  assert.match(envelopeProto, /reserved "apply_graph_patch";/);
+  assert.match(envelopeProto, /ApplyRuntimeOperation apply_runtime_operation = 22;/);
+  assert.doesNotMatch(envelopeProto, /ApplyRuntimeOperation apply_runtime_operation = 20;|ApplyGraphPatch|patch_json/);
+});
+
+test("documents v0.1 graph patch helpers as legacy root API", async () => {
+  const indexSource = await readFile(path.join(repoRoot, "packages/ts/src/index.ts"), "utf8");
+  const patchSource = await readFile(path.join(repoRoot, "packages/ts/src/patch.ts"), "utf8");
+
+  assert.equal(applyLegacyGraphPatchV01, applyGraphPatch);
+  assert.equal(invertLegacyGraphPatchV01, invertGraphPatch);
+  assert.match(indexSource, /@deprecated Legacy v0\.1 graph patch helpers/);
+  assert.match(indexSource, /applyLegacyGraphPatchV01/);
+  assert.match(indexSource, /invertLegacyGraphPatchV01/);
+  assert.match(patchSource, /Active graph mutation uses RuntimeOperationEnvelope/);
 });
 
 test("validates object text parse result fixtures", async () => {
@@ -482,6 +510,118 @@ test("validates a v0.1 graph fixture", async () => {
   const result = validateGraphDocument(graph);
 
   assert.equal(result.ok, true);
+});
+
+test("migrates legacy v0.1 graph and project fixtures to active v0.2 contracts", async () => {
+  for (const name of ["minimal-value", "core-panel-help"]) {
+    const input = await readJson(`fixtures/migration/v0.1-to-v0.2/${name}.input.graph.json`);
+    const expected = await readJson(`fixtures/migration/v0.1-to-v0.2/${name}.expected.graph.json`);
+    const migrated = migrateGraphDocumentV01ToV02(input);
+
+    assert.deepEqual(migrated, expected, name);
+    assert.equal(validateGraphDocument(input).ok, true, name);
+    assert.equal(validateGraphDocumentV02(migrated).ok, true, name);
+  }
+
+  const projectInput = await readJson("fixtures/migration/v0.1-to-v0.2/minimal-project.input.project.json");
+  const projectExpected = await readJson("fixtures/migration/v0.1-to-v0.2/minimal-project.expected.project.json");
+  const projectMigrated = migrateProjectDocumentV01ToV02(projectInput);
+
+  assert.deepEqual(projectMigrated, projectExpected);
+  assert.equal(validateProjectDocument(projectInput).ok, true);
+  assert.equal(validateProjectDocumentV02(projectMigrated).ok, true);
+  assert.deepEqual(projectMigrated.patchLibrary, []);
+});
+
+test("migrates legacy v0.1 edge-case flows without optional project fields", () => {
+  const graph = {
+    schema: "skenion.graph",
+    schemaVersion: "0.1.0",
+    id: "legacy-flow-edge-cases",
+    revision: "edge-cases",
+    nodes: [
+      {
+        id: "source",
+        kind: "legacy.source",
+        kindVersion: "0.1.0",
+        params: {},
+        ports: [
+          { id: "signal", direction: "output", type: { flow: "signal", dataKind: "number.float" } },
+          { id: "stream", direction: "output", type: { flow: "stream", dataKind: "video.frame" } },
+          { id: "gpu", direction: "output", type: { flow: "resource", dataKind: "gpu.texture2d" } },
+          { id: "file", direction: "output", type: { flow: "resource", dataKind: "file.blob" } },
+          { id: "plain", direction: "output", type: { flow: "value", dataKind: "boolean" } }
+        ]
+      },
+      {
+        id: "!!!",
+        kind: "legacy.endpoint",
+        kindVersion: "0.1.0",
+        params: {},
+        ports: [{ id: "###", direction: "output", type: { flow: "value", dataKind: "number.float" } }]
+      },
+      {
+        id: "???",
+        kind: "legacy.endpoint",
+        kindVersion: "0.1.0",
+        params: {},
+        ports: [{ id: "***", direction: "input", type: { flow: "value", dataKind: "number.float" } }]
+      }
+    ],
+    edges: [
+      { from: { node: "!!!", port: "###" }, to: { node: "???", port: "***" } },
+      { from: { node: "!!!", port: "###" }, to: { node: "???", port: "***" } }
+    ]
+  };
+
+  const migrated = migrateGraphDocumentV01ToV02(graph);
+  assert.deepEqual(migrated.nodes[0].ports.map((port) => port.rate), [
+    "audio",
+    "render",
+    "gpu",
+    "resource",
+    "control"
+  ]);
+  assert.deepEqual(migrated.edges.map((edge) => edge.id), [
+    "edge_endpoint_endpoint_to_endpoint_endpoint",
+    "edge_endpoint_endpoint_to_endpoint_endpoint_2"
+  ]);
+  assert.equal("label" in migrated.nodes[0].ports[0], false);
+  assert.equal("defaultValue" in migrated.nodes[0].ports[0], false);
+  assert.equal("required" in migrated.nodes[0].ports[0], false);
+  assert.equal("triggerMode" in migrated.nodes[0].ports[0], false);
+
+  const project = {
+    schema: "skenion.project",
+    schemaVersion: "0.1.0",
+    id: "legacy-no-optionals",
+    revision: "1",
+    graph,
+    viewState: {
+      schema: "skenion.view-state",
+      schemaVersion: "0.1.0",
+      canvas: {
+        nodes: {},
+        viewport: { x: 0, y: 0, zoom: 1 }
+      }
+    }
+  };
+  const migratedProject = migrateProjectDocumentV01ToV02(project);
+  assert.equal("metadata" in migratedProject, false);
+  assert.equal("tutorial" in migratedProject, false);
+  assert.equal("help" in migratedProject, false);
+  assert.deepEqual(migratedProject.patchLibrary, []);
+
+  const migratedProjectWithHelp = migrateProjectDocumentV01ToV02({
+    ...project,
+    id: "legacy-with-help",
+    tutorial: { steps: [{ title: "Open", body: "Inspect the migrated graph." }] },
+    help: { topic: "legacy-migration" }
+  });
+  assert.deepEqual(migratedProjectWithHelp.tutorial, {
+    steps: [{ title: "Open", body: "Inspect the migrated graph." }]
+  });
+  assert.deepEqual(migratedProjectWithHelp.help, { topic: "legacy-migration" });
 });
 
 test("rejects incompatible bool to bang graph wiring", async () => {

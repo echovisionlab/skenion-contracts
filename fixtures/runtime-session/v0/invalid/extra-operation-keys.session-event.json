@@ -23,20 +23,26 @@
         "sequence": 11,
         "kind": "apply",
         "mutation": {
-          "graphPatch": {
-            "schema": "skenion.graph.patch",
+          "operation": {
+            "schema": "skenion.runtime.operation",
             "schemaVersion": "0.1.0",
-            "id": "patch-extra-operation-key",
-            "baseRevision": "10",
-            "ops": [
-              {
-                "op": "setNodeParam",
-                "nodeId": "value_1",
-                "key": "value",
-                "value": 0.5,
-                "unexpected": true
+            "id": "operation-extra-key",
+            "kind": "pasteGraphFragment",
+            "request": {
+              "target": {
+                "path": {
+                  "kind": "root"
+                },
+                "baseRevision": "10"
+              },
+              "fragment": {
+                "schema": "skenion.graph.fragment",
+                "schemaVersion": "0.2.0",
+                "nodes": [],
+                "edges": []
               }
-            ]
+            },
+            "unexpected": true
           }
         },
         "inverseMutation": {

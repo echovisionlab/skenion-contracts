@@ -9,7 +9,7 @@
     "documentation",
     "annotation"
   ],
-  "runtimeBehavior": "Messages arrive through in. set <text> updates the runtime comment text silently. Inspector text edits remain graph patches.",
+  "runtimeBehavior": "Messages arrive through in. set <text> updates the runtime comment text silently. Inspector text edits remain saved graph mutations.",
   "relatedNodes": [
     "core.message"
   ],

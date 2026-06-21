@@ -1094,20 +1094,7 @@ components:
                 $ref: "#/components/schemas/RuntimeIoInlineFrame"
           additionalProperties: false
     ProjectRequest:
-      type: object
-      required:
-        - graph
-        - nodes
-      properties:
-        graph:
-          $ref: "#/components/schemas/GraphDocumentV01"
-        nodes:
-          type: array
-          items:
-            $ref: "#/components/schemas/NodeDefinitionManifestV01"
-        viewState:
-          type: object
-          additionalProperties: true
+      $ref: "#/components/schemas/ProjectDocumentV02"
     RunProjectRequest:
       allOf:
         - $ref: "#/components/schemas/ProjectRequest"
@@ -1193,22 +1180,7 @@ components:
             - type: "null"
       additionalProperties: false
     RuntimeProjectSnapshot:
-      type: object
-      required:
-        - graph
-        - viewState
-        - nodes
-      properties:
-        graph:
-          $ref: "#/components/schemas/GraphDocumentV01"
-        viewState:
-          type: object
-          additionalProperties: true
-        nodes:
-          type: array
-          items:
-            $ref: "#/components/schemas/NodeDefinitionManifestV01"
-      additionalProperties: false
+      $ref: "#/components/schemas/ProjectDocumentV02"
     SessionRunRequest:
       type: object
       properties:
@@ -1218,8 +1190,8 @@ components:
     RuntimeMutationRequest:
       type: object
       properties:
-        graphPatch:
-          $ref: "#/components/schemas/RuntimeMutationGraphPatch"
+        operation:
+          $ref: "#/components/schemas/RuntimeOperationEnvelope"
         viewPatch:
           $ref: "#/components/schemas/RuntimeViewPatch"
         clientId:
@@ -1228,8 +1200,8 @@ components:
         description:
           type: string
       additionalProperties: false
-    RuntimeMutationGraphPatch:
-      $ref: "../json-schema/graph/v0.1/patch.schema.json"
+    ProjectDocumentV02:
+      $ref: "../json-schema/project/v0.2/project.schema.json"
     GraphFragmentV02:
       $ref: "../json-schema/graph/v0.2/fragment.schema.json"
     PatchPath:
@@ -2416,117 +2388,6 @@ components:
           minimum: 0
         status:
           type: string
-    GraphDocumentV01:
-      type: object
-      required:
-        - schema
-        - schemaVersion
-        - id
-        - revision
-        - nodes
-        - edges
-      properties:
-        schema:
-          type: string
-          const: skenion.graph
-        schemaVersion:
-          type: string
-          const: 0.1.0
-        id:
-          type: string
-        revision:
-          type: string
-        nodes:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        edges:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-      additionalProperties: true
-    GraphPatchV01:
-      type: object
-      required:
-        - schema
-        - schemaVersion
-        - id
-        - baseRevision
-        - ops
-      properties:
-        schema:
-          type: string
-          const: skenion.graph.patch
-        schemaVersion:
-          type: string
-          const: 0.1.0
-        id:
-          type: string
-        baseRevision:
-          type: string
-        clientId:
-          type: string
-        createdAt:
-          type: string
-        description:
-          type: string
-        ops:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-      additionalProperties: true
-    GraphPatchEventV01:
-      type: object
-      required:
-        - schema
-        - schemaVersion
-        - id
-        - sequence
-        - kind
-        - patch
-        - inversePatch
-        - revisionBefore
-        - revisionAfter
-        - createdAt
-      properties:
-        schema:
-          type: string
-          const: skenion.graph.patch.event
-        schemaVersion:
-          type: string
-          const: 0.1.0
-        id:
-          type: string
-          minLength: 1
-        sequence:
-          type: integer
-          minimum: 1
-        kind:
-          type: string
-          enum:
-            - apply
-            - undo
-            - redo
-        patch:
-          $ref: "#/components/schemas/GraphPatchV01"
-        inversePatch:
-          $ref: "#/components/schemas/GraphPatchV01"
-        revisionBefore:
-          type: string
-        revisionAfter:
-          type: string
-        clientId:
-          type: string
-        description:
-          type: string
-        subjectEventId:
-          type: string
-        createdAt:
-          type: string
-      additionalProperties: true
     RuntimeHistory:
       type: object
       required:
@@ -2596,38 +2457,6 @@ components:
         createdAt:
           type: string
           minLength: 1
-      additionalProperties: false
-    GraphPatchHistoryV01:
-      type: object
-      required:
-        - schema
-        - schemaVersion
-        - events
-        - canUndo
-        - canRedo
-        - undoDepth
-        - redoDepth
-      properties:
-        schema:
-          type: string
-          const: skenion.graph.patch.history
-        schemaVersion:
-          type: string
-          const: 0.1.0
-        events:
-          type: array
-          items:
-            $ref: "#/components/schemas/GraphPatchEventV01"
-        canUndo:
-          type: boolean
-        canRedo:
-          type: boolean
-        undoDepth:
-          type: integer
-          minimum: 0
-        redoDepth:
-          type: integer
-          minimum: 0
       additionalProperties: false
     NodeDefinitionManifestV01:
       type: object

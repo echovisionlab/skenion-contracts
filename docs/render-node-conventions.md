@@ -196,8 +196,7 @@ selected by wiring `render.fullscreen-shader:out` into `render.output:in`.
 The shader interface analyzer produces a `skenion.shader.interface` document
 from WGSL annotations. `shaderInterfaceToPortsV01` converts that interface into
 graph node ports. Studio must apply interface changes explicitly through the
-`replaceNodeInterface` graph patch operation with
-`edgePolicy: "removeInvalidEdges"`.
+active graph mutation surface with invalid edges removed.
 
 Example:
 

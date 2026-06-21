@@ -1,0 +1,77 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.2.0",
+  "id": "minimal-project",
+  "revision": "1",
+  "metadata": {
+    "title": "Minimal Project",
+    "description": "A minimal graph with persisted Studio view state.",
+    "createdAt": "2026-06-17T00:00:00.000Z",
+    "updatedAt": "2026-06-17T00:00:00.000Z"
+  },
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.2.0",
+    "id": "minimal-value",
+    "revision": "1",
+    "nodes": [
+      {
+        "id": "value_1",
+        "kind": "core.float",
+        "kindVersion": "0.1.0",
+        "params": {
+          "value": 0.5
+        },
+        "ports": [
+          {
+            "id": "in",
+            "direction": "input",
+            "type": "message.any",
+            "label": "In",
+            "rate": "event",
+            "required": false,
+            "triggerMode": "trigger"
+          },
+          {
+            "id": "cold",
+            "direction": "input",
+            "type": "number.float",
+            "label": "Cold",
+            "rate": "control",
+            "required": false,
+            "triggerMode": "latched"
+          },
+          {
+            "id": "value",
+            "direction": "output",
+            "type": "number.float",
+            "label": "Value",
+            "rate": "control"
+          }
+        ]
+      }
+    ],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {
+        "value_1": {
+          "x": 120,
+          "y": 80,
+          "width": 220,
+          "height": 120,
+          "collapsed": false
+        }
+      },
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      }
+    }
+  },
+  "patchLibrary": []
+}

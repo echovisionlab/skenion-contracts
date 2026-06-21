@@ -5,9 +5,9 @@ local preview without mutating the persisted graph.
 
 ## Boundary
 
-Graph patches edit the artwork definition. Runtime control events perform the
-loaded artwork. Slider, toggle, button, and typed value interactions must not
-produce graph patch operations.
+Graph mutation operations edit the artwork definition. Runtime control events
+perform the loaded artwork. Slider, toggle, button, and typed value interactions
+must not produce graph mutation operations.
 
 Runtime control events may update:
 

@@ -281,17 +281,8 @@ export interface RuntimeLogSnapshotResponse {
   diagnostics: RuntimeDiagnostic[];
 }
 
-export interface RuntimeProjectSnapshot {
-  graph: GraphDocumentV01;
-  viewState: ViewStateV01;
-  nodes: NodeDefinitionManifestV01[];
-}
-
-export interface RuntimeProjectRequest {
-  graph: GraphDocumentV01;
-  nodes: NodeDefinitionManifestV01[];
-  viewState?: ViewStateV01;
-}
+export type RuntimeProjectSnapshot = ProjectDocumentV02;
+export type RuntimeProjectRequest = ProjectDocumentV02;
 
 export interface RuntimePlan {
   graphId: string;
@@ -393,7 +384,7 @@ export interface RuntimeSessionInfoResponse {
 }
 
 export interface RuntimeMutationRequest {
-  graphPatch?: GraphPatchV01;
+  operation?: RuntimeOperationEnvelope;
   viewPatch?: RuntimeViewPatch;
   clientId?: string;
   description?: string;

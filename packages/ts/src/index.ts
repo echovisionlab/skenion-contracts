@@ -317,7 +317,18 @@ export type {
   MidiClockSnapshotOptionsV01,
   MidiClockSnapshotV01
 } from "./clock.js";
-export { applyGraphPatch, invertGraphPatch } from "./patch.js";
+/**
+ * @deprecated Legacy v0.1 graph patch helpers retained only for import and
+ * migration fixtures. Active graph mutation uses RuntimeOperationEnvelope,
+ * GraphTargetRef, and GraphFragmentV02.
+ */
+export {
+  applyGraphPatch,
+  applyLegacyGraphPatchV01,
+  invertGraphPatch,
+  invertLegacyGraphPatchV01
+} from "./patch.js";
+export { migrateGraphDocumentV01ToV02, migrateProjectDocumentV01ToV02 } from "./migration.js";
 export { parseObjectTextV01 } from "./objectText.js";
 export {
   createDefaultViewStateForGraph,

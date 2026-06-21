@@ -2683,7 +2683,7 @@ export const builtinNodeHelpV01 = [
       "documentation",
       "annotation"
     ],
-    "runtimeBehavior": "Messages arrive through in. set <text> updates the runtime comment text silently. Inspector text edits remain graph patches.",
+    "runtimeBehavior": "Messages arrive through in. set <text> updates the runtime comment text silently. Inspector text edits remain saved graph mutations.",
     "relatedNodes": [
       "core.message"
     ],
@@ -2861,7 +2861,7 @@ export const builtinNodeHelpV01 = [
       "message",
       "text"
     ],
-    "runtimeBehavior": "Click or bang on in emits the saved message payload. set ... on in updates runtime message text without output. Inspector edits are graph patches.",
+    "runtimeBehavior": "Click or bang on in emits the saved message payload. set ... on in updates runtime message text without output. Inspector edits are saved graph mutations.",
     "relatedNodes": [
       "core.string"
     ],
@@ -3019,7 +3019,7 @@ export const builtinNodeHelpV01 = [
       "panel",
       "background"
     ],
-    "runtimeBehavior": "Messages arrive through in. set <hex> updates the runtime panel CSS color text silently. Inspector color edits remain graph patches.",
+    "runtimeBehavior": "Messages arrive through in. set <hex> updates the runtime panel CSS color text silently. Inspector color edits remain saved graph mutations.",
     "relatedNodes": [
       "core.comment",
       "core.message"

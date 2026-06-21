@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/graph/v0.1/patch.schema.json",
-  "title": "Skenion Graph Patch v0.1",
+  "title": "Skenion Graph Patch v0.1 (legacy import)",
+  "description": "Frozen legacy graph patch schema retained for migration fixtures and old history import only. Active runtime mutation uses v0 RuntimeOperationEnvelope and graph v0.2 targets.",
   "type": "object",
   "required": ["schema", "schemaVersion", "id", "baseRevision", "ops"],
   "properties": {

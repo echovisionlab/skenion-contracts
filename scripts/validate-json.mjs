@@ -606,7 +606,23 @@ function edgeEnabled(edge) {
   return edge.enabled !== false;
 }
 
+function v02ControlMessagePortType(type) {
+  return [
+    "message.any",
+    "event.bang",
+    "number.float",
+    "number.int",
+    "number.uint",
+    "boolean",
+    "color",
+    "string"
+  ].includes(type);
+}
+
 function portTypeAccepts(source, target) {
+  if (target.type === "message.any" && v02ControlMessagePortType(source.type)) {
+    return true;
+  }
   return source.type === target.type || target.accepts?.includes(source.type) === true;
 }
 
@@ -1177,6 +1193,7 @@ ajv.addSchema(graphFragmentV02Schema);
 ajv.addSchema(runtimeOperationV0Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
+ajv.addSchema(projectV02Schema);
 ajv.addSchema(runtimeSessionV0Schema);
 ajv.addSchema(runtimeCollaborationV0Schema);
 ajv.addSchema(graphPatchV01Schema);

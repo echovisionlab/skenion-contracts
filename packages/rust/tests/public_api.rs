@@ -634,112 +634,36 @@ fn validates_public_remaining_collaboration_coverage_paths() {
                 "sequence": 3,
                 "kind": "apply",
                 "mutation": {
-                  "graphPatch": {
-                    "schema": "skenion.graph.patch",
-                    "schemaVersion": "0.1.0",
-                    "id": "patch-runtime-full",
-                    "baseRevision": "2",
-                    "clientId": "studio-main",
-                    "createdAt": "2026-06-22T00:00:02.000Z",
-                    "ops": [
-                      {
-                        "op": "addNode",
-                        "node": {
-                          "id": "value_2",
-                          "kind": "core.float",
-                          "kindVersion": "0.1.0",
-                          "params": { "value": 0.75 },
-                          "ports": [
-                            {
-                              "id": "out",
-                              "direction": "output",
-                              "type": {
-                                "flow": "value",
-                                "dataKind": "number.float",
-                                "range": { "min": 0, "max": 1, "step": 0.1 },
-                                "shape": [1],
-                                "channels": 1,
-                                "sampleRate": 48000,
-                                "format": ["float32"],
-                                "frameRate": 60,
-                                "alphaPolicy": "white",
-                                "values": ["low", 0.5, true]
-                              }
-                            }
-                          ]
-                        }
-                      },
-                      { "op": "removeNode", "nodeId": "old_value" },
-                      {
-                        "op": "replaceNode",
-                        "nodeId": "value_2",
-                        "node": {
-                          "id": "value_2",
-                          "kind": "core.float",
-                          "kindVersion": "0.1.0",
-                          "params": { "value": 0.75 },
-                          "ports": [
-                            {
-                              "id": "out",
-                              "direction": "output",
-                              "type": {
-                                "flow": "value",
-                                "dataKind": "number.float",
-                                "range": { "min": 0, "max": 1, "step": 0.1 },
-                                "shape": [1],
-                                "channels": 1,
-                                "sampleRate": 48000,
-                                "format": ["float32"],
-                                "frameRate": 60,
-                                "alphaPolicy": "white",
-                                "values": ["low", 0.5, true]
-                              }
-                            }
-                          ]
-                        },
-                        "edgePolicy": "removeInvalidEdges"
-                      },
-                      { "op": "setNodeParams", "nodeId": "value_2", "params": { "value": 0.5 } },
-                      { "op": "setNodeParam", "nodeId": "value_2", "key": "value", "value": 0.5 },
-                      {
-                        "op": "replaceNodeInterface",
-                        "nodeId": "value_2",
-                        "ports": [
-                          {
-                            "id": "out",
-                            "direction": "output",
-                            "type": {
-                              "flow": "value",
-                              "dataKind": "number.float",
-                              "range": { "min": 0, "max": 1, "step": 0.1 },
-                              "shape": [1],
-                              "channels": 1,
-                              "sampleRate": 48000,
-                              "format": ["float32"],
-                              "frameRate": 60,
-                              "alphaPolicy": "white",
-                              "values": ["low", 0.5, true]
-                            }
-                          }
-                        ],
-                        "edgePolicy": "removeInvalidEdges"
-                      },
-                      {
-                        "op": "addEdge",
-                        "edge": {
-                          "from": { "node": "value_2", "port": "out" },
-                          "to": { "node": "target_1", "port": "value" }
-                        }
-                      },
-                      {
-                        "op": "removeEdge",
-                        "edge": {
-                          "from": { "node": "value_2", "port": "out" },
-                          "to": { "node": "target_1", "port": "value" }
-                        }
-                      }
-                    ]
-                  },
+	                  "operation": {
+	                    "schema": "skenion.runtime.operation",
+	                    "schemaVersion": "0.1.0",
+	                    "id": "op-runtime-full",
+	                    "kind": "pasteGraphFragment",
+	                    "request": {
+	                      "target": {
+	                        "path": { "kind": "root" },
+	                        "baseRevision": "2"
+	                      },
+	                      "fragment": {
+	                        "schema": "skenion.graph.fragment",
+	                        "schemaVersion": "0.2.0",
+	                        "nodes": [
+	                          {
+	                            "id": "value_2",
+	                            "kind": "core.float",
+	                            "kindVersion": "0.2.0",
+	                            "params": { "value": 0.75 },
+	                            "ports": [
+	                              { "id": "out", "direction": "output", "type": "number.float", "rate": "control" }
+	                            ]
+	                          }
+	                        ],
+	                        "edges": []
+	                      },
+	                      "placement": { "kind": "position", "x": 10, "y": 20 }
+	                    },
+	                    "correlationId": "runtime-session-valid"
+	                  },
                   "viewPatch": {
                     "baseViewRevision": 2,
                     "ops": [

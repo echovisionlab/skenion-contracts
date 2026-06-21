@@ -22,10 +22,7 @@ use super::{
     RuntimeSessionInfoResponse, RuntimeSessionSnapshot, RuntimeViewPatchOperation,
     derive_patch_contract_v02,
 };
-use crate::v0_1::{
-    DataTypeV01, EdgeV01, GraphNodeV01, GraphPatchOperationV01, GraphPatchV01, PortV01,
-    StringOrStringsV01, ViewStateV01,
-};
+use crate::v0_1::ViewStateV01;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationErrorV02 {
@@ -1317,6 +1314,11 @@ pub fn validate_runtime_operation_envelope(
             envelope.schema_version
         )));
     }
+    if envelope.id.is_empty() {
+        errors.push(ValidationErrorV02::new(
+            "runtime operation id must not be empty",
+        ));
+    }
     if envelope.kind != "pasteGraphFragment" {
         errors.push(ValidationErrorV02::new(format!(
             "unsupported runtime operation kind: {}",
@@ -1584,6 +1586,13 @@ fn runtime_session_snapshot_errors(snapshot: &RuntimeSessionSnapshot) -> Vec<Val
             "snapshot plan must be an object or null",
         ));
     }
+    if let Some(project) = &snapshot.project {
+        if let Err(report) = validate_project_document_v02(project) {
+            errors.extend(report.errors.into_iter().map(|error| {
+                ValidationErrorV02::new(format!("snapshot project {}", error.message))
+            }));
+        }
+    }
     errors
 }
 
@@ -1657,8 +1666,12 @@ fn runtime_mutation_request_errors(
     label: &str,
 ) -> Vec<ValidationErrorV02> {
     let mut errors = Vec::new();
-    if let Some(graph_patch) = &mutation.graph_patch {
-        errors.extend(runtime_graph_patch_errors(graph_patch, label));
+    if let Some(operation) = &mutation.operation {
+        if let Err(report) = validate_runtime_operation_envelope(operation) {
+            errors.extend(report.errors.into_iter().map(|error| {
+                ValidationErrorV02::new(format!("{label} operation {}", error.message))
+            }));
+        }
     }
     if let Some(view_patch) = &mutation.view_patch {
         for operation in &view_patch.ops {
@@ -1677,241 +1690,6 @@ fn runtime_mutation_request_errors(
     if mutation.client_id.as_ref().is_some_and(String::is_empty) {
         errors.push(ValidationErrorV02::new(format!(
             "{label} clientId must not be empty"
-        )));
-    }
-    errors
-}
-
-#[allow(clippy::collapsible_match)]
-fn runtime_graph_patch_errors(patch: &GraphPatchV01, label: &str) -> Vec<ValidationErrorV02> {
-    let mut errors = Vec::new();
-    if patch.schema != "skenion.graph.patch" {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch schema must be skenion.graph.patch"
-        )));
-    }
-    if patch.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch schemaVersion must be 0.1.0"
-        )));
-    }
-    if patch.id.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch id must not be empty"
-        )));
-    }
-    if patch.base_revision.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch baseRevision must not be empty"
-        )));
-    }
-    if patch.client_id.as_ref().is_some_and(String::is_empty) {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch clientId must not be empty"
-        )));
-    }
-    if patch.created_at.as_ref().is_some_and(String::is_empty) {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch createdAt must not be empty"
-        )));
-    }
-    for operation in &patch.ops {
-        match operation {
-            GraphPatchOperationV01::AddNode { node } => {
-                errors.extend(runtime_graph_patch_node_errors(node, label));
-            }
-            GraphPatchOperationV01::RemoveNode { node_id } => {
-                if node_id.is_empty() {
-                    errors.push(ValidationErrorV02::new(format!(
-                        "{label} graphPatch operation nodeId must not be empty"
-                    )));
-                }
-            }
-            GraphPatchOperationV01::ReplaceNode { node_id, node, .. } => {
-                if node_id.is_empty() {
-                    errors.push(ValidationErrorV02::new(format!(
-                        "{label} graphPatch operation nodeId must not be empty"
-                    )));
-                }
-                errors.extend(runtime_graph_patch_node_errors(node, label));
-            }
-            GraphPatchOperationV01::SetNodeParams { node_id, .. } => {
-                if node_id.is_empty() {
-                    errors.push(ValidationErrorV02::new(format!(
-                        "{label} graphPatch operation nodeId must not be empty"
-                    )));
-                }
-            }
-            GraphPatchOperationV01::SetNodeParam { node_id, key, .. } => {
-                if node_id.is_empty() {
-                    errors.push(ValidationErrorV02::new(format!(
-                        "{label} graphPatch operation nodeId must not be empty"
-                    )));
-                }
-                if key.is_empty() {
-                    errors.push(ValidationErrorV02::new(format!(
-                        "{label} graphPatch operation key must not be empty"
-                    )));
-                }
-            }
-            GraphPatchOperationV01::ReplaceNodeInterface { node_id, .. } => {
-                if node_id.is_empty() {
-                    errors.push(ValidationErrorV02::new(format!(
-                        "{label} graphPatch operation nodeId must not be empty"
-                    )));
-                }
-            }
-            GraphPatchOperationV01::AddEdge { edge }
-            | GraphPatchOperationV01::RemoveEdge { edge } => {
-                errors.extend(runtime_graph_patch_edge_errors(edge, label));
-            }
-        }
-    }
-    errors
-}
-
-fn runtime_graph_patch_node_errors(node: &GraphNodeV01, label: &str) -> Vec<ValidationErrorV02> {
-    let mut errors = Vec::new();
-    if node.id.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch node id must not be empty"
-        )));
-    }
-    if node.kind.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch node kind must not be empty"
-        )));
-    }
-    if node.kind_version.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch node kindVersion must not be empty"
-        )));
-    }
-    for port in &node.ports {
-        errors.extend(runtime_graph_patch_port_errors(port, label));
-    }
-    errors
-}
-
-fn runtime_graph_patch_port_errors(port: &PortV01, label: &str) -> Vec<ValidationErrorV02> {
-    let mut errors = Vec::new();
-    if port.id.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port id must not be empty"
-        )));
-    }
-    errors.extend(runtime_graph_patch_data_type_errors(&port.data_type, label));
-    errors
-}
-
-fn runtime_graph_patch_data_type_errors(
-    data_type: &DataTypeV01,
-    label: &str,
-) -> Vec<ValidationErrorV02> {
-    let mut errors = Vec::new();
-    if data_type.data_kind.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port dataKind must not be empty"
-        )));
-    }
-    let invalid_range_step = match &data_type.range {
-        Some(range) => matches!(range.step, Some(step) if step <= 0.0),
-        None => false,
-    };
-    if invalid_range_step {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port range step must be greater than 0"
-        )));
-    }
-    let invalid_shape = match &data_type.shape {
-        Some(shape) => {
-            let mut has_invalid_shape_entry = false;
-            for entry in shape {
-                if *entry == 0 {
-                    has_invalid_shape_entry = true;
-                }
-            }
-            has_invalid_shape_entry
-        }
-        None => false,
-    };
-    if invalid_shape {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port shape entries must be at least 1"
-        )));
-    }
-    if data_type.channels == Some(0) {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port channels must be at least 1"
-        )));
-    }
-    if matches!(data_type.sample_rate, Some(sample_rate) if sample_rate <= 0.0) {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port sampleRate must be greater than 0"
-        )));
-    }
-    if matches!(data_type.frame_rate, Some(frame_rate) if frame_rate <= 0.0) {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port frameRate must be greater than 0"
-        )));
-    }
-    let invalid_format = match &data_type.format {
-        Some(StringOrStringsV01::One(value)) => value.is_empty(),
-        Some(StringOrStringsV01::Many(values)) => {
-            let mut has_empty_format = false;
-            for value in values {
-                if value.is_empty() {
-                    has_empty_format = true;
-                }
-            }
-            has_empty_format
-        }
-        None => false,
-    };
-    if invalid_format {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port format must not be empty"
-        )));
-    }
-    let invalid_alpha_policy = match &data_type.alpha_policy {
-        Some(policy) => !matches!(policy.as_str(), "error" | "white" | "black" | "luminance"),
-        None => false,
-    };
-    if invalid_alpha_policy {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port alphaPolicy must be supported"
-        )));
-    }
-    let invalid_values = match &data_type.values {
-        Some(values) => {
-            let mut has_invalid_value = false;
-            for value in values {
-                if !(value.is_string() || value.is_number() || value.is_boolean()) {
-                    has_invalid_value = true;
-                }
-            }
-            has_invalid_value
-        }
-        None => false,
-    };
-    if invalid_values {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch port values must be scalar strings, numbers, or booleans"
-        )));
-    }
-    errors
-}
-
-fn runtime_graph_patch_edge_errors(edge: &EdgeV01, label: &str) -> Vec<ValidationErrorV02> {
-    let mut errors = Vec::new();
-    if edge.from.node.is_empty() || edge.from.port.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch edge source must not be empty"
-        )));
-    }
-    if edge.to.node.is_empty() || edge.to.port.is_empty() {
-        errors.push(ValidationErrorV02::new(format!(
-            "{label} graphPatch edge target must not be empty"
         )));
     }
     errors
@@ -2581,27 +2359,43 @@ mod tests {
         event
     }
 
-    fn runtime_graph_patch_mutation(extra_operation_key: bool) -> serde_json::Value {
+    fn runtime_operation_mutation(extra_operation_key: bool) -> serde_json::Value {
         let mut mutation = value(
             r#"{
-              "graphPatch": {
-                "schema": "skenion.graph.patch",
+              "operation": {
+                "schema": "skenion.runtime.operation",
                 "schemaVersion": "0.1.0",
-                "id": "patch-runtime",
-                "baseRevision": "1",
-                "ops": [
-                  {
-                    "op": "setNodeParam",
-                    "nodeId": "value_1",
-                    "key": "value",
-                    "value": 0.5
-                  }
-                ]
+                "id": "op-runtime-paste",
+                "kind": "pasteGraphFragment",
+                "request": {
+                  "target": {
+                    "path": { "kind": "root" },
+                    "baseRevision": "1"
+                  },
+                  "fragment": {
+                    "schema": "skenion.graph.fragment",
+                    "schemaVersion": "0.2.0",
+                    "nodes": [
+                      {
+                        "id": "value_1",
+                        "kind": "core.float",
+                        "kindVersion": "0.2.0",
+                        "params": { "value": 0.5 },
+                        "ports": [
+                          { "id": "out", "direction": "output", "type": "number.float", "rate": "control" }
+                        ]
+                      }
+                    ],
+                    "edges": []
+                  },
+                  "placement": { "kind": "position", "x": 0, "y": 0 }
+                },
+                "correlationId": "runtime-paste-test"
               }
             }"#,
         );
         if extra_operation_key {
-            mutation["graphPatch"]["ops"][0]["unexpected"] = serde_json::Value::Bool(true);
+            mutation["operation"]["unexpected"] = serde_json::Value::Bool(true);
         }
         mutation
     }
@@ -2627,135 +2421,13 @@ mod tests {
         mutation
     }
 
-    fn fully_valid_runtime_graph_patch_mutation() -> serde_json::Value {
-        value(
-            r#"{
-              "graphPatch": {
-                "schema": "skenion.graph.patch",
-                "schemaVersion": "0.1.0",
-                "id": "patch-runtime-full",
-                "baseRevision": "1",
-                "clientId": "studio-main",
-                "createdAt": "2026-06-22T00:00:02.000Z",
-                "ops": [
-                  {
-                    "op": "addNode",
-                    "node": {
-                      "id": "value_2",
-                      "kind": "core.float",
-                      "kindVersion": "0.1.0",
-                      "params": { "value": 0.75 },
-                      "ports": [
-                        {
-                          "id": "out",
-                          "direction": "output",
-                          "type": {
-                            "flow": "value",
-                            "dataKind": "number.float",
-                            "range": { "min": 0, "max": 1, "step": 0.1 },
-                            "shape": [1],
-                            "channels": 1,
-                            "sampleRate": 48000,
-                            "frameRate": 60,
-                            "format": ["float32"],
-                            "alphaPolicy": "white",
-                            "values": ["low", 0.5, true]
-                          }
-                        }
-                      ]
-                    }
-                  },
-                  { "op": "removeNode", "nodeId": "old_value" },
-                  {
-                    "op": "replaceNode",
-                    "nodeId": "value_2",
-                    "node": {
-                      "id": "value_2",
-                      "kind": "core.float",
-                      "kindVersion": "0.1.0",
-                      "params": { "value": 0.75 },
-                      "ports": [
-                        {
-                          "id": "out",
-                          "direction": "output",
-                          "type": {
-                            "flow": "value",
-                            "dataKind": "number.float",
-                            "range": { "min": 0, "max": 1, "step": 0.1 },
-                            "shape": [1],
-                            "channels": 1,
-                            "sampleRate": 48000,
-                            "frameRate": 60,
-                            "format": ["float32"],
-                            "alphaPolicy": "white",
-                            "values": ["low", 0.5, true]
-                          }
-                        }
-                      ]
-                    },
-                    "edgePolicy": "removeInvalidEdges"
-                  },
-                  { "op": "setNodeParams", "nodeId": "value_2", "params": { "value": 0.5 } },
-                  { "op": "setNodeParam", "nodeId": "value_2", "key": "value", "value": 0.5 },
-                  {
-                    "op": "replaceNodeInterface",
-                    "nodeId": "value_2",
-                    "ports": [
-                      {
-                        "id": "out",
-                        "direction": "output",
-                        "type": {
-                          "flow": "value",
-                          "dataKind": "number.float",
-                          "range": { "min": 0, "max": 1, "step": 0.1 },
-                          "shape": [1],
-                          "channels": 1,
-                          "sampleRate": 48000,
-                          "frameRate": 60,
-                          "format": ["float32"],
-                          "alphaPolicy": "white",
-                          "values": ["low", 0.5, true]
-                        }
-                      }
-                    ],
-                    "edgePolicy": "removeInvalidEdges"
-                  },
-                  {
-                    "op": "addEdge",
-                    "edge": {
-                      "from": { "node": "value_2", "port": "out" },
-                      "to": { "node": "target_1", "port": "value" }
-                    }
-                  },
-                  {
-                    "op": "removeEdge",
-                    "edge": {
-                      "from": { "node": "value_2", "port": "out" },
-                      "to": { "node": "target_1", "port": "value" }
-                    }
-                  }
-                ]
-              },
-              "viewPatch": {
-                "baseViewRevision": 1,
-                "ops": [
-                  {
-                    "op": "setNodeView",
-                    "nodeId": "value_2",
-                    "view": { "x": 10, "y": 20 }
-                  },
-                  {
-                    "op": "moveNodeView",
-                    "nodeId": "value_2",
-                    "from": { "x": 10, "y": 20 },
-                    "to": { "x": 20, "y": 30 }
-                  }
-                ]
-              },
-              "clientId": "studio-main",
-              "description": "exercise every valid runtime patch branch"
-            }"#,
-        )
+    fn fully_valid_runtime_operation_mutation() -> serde_json::Value {
+        let mut mutation = runtime_operation_mutation(false);
+        mutation["viewPatch"] = runtime_view_patch_mutation(false)["viewPatch"].clone();
+        mutation["clientId"] = serde_json::Value::String("studio-main".to_owned());
+        mutation["description"] =
+            serde_json::Value::String("exercise active runtime operation branch".to_owned());
+        mutation
     }
 
     #[test]
@@ -2766,97 +2438,33 @@ mod tests {
         ))
         .expect("empty mutation requests should parse");
 
-        let graph_null = runtime_session_mutation_event(
+        let legacy_graph_patch = runtime_session_mutation_event(
             json!({ "graphPatch": null }),
             runtime_view_patch_mutation(false),
         );
-        let graph_null_error = serde_json::from_value::<RuntimeSessionEvent>(graph_null)
-            .expect_err("explicit null graphPatch should fail");
+        let legacy_graph_patch_error =
+            serde_json::from_value::<RuntimeSessionEvent>(legacy_graph_patch)
+                .expect_err("legacy graphPatch should fail");
         assert!(
-            graph_null_error
+            legacy_graph_patch_error
                 .to_string()
-                .contains("graphPatch must be an object")
+                .contains("unknown field `graphPatch`")
         );
 
-        let graph_without_ops = runtime_session_mutation_event(
-            json!({
-                "graphPatch": {
-                    "schema": "skenion.graph.patch",
-                    "schemaVersion": "0.1.0",
-                    "id": "patch-without-ops",
-                    "baseRevision": "1"
-                }
-            }),
+        let operation_extra = runtime_session_mutation_event(
+            runtime_operation_mutation(true),
             runtime_view_patch_mutation(false),
         );
-        let graph_without_ops_error =
-            serde_json::from_value::<RuntimeSessionEvent>(graph_without_ops)
-                .expect_err("graphPatch without ops should fail after strict key scan");
+        let operation_error = serde_json::from_value::<RuntimeSessionEvent>(operation_extra)
+            .expect_err("extra nested runtime operation key should fail");
         assert!(
-            graph_without_ops_error
+            operation_error
                 .to_string()
-                .contains("missing field `ops`")
-        );
-
-        let graph_non_object_op = runtime_session_mutation_event(
-            json!({
-                "graphPatch": {
-                    "schema": "skenion.graph.patch",
-                    "schemaVersion": "0.1.0",
-                    "id": "patch-non-object-op",
-                    "baseRevision": "1",
-                    "ops": [null]
-                }
-            }),
-            runtime_view_patch_mutation(false),
-        );
-        serde_json::from_value::<RuntimeSessionEvent>(graph_non_object_op)
-            .expect_err("non-object graphPatch operation should fail");
-
-        let graph_missing_op = runtime_session_mutation_event(
-            json!({
-                "graphPatch": {
-                    "schema": "skenion.graph.patch",
-                    "schemaVersion": "0.1.0",
-                    "id": "patch-missing-op",
-                    "baseRevision": "1",
-                    "ops": [{ "nodeId": "value_1" }]
-                }
-            }),
-            runtime_view_patch_mutation(false),
-        );
-        serde_json::from_value::<RuntimeSessionEvent>(graph_missing_op)
-            .expect_err("graphPatch operation without op discriminator should fail");
-
-        let graph_unknown_op = runtime_session_mutation_event(
-            json!({
-                "graphPatch": {
-                    "schema": "skenion.graph.patch",
-                    "schemaVersion": "0.1.0",
-                    "id": "patch-unknown-op",
-                    "baseRevision": "1",
-                    "ops": [{ "op": "unsupported" }]
-                }
-            }),
-            runtime_view_patch_mutation(false),
-        );
-        serde_json::from_value::<RuntimeSessionEvent>(graph_unknown_op)
-            .expect_err("unsupported graphPatch operation should fail");
-
-        let graph_extra = runtime_session_mutation_event(
-            runtime_graph_patch_mutation(true),
-            runtime_view_patch_mutation(false),
-        );
-        let graph_error = serde_json::from_value::<RuntimeSessionEvent>(graph_extra)
-            .expect_err("extra nested graphPatch operation key should fail");
-        assert!(
-            graph_error
-                .to_string()
-                .contains("graphPatch ops[0] contains unknown field unexpected")
+                .contains("unknown field `unexpected`")
         );
 
         let view_extra = runtime_session_mutation_event(
-            runtime_graph_patch_mutation(false),
+            runtime_operation_mutation(false),
             runtime_view_patch_mutation(true),
         );
         let view_error = serde_json::from_value::<RuntimeSessionEvent>(view_extra)
@@ -2871,8 +2479,8 @@ mod tests {
     #[test]
     fn validates_complete_runtime_mutation_patch_branches() {
         let event: RuntimeSessionEvent = serde_json::from_value(runtime_session_mutation_event(
-            fully_valid_runtime_graph_patch_mutation(),
-            fully_valid_runtime_graph_patch_mutation(),
+            fully_valid_runtime_operation_mutation(),
+            fully_valid_runtime_operation_mutation(),
         ))
         .expect("valid mutation event should parse");
 
@@ -4345,94 +3953,50 @@ mod tests {
         invalid_event.snapshot.plan = Some(json!("opaque-plan"));
         invalid_event.history.schema = "wrong".to_owned();
         invalid_event.history.schema_version = "9.9.9".to_owned();
-        let invalid_graph_patch = json!({
+        let invalid_runtime_operation = json!({
             "schema": "wrong",
             "schemaVersion": "9.9.9",
             "id": "",
-            "baseRevision": "",
-            "clientId": "",
-            "createdAt": "",
-            "ops": [
-                {
-                    "op": "addNode",
-                    "node": {
-                        "id": "",
-                        "kind": "",
-                        "kindVersion": "",
-                        "params": {},
-                        "ports": [
+            "kind": "loadProject",
+            "request": {
+                "target": {
+                    "path": { "kind": "root" },
+                    "baseRevision": "1"
+                },
+                "fragment": {
+                    "schema": "skenion.graph.fragment",
+                    "schemaVersion": "0.2.0",
+                    "nodes": [
+                        {
+                            "id": "",
+                            "kind": "",
+                            "kindVersion": "",
+                            "params": {},
+                            "ports": [
                             {
                                 "id": "",
                                 "direction": "input",
-                                "type": {
-                                    "flow": "value",
-                                    "dataKind": "",
-                                    "range": { "step": 0 },
-                                    "shape": [0],
-                                    "channels": 0,
-                                    "sampleRate": 0,
-                                    "format": "",
-                                    "frameRate": 0,
-                                    "alphaPolicy": "unsupported",
-                                    "values": [{}]
+                                    "type": "number.float"
                                 }
-                            },
-                            {
-                                "id": "format-array",
-                                "direction": "input",
-                                "type": {
-                                    "flow": "value",
-                                    "dataKind": "number.float",
-                                    "format": [""]
-                                }
-                            },
-                            {
-                                "id": "format-absent",
-                                "direction": "input",
-                                "type": {
-                                    "flow": "value",
-                                    "dataKind": "number.float"
-                                }
-                            }
-                        ]
-                    }
-                },
-                { "op": "removeNode", "nodeId": "" },
-                { "op": "setNodeParams", "nodeId": "", "params": {} },
-                {
-                    "op": "replaceNode",
-                    "nodeId": "",
-                    "node": {
-                        "id": "",
-                        "kind": "",
-                        "kindVersion": "",
-                        "params": {},
-                        "ports": []
-                    },
-                    "edgePolicy": "removeInvalidEdges"
-                },
-                { "op": "setNodeParam", "nodeId": "", "key": "", "value": null },
-                {
-                    "op": "replaceNodeInterface",
-                    "nodeId": "",
-                    "ports": [],
-                    "edgePolicy": "removeInvalidEdges"
-                },
-                {
-                    "op": "addEdge",
-                    "edge": {
-                        "from": { "node": "node-a", "port": "out" },
-                        "to": { "node": "node-b", "port": "in" }
-                    }
-                },
-                {
-                    "op": "removeEdge",
-                    "edge": {
-                        "from": { "node": "", "port": "" },
-                        "to": { "node": "", "port": "" }
-                    }
+                            ]
+                        },
+                        {
+                            "id": "",
+                            "kind": "core.float",
+                            "kindVersion": "0.2.0",
+                            "params": {},
+                            "ports": []
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "id": "edge-missing-source",
+                            "source": { "nodeId": "missing", "portId": "out" },
+                            "target": { "nodeId": "", "portId": "" }
+                        }
+                    ]
                 }
-            ]
+            }
         });
         let invalid_view_patch = json!({
             "baseViewRevision": 0,
@@ -4446,7 +4010,7 @@ mod tests {
             "sequence": 0,
             "kind": "apply",
             "mutation": {
-                "graphPatch": invalid_graph_patch,
+                "operation": invalid_runtime_operation,
                 "clientId": ""
             },
             "inverseMutation": {
@@ -4486,35 +4050,18 @@ mod tests {
             "history entry createdAt must not be empty",
             "history entry subjectEventId must not be empty",
             "history entry clientId must not be empty",
-            "history entry mutation graphPatch schema must be",
-            "history entry mutation graphPatch schemaVersion must be",
-            "history entry mutation graphPatch id must not be empty",
-            "history entry mutation graphPatch baseRevision must not be empty",
-            "history entry mutation graphPatch clientId must not be empty",
-            "history entry mutation graphPatch createdAt must not be empty",
-            "history entry mutation graphPatch operation nodeId must not be empty",
-            "history entry mutation graphPatch operation key must not be empty",
-            "history entry mutation graphPatch node id must not be empty",
-            "history entry mutation graphPatch node kind must not be empty",
-            "history entry mutation graphPatch node kindVersion must not be empty",
-            "history entry mutation graphPatch port id must not be empty",
-            "history entry mutation graphPatch port dataKind must not be empty",
-            "history entry mutation graphPatch port range step must be greater than 0",
-            "history entry mutation graphPatch port shape entries must be at least 1",
-            "history entry mutation graphPatch port channels must be at least 1",
-            "history entry mutation graphPatch port sampleRate must be greater than 0",
-            "history entry mutation graphPatch port frameRate must be greater than 0",
-            "history entry mutation graphPatch port format must not be empty",
-            "history entry mutation graphPatch port alphaPolicy must be supported",
-            "history entry mutation graphPatch port values must be scalar strings, numbers, or booleans",
-            "history entry mutation graphPatch edge source must not be empty",
-            "history entry mutation graphPatch edge target must not be empty",
+            "history entry mutation operation expected schema skenion.runtime.operation",
+            "history entry mutation operation expected schemaVersion 0.1.0",
+            "history entry mutation operation runtime operation id must not be empty",
+            "history entry mutation operation unsupported runtime operation kind",
+            "history entry mutation operation duplicate-node-id",
+            "history entry mutation operation fragment-edge-outside-selection",
             "history entry mutation clientId must not be empty",
             "history entry inverseMutation viewPatch operation nodeId must not be empty",
             "history entry inverseMutation clientId must not be empty",
             "mutation id must not be empty",
-            "mutation mutation graphPatch schema must be",
-            "mutation mutation graphPatch operation nodeId must not be empty",
+            "mutation mutation operation expected schema skenion.runtime.operation",
+            "mutation mutation operation duplicate-node-id",
             "mutation mutation clientId must not be empty",
             "mutation inverseMutation viewPatch operation nodeId must not be empty",
             "mutation inverseMutation clientId must not be empty",

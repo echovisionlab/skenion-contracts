@@ -1,6 +1,8 @@
+mod migration;
 mod types;
 mod validation;
 
+pub use migration::{migrate_graph_document_v01_to_v02, migrate_project_document_v01_to_v02};
 pub use types::{
     CableStyleRegistryV02, CableStyleV02, CycleValidationV02, EdgeEndpointV02, EdgeSpecV02,
     ExecutionModelV02, FanOutPolicyV02, FeedbackBoundaryV02, FeedbackBufferModeV02,

@@ -15,10 +15,14 @@ Human-readable delivery and processing model docs live in
 - Golden fixtures and conformance tests for TypeScript/Rust compatibility.
 - Typed node interfaces for value, event, stream, and resource ports.
 
-The current v0 Runtime HTTP session contract is Runtime-authoritative: clients
-read project state from `RuntimeSessionSnapshot.project`, submit graph/view
-changes through `/v0/session/mutate`, and receive full canonical snapshots on
-the session event stream.
+The active graph/project contract is v0.2. Runtime-authoritative session
+snapshots expose `ProjectDocumentV02` at `RuntimeSessionSnapshot.project`;
+active graph mutation surfaces use `RuntimeOperationEnvelope`,
+`GraphTargetRef`, and `GraphFragmentV02`. v0.1 graph/project/patch documents
+remain available only as legacy import and migration fixtures.
+The TypeScript `applyGraphPatch`/`invertGraphPatch` exports are deprecated
+v0.1 legacy helpers; migration tooling should prefer the explicitly named
+`applyLegacyGraphPatchV01`/`invertLegacyGraphPatchV01` aliases.
 
 Typed object boxes preserve user-entered `objectText`; Runtime resolution maps
 that text to implementation kinds and diagnostics without making unresolved text

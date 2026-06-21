@@ -53,9 +53,8 @@ message RuntimeError {
   bool retryable = 3;
 }
 
-message ApplyGraphPatch {
-  string base_revision = 1;
-  bytes patch_json = 2;
+message ApplyRuntimeOperation {
+  bytes operation_json = 1;
 }
 
 message RuntimeCommand {
@@ -91,6 +90,9 @@ message PreviewStatus {
 }
 
 message ClientEnvelope {
+  reserved 20;
+  reserved "apply_graph_patch";
+
   ProtocolVersion protocol_version = 1;
   string session_id = 2;
   string message_id = 3;
@@ -101,8 +103,8 @@ message ClientEnvelope {
     Hello hello = 10;
     Ack ack = 11;
     Ping ping = 12;
-    ApplyGraphPatch apply_graph_patch = 20;
     RuntimeCommand runtime_command = 21;
+    ApplyRuntimeOperation apply_runtime_operation = 22;
   }
 }
 

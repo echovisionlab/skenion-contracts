@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json",
-  "title": "Skenion Graph Document v0.1",
+  "title": "Skenion Graph Document v0.1 (legacy import)",
+  "description": "Frozen legacy graph document used only for import and migration fixtures. New authoring/runtime contracts use graph v0.2.",
   "type": "object",
   "required": ["schema", "schemaVersion", "id", "revision", "nodes", "edges"],
   "properties": {

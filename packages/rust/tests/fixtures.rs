@@ -6,16 +6,17 @@ use skenion_contracts::{
     GraphDocumentV01, GraphDocumentV02, GraphFragmentOutsideEndpointPolicyV02, GraphFragmentV02,
     GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01, NodeDefinitionManifestV01,
     NodeDefinitionManifestV02, ObjectTextParseResultV01, PasteGraphFragmentResponse,
-    ProjectDocumentV02, RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
-    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
-    RuntimeCollaborationOperationResult, RuntimeCollaborationPresenceEnvelope,
-    RuntimeCollaborationSelectionEnvelope, RuntimeOperationEnvelope, RuntimeSessionEvent,
-    RuntimeSessionInfoResponse, analyze_graph_document_v02, analyze_graph_fragment_v02,
-    parse_object_text_v01, validate_graph_document_v01, validate_graph_document_v02,
-    validate_graph_fragment_v02, validate_node_definition_v01, validate_node_definition_v02,
-    validate_object_text_parse_result_v01, validate_paste_graph_fragment_response,
-    validate_project_document_v02, validate_runtime_collaboration_event_envelope,
-    validate_runtime_collaboration_operation_batch,
+    ProjectDocumentV01, ProjectDocumentV02, RuntimeCollaborationEventEnvelope,
+    RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationBatchResult,
+    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationPresenceEnvelope, RuntimeCollaborationSelectionEnvelope,
+    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionInfoResponse,
+    analyze_graph_document_v02, analyze_graph_fragment_v02, migrate_graph_document_v01_to_v02,
+    migrate_project_document_v01_to_v02, parse_object_text_v01, validate_graph_document_v01,
+    validate_graph_document_v02, validate_graph_fragment_v02, validate_node_definition_v01,
+    validate_node_definition_v02, validate_object_text_parse_result_v01,
+    validate_paste_graph_fragment_response, validate_project_document_v02,
+    validate_runtime_collaboration_event_envelope, validate_runtime_collaboration_operation_batch,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
     validate_runtime_collaboration_operation_result,
@@ -89,6 +90,52 @@ fn validates_v02_graph_fixtures() {
             file.display()
         );
     }
+}
+
+#[test]
+fn migrates_legacy_v01_fixtures_to_v02_active_contracts() {
+    for name in ["minimal-value", "core-panel-help"] {
+        let input_path = format!("../../fixtures/migration/v0.1-to-v0.2/{name}.input.graph.json");
+        let expected_path =
+            format!("../../fixtures/migration/v0.1-to-v0.2/{name}.expected.graph.json");
+        let input: GraphDocumentV01 = serde_json::from_slice(
+            &fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join(&input_path))
+                .expect("input graph fixture should be readable"),
+        )
+        .expect("input graph fixture should parse");
+        let expected: GraphDocumentV02 = serde_json::from_slice(
+            &fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join(&expected_path))
+                .expect("expected graph fixture should be readable"),
+        )
+        .expect("expected graph fixture should parse");
+        let migrated = migrate_graph_document_v01_to_v02(&input);
+
+        assert_eq!(migrated, expected, "{name}");
+        validate_graph_document_v01(&input).expect("legacy graph input should validate");
+        validate_graph_document_v02(&migrated).expect("migrated graph should validate");
+    }
+
+    let project_input: ProjectDocumentV01 = serde_json::from_slice(
+        &fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../fixtures/migration/v0.1-to-v0.2/minimal-project.input.project.json"),
+        )
+        .expect("input project fixture should be readable"),
+    )
+    .expect("input project fixture should parse");
+    let project_expected: ProjectDocumentV02 =
+        serde_json::from_slice(
+            &fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join(
+                "../../fixtures/migration/v0.1-to-v0.2/minimal-project.expected.project.json",
+            ))
+            .expect("expected project fixture should be readable"),
+        )
+        .expect("expected project fixture should parse");
+    let project_migrated = migrate_project_document_v01_to_v02(&project_input);
+
+    assert_eq!(project_migrated, project_expected);
+    assert!(project_migrated.patch_library.is_empty());
+    validate_project_document_v02(&project_migrated).expect("migrated project should validate");
 }
 
 #[test]
@@ -623,94 +670,46 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
                     "sequence": 0,
                     "kind": "apply",
                     "mutation": {
-                        "graphPatch": {
+                        "operation": {
                             "schema": "wrong",
                             "schemaVersion": "9.9.9",
                             "id": "",
-                            "baseRevision": "",
-                            "clientId": "",
-                            "createdAt": "",
-                            "ops": [
-                                {
-                                    "op": "addNode",
-                                    "node": {
-                                        "id": "",
-                                        "kind": "",
-                                        "kindVersion": "",
-                                        "params": {},
-                                        "ports": [
-                                            {
-                                                "id": "",
-                                                "direction": "input",
-                                                "type": {
-                                                    "flow": "value",
-                                                    "dataKind": "",
-                                                    "range": { "step": 0 },
-                                                    "shape": [0],
-                                                    "channels": 0,
-                                                    "sampleRate": 0,
-                                                    "format": "",
-                                                    "frameRate": 0,
-                                                    "alphaPolicy": "unsupported",
-                                                    "values": [{}]
-                                                }
-                                            },
-                                            {
-                                                "id": "format-array",
-                                                "direction": "input",
-                                                "type": {
-                                                    "flow": "value",
-                                                    "dataKind": "number.float",
-                                                    "format": [""]
-                                                }
-                                            },
-                                            {
-                                                "id": "format-absent",
-                                                "direction": "input",
-                                                "type": {
-                                                    "flow": "value",
-                                                    "dataKind": "number.float"
-                                                }
-                                            }
-                                        ]
-                                    }
+                            "kind": "loadProject",
+                            "request": {
+                                "target": {
+                                    "path": { "kind": "root" },
+                                    "baseRevision": "1"
                                 },
-                                { "op": "removeNode", "nodeId": "" },
-                                { "op": "setNodeParams", "nodeId": "", "params": {} },
-                                {
-                                    "op": "replaceNode",
-                                    "nodeId": "",
-                                    "node": {
-                                        "id": "",
-                                        "kind": "",
-                                        "kindVersion": "",
-                                        "params": {},
-                                        "ports": []
-                                    },
-                                    "edgePolicy": "removeInvalidEdges"
-                                },
-                                { "op": "setNodeParam", "nodeId": "", "key": "", "value": null },
-                                {
-                                    "op": "replaceNodeInterface",
-                                    "nodeId": "",
-                                    "ports": [],
-                                    "edgePolicy": "removeInvalidEdges"
-                                },
-                                {
-                                    "op": "addEdge",
-                                    "edge": {
-                                        "from": { "node": "", "port": "" },
-                                        "to": { "node": "", "port": "" }
-                                    }
-                                },
-                                {
-                                    "op": "removeEdge",
-                                    "edge": {
-                                        "from": { "node": "", "port": "" },
-                                        "to": { "node": "", "port": "" }
-                                    }
+                                "fragment": {
+                                    "schema": "skenion.graph.fragment",
+                                    "schemaVersion": "0.2.0",
+                                    "nodes": [
+                                        {
+                                            "id": "",
+                                            "kind": "",
+                                            "kindVersion": "",
+                                            "params": {},
+                                            "ports": [
+                                                { "id": "", "direction": "input", "type": "number.float" }
+                                            ]
+                                        },
+                                        {
+                                            "id": "",
+                                            "kind": "core.float",
+                                            "kindVersion": "0.2.0",
+                                            "params": {},
+                                            "ports": []
+                                        }
+                                    ],
+                                    "edges": [
+                                        {
+                                            "id": "edge-missing-source",
+                                            "source": { "nodeId": "missing", "portId": "out" },
+                                            "target": { "nodeId": "", "portId": "" }
+                                        }
+                                    ]
                                 }
-                            ]
+                            }
                         },
                         "clientId": ""
                     },
@@ -739,16 +738,38 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             "sequence": 0,
             "kind": "apply",
             "mutation": {
-                "graphPatch": {
+                "operation": {
                     "schema": "wrong",
                     "schemaVersion": "9.9.9",
                     "id": "",
-                    "baseRevision": "",
-                    "clientId": "",
-                    "createdAt": "",
-                    "ops": [
-                        { "op": "removeNode", "nodeId": "" }
-                    ]
+                    "kind": "loadProject",
+                    "request": {
+                        "target": {
+                            "path": { "kind": "root" },
+                            "baseRevision": "1"
+                        },
+                        "fragment": {
+                            "schema": "skenion.graph.fragment",
+                            "schemaVersion": "0.2.0",
+                            "nodes": [
+                                {
+                                    "id": "",
+                                    "kind": "core.float",
+                                    "kindVersion": "0.2.0",
+                                    "params": {},
+                                    "ports": []
+                                },
+                                {
+                                    "id": "",
+                                    "kind": "core.float",
+                                    "kindVersion": "0.2.0",
+                                    "params": {},
+                                    "ports": []
+                                }
+                            ],
+                            "edges": []
+                        }
+                    }
                 },
                 "clientId": ""
             },
@@ -780,8 +801,8 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
     assert!(!report.errors().is_empty());
     let text = report.to_string();
     assert!(text.contains("snapshot diagnostics"));
-    assert!(text.contains("graphPatch schema must be"));
-    assert!(text.contains("graphPatch port dataKind must not be empty"));
+    assert!(text.contains("operation expected schema skenion.runtime.operation"));
+    assert!(text.contains("operation duplicate-node-id"));
     assert!(text.contains("viewPatch operation nodeId must not be empty"));
 }
 
@@ -1114,112 +1135,36 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
                 "sequence": 3,
                 "kind": "apply",
                 "mutation": {
-                  "graphPatch": {
-                    "schema": "skenion.graph.patch",
-                    "schemaVersion": "0.1.0",
-                    "id": "patch-runtime-full",
-                    "baseRevision": "2",
-                    "clientId": "studio-main",
-                    "createdAt": "2026-06-22T00:00:02.000Z",
-                    "ops": [
-                      {
-                        "op": "addNode",
-                        "node": {
-                          "id": "value_2",
-                          "kind": "core.float",
-                          "kindVersion": "0.1.0",
-                          "params": { "value": 0.75 },
-                          "ports": [
-                            {
-                              "id": "out",
-                              "direction": "output",
-                              "type": {
-                                "flow": "value",
-                                "dataKind": "number.float",
-                                "range": { "min": 0, "max": 1, "step": 0.1 },
-                                "shape": [1],
-                                "channels": 1,
-                                "sampleRate": 48000,
-                                "format": ["float32"],
-                                "frameRate": 60,
-                                "alphaPolicy": "white",
-                                "values": ["low", 0.5, true]
-                              }
-                            }
-                          ]
-                        }
-                      },
-                      { "op": "removeNode", "nodeId": "old_value" },
-                      {
-                        "op": "replaceNode",
-                        "nodeId": "value_2",
-                        "node": {
-                          "id": "value_2",
-                          "kind": "core.float",
-                          "kindVersion": "0.1.0",
-                          "params": { "value": 0.75 },
-                          "ports": [
-                            {
-                              "id": "out",
-                              "direction": "output",
-                              "type": {
-                                "flow": "value",
-                                "dataKind": "number.float",
-                                "range": { "min": 0, "max": 1, "step": 0.1 },
-                                "shape": [1],
-                                "channels": 1,
-                                "sampleRate": 48000,
-                                "format": ["float32"],
-                                "frameRate": 60,
-                                "alphaPolicy": "white",
-                                "values": ["low", 0.5, true]
-                              }
-                            }
-                          ]
-                        },
-                        "edgePolicy": "removeInvalidEdges"
-                      },
-                      { "op": "setNodeParams", "nodeId": "value_2", "params": { "value": 0.5 } },
-                      { "op": "setNodeParam", "nodeId": "value_2", "key": "value", "value": 0.5 },
-                      {
-                        "op": "replaceNodeInterface",
-                        "nodeId": "value_2",
-                        "ports": [
-                          {
-                            "id": "out",
-                            "direction": "output",
-                            "type": {
-                              "flow": "value",
-                              "dataKind": "number.float",
-                              "range": { "min": 0, "max": 1, "step": 0.1 },
-                              "shape": [1],
-                              "channels": 1,
-                              "sampleRate": 48000,
-                              "format": ["float32"],
-                              "frameRate": 60,
-                              "alphaPolicy": "white",
-                              "values": ["low", 0.5, true]
-                            }
-                          }
-                        ],
-                        "edgePolicy": "removeInvalidEdges"
-                      },
-                      {
-                        "op": "addEdge",
-                        "edge": {
-                          "from": { "node": "value_2", "port": "out" },
-                          "to": { "node": "target_1", "port": "value" }
-                        }
-                      },
-                      {
-                        "op": "removeEdge",
-                        "edge": {
-                          "from": { "node": "value_2", "port": "out" },
-                          "to": { "node": "target_1", "port": "value" }
-                        }
-                      }
-                    ]
-                  },
+	                  "operation": {
+	                    "schema": "skenion.runtime.operation",
+	                    "schemaVersion": "0.1.0",
+	                    "id": "op-runtime-full",
+	                    "kind": "pasteGraphFragment",
+	                    "request": {
+	                      "target": {
+	                        "path": { "kind": "root" },
+	                        "baseRevision": "2"
+	                      },
+	                      "fragment": {
+	                        "schema": "skenion.graph.fragment",
+	                        "schemaVersion": "0.2.0",
+	                        "nodes": [
+	                          {
+	                            "id": "value_2",
+	                            "kind": "core.float",
+	                            "kindVersion": "0.2.0",
+	                            "params": { "value": 0.75 },
+	                            "ports": [
+	                              { "id": "out", "direction": "output", "type": "number.float", "rate": "control" }
+	                            ]
+	                          }
+	                        ],
+	                        "edges": []
+	                      },
+	                      "placement": { "kind": "position", "x": 10, "y": 20 }
+	                    },
+	                    "correlationId": "runtime-session-valid"
+	                  },
                   "viewPatch": {
                     "baseViewRevision": 2,
                     "ops": [

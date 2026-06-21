@@ -72,8 +72,8 @@ edits:
   `false/true`, and `set` forms through its hot `in` inlet
 
 Changing graph parameters such as `label`, `min`, `max`, `step`, `sendName`, or
-`receiveName` remains a graph patch. Moving a runtime slider or clicking a
-runtime toggle must not create a graph patch.
+`receiveName` remains a saved graph mutation. Moving a runtime slider or
+clicking a runtime toggle must not create a graph mutation.
 
 When local preview is running, Runtime may write the updated control state to a
 preview control-state snapshot so the preview can consume new typed values on a

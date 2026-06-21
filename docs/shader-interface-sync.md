@@ -26,7 +26,7 @@ WGSL source annotations
   -> shader interface analyzer
   -> inferred node input ports
   -> Studio Analyze / Sync Inputs
-  -> replaceNodeInterface graph patch
+  -> active graph mutation
   -> Runtime dynamic uniform layout
 ```
 

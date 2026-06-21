@@ -228,23 +228,8 @@
       ]
     },
     "runtimeProjectSnapshot": {
-      "type": "object",
-      "required": ["graph", "viewState", "nodes"],
-      "properties": {
-        "graph": {
-          "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json"
-        },
-        "viewState": {
-          "$ref": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json"
-        },
-        "nodes": {
-          "type": "array",
-          "items": {
-            "$ref": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json"
-          }
-        }
-      },
-      "additionalProperties": false
+      "description": "Active Runtime project snapshots are ProjectDocument v0.2 documents. v0.1 graphs remain valid only as legacy import/migration inputs.",
+      "$ref": "https://skenion.dev/schemas/project/v0.2/project.schema.json"
     },
     "runtimeSessionSnapshot": {
       "type": "object",
@@ -294,8 +279,8 @@
     "runtimeMutationRequest": {
       "type": "object",
       "properties": {
-        "graphPatch": {
-          "$ref": "https://skenion.dev/schemas/graph/v0.1/patch.schema.json"
+        "operation": {
+          "$ref": "https://skenion.dev/schemas/runtime/v0/operation.schema.json"
         },
         "viewPatch": {
           "$ref": "#/$defs/runtimeViewPatch"
