@@ -1,6 +1,6 @@
 {
   "name": "@skenion/contracts",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "description": "Skenion contract schemas and validators",
   "type": "module",
   "license": "Apache-2.0",

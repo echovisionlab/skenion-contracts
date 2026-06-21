@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.39.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.38.0...skenion-contracts-v0.39.0) (2026-06-21)
+
+
+### Features
+
+* **graph-schema:** promote v0.2 active contract ([#112](https://github.com/echovisionlab/skenion-contracts/issues/112)) ([a9d020e](https://github.com/echovisionlab/skenion-contracts/commit/a9d020e3466e3a851e60be2cbc2dd3c3e41e8749))
+
 ## [0.38.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.37.0...skenion-contracts-v0.38.0) (2026-06-21)
 
 
