@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.36.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.35.0...skenion-contracts-v0.36.0) (2026-06-21)
+
+
+### Features
+
+* **graph-schema:** add graph fragment paste contracts ([#105](https://github.com/echovisionlab/skenion-contracts/issues/105)) ([0dab7c7](https://github.com/echovisionlab/skenion-contracts/commit/0dab7c794c9850950af232a68c3e708d7072b1cf))
+
 ## [0.35.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.34.0...skenion-contracts-v0.35.0) (2026-06-21)
 
 
