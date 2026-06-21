@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.37.0...skenion-contracts-v0.38.0) (2026-06-21)
+
+
+### Features
+
+* **runtime-wire:** add collaboration sync contracts ([#109](https://github.com/echovisionlab/skenion-contracts/pull/109)) ([150849f](https://github.com/echovisionlab/skenion-contracts/commit/150849f2a10639f36826ece6dd0b1492a5dcad1c))
+
 ## [0.37.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.36.0...skenion-contracts-v0.37.0) (2026-06-21)
 
 
