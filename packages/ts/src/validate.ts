@@ -67,11 +67,13 @@ const Ajv2020 = Ajv2020Runtime as unknown as new (opts?: Options) => {
   addSchema(schema: unknown): unknown;
 };
 const ajv = new Ajv2020({ allErrors: true });
+ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphV02Schema);
 ajv.addSchema(graphFragmentV02Schema);
 ajv.addSchema(graphPatchV01Schema);
 ajv.addSchema(graphPatchEventV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
+ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(runtimeSessionV0Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphV02Validator = ajv.compile(graphV02Schema);

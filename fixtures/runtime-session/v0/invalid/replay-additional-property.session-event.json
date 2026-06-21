@@ -23,6 +23,14 @@
     "undoDepth": 0,
     "redoDepth": 0
   },
+  "replay": {
+    "cursor": "1",
+    "previousCursor": null,
+    "replayed": false,
+    "gap": null,
+    "overflow": false,
+    "unexpected": true
+  },
   "diagnostics": [],
   "createdAt": "2026-06-22T00:00:00.000Z"
 }

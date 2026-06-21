@@ -23,6 +23,13 @@
     "undoDepth": 0,
     "redoDepth": 0
   },
+  "replay": {
+    "cursor": "",
+    "previousCursor": "",
+    "replayed": false,
+    "gap": null,
+    "overflow": false
+  },
   "diagnostics": [],
   "createdAt": "2026-06-22T00:00:00.000Z"
 }

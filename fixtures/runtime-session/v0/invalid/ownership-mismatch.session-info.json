@@ -13,11 +13,14 @@
     "plan": null
   },
   "profile": {
-    "mode": "local-admin",
-    "ownership": "owned-child",
+    "mode": "local-managed",
+    "ownership": "remote",
     "endpoint": {
       "url": "http://127.0.0.1:49231",
       "protocol": "http"
+    },
+    "process": {
+      "ownedByHost": true
     }
   },
   "capabilities": {
@@ -26,7 +29,7 @@
     "eventReplay": true,
     "multiWindow": true,
     "profiles": ["local-managed"],
-    "authPolicy": "local-trusted"
+    "authPolicy": "deferred"
   },
   "eventReplay": {
     "cursorKind": "sequence",

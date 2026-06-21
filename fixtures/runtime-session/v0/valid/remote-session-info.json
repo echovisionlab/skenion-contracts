@@ -1,0 +1,45 @@
+{
+  "schema": "skenion.runtime.session.info",
+  "schemaVersion": "0.1.0",
+  "ok": true,
+  "sessionId": "session-remote",
+  "lifecycle": "ready",
+  "snapshot": {
+    "sessionRevision": 4,
+    "viewRevision": 2,
+    "controlRevision": 1,
+    "project": null,
+    "diagnostics": [],
+    "plan": null
+  },
+  "profile": {
+    "mode": "remote",
+    "ownership": "remote",
+    "displayName": "Remote runtime",
+    "endpoint": {
+      "url": "https://runtime.example.test",
+      "canonicalUrl": "https://runtime.example.test",
+      "protocol": "https",
+      "host": "runtime.example.test",
+      "tls": true
+    },
+    "process": null
+  },
+  "capabilities": {
+    "sessionAddressing": true,
+    "defaultSessionAlias": false,
+    "eventReplay": true,
+    "multiWindow": true,
+    "profiles": ["remote"],
+    "authPolicy": "deferred"
+  },
+  "eventReplay": {
+    "cursorKind": "sequence",
+    "currentCursor": "4",
+    "earliestSequence": 1,
+    "latestSequence": 4,
+    "replayLimit": 512,
+    "overflow": false
+  },
+  "diagnostics": []
+}

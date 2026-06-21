@@ -229,13 +229,16 @@ export interface RuntimeProcessMetadata {
   arch?: string;
 }
 
-export interface RuntimeConnectionProfile {
-  mode: RuntimeConnectionProfileMode;
-  ownership: RuntimeOwnershipMode;
+export interface RuntimeConnectionProfileBase {
   displayName?: string;
   endpoint: RuntimeEndpointMetadata;
   process?: RuntimeProcessMetadata | null;
 }
+
+export type RuntimeConnectionProfile =
+  | (RuntimeConnectionProfileBase & { mode: "local-managed"; ownership: "owned-child" })
+  | (RuntimeConnectionProfileBase & { mode: "local-shared"; ownership: "external" })
+  | (RuntimeConnectionProfileBase & { mode: "remote"; ownership: "remote" });
 
 export interface RuntimeEventReplayWindow {
   cursorKind: "sequence";

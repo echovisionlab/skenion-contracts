@@ -175,8 +175,16 @@ fn parses_public_session_addressed_runtime_event() {
           "sequence": 1,
           "sessionRevision": 1,
           "kind": "snapshot",
-          "snapshot": { "sessionRevision": 1 },
-          "history": { "entries": [] },
+          "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
+          "history": {
+            "schema": "skenion.runtime.history",
+            "schemaVersion": "0.1.0",
+            "entries": [],
+            "canUndo": false,
+            "canRedo": false,
+            "undoDepth": 0,
+            "redoDepth": 0
+          },
           "replay": {
             "cursor": "1",
             "previousCursor": null,

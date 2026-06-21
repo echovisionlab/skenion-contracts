@@ -589,6 +589,80 @@ pub struct RuntimeConnectionProfile {
     pub process: Option<RuntimeProcessMetadata>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeProjectSnapshot {
+    pub graph: Value,
+    pub view_state: Value,
+    pub nodes: Vec<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSessionSnapshot {
+    pub session_revision: u64,
+    pub view_revision: u64,
+    pub control_revision: u64,
+    pub project: Option<RuntimeProjectSnapshot>,
+    pub diagnostics: Vec<Value>,
+    pub plan: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeMutationRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_patch: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view_patch: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RuntimeHistoryEntryKind {
+    Apply,
+    Undo,
+    Redo,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeHistoryEntry {
+    pub id: String,
+    pub sequence: u64,
+    pub kind: RuntimeHistoryEntryKind,
+    pub mutation: RuntimeMutationRequest,
+    pub inverse_mutation: RuntimeMutationRequest,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject_event_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeHistory {
+    pub schema: String,
+    pub schema_version: String,
+    pub entries: Vec<RuntimeHistoryEntry>,
+    pub can_undo: bool,
+    pub can_redo: bool,
+    pub undo_depth: u64,
+    pub redo_depth: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
@@ -623,7 +697,7 @@ pub struct RuntimeSessionInfoResponse {
     pub ok: bool,
     pub session_id: String,
     pub lifecycle: RuntimeSessionLifecycleState,
-    pub snapshot: Value,
+    pub snapshot: RuntimeSessionSnapshot,
     pub profile: RuntimeConnectionProfile,
     pub capabilities: RuntimeSessionCapabilitySet,
     pub event_replay: RuntimeEventReplayWindow,
@@ -669,10 +743,10 @@ pub struct RuntimeSessionEvent {
     pub sequence: u64,
     pub session_revision: u64,
     pub kind: RuntimeSessionEventKind,
-    pub snapshot: Value,
-    pub history: Value,
+    pub snapshot: RuntimeSessionSnapshot,
+    pub history: RuntimeHistory,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub mutation: Option<Value>,
+    pub mutation: Option<RuntimeHistoryEntry>,
     pub replay: RuntimeEventReplayMetadata,
     pub diagnostics: Vec<Value>,
     pub created_at: String,

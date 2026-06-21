@@ -587,6 +587,11 @@ components:
           minLength: 1
       additionalProperties: false
     RuntimeConnectionProfile:
+      oneOf:
+        - $ref: "#/components/schemas/RuntimeLocalManagedConnectionProfile"
+        - $ref: "#/components/schemas/RuntimeLocalSharedConnectionProfile"
+        - $ref: "#/components/schemas/RuntimeRemoteConnectionProfile"
+    RuntimeConnectionProfileBase:
       type: object
       required:
         - mode
@@ -606,6 +611,39 @@ components:
             - $ref: "#/components/schemas/RuntimeProcessMetadata"
             - type: "null"
       additionalProperties: false
+    RuntimeLocalManagedConnectionProfile:
+      allOf:
+        - $ref: "#/components/schemas/RuntimeConnectionProfileBase"
+        - type: object
+          properties:
+            mode:
+              type: string
+              const: local-managed
+            ownership:
+              type: string
+              const: owned-child
+    RuntimeLocalSharedConnectionProfile:
+      allOf:
+        - $ref: "#/components/schemas/RuntimeConnectionProfileBase"
+        - type: object
+          properties:
+            mode:
+              type: string
+              const: local-shared
+            ownership:
+              type: string
+              const: external
+    RuntimeRemoteConnectionProfile:
+      allOf:
+        - $ref: "#/components/schemas/RuntimeConnectionProfileBase"
+        - type: object
+          properties:
+            mode:
+              type: string
+              const: remote
+            ownership:
+              type: string
+              const: remote
     RuntimeEventReplayWindow:
       type: object
       required:
@@ -735,6 +773,7 @@ components:
       properties:
         id:
           type: string
+          minLength: 1
           minLength: 1
         version:
           type: string
@@ -1132,6 +1171,7 @@ components:
           $ref: "#/components/schemas/RuntimeViewPatch"
         clientId:
           type: string
+          minLength: 1
         description:
           type: string
       additionalProperties: false
@@ -2372,6 +2412,7 @@ components:
           const: 0.1.0
         id:
           type: string
+          minLength: 1
         sequence:
           type: integer
           minimum: 1
@@ -2457,8 +2498,10 @@ components:
           $ref: "#/components/schemas/RuntimeMutationRequest"
         subjectEventId:
           type: string
+          minLength: 1
         clientId:
           type: string
+          minLength: 1
         description:
           type: string
         createdAt:

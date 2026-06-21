@@ -996,13 +996,15 @@ const projectV02Schema = await readJson("json-schema/project/v0.2/project.schema
 const graphPatchV01Schema = await readJson("json-schema/graph/v0.1/patch.schema.json");
 const graphPatchEventV01Schema = await readJson("json-schema/graph/v0.1/patch-event.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
+ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphV02Schema);
 ajv.addSchema(graphFragmentV02Schema);
 ajv.addSchema(runtimeOperationV0Schema);
+ajv.addSchema(viewStateV01Schema);
+ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(runtimeSessionV0Schema);
 ajv.addSchema(graphPatchV01Schema);
 ajv.addSchema(graphPatchEventV01Schema);
-ajv.addSchema(nodeDefinitionV01Schema);
 const validators = {
   graphV0: ajv.compile(await readJson("json-schema/graph/v0/graph.schema.json")),
   patchV0: ajv.compile(await readJson("json-schema/graph/v0/patch.schema.json")),

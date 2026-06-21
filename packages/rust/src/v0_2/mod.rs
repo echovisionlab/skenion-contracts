@@ -16,9 +16,11 @@ pub use types::{
     ProjectMetadataV02, RuntimeConnectionProfile, RuntimeConnectionProfileMode,
     RuntimeEndpointMetadata, RuntimeEndpointProtocol, RuntimeEventReplayGap,
     RuntimeEventReplayGapReason, RuntimeEventReplayMetadata, RuntimeEventReplayWindow,
+    RuntimeHistory, RuntimeHistoryEntry, RuntimeHistoryEntryKind, RuntimeMutationRequest,
     RuntimeOperationAttribution, RuntimeOperationDiagnostic, RuntimeOperationEnvelope,
-    RuntimeOwnershipMode, RuntimeProcessMetadata, RuntimeSessionCapabilitySet, RuntimeSessionEvent,
-    RuntimeSessionEventKind, RuntimeSessionInfoResponse, RuntimeSessionLifecycleState,
+    RuntimeOwnershipMode, RuntimeProcessMetadata, RuntimeProjectSnapshot,
+    RuntimeSessionCapabilitySet, RuntimeSessionEvent, RuntimeSessionEventKind,
+    RuntimeSessionInfoResponse, RuntimeSessionLifecycleState, RuntimeSessionSnapshot,
     TriggerModeV02, derive_patch_contract_v02, derive_patch_contracts_v02,
 };
 pub use validation::{

@@ -161,18 +161,22 @@ fn validates_runtime_session_fixtures() {
             .expect("invalid runtime session fixture should parse");
         match value.get("schema").and_then(serde_json::Value::as_str) {
             Some("skenion.runtime.session.info") => {
-                assert!(
-                    serde_json::from_value::<RuntimeSessionInfoResponse>(value).is_err(),
-                    "{} should fail to parse",
-                    file.display()
-                );
+                if let Ok(response) = serde_json::from_value::<RuntimeSessionInfoResponse>(value) {
+                    assert!(
+                        validate_runtime_session_info_response(&response).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
             }
             Some("skenion.runtime.session.event") => {
-                assert!(
-                    serde_json::from_value::<RuntimeSessionEvent>(value).is_err(),
-                    "{} should fail to parse",
-                    file.display()
-                );
+                if let Ok(event) = serde_json::from_value::<RuntimeSessionEvent>(value) {
+                    assert!(
+                        validate_runtime_session_event(&event).is_err(),
+                        "{} should fail validation",
+                        file.display()
+                    );
+                }
             }
             other => panic!("{} has unexpected schema {other:?}", file.display()),
         }

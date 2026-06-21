@@ -177,6 +177,7 @@ export type {
   RuntimeExtensionListResponse,
   RuntimeExtensionStatus,
   RuntimeConnectionProfile,
+  RuntimeConnectionProfileBase,
   RuntimeConnectionProfileMode,
   RuntimeGeneratedShaderResponse,
   RuntimeHealth,

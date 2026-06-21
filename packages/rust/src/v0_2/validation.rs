@@ -10,9 +10,9 @@ use super::{
     GraphFragmentV02, GraphFragmentValidationResultV02, GraphValidationDiagnosticV02,
     GraphValidationResultV02, MergePolicyV02, NodeDefinitionManifestV02, PasteGraphFragmentRequest,
     PasteGraphFragmentResponse, PatchDefinitionV02, PortDirectionV02, PortSpecV02,
-    ProjectDocumentV02, RuntimeConnectionProfileMode, RuntimeOperationEnvelope,
-    RuntimeOwnershipMode, RuntimeSessionEvent, RuntimeSessionInfoResponse,
-    derive_patch_contract_v02,
+    ProjectDocumentV02, RuntimeConnectionProfileMode, RuntimeHistory, RuntimeHistoryEntry,
+    RuntimeOperationEnvelope, RuntimeOwnershipMode, RuntimeSessionEvent,
+    RuntimeSessionInfoResponse, RuntimeSessionSnapshot, derive_patch_contract_v02,
 };
 use crate::v0_1::ViewStateV01;
 
@@ -927,6 +927,7 @@ pub fn validate_runtime_session_info_response(
     if response.session_id.is_empty() {
         errors.push(ValidationErrorV02::new("sessionId must not be empty"));
     }
+    errors.extend(runtime_session_snapshot_errors(&response.snapshot));
     if response.capabilities.auth_policy != "deferred" {
         errors.push(ValidationErrorV02::new(
             "runtime session authPolicy must be deferred",
@@ -992,11 +993,32 @@ pub fn validate_runtime_session_event(
     if event.session_id.is_empty() {
         errors.push(ValidationErrorV02::new("sessionId must not be empty"));
     }
+    if event.id.is_empty() {
+        errors.push(ValidationErrorV02::new("event id must not be empty"));
+    }
     if event.sequence == 0 {
         errors.push(ValidationErrorV02::new("sequence must be at least 1"));
     }
+    if event.created_at.is_empty() {
+        errors.push(ValidationErrorV02::new("createdAt must not be empty"));
+    }
+    errors.extend(runtime_session_snapshot_errors(&event.snapshot));
+    errors.extend(runtime_history_errors(&event.history));
+    if let Some(mutation) = &event.mutation {
+        errors.extend(runtime_history_entry_errors(mutation, "mutation"));
+    }
     if event.replay.cursor.is_empty() {
         errors.push(ValidationErrorV02::new("replay cursor must not be empty"));
+    }
+    if event
+        .replay
+        .previous_cursor
+        .as_ref()
+        .is_some_and(String::is_empty)
+    {
+        errors.push(ValidationErrorV02::new(
+            "replay previousCursor must not be empty",
+        ));
     }
     if let Some(gap) = &event.replay.gap {
         if gap.expected_sequence == 0 || gap.actual_sequence == 0 {
@@ -1010,12 +1032,7 @@ pub fn validate_runtime_session_event(
             ));
         }
     }
-    if event
-        .snapshot
-        .get("sessionRevision")
-        .and_then(serde_json::Value::as_u64)
-        .is_some_and(|snapshot_revision| event.session_revision != snapshot_revision)
-    {
+    if event.session_revision != event.snapshot.session_revision {
         errors.push(ValidationErrorV02::new(
             "event sessionRevision must match snapshot.sessionRevision",
         ));
@@ -1026,6 +1043,78 @@ pub fn validate_runtime_session_event(
     } else {
         Err(ValidationReportV02::new(errors))
     }
+}
+
+fn runtime_session_snapshot_errors(snapshot: &RuntimeSessionSnapshot) -> Vec<ValidationErrorV02> {
+    let mut errors = Vec::new();
+    if snapshot.diagnostics.iter().any(|diagnostic| {
+        diagnostic
+            .get("message")
+            .and_then(serde_json::Value::as_str)
+            .is_none_or(str::is_empty)
+    }) {
+        errors.push(ValidationErrorV02::new(
+            "snapshot diagnostics must include non-empty message",
+        ));
+    }
+    errors
+}
+
+fn runtime_history_errors(history: &RuntimeHistory) -> Vec<ValidationErrorV02> {
+    let mut errors = Vec::new();
+    if history.schema != "skenion.runtime.history" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected history schema skenion.runtime.history, found {}",
+            history.schema
+        )));
+    }
+    if history.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV02::new(format!(
+            "expected history schemaVersion 0.1.0, found {}",
+            history.schema_version
+        )));
+    }
+    for entry in &history.entries {
+        errors.extend(runtime_history_entry_errors(entry, "history entry"));
+    }
+    errors
+}
+
+fn runtime_history_entry_errors(
+    entry: &RuntimeHistoryEntry,
+    label: &str,
+) -> Vec<ValidationErrorV02> {
+    let mut errors = Vec::new();
+    if entry.id.is_empty() {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} id must not be empty"
+        )));
+    }
+    if entry.sequence == 0 {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} sequence must be at least 1"
+        )));
+    }
+    if entry.created_at.is_empty() {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} createdAt must not be empty"
+        )));
+    }
+    if entry
+        .subject_event_id
+        .as_ref()
+        .is_some_and(String::is_empty)
+    {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} subjectEventId must not be empty"
+        )));
+    }
+    if entry.client_id.as_ref().is_some_and(String::is_empty) {
+        errors.push(ValidationErrorV02::new(format!(
+            "{label} clientId must not be empty"
+        )));
+    }
+    errors
 }
 
 pub fn validate_node_definition_v02(
@@ -1218,8 +1307,8 @@ mod tests {
         EdgeEndpointV02, FeedbackPolicyV02, GraphFragmentV02, GraphNodeV02, GraphTargetRef,
         IdConflictPolicy, IdRemapResult, PasteGraphFragmentOptions, PasteGraphFragmentRequest,
         PasteGraphFragmentResponse, PatchPath, RuntimeEventReplayGap, RuntimeEventReplayGapReason,
-        RuntimeOperationDiagnostic, RuntimeOperationEnvelope, RuntimeSessionEvent,
-        RuntimeSessionInfoResponse,
+        RuntimeHistoryEntry, RuntimeOperationDiagnostic, RuntimeOperationEnvelope,
+        RuntimeSessionEvent, RuntimeSessionInfoResponse,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -1321,7 +1410,7 @@ mod tests {
             "ok": true,
             "sessionId": "session-a",
             "lifecycle": "ready",
-            "snapshot": { "sessionRevision": 1 },
+            "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
             "profile": {
                 "mode": "local-managed",
                 "ownership": "owned-child",
@@ -1357,8 +1446,16 @@ mod tests {
             "sequence": 1,
             "sessionRevision": 1,
             "kind": "snapshot",
-            "snapshot": { "sessionRevision": 1 },
-            "history": { "entries": [] },
+            "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
+            "history": {
+                "schema": "skenion.runtime.history",
+                "schemaVersion": "0.1.0",
+                "entries": [],
+                "canUndo": false,
+                "canRedo": false,
+                "undoDepth": 0,
+                "redoDepth": 0
+            },
             "replay": {
                 "cursor": "1",
                 "previousCursor": null,
@@ -2101,7 +2198,7 @@ mod tests {
             "ok": true,
             "sessionId": "session-b",
             "lifecycle": "ready",
-            "snapshot": {},
+            "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
             "profile": {
                 "mode": "local-shared",
                 "ownership": "external",
@@ -2134,7 +2231,7 @@ mod tests {
             "ok": true,
             "sessionId": "session-c",
             "lifecycle": "ready",
-            "snapshot": {},
+            "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
             "profile": {
                 "mode": "remote",
                 "ownership": "remote",
@@ -2167,10 +2264,31 @@ mod tests {
         let mut invalid_event = event.clone();
         invalid_event.schema = "wrong".to_owned();
         invalid_event.schema_version = "9.9.9".to_owned();
+        invalid_event.id.clear();
         invalid_event.session_id.clear();
         invalid_event.sequence = 0;
+        invalid_event.created_at.clear();
         invalid_event.session_revision = 2;
+        invalid_event.snapshot.diagnostics.push(json!({
+            "severity": "warning"
+        }));
+        invalid_event.history.schema = "wrong".to_owned();
+        invalid_event.history.schema_version = "9.9.9".to_owned();
+        let invalid_entry: RuntimeHistoryEntry = serde_json::from_value(json!({
+            "id": "",
+            "sequence": 0,
+            "kind": "apply",
+            "mutation": {},
+            "inverseMutation": {},
+            "subjectEventId": "",
+            "clientId": "",
+            "createdAt": ""
+        }))
+        .expect("invalid history entry should parse structurally");
+        invalid_event.history.entries.push(invalid_entry.clone());
+        invalid_event.mutation = Some(invalid_entry);
         invalid_event.replay.cursor.clear();
+        invalid_event.replay.previous_cursor = Some(String::new());
         invalid_event.replay.gap = Some(RuntimeEventReplayGap {
             expected_sequence: 0,
             actual_sequence: 0,
@@ -2181,9 +2299,21 @@ mod tests {
             .to_string();
         assert!(event_error.contains("skenion.runtime.session.event"));
         assert!(event_error.contains("0.1.0"));
+        assert!(event_error.contains("event id must not be empty"));
         assert!(event_error.contains("sessionId must not be empty"));
         assert!(event_error.contains("sequence must be at least 1"));
+        assert!(event_error.contains("createdAt must not be empty"));
+        assert!(event_error.contains("snapshot diagnostics must include non-empty message"));
+        assert!(event_error.contains("expected history schema skenion.runtime.history"));
+        assert!(event_error.contains("expected history schemaVersion 0.1.0"));
+        assert!(event_error.contains("history entry id must not be empty"));
+        assert!(event_error.contains("history entry sequence must be at least 1"));
+        assert!(event_error.contains("history entry createdAt must not be empty"));
+        assert!(event_error.contains("history entry subjectEventId must not be empty"));
+        assert!(event_error.contains("history entry clientId must not be empty"));
+        assert!(event_error.contains("mutation id must not be empty"));
         assert!(event_error.contains("replay cursor must not be empty"));
+        assert!(event_error.contains("replay previousCursor must not be empty"));
         assert!(event_error.contains("replay gap sequences must be at least 1"));
         assert!(event_error.contains("expectedSequence must be less than actualSequence"));
         assert!(event_error.contains("sessionRevision must match"));

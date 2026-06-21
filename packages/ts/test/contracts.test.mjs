@@ -112,15 +112,25 @@ test("exports v0.1 graph and node definition schemas", () => {
 });
 
 test("validates runtime session profile and replay fixtures", async () => {
-  const info = await readJson("fixtures/runtime-session/v0/valid/local-managed-session-info.json");
-  const infoResult = validateRuntimeSessionInfoResponse(info);
+  const infoFixtures = [
+    "fixtures/runtime-session/v0/valid/local-managed-session-info.json",
+    "fixtures/runtime-session/v0/valid/local-shared-session-info.json",
+    "fixtures/runtime-session/v0/valid/remote-session-info.json"
+  ];
 
-  assert.equal(infoResult.ok, true);
-  assert.equal(isRuntimeSessionInfoResponse(info), true);
-  assert.equal(info.profile.mode, "local-managed");
-  assert.equal(info.profile.ownership, "owned-child");
-  assert.equal(info.capabilities.authPolicy, "deferred");
-  assert.deepEqual(info.capabilities.profiles, ["local-managed", "local-shared", "remote"]);
+  for (const fixture of infoFixtures) {
+    const info = await readJson(fixture);
+    const infoResult = validateRuntimeSessionInfoResponse(info);
+
+    assert.equal(infoResult.ok, true, fixture);
+    assert.equal(isRuntimeSessionInfoResponse(info), true, fixture);
+    assert.equal(info.capabilities.authPolicy, "deferred");
+  }
+
+  const localManaged = await readJson("fixtures/runtime-session/v0/valid/local-managed-session-info.json");
+  assert.equal(localManaged.profile.mode, "local-managed");
+  assert.equal(localManaged.profile.ownership, "owned-child");
+  assert.deepEqual(localManaged.capabilities.profiles, ["local-managed", "local-shared", "remote"]);
 
   const event = await readJson("fixtures/runtime-session/v0/valid/replayed-session-event.json");
   const eventResult = validateRuntimeSessionEvent(event);
@@ -131,19 +141,42 @@ test("validates runtime session profile and replay fixtures", async () => {
   assert.equal(event.sessionRevision, event.snapshot.sessionRevision);
   assert.equal(event.replay.gap.reason, "retention-overflow");
 
-  const invalidProfile = await readJson("fixtures/runtime-session/v0/invalid/invalid-profile-mode.session-info.json");
-  const invalidProfileResult = validateRuntimeSessionInfoResponse(invalidProfile);
+  const invalidInfoFixtures = [
+    "fixtures/runtime-session/v0/invalid/invalid-profile-mode.session-info.json",
+    "fixtures/runtime-session/v0/invalid/ownership-mismatch.session-info.json"
+  ];
 
-  assert.equal(invalidProfileResult.ok, false);
-  assert.equal(isRuntimeSessionInfoResponse(invalidProfile), false);
-  assert.match(invalidProfileResult.errors.join("\n"), /must be equal to one of the allowed values|must be equal to constant/);
+  for (const fixture of invalidInfoFixtures) {
+    const invalidInfo = await readJson(fixture);
+    const invalidInfoResult = validateRuntimeSessionInfoResponse(invalidInfo);
 
-  const missingReplay = await readJson("fixtures/runtime-session/v0/invalid/missing-replay.session-event.json");
-  const missingReplayResult = validateRuntimeSessionEvent(missingReplay);
+    assert.equal(invalidInfoResult.ok, false, fixture);
+    assert.equal(isRuntimeSessionInfoResponse(invalidInfo), false, fixture);
+  }
 
-  assert.equal(missingReplayResult.ok, false);
-  assert.equal(isRuntimeSessionEvent(missingReplay), false);
-  assert.match(missingReplayResult.errors.join("\n"), /must have required property 'replay'/);
+  const extraProfile = structuredClone(localManaged);
+  extraProfile.profile.endpoint.extra = true;
+  assert.equal(validateRuntimeSessionInfoResponse(extraProfile).ok, false);
+  assert.equal(isRuntimeSessionInfoResponse(extraProfile), false);
+
+  const invalidEventFixtures = [
+    "fixtures/runtime-session/v0/invalid/missing-replay.session-event.json",
+    "fixtures/runtime-session/v0/invalid/empty-replay-cursor.session-event.json",
+    "fixtures/runtime-session/v0/invalid/replay-additional-property.session-event.json"
+  ];
+
+  for (const fixture of invalidEventFixtures) {
+    const invalidEvent = await readJson(fixture);
+    const invalidEventResult = validateRuntimeSessionEvent(invalidEvent);
+
+    assert.equal(invalidEventResult.ok, false, fixture);
+    assert.equal(isRuntimeSessionEvent(invalidEvent), false, fixture);
+  }
+
+  const extraReplay = structuredClone(event);
+  extraReplay.replay.extra = true;
+  assert.equal(validateRuntimeSessionEvent(extraReplay).ok, false);
+  assert.equal(isRuntimeSessionEvent(extraReplay), false);
 });
 
 test("validates extension package manifests with help and tests", async () => {

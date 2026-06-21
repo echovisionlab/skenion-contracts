@@ -22,7 +22,7 @@
       "$ref": "#/$defs/runtimeSessionLifecycleState"
     },
     "snapshot": {
-      "type": "object"
+      "$ref": "#/$defs/runtimeSessionSnapshot"
     },
     "profile": {
       "$ref": "#/$defs/runtimeConnectionProfile"
@@ -132,6 +132,19 @@
       "additionalProperties": false
     },
     "runtimeConnectionProfile": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/runtimeLocalManagedConnectionProfile"
+        },
+        {
+          "$ref": "#/$defs/runtimeLocalSharedConnectionProfile"
+        },
+        {
+          "$ref": "#/$defs/runtimeRemoteConnectionProfile"
+        }
+      ]
+    },
+    "runtimeConnectionProfileBase": {
       "type": "object",
       "required": ["mode", "ownership", "endpoint"],
       "properties": {
@@ -156,6 +169,215 @@
               "type": "null"
             }
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeLocalManagedConnectionProfile": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtimeConnectionProfileBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "local-managed"
+            },
+            "ownership": {
+              "const": "owned-child"
+            }
+          }
+        }
+      ]
+    },
+    "runtimeLocalSharedConnectionProfile": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtimeConnectionProfileBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "local-shared"
+            },
+            "ownership": {
+              "const": "external"
+            }
+          }
+        }
+      ]
+    },
+    "runtimeRemoteConnectionProfile": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtimeConnectionProfileBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "remote"
+            },
+            "ownership": {
+              "const": "remote"
+            }
+          }
+        }
+      ]
+    },
+    "runtimeProjectSnapshot": {
+      "type": "object",
+      "required": ["graph", "viewState", "nodes"],
+      "properties": {
+        "graph": {
+          "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json"
+        },
+        "viewState": {
+          "$ref": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeSessionSnapshot": {
+      "type": "object",
+      "required": ["sessionRevision", "viewRevision", "controlRevision", "project", "diagnostics", "plan"],
+      "properties": {
+        "sessionRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "viewRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "controlRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "project": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/runtimeProjectSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeDiagnostic"
+          }
+        },
+        "plan": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeMutationRequest": {
+      "type": "object",
+      "properties": {
+        "graphPatch": {
+          "type": "object"
+        },
+        "viewPatch": {
+          "type": "object"
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeHistoryEntry": {
+      "type": "object",
+      "required": ["id", "sequence", "kind", "mutation", "inverseMutation", "createdAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "enum": ["apply", "undo", "redo"]
+        },
+        "mutation": {
+          "$ref": "#/$defs/runtimeMutationRequest"
+        },
+        "inverseMutation": {
+          "$ref": "#/$defs/runtimeMutationRequest"
+        },
+        "subjectEventId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeHistory": {
+      "type": "object",
+      "required": ["schema", "schemaVersion", "entries", "canUndo", "canRedo", "undoDepth", "redoDepth"],
+      "properties": {
+        "schema": {
+          "const": "skenion.runtime.history"
+        },
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeHistoryEntry"
+          }
+        },
+        "canUndo": {
+          "type": "boolean"
+        },
+        "canRedo": {
+          "type": "boolean"
+        },
+        "undoDepth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "redoDepth": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
@@ -313,13 +535,13 @@
           "$ref": "#/$defs/runtimeSessionEventKind"
         },
         "snapshot": {
-          "type": "object"
+          "$ref": "#/$defs/runtimeSessionSnapshot"
         },
         "history": {
-          "type": "object"
+          "$ref": "#/$defs/runtimeHistory"
         },
         "mutation": {
-          "type": "object"
+          "$ref": "#/$defs/runtimeHistoryEntry"
         },
         "replay": {
           "$ref": "#/$defs/runtimeEventReplayMetadata"
