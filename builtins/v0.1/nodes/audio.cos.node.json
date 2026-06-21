@@ -37,5 +37,8 @@
   "permissions": [],
   "capabilities": [
     "pd.audio.v0.1"
-  ]
+  ],
+  "surface": {
+    "palette": "direct"
+  }
 }

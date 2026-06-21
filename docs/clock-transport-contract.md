@@ -50,5 +50,6 @@ External sources do not provide equivalent data:
 
 - `clock: value<clock.state>`
 
-These are contract surfaces only. Runtime scheduling and external clock source
-implementations are later milestones.
+These are contract surfaces only. Runtime scheduling and external clock input
+objects are later milestones; they are graph nodes/objects, not Runtime-global
+start/stop endpoints.

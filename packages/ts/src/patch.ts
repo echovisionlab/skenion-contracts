@@ -81,6 +81,27 @@ function replaceNodeInterface(
   return removedEdges;
 }
 
+function replaceNode(
+  graph: GraphDocumentV01,
+  nodeId: string,
+  node: GraphNodeV01
+): EdgeV01[] {
+  const nodeIndex = graph.nodes.findIndex((candidate) => candidate.id === nodeId);
+  graph.nodes[nodeIndex] = cloneJson(node);
+  const removedEdges: EdgeV01[] = [];
+  graph.edges = graph.edges.filter((edge) => {
+    if (edge.from.node !== nodeId && edge.to.node !== nodeId) {
+      return true;
+    }
+    if (edgeIsValidInGraph(graph, edge)) {
+      return true;
+    }
+    removedEdges.push(cloneJson(edge));
+    return false;
+  });
+  return removedEdges;
+}
+
 function nextRevision(current: string, explicit?: string): string {
   if (explicit) {
     return explicit;
@@ -129,6 +150,15 @@ export function applyGraphPatch(
       nextGraph.edges = nextGraph.edges.filter(
         (edge) => edge.from.node !== operation.nodeId && edge.to.node !== operation.nodeId
       );
+    } else if (operation.op === "replaceNode") {
+      const node = findNode(nextGraph, operation.nodeId);
+      if (!node) {
+        return { ok: false, errors: [`node ${operation.nodeId} does not exist`] };
+      }
+      if (operation.node.id !== operation.nodeId) {
+        return { ok: false, errors: [`replaceNode node id ${operation.node.id} must match nodeId ${operation.nodeId}`] };
+      }
+      replaceNode(nextGraph, operation.nodeId, operation.node);
     } else if (operation.op === "setNodeParams") {
       const node = findNode(nextGraph, operation.nodeId);
       if (!node) {
@@ -220,6 +250,25 @@ export function invertGraphPatch(
       workingGraph.edges = workingGraph.edges.filter(
         (edge) => edge.from.node !== operation.nodeId && edge.to.node !== operation.nodeId
       );
+    } else if (operation.op === "replaceNode") {
+      const node = findNode(workingGraph, operation.nodeId);
+      if (!node) {
+        return { ok: false, errors: [`node ${operation.nodeId} does not exist`] };
+      }
+      if (operation.node.id !== operation.nodeId) {
+        return { ok: false, errors: [`replaceNode node id ${operation.node.id} must match nodeId ${operation.nodeId}`] };
+      }
+      const previousNode = cloneJson(node);
+      const removedEdges = replaceNode(workingGraph, operation.nodeId, operation.node);
+      inverseGroups.unshift([
+        {
+          op: "replaceNode",
+          nodeId: operation.nodeId,
+          node: previousNode,
+          edgePolicy: "removeInvalidEdges"
+        },
+        ...removedEdges.map((edge): GraphPatchOperationV01 => ({ op: "addEdge", edge }))
+      ]);
     } else if (operation.op === "setNodeParams") {
       const node = findNode(workingGraph, operation.nodeId);
       if (!node) {

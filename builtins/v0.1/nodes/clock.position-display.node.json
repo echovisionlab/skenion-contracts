@@ -28,5 +28,8 @@
   "permissions": [],
   "capabilities": [
     "clock.display.v0.1"
-  ]
+  ],
+  "surface": {
+    "palette": "direct"
+  }
 }

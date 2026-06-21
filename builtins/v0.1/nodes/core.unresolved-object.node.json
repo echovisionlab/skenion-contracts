@@ -1,0 +1,19 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "core.unresolved-object",
+  "version": "0.1.0",
+  "displayName": "Unresolved Object",
+  "category": "Diagnostics",
+  "ports": [],
+  "execution": {
+    "model": "event"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "diagnostic.unresolved-object.v0.1"
+  ]
+}

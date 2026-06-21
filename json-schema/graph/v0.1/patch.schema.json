@@ -41,6 +41,9 @@
             "$ref": "#/$defs/removeNode"
           },
           {
+            "$ref": "#/$defs/replaceNode"
+          },
+          {
             "$ref": "#/$defs/setNodeParams"
           },
           {
@@ -84,6 +87,26 @@
         "nodeId": {
           "type": "string",
           "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "replaceNode": {
+      "type": "object",
+      "required": ["op", "nodeId", "node", "edgePolicy"],
+      "properties": {
+        "op": {
+          "const": "replaceNode"
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "node": {
+          "$ref": "#/$defs/node"
+        },
+        "edgePolicy": {
+          "const": "removeInvalidEdges"
         }
       },
       "additionalProperties": false

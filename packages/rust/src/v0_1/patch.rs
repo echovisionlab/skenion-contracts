@@ -77,6 +77,14 @@ pub enum GraphPatchOperationV01 {
         #[serde(rename = "nodeId")]
         node_id: String,
     },
+    #[serde(rename = "replaceNode")]
+    ReplaceNode {
+        #[serde(rename = "nodeId")]
+        node_id: String,
+        node: GraphNodeV01,
+        #[serde(rename = "edgePolicy")]
+        edge_policy: ReplaceNodeInterfaceEdgePolicyV01,
+    },
     #[serde(rename = "setNodeParams")]
     SetNodeParams {
         #[serde(rename = "nodeId")]
@@ -232,6 +240,30 @@ fn replace_node_interface(
     removed_edges
 }
 
+fn replace_node(graph: &mut GraphDocumentV01, node_id: &str, node: GraphNodeV01) -> Vec<EdgeV01> {
+    let Some(node_index) = graph
+        .nodes
+        .iter()
+        .position(|candidate| candidate.id == node_id)
+    else {
+        return Vec::new();
+    };
+    graph.nodes[node_index] = node;
+
+    let mut removed_edges = Vec::new();
+    let mut kept_edges = Vec::new();
+    for edge in std::mem::take(&mut graph.edges) {
+        let incident_to_node = edge.from.node == node_id || edge.to.node == node_id;
+        if !incident_to_node || edge_is_valid_in_graph(graph, &edge) {
+            kept_edges.push(edge);
+        } else {
+            removed_edges.push(edge);
+        }
+    }
+    graph.edges = kept_edges;
+    removed_edges
+}
+
 pub fn apply_graph_patch_v01(
     graph: &GraphDocumentV01,
     patch: &GraphPatchV01,
@@ -275,6 +307,18 @@ pub fn apply_graph_patch_v01(
                 next_graph
                     .edges
                     .retain(|edge| edge.from.node != *node_id && edge.to.node != *node_id);
+            }
+            GraphPatchOperationV01::ReplaceNode { node_id, node, .. } => {
+                if find_node(&next_graph, node_id).is_none() {
+                    return Err(ApplyPatchErrorV01::NodeMissing(node_id.clone()));
+                }
+                if node.id != *node_id {
+                    return Err(ApplyPatchErrorV01::InvalidGraph(format!(
+                        "replaceNode node id {} must match nodeId {}",
+                        node.id, node_id
+                    )));
+                }
+                replace_node(&mut next_graph, node_id, node.clone());
             }
             GraphPatchOperationV01::SetNodeParams { node_id, params } => {
                 let Some(node) = find_node_mut(&mut next_graph, node_id) else {
@@ -392,6 +436,30 @@ pub fn invert_graph_patch_v01(
                 working_graph
                     .edges
                     .retain(|edge| edge.from.node != *node_id && edge.to.node != *node_id);
+            }
+            GraphPatchOperationV01::ReplaceNode { node_id, node, .. } => {
+                let Some(previous_node) = find_node(&working_graph, node_id) else {
+                    return Err(InvertPatchErrorV01::NodeMissing(node_id.clone()));
+                };
+                if node.id != *node_id {
+                    return Err(InvertPatchErrorV01::InvalidGraph(format!(
+                        "replaceNode node id {} must match nodeId {}",
+                        node.id, node_id
+                    )));
+                }
+                let previous_node = previous_node.clone();
+                let removed_edges = replace_node(&mut working_graph, node_id, node.clone());
+                let mut group = vec![GraphPatchOperationV01::ReplaceNode {
+                    node_id: node_id.clone(),
+                    node: previous_node,
+                    edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+                }];
+                group.extend(
+                    removed_edges
+                        .into_iter()
+                        .map(|edge| GraphPatchOperationV01::AddEdge { edge }),
+                );
+                inverse_groups.insert(0, group);
             }
             GraphPatchOperationV01::SetNodeParams { node_id, params } => {
                 let Some(node) = find_node_mut(&mut working_graph, node_id) else {
@@ -724,13 +792,33 @@ mod tests {
             Err(ApplyPatchErrorV01::NodeMissing(id)) if id == "missing"
         ));
 
-        let missing_replace_node = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+        let missing_replace_node = patch(vec![GraphPatchOperationV01::ReplaceNode {
+            node_id: "missing".to_owned(),
+            node: added_node("missing"),
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        assert!(matches!(
+            apply_graph_patch_v01(&graph(), &missing_replace_node, None),
+            Err(ApplyPatchErrorV01::NodeMissing(id)) if id == "missing"
+        ));
+
+        let wrong_replace_node_id = patch(vec![GraphPatchOperationV01::ReplaceNode {
+            node_id: "target".to_owned(),
+            node: added_node("other"),
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        assert!(matches!(
+            apply_graph_patch_v01(&graph(), &wrong_replace_node_id, None),
+            Err(ApplyPatchErrorV01::InvalidGraph(message)) if message.contains("must match nodeId")
+        ));
+
+        let missing_replace_interface = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
             node_id: "missing".to_owned(),
             ports: vec![],
             edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
         }]);
         assert!(matches!(
-            apply_graph_patch_v01(&graph(), &missing_replace_node, None),
+            apply_graph_patch_v01(&graph(), &missing_replace_interface, None),
             Err(ApplyPatchErrorV01::NodeMissing(id)) if id == "missing"
         ));
 
@@ -839,6 +927,68 @@ mod tests {
             ports: vec![bool_input_port("enabled")],
             edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
         }]);
+        let inverse_with_edge =
+            invert_graph_patch_v01(&graph(), &removing_forward).expect("replace should invert");
+        assert_eq!(inverse_with_edge.ops.len(), 2);
+        assert!(matches!(
+            inverse_with_edge.ops[1],
+            GraphPatchOperationV01::AddEdge { .. }
+        ));
+
+        let mut missing = graph();
+        let removed = replace_node(&mut missing, "missing", added_node("missing"));
+        assert!(removed.is_empty());
+    }
+
+    #[test]
+    fn replace_node_keeps_compatible_edges_and_inverts_removed_edges() {
+        let mut replacement = graph()
+            .nodes
+            .into_iter()
+            .find(|node| node.id == "target")
+            .expect("target node should exist");
+        replacement
+            .params
+            .insert("objectText".to_owned(), Value::from("target"));
+        let forward = patch(vec![GraphPatchOperationV01::ReplaceNode {
+            node_id: "target".to_owned(),
+            node: replacement,
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        let applied =
+            apply_graph_patch_v01(&graph(), &forward, Some("2")).expect("replace should apply");
+        assert_eq!(applied.edges.len(), 1);
+
+        let inverse = invert_graph_patch_v01(&graph(), &forward).expect("replace should invert");
+        assert!(matches!(
+            &inverse.ops[0],
+            GraphPatchOperationV01::ReplaceNode { node_id, node, .. }
+                if node_id == "target" && node.params.is_empty()
+        ));
+
+        let mut unresolved = graph()
+            .nodes
+            .into_iter()
+            .find(|node| node.id == "target")
+            .expect("target node should exist");
+        unresolved.kind = "core.unresolved-object".to_owned();
+        unresolved.params = Map::from_iter([
+            ("objectText".to_owned(), Value::from("user.target")),
+            (
+                "diagnosticMessage".to_owned(),
+                Value::from("user.target is unavailable"),
+            ),
+            ("requestedKind".to_owned(), Value::from("user.target")),
+        ]);
+        unresolved.ports.clear();
+        let removing_forward = patch(vec![GraphPatchOperationV01::ReplaceNode {
+            node_id: "target".to_owned(),
+            node: unresolved,
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        let removing_applied = apply_graph_patch_v01(&graph(), &removing_forward, Some("2"))
+            .expect("unresolved replace should apply");
+        assert!(removing_applied.edges.is_empty());
         let inverse_with_edge =
             invert_graph_patch_v01(&graph(), &removing_forward).expect("replace should invert");
         assert_eq!(inverse_with_edge.ops.len(), 2);
@@ -1051,13 +1201,33 @@ mod tests {
             Err(InvertPatchErrorV01::NodeMissing(id)) if id == "missing"
         ));
 
-        let missing_replace_node = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
+        let missing_replace_node = patch(vec![GraphPatchOperationV01::ReplaceNode {
+            node_id: "missing".to_owned(),
+            node: added_node("missing"),
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        assert!(matches!(
+            invert_graph_patch_v01(&source, &missing_replace_node),
+            Err(InvertPatchErrorV01::NodeMissing(id)) if id == "missing"
+        ));
+
+        let wrong_replace_node_id = patch(vec![GraphPatchOperationV01::ReplaceNode {
+            node_id: "target".to_owned(),
+            node: added_node("other"),
+            edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
+        }]);
+        assert!(matches!(
+            invert_graph_patch_v01(&source, &wrong_replace_node_id),
+            Err(InvertPatchErrorV01::InvalidGraph(message)) if message.contains("must match nodeId")
+        ));
+
+        let missing_replace_interface = patch(vec![GraphPatchOperationV01::ReplaceNodeInterface {
             node_id: "missing".to_owned(),
             ports: vec![],
             edge_policy: ReplaceNodeInterfaceEdgePolicyV01::RemoveInvalidEdges,
         }]);
         assert!(matches!(
-            invert_graph_patch_v01(&source, &missing_replace_node),
+            invert_graph_patch_v01(&source, &missing_replace_interface),
             Err(InvertPatchErrorV01::NodeMissing(id)) if id == "missing"
         ));
 

@@ -144,62 +144,141 @@ export interface RuntimeClockDiagnostic {
   message: string;
 }
 
-export type RuntimeClockSourceStatus = "running" | "stopped" | "error";
+export type RuntimeIoDiagnosticSeverity = "warning" | "error";
 
-export interface ClockSourceSnapshot {
-  sourceId: string;
-  sourceKind: ClockSourceKindV01 | string;
-  status: RuntimeClockSourceStatus;
-  latestSnapshot: ClockStateV01 | null;
-  diagnostics: RuntimeClockDiagnostic[];
+export interface RuntimeIoDiagnostic {
+  severity: RuntimeIoDiagnosticSeverity;
+  code: string;
+  message: string;
 }
 
-export interface ClockSourceListResponse {
-  ok: boolean;
-  sources: ClockSourceSnapshot[];
-  diagnostics: RuntimeClockDiagnostic[];
-}
+export type RuntimeIoTransportKind = "midi" | "hid" | "serial" | "inline";
+export type RuntimeIoDirection = "input" | "output";
 
-export interface ClockSourceSnapshotResponse {
-  ok: boolean;
-  source: ClockSourceSnapshot | null;
-  diagnostics: RuntimeClockDiagnostic[];
-}
-
-export interface MidiInputDescriptor {
-  index: number;
+export interface RuntimeIoDeviceDescriptor {
+  id: string;
   name: string;
-  backend: "midir";
-  id: string | null;
-  stable: false;
+  transportKind: RuntimeIoTransportKind;
+  directions: RuntimeIoDirection[];
+  backend: string;
+  index?: number;
+  stable: boolean;
 }
 
-export interface MidiInputListResponse {
+export interface RuntimeIoDeviceListResponse {
   ok: boolean;
-  inputs: MidiInputDescriptor[];
-  diagnostics: RuntimeClockDiagnostic[];
+  devices: RuntimeIoDeviceDescriptor[];
+  diagnostics: RuntimeIoDiagnostic[];
 }
 
-export interface MidiClockSourceStartRequest {
-  sourceId: string;
-  inputPortIndex: number;
-  timeSignature?: ClockTimeSignatureV01 | null;
+export interface RuntimeIoInlineFrame {
+  atNs: number;
+  bytes: number[];
 }
 
-export interface MidiClockSourceStartResponse {
+export type RuntimeIoBindingConfig =
+  | { kind: "midi"; deviceId: string }
+  | { kind: "hid"; deviceId: string }
+  | { kind: "serial"; deviceId: string; baudRate?: number }
+  | { kind: "inline"; frames: RuntimeIoInlineFrame[] };
+
+export type RuntimeDiagnosticSeverityV01 = "error" | "warning" | "info";
+
+export interface RuntimeDiagnosticV01 {
+  severity: RuntimeDiagnosticSeverityV01;
+  message: string;
+}
+
+export interface RuntimeProjectSnapshot {
+  graph: GraphDocumentV01;
+  viewState: ViewStateV01;
+  nodes: NodeDefinitionManifestV01[];
+}
+
+export interface RuntimeProjectRequest {
+  graph: GraphDocumentV01;
+  nodes: NodeDefinitionManifestV01[];
+  viewState?: ViewStateV01;
+}
+
+export interface RuntimeSessionSnapshot {
+  sessionRevision: number;
+  viewRevision: number;
+  controlRevision: number;
+  project: RuntimeProjectSnapshot | null;
+  diagnostics: RuntimeDiagnosticV01[];
+  plan: unknown | null;
+}
+
+export interface RuntimeSessionResponse {
   ok: boolean;
-  source: ClockSourceSnapshot | null;
-  diagnostics: RuntimeClockDiagnostic[];
+  snapshot: RuntimeSessionSnapshot;
+  diagnostics: RuntimeDiagnosticV01[];
+  report: unknown | null;
 }
 
-export interface MidiClockSourceStopRequest {
-  sourceId: string;
+export interface RuntimeMutationRequest {
+  graphPatch?: GraphPatchV01;
+  viewPatch?: RuntimeViewPatch;
+  clientId?: string;
+  description?: string;
 }
 
-export interface MidiClockSourceStopResponse {
+export interface RuntimeViewPatch {
+  baseViewRevision: number;
+  ops: RuntimeViewPatchOperation[];
+}
+
+export type RuntimeViewPatchOperation =
+  | { op: "setNodeView"; nodeId: string; view: CanvasNodeViewV01 }
+  | { op: "moveNodeView"; nodeId: string; from?: CanvasNodeViewV01; to: CanvasNodeViewV01 };
+
+export type RuntimeHistoryEntryKind = "apply" | "undo" | "redo";
+
+export interface RuntimeHistoryEntry {
+  id: string;
+  sequence: number;
+  kind: RuntimeHistoryEntryKind;
+  mutation: RuntimeMutationRequest;
+  inverseMutation: RuntimeMutationRequest;
+  subjectEventId?: string;
+  clientId?: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface RuntimeHistory {
+  schema: "skenion.runtime.history";
+  schemaVersion: "0.1.0";
+  entries: RuntimeHistoryEntry[];
+  canUndo: boolean;
+  canRedo: boolean;
+  undoDepth: number;
+  redoDepth: number;
+}
+
+export interface RuntimeMutationResponse {
   ok: boolean;
-  source: ClockSourceSnapshot | null;
-  diagnostics: RuntimeClockDiagnostic[];
+  applied: boolean;
+  conflict: boolean;
+  snapshot: RuntimeSessionSnapshot;
+  history: RuntimeHistory;
+  diagnostics: RuntimeDiagnosticV01[];
+}
+
+export type RuntimeSessionEventKind = "snapshot" | "load" | "clear" | "mutate" | "undo" | "redo";
+
+export interface RuntimeSessionEvent {
+  schema: "skenion.runtime.session.event";
+  schemaVersion: "0.1.0";
+  id: string;
+  sequence: number;
+  kind: RuntimeSessionEventKind;
+  snapshot: RuntimeSessionSnapshot;
+  history: RuntimeHistory;
+  mutation?: RuntimeHistoryEntry;
+  diagnostics: RuntimeDiagnosticV01[];
+  createdAt: string;
 }
 
 export interface AudioDeviceDescriptorV01 {
@@ -566,6 +645,13 @@ export interface RemoveNodeOperationV01 {
   nodeId: string;
 }
 
+export interface ReplaceNodeOperationV01 {
+  op: "replaceNode";
+  nodeId: string;
+  node: GraphNodeV01;
+  edgePolicy: "removeInvalidEdges";
+}
+
 export interface SetNodeParamsOperationV01 {
   op: "setNodeParams";
   nodeId: string;
@@ -599,6 +685,7 @@ export interface ReplaceNodeInterfaceOperationV01 {
 export type GraphPatchOperationV01 =
   | AddNodeOperationV01
   | RemoveNodeOperationV01
+  | ReplaceNodeOperationV01
   | SetNodeParamsOperationV01
   | SetNodeParamOperationV01
   | AddEdgeOperationV01
@@ -672,6 +759,10 @@ export interface NodeStateV01 {
   persistent: boolean;
 }
 
+export interface NodeSurfaceV01 {
+  palette?: "direct";
+}
+
 export interface NodeDefinitionManifestV01 {
   schema: "skenion.node.definition";
   schemaVersion: "0.1.0";
@@ -681,6 +772,7 @@ export interface NodeDefinitionManifestV01 {
   category: string;
   scriptApiVersion?: string;
   bundleHash?: string;
+  surface?: NodeSurfaceV01;
   ports: PortV01[];
   execution: NodeExecutionV01;
   state: NodeStateV01;
@@ -697,6 +789,7 @@ export interface NodeDefinitionManifestV02 {
   category: string;
   scriptApiVersion?: string;
   bundleHash?: string;
+  surface?: NodeSurfaceV01;
   ports: PortSpecV02[];
   portGroups?: PortGroupSpecV02[];
   execution: NodeExecutionV01;

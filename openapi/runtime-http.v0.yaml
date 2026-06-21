@@ -23,75 +23,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeInfoResponse"
-  /v0/clock/sources:
+  /v0/io/devices:
     get:
-      summary: Return Runtime-owned external clock source state.
+      summary: Return currently enumerable runtime IO devices.
       responses:
         "200":
-          description: Current clock sources.
+          description: Runtime IO devices. Device ids are transport-scoped handles for node IO bindings.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClockSourceListResponse"
-  /v0/clock/sources/{sourceId}:
-    get:
-      summary: Return a Runtime-owned external clock source by id.
-      parameters:
-        - name: sourceId
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
-      responses:
-        "200":
-          description: Clock source state or a not-found diagnostic.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClockSourceSnapshotResponse"
-  /v0/clock/midi/inputs:
-    get:
-      summary: Return currently enumerable MIDI input ports.
-      responses:
-        "200":
-          description: MIDI input ports. Port indices are current enumeration indices, not stable device identities.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MidiInputListResponse"
-  /v0/clock/midi/start:
-    post:
-      summary: Start a Runtime-owned MIDI Clock source.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MidiClockSourceStartRequest"
-      responses:
-        "200":
-          description: MIDI Clock source start result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MidiClockSourceStartResponse"
-  /v0/clock/midi/stop:
-    post:
-      summary: Stop a Runtime-owned MIDI Clock source.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MidiClockSourceStopRequest"
-      responses:
-        "200":
-          description: MIDI Clock source stop result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MidiClockSourceStopResponse"
+                $ref: "#/components/schemas/RuntimeIoDeviceListResponse"
   /v0/validate:
     post:
       summary: Validate a complete project payload.
@@ -159,16 +100,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeSessionResponse"
-  /v0/session/project:
+  /v0/session/events/stream:
     get:
-      summary: Return the current Runtime-owned project document for the local session.
+      summary: Stream Runtime-authoritative session snapshots with Server-Sent Events.
       responses:
         "200":
-          description: Current session project, if one is loaded.
+          description: Session event stream. Each event carries a full canonical snapshot and history.
           content:
-            application/json:
+            text/event-stream:
               schema:
-                $ref: "#/components/schemas/RuntimeSessionProjectResponse"
+                type: string
+              examples:
+                session:
+                  value: |
+                    event: session
+                    data: {"schema":"skenion.runtime.session.event","schemaVersion":"0.1.0","kind":"snapshot"}
   /v0/session/load:
     post:
       summary: Validate and load a project payload into the local runtime session.
@@ -221,32 +167,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeSessionResponse"
-  /v0/session/patch:
+  /v0/session/mutate:
     post:
-      summary: Apply a graph patch to the currently loaded local runtime session.
+      summary: Apply a graph and/or view mutation to the currently loaded local runtime session.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GraphPatchV01"
+              $ref: "#/components/schemas/RuntimeMutationRequest"
       responses:
         "200":
-          description: Patch application result and current session state.
+          description: Mutation result and current Runtime-authoritative session snapshot.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RuntimePatchResponse"
+                $ref: "#/components/schemas/RuntimeMutationResponse"
   /v0/session/history:
     get:
-      summary: Return the current local runtime session patch history.
+      summary: Return the current local runtime mutation history.
       responses:
         "200":
-          description: Current session patch history.
+          description: Current session mutation history.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GraphPatchHistoryV01"
+                $ref: "#/components/schemas/RuntimeHistory"
   /v0/session/control/event:
     post:
       summary: Dispatch a runtime-only control event to the current local session.
@@ -291,24 +237,24 @@ paths:
                 $ref: "#/components/schemas/RuntimeControlReadResponse"
   /v0/session/undo:
     post:
-      summary: Undo the latest accepted patch in the local runtime session.
+      summary: Undo the latest accepted runtime mutation in the local runtime session.
       responses:
         "200":
           description: Undo result and current session state.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RuntimePatchResponse"
+                $ref: "#/components/schemas/RuntimeMutationResponse"
   /v0/session/redo:
     post:
-      summary: Redo the latest undone patch in the local runtime session.
+      summary: Redo the latest undone runtime mutation in the local runtime session.
       responses:
         "200":
           description: Redo result and current session state.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RuntimePatchResponse"
+                $ref: "#/components/schemas/RuntimeMutationResponse"
   /v0/session/preview:
     get:
       summary: Return the current local runtime session preview status.
@@ -469,7 +415,7 @@ components:
           items:
             type: string
           examples:
-            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.project", "session.validate", "session.plan", "session.run", "session.patch", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.preview.controlState", "session.render.generatedShader", "session.telemetry", "session.telemetry.stream", "session.clear"]
+            - ["project.validate", "project.plan", "dummy.run", "session.load", "session.events.stream", "session.validate", "session.plan", "session.run", "session.mutate", "session.history", "session.undo", "session.redo", "session.control.event", "session.control.state", "session.control.read", "session.preview.status", "session.preview.start", "session.preview.stop", "session.preview.restart", "session.preview.controlState", "session.render.generatedShader", "session.telemetry", "session.telemetry.stream", "runtime.logs", "io.devices", "session.clear"]
     RuntimeClockDiagnosticSeverity:
       type: string
       enum:
@@ -487,8 +433,29 @@ components:
         code:
           type: string
           examples:
-            - invalid-midi-input-port
-            - clock-source-not-found
+            - invalid-midi-clock-message
+        message:
+          type: string
+      additionalProperties: false
+    RuntimeIoDiagnosticSeverity:
+      type: string
+      enum:
+        - warning
+        - error
+    RuntimeIoDiagnostic:
+      type: object
+      required:
+        - severity
+        - code
+        - message
+      properties:
+        severity:
+          $ref: "#/components/schemas/RuntimeIoDiagnosticSeverity"
+        code:
+          type: string
+          examples:
+            - io-device-enumeration-failed
+            - io-device-name-unavailable
         message:
           type: string
       additionalProperties: false
@@ -524,187 +491,137 @@ components:
           type: integer
           minimum: 0
       additionalProperties: true
-    RuntimeClockSourceStatus:
+    RuntimeIoTransportKind:
       type: string
       enum:
-        - running
-        - stopped
-        - error
-    ClockSourceSnapshot:
+        - midi
+        - hid
+        - serial
+        - inline
+    RuntimeIoDirection:
+      type: string
+      enum:
+        - input
+        - output
+    RuntimeIoDeviceDescriptor:
       type: object
       required:
-        - sourceId
-        - sourceKind
-        - status
-        - latestSnapshot
-        - diagnostics
-      properties:
-        sourceId:
-          type: string
-        sourceKind:
-          type: string
-          enum:
-            - midi-clock
-            - link
-            - mtc
-            - host-transport
-            - local
-        status:
-          $ref: "#/components/schemas/RuntimeClockSourceStatus"
-        latestSnapshot:
-          anyOf:
-            - $ref: "#/components/schemas/ClockStateV01"
-            - type: "null"
-        diagnostics:
-          type: array
-          items:
-            $ref: "#/components/schemas/RuntimeClockDiagnostic"
-      additionalProperties: false
-    ClockSourceListResponse:
-      type: object
-      required:
-        - ok
-        - sources
-        - diagnostics
-      properties:
-        ok:
-          type: boolean
-        sources:
-          type: array
-          items:
-            $ref: "#/components/schemas/ClockSourceSnapshot"
-        diagnostics:
-          type: array
-          items:
-            $ref: "#/components/schemas/RuntimeClockDiagnostic"
-      additionalProperties: false
-    ClockSourceSnapshotResponse:
-      type: object
-      required:
-        - ok
-        - source
-        - diagnostics
-      properties:
-        ok:
-          type: boolean
-        source:
-          anyOf:
-            - $ref: "#/components/schemas/ClockSourceSnapshot"
-            - type: "null"
-        diagnostics:
-          type: array
-          items:
-            $ref: "#/components/schemas/RuntimeClockDiagnostic"
-      additionalProperties: false
-    MidiInputDescriptor:
-      type: object
-      required:
-        - index
-        - name
-        - backend
         - id
+        - name
+        - transportKind
+        - directions
+        - backend
         - stable
       properties:
+        id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+        transportKind:
+          $ref: "#/components/schemas/RuntimeIoTransportKind"
+        directions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeIoDirection"
+        backend:
+          type: string
         index:
           type: integer
           minimum: 0
-          description: Current Runtime enumeration index from /v0/clock/midi/inputs.
-        name:
-          type: string
-        backend:
-          type: string
-          const: midir
-        id:
-          anyOf:
-            - type: string
-            - type: "null"
-          description: Stable MIDI device id. Null for midir enumeration indices in v0.
+          description: Current backend enumeration index when no stable id is available.
         stable:
           type: boolean
-          const: false
-          description: False because inputPortIndex is not a stable device identity.
+          description: True when id is stable across runtime restarts and device reordering.
       additionalProperties: false
-    MidiInputListResponse:
+    RuntimeIoDeviceListResponse:
       type: object
       required:
         - ok
-        - inputs
+        - devices
         - diagnostics
       properties:
         ok:
           type: boolean
-        inputs:
+        devices:
           type: array
           items:
-            $ref: "#/components/schemas/MidiInputDescriptor"
+            $ref: "#/components/schemas/RuntimeIoDeviceDescriptor"
         diagnostics:
           type: array
           items:
-            $ref: "#/components/schemas/RuntimeClockDiagnostic"
+            $ref: "#/components/schemas/RuntimeIoDiagnostic"
       additionalProperties: false
-    MidiClockSourceStartRequest:
+    RuntimeIoInlineFrame:
       type: object
       required:
-        - sourceId
-        - inputPortIndex
+        - atNs
+        - bytes
       properties:
-        sourceId:
-          type: string
-          minLength: 1
-        inputPortIndex:
+        atNs:
           type: integer
           minimum: 0
-          description: Current Runtime MIDI input enumeration index, not a stable device identity.
-        timeSignature:
-          anyOf:
-            - $ref: "#/components/schemas/ClockTimeSignatureV01"
-            - type: "null"
-      additionalProperties: false
-    MidiClockSourceStartResponse:
-      type: object
-      required:
-        - ok
-        - source
-        - diagnostics
-      properties:
-        ok:
-          type: boolean
-        source:
-          anyOf:
-            - $ref: "#/components/schemas/ClockSourceSnapshot"
-            - type: "null"
-        diagnostics:
+        bytes:
           type: array
           items:
-            $ref: "#/components/schemas/RuntimeClockDiagnostic"
+            type: integer
+            minimum: 0
+            maximum: 255
       additionalProperties: false
-    MidiClockSourceStopRequest:
-      type: object
-      required:
-        - sourceId
-      properties:
-        sourceId:
-          type: string
-          minLength: 1
-      additionalProperties: false
-    MidiClockSourceStopResponse:
-      type: object
-      required:
-        - ok
-        - source
-        - diagnostics
-      properties:
-        ok:
-          type: boolean
-        source:
-          anyOf:
-            - $ref: "#/components/schemas/ClockSourceSnapshot"
-            - type: "null"
-        diagnostics:
-          type: array
-          items:
-            $ref: "#/components/schemas/RuntimeClockDiagnostic"
-      additionalProperties: false
+    RuntimeIoBindingConfig:
+      oneOf:
+        - type: object
+          required:
+            - kind
+            - deviceId
+          properties:
+            kind:
+              type: string
+              const: midi
+            deviceId:
+              type: string
+              minLength: 1
+          additionalProperties: false
+        - type: object
+          required:
+            - kind
+            - deviceId
+          properties:
+            kind:
+              type: string
+              const: hid
+            deviceId:
+              type: string
+              minLength: 1
+          additionalProperties: false
+        - type: object
+          required:
+            - kind
+            - deviceId
+          properties:
+            kind:
+              type: string
+              const: serial
+            deviceId:
+              type: string
+              minLength: 1
+            baudRate:
+              type: integer
+              minimum: 1
+          additionalProperties: false
+        - type: object
+          required:
+            - kind
+            - frames
+          properties:
+            kind:
+              type: string
+              const: inline
+            frames:
+              type: array
+              items:
+                $ref: "#/components/schemas/RuntimeIoInlineFrame"
+          additionalProperties: false
     ProjectRequest:
       type: object
       required:
@@ -717,6 +634,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/NodeDefinitionManifestV01"
+        viewState:
+          type: object
+          additionalProperties: true
     RunProjectRequest:
       allOf:
         - $ref: "#/components/schemas/ProjectRequest"
@@ -725,29 +645,6 @@ components:
             frames:
               type: integer
               minimum: 0
-    RuntimeSessionProjectResponse:
-      type: object
-      required:
-        - ok
-        - loaded
-        - project
-        - session
-        - diagnostics
-      properties:
-        ok:
-          type: boolean
-        loaded:
-          type: boolean
-        project:
-          anyOf:
-            - $ref: "#/components/schemas/ProjectRequest"
-            - type: "null"
-        session:
-          $ref: "#/components/schemas/RuntimeSessionResponse"
-        diagnostics:
-          type: array
-          items:
-            $ref: "#/components/schemas/RuntimeDiagnostic"
     RuntimeApiResponse:
       type: object
       required:
@@ -774,34 +671,45 @@ components:
       type: object
       required:
         - ok
-        - loaded
-        - graphId
-        - graphRevision
-        - sessionRevision
-        - controlRevision
+        - snapshot
         - diagnostics
-        - plan
         - report
       properties:
         ok:
           type: boolean
-        loaded:
-          type: boolean
-        graphId:
+        snapshot:
+          $ref: "#/components/schemas/RuntimeSessionSnapshot"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+        report:
           anyOf:
-            - type: string
+            - $ref: "#/components/schemas/DummyExecutionReport"
             - type: "null"
-        graphRevision:
-          anyOf:
-            - type: string
-            - type: "null"
+    RuntimeSessionSnapshot:
+      type: object
+      required:
+        - sessionRevision
+        - viewRevision
+        - controlRevision
+        - project
+        - diagnostics
+        - plan
+      properties:
         sessionRevision:
+          type: integer
+          minimum: 0
+        viewRevision:
           type: integer
           minimum: 0
         controlRevision:
           type: integer
           minimum: 0
-          description: Monotonic revision for runtime control state changes. Graph/session mutations use sessionRevision.
+        project:
+          anyOf:
+            - $ref: "#/components/schemas/RuntimeProjectSnapshot"
+            - type: "null"
         diagnostics:
           type: array
           items:
@@ -810,25 +718,98 @@ components:
           anyOf:
             - $ref: "#/components/schemas/ExecutionPlan"
             - type: "null"
-        report:
-          anyOf:
-            - $ref: "#/components/schemas/DummyExecutionReport"
-            - type: "null"
+      additionalProperties: false
+    RuntimeProjectSnapshot:
+      type: object
+      required:
+        - graph
+        - viewState
+        - nodes
+      properties:
+        graph:
+          $ref: "#/components/schemas/GraphDocumentV01"
+        viewState:
+          type: object
+          additionalProperties: true
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/NodeDefinitionManifestV01"
+      additionalProperties: false
     SessionRunRequest:
       type: object
       properties:
         frames:
           type: integer
           minimum: 0
-    RuntimePatchResponse:
+    RuntimeMutationRequest:
+      type: object
+      properties:
+        graphPatch:
+          $ref: "#/components/schemas/GraphPatchV01"
+        viewPatch:
+          $ref: "#/components/schemas/RuntimeViewPatch"
+        clientId:
+          type: string
+        description:
+          type: string
+      additionalProperties: false
+    RuntimeViewPatch:
+      type: object
+      required:
+        - baseViewRevision
+        - ops
+      properties:
+        baseViewRevision:
+          type: integer
+          minimum: 0
+        ops:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeViewPatchOperation"
+      additionalProperties: false
+    RuntimeViewPatchOperation:
+      oneOf:
+        - type: object
+          required:
+            - op
+            - nodeId
+            - view
+          properties:
+            op:
+              type: string
+              const: setNodeView
+            nodeId:
+              type: string
+            view:
+              type: object
+              additionalProperties: true
+          additionalProperties: false
+        - type: object
+          required:
+            - op
+            - nodeId
+            - to
+          properties:
+            op:
+              type: string
+              const: moveNodeView
+            nodeId:
+              type: string
+            from:
+              type: object
+              additionalProperties: true
+            to:
+              type: object
+              additionalProperties: true
+          additionalProperties: false
+    RuntimeMutationResponse:
       type: object
       required:
         - ok
         - applied
         - conflict
-        - graph
-        - session
-        - event
+        - snapshot
         - history
         - diagnostics
       properties:
@@ -838,22 +819,63 @@ components:
           type: boolean
         conflict:
           type: boolean
-        graph:
-          anyOf:
-            - $ref: "#/components/schemas/GraphDocumentV01"
-            - type: "null"
-        session:
-          $ref: "#/components/schemas/RuntimeSessionResponse"
-        event:
-          anyOf:
-            - $ref: "#/components/schemas/GraphPatchEventV01"
-            - type: "null"
+        snapshot:
+          $ref: "#/components/schemas/RuntimeSessionSnapshot"
         history:
-          $ref: "#/components/schemas/GraphPatchHistoryV01"
+          $ref: "#/components/schemas/RuntimeHistory"
         diagnostics:
           type: array
           items:
             $ref: "#/components/schemas/RuntimeDiagnostic"
+      additionalProperties: false
+    RuntimeSessionEventKind:
+      type: string
+      enum:
+        - snapshot
+        - load
+        - clear
+        - mutate
+        - undo
+        - redo
+    RuntimeSessionEvent:
+      type: object
+      required:
+        - schema
+        - schemaVersion
+        - id
+        - sequence
+        - kind
+        - snapshot
+        - history
+        - diagnostics
+        - createdAt
+      properties:
+        schema:
+          type: string
+          const: skenion.runtime.session.event
+        schemaVersion:
+          type: string
+          const: 0.1.0
+        id:
+          type: string
+        sequence:
+          type: integer
+          minimum: 1
+        kind:
+          $ref: "#/components/schemas/RuntimeSessionEventKind"
+        snapshot:
+          $ref: "#/components/schemas/RuntimeSessionSnapshot"
+        history:
+          $ref: "#/components/schemas/RuntimeHistory"
+        mutation:
+          $ref: "#/components/schemas/RuntimeHistoryEntry"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeDiagnostic"
+        createdAt:
+          type: string
+      additionalProperties: false
     RuntimeControlValue:
       oneOf:
         - type: object
@@ -1921,6 +1943,72 @@ components:
         createdAt:
           type: string
       additionalProperties: true
+    RuntimeHistory:
+      type: object
+      required:
+        - schema
+        - schemaVersion
+        - entries
+        - canUndo
+        - canRedo
+        - undoDepth
+        - redoDepth
+      properties:
+        schema:
+          type: string
+          const: skenion.runtime.history
+        schemaVersion:
+          type: string
+          const: 0.1.0
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeHistoryEntry"
+        canUndo:
+          type: boolean
+        canRedo:
+          type: boolean
+        undoDepth:
+          type: integer
+          minimum: 0
+        redoDepth:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+    RuntimeHistoryEntry:
+      type: object
+      required:
+        - id
+        - sequence
+        - kind
+        - mutation
+        - inverseMutation
+        - createdAt
+      properties:
+        id:
+          type: string
+        sequence:
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+            - apply
+            - undo
+            - redo
+        mutation:
+          $ref: "#/components/schemas/RuntimeMutationRequest"
+        inverseMutation:
+          $ref: "#/components/schemas/RuntimeMutationRequest"
+        subjectEventId:
+          type: string
+        clientId:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+      additionalProperties: false
     GraphPatchHistoryV01:
       type: object
       required:

@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use super::clock::{ClockSourceKindV01, ClockStateV01, ClockTimeSignatureV01};
-
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RuntimeClockDiagnosticSeverityV01 {
@@ -18,84 +16,79 @@ pub struct RuntimeClockDiagnosticV01 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum RuntimeClockSourceStatusV01 {
-    Running,
-    Stopped,
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeIoDiagnosticSeverityV01 {
+    Warning,
     Error,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ClockSourceSnapshotV01 {
-    pub source_id: String,
-    pub source_kind: ClockSourceKindV01,
-    pub status: RuntimeClockSourceStatusV01,
-    pub latest_snapshot: Option<ClockStateV01>,
-    pub diagnostics: Vec<RuntimeClockDiagnosticV01>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ClockSourceListResponseV01 {
-    pub ok: bool,
-    pub sources: Vec<ClockSourceSnapshotV01>,
-    pub diagnostics: Vec<RuntimeClockDiagnosticV01>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ClockSourceSnapshotResponseV01 {
-    pub ok: bool,
-    pub source: Option<ClockSourceSnapshotV01>,
-    pub diagnostics: Vec<RuntimeClockDiagnosticV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MidiInputDescriptorV01 {
-    pub index: usize,
+pub struct RuntimeIoDiagnosticV01 {
+    pub severity: RuntimeIoDiagnosticSeverityV01,
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeIoDeviceDescriptorV01 {
+    pub id: String,
     pub name: String,
+    pub transport_kind: RuntimeIoTransportKindV01,
+    pub directions: Vec<RuntimeIoDirectionV01>,
     pub backend: String,
-    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index: Option<usize>,
     pub stable: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MidiInputListResponseV01 {
+pub struct RuntimeIoDeviceListResponseV01 {
     pub ok: bool,
-    pub inputs: Vec<MidiInputDescriptorV01>,
-    pub diagnostics: Vec<RuntimeClockDiagnosticV01>,
+    pub devices: Vec<RuntimeIoDeviceDescriptorV01>,
+    pub diagnostics: Vec<RuntimeIoDiagnosticV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RuntimeIoTransportKindV01 {
+    Midi,
+    Hid,
+    Serial,
+    Inline,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeIoDirectionV01 {
+    Input,
+    Output,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MidiClockSourceStartRequestV01 {
-    pub source_id: String,
-    pub input_port_index: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub time_signature: Option<ClockTimeSignatureV01>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MidiClockSourceStartResponseV01 {
-    pub ok: bool,
-    pub source: Option<ClockSourceSnapshotV01>,
-    pub diagnostics: Vec<RuntimeClockDiagnosticV01>,
+pub struct RuntimeIoInlineFrameV01 {
+    pub at_ns: u64,
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MidiClockSourceStopRequestV01 {
-    pub source_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MidiClockSourceStopResponseV01 {
-    pub ok: bool,
-    pub source: Option<ClockSourceSnapshotV01>,
-    pub diagnostics: Vec<RuntimeClockDiagnosticV01>,
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum RuntimeIoBindingConfigV01 {
+    #[serde(rename = "midi")]
+    Midi { device_id: String },
+    #[serde(rename = "hid")]
+    Hid { device_id: String },
+    #[serde(rename = "serial")]
+    Serial {
+        device_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        baud_rate: Option<u32>,
+    },
+    #[serde(rename = "inline")]
+    Inline {
+        frames: Vec<RuntimeIoInlineFrameV01>,
+    },
 }

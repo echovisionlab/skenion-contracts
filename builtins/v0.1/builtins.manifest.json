@@ -6,6 +6,7 @@
     "core.comment",
     "core.panel",
     "core.message",
+    "core.unresolved-object",
     "core.string",
     "core.bang",
     "core.float",

@@ -87,26 +87,30 @@ test("exports v0.1 graph and node definition schemas", () => {
   ]);
 });
 
-test("documents runtime clock source HTTP APIs", async () => {
+test("documents runtime IO discovery HTTP API", async () => {
   const openApi = await readFile(path.join(repoRoot, "openapi/runtime-http.v0.yaml"), "utf8");
 
   for (const pathName of [
-    "/v0/clock/sources:",
-    "/v0/clock/sources/{sourceId}:",
-    "/v0/clock/midi/inputs:",
-    "/v0/clock/midi/start:",
-    "/v0/clock/midi/stop:"
+    "/v0/io/devices:"
   ]) {
     assert.match(openApi, new RegExp(pathName.replace(/[{}]/g, "\\$&")));
   }
 
+  for (const legacyPath of [
+    "/v0/clock/midi/inputs:",
+    "/v0/clock/midi/start:",
+    "/v0/clock/midi/stop:",
+    "/v0/clock/sources:",
+    "/v0/clock/sources/{sourceId}:"
+  ]) {
+    assert.doesNotMatch(openApi, new RegExp(legacyPath.replace(/[{}]/g, "\\$&")));
+  }
+
   for (const schemaName of [
-    "ClockSourceListResponse",
-    "ClockSourceSnapshotResponse",
-    "MidiInputListResponse",
-    "MidiClockSourceStartRequest",
-    "MidiClockSourceStopResponse",
-    "RuntimeClockDiagnostic"
+    "RuntimeIoDeviceListResponse",
+    "RuntimeIoDeviceDescriptor",
+    "RuntimeIoBindingConfig",
+    "RuntimeIoDiagnostic"
   ]) {
     assert.match(openApi, new RegExp(`\\b${schemaName}:`));
   }
@@ -450,6 +454,7 @@ test("exports canonical v0.1 builtin node definitions", () => {
   assert.deepEqual([...ids].sort(), [...builtinManifestV01.nodes].sort());
 
   const valueDefinition = getBuiltinNodeDefinition("core.float");
+  assert.deepEqual(valueDefinition?.surface, { palette: "direct" });
   assert.deepEqual(valueDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
   assert.equal(valueDefinition?.ports.find((port) => port.id === "in")?.activation, "trigger");
   assert.equal(valueDefinition?.ports.find((port) => port.id === "cold")?.activation, "latched");
@@ -547,6 +552,8 @@ test("exports the canonical v0.1 builtin manifest", () => {
   assert.equal(getBuiltinNodeDefinition("audio.input")?.ports.map((port) => port.id).join(","), "left,right");
   assert.equal(getBuiltinNodeDefinition("audio.clock-bridge")?.ports.map((port) => port.id).join(","), "in,out");
   assert.equal(getBuiltinNodeDefinition("audio.resample")?.ports.map((port) => port.id).join(","), "in,out");
+  assert.equal(getBuiltinNodeDefinition("core.operator.add")?.surface?.palette, undefined);
+  assert.equal(getBuiltinNodeDefinition("audio.operator.mul")?.surface?.palette, undefined);
 });
 
 test("parses MIDI Clock messages into clock state authority", () => {
@@ -1013,11 +1020,12 @@ test("rejects schema-invalid shader interfaces", () => {
 
 test("exports builtin node help", () => {
   const helpIds = builtinNodeHelpV01.map((help) => help.id);
+  const helpNodeIds = builtinManifestV01.nodes;
 
-  assert.deepEqual([...helpIds].sort(), [...builtinManifestV01.nodes].sort());
+  assert.deepEqual([...helpIds].sort(), [...helpNodeIds].sort());
   assert.deepEqual(
     builtinNodeHelpGraphsV01.map((helpGraph) => helpGraph.id).sort(),
-    [...builtinManifestV01.nodes].sort()
+    [...helpNodeIds].sort()
   );
 
   const valueHelp = getBuiltinNodeHelp("core.float");
@@ -1031,6 +1039,15 @@ test("exports builtin node help", () => {
   assert.match(bangHelp?.description ?? "", /event\.bang.*selector/);
   assert.match(bangHelp?.runtimeBehavior ?? "", /any message/);
   assert.deepEqual(bangHelp?.ports?.map((port) => port.id), ["in", "out"]);
+
+  const unresolvedHelp = getBuiltinNodeHelp("core.unresolved-object");
+  assert.match(unresolvedHelp?.summary ?? "", /object text/);
+  assert.match(unresolvedHelp?.runtimeBehavior ?? "", /diagnostics/);
+  assert.deepEqual(unresolvedHelp?.params?.map((param) => param.id), [
+    "objectText",
+    "diagnosticMessage",
+    "requestedKind"
+  ]);
 
   const shaderHelp = getBuiltinNodeHelp("render.fullscreen-shader");
   assert.match(shaderHelp?.runtimeBehavior ?? "", /dynamic uniform layout/);
@@ -1793,6 +1810,129 @@ test("replaceNodeInterface keeps compatible edges and inverts removed edges", as
   });
   assert.equal(missingInvert.ok, false);
   assert.match(missingInvert.errors.join("\n"), /node missing does not exist/);
+});
+
+test("replaceNode swaps node snapshots and keeps only compatible incident edges", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  graph.revision = "1";
+  graph.nodes.push(
+    {
+      id: "source_2",
+      kind: "core.float",
+      kindVersion: "0.1.0",
+      params: {},
+      ports: [
+        {
+          id: "value",
+          direction: "output",
+          type: { flow: "value", dataKind: "number.float" }
+        }
+      ]
+    },
+    {
+      id: "target_2",
+      kind: "core.preview",
+      kindVersion: "0.1.0",
+      params: {},
+      ports: [
+        {
+          id: "value",
+          direction: "input",
+          type: { flow: "value", dataKind: "number.float" },
+          required: false,
+          activation: "latched"
+        }
+      ]
+    }
+  );
+  graph.edges.push({
+    from: { node: "source_2", port: "value" },
+    to: { node: "target_2", port: "value" }
+  });
+  const replacement = {
+    ...graph.nodes[1],
+    params: { objectText: "gpu.blur 12" }
+  };
+  const patch = {
+    schema: "skenion.graph.patch",
+    schemaVersion: "0.1.0",
+    id: "replace_node",
+    baseRevision: "1",
+    ops: [
+      {
+        op: "replaceNode",
+        nodeId: "blur_1",
+        node: replacement,
+        edgePolicy: "removeInvalidEdges"
+      }
+    ]
+  };
+
+  const result = applyGraphPatch(graph, patch, { nextRevision: "2" });
+  assert.equal(result.ok, true);
+  assert.equal(result.graph.nodes.find((node) => node.id === "blur_1").params.objectText, "gpu.blur 12");
+  assert.equal(result.graph.edges.length, 2);
+
+  const inverse = invertGraphPatch(graph, patch);
+  assert.equal(inverse.ok, true);
+  assert.equal(inverse.inversePatch.ops[0].op, "replaceNode");
+  assert.equal(inverse.inversePatch.ops[0].node.params.value, undefined);
+
+  const missingPatch = {
+    ...patch,
+    id: "replace_node_missing",
+    ops: [{ ...patch.ops[0], nodeId: "missing" }]
+  };
+  const missingApply = applyGraphPatch(graph, missingPatch);
+  assert.equal(missingApply.ok, false);
+  assert.match(missingApply.errors.join("\n"), /node missing does not exist/);
+  const missingInvert = invertGraphPatch(graph, missingPatch);
+  assert.equal(missingInvert.ok, false);
+  assert.match(missingInvert.errors.join("\n"), /node missing does not exist/);
+
+  const mismatchedPatch = {
+    ...patch,
+    id: "replace_node_mismatched",
+    ops: [{ ...patch.ops[0], node: { ...replacement, id: "other_1" } }]
+  };
+  const mismatchedApply = applyGraphPatch(graph, mismatchedPatch);
+  assert.equal(mismatchedApply.ok, false);
+  assert.match(mismatchedApply.errors.join("\n"), /must match nodeId/);
+  const mismatchedInvert = invertGraphPatch(graph, mismatchedPatch);
+  assert.equal(mismatchedInvert.ok, false);
+  assert.match(mismatchedInvert.errors.join("\n"), /must match nodeId/);
+
+  const unresolved = {
+    id: "blur_1",
+    kind: "core.unresolved-object",
+    kindVersion: "0.1.0",
+    params: {
+      objectText: "user.blur",
+      diagnosticMessage: "user.blur is unavailable",
+      requestedKind: "user.blur"
+    },
+    ports: []
+  };
+  const unresolvedPatch = {
+    ...patch,
+    id: "replace_node_unresolved",
+    ops: [
+      {
+        op: "replaceNode",
+        nodeId: "blur_1",
+        node: unresolved,
+        edgePolicy: "removeInvalidEdges"
+      }
+    ]
+  };
+  const unresolvedResult = applyGraphPatch(graph, unresolvedPatch, { nextRevision: "2" });
+  assert.equal(unresolvedResult.ok, true);
+  assert.equal(unresolvedResult.graph.edges.length, 1);
+
+  const inverseWithRemovedEdge = invertGraphPatch(graph, unresolvedPatch);
+  assert.equal(inverseWithRemovedEdge.ok, true);
+  assert.equal(inverseWithRemovedEdge.inversePatch.ops.length, 2);
+  assert.equal(inverseWithRemovedEdge.inversePatch.ops[1].op, "addEdge");
 });
 
 test("appends deterministic suffix for non-numeric graph revisions", async () => {

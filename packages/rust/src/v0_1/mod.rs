@@ -28,7 +28,9 @@ pub use clock::{
 };
 pub use control_message::{ControlAtomV01, ControlMessageV01};
 pub use graph::{EdgeV01, GraphDocumentV01, GraphNodeV01, PortRefV01};
-pub use node_definition::{NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01};
+pub use node_definition::{
+    NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01, NodeSurfaceV01,
+};
 pub use object_text::{
     ObjectTextAtomV01, ObjectTextDiagnosticSeverityV01, ObjectTextDiagnosticV01,
     ObjectTextParseResultV01, ObjectTextPortActivationV01, ObjectTextPortDirectionV01,
@@ -45,10 +47,10 @@ pub use project::{
     ProjectMetadataV01, ViewStateV01, create_default_view_state_for_graph_v01,
 };
 pub use runtime_clock::{
-    ClockSourceListResponseV01, ClockSourceSnapshotResponseV01, ClockSourceSnapshotV01,
-    MidiClockSourceStartRequestV01, MidiClockSourceStartResponseV01, MidiClockSourceStopRequestV01,
-    MidiClockSourceStopResponseV01, MidiInputDescriptorV01, MidiInputListResponseV01,
-    RuntimeClockDiagnosticSeverityV01, RuntimeClockDiagnosticV01, RuntimeClockSourceStatusV01,
+    RuntimeClockDiagnosticSeverityV01, RuntimeClockDiagnosticV01, RuntimeIoBindingConfigV01,
+    RuntimeIoDeviceDescriptorV01, RuntimeIoDeviceListResponseV01, RuntimeIoDiagnosticSeverityV01,
+    RuntimeIoDiagnosticV01, RuntimeIoDirectionV01, RuntimeIoInlineFrameV01,
+    RuntimeIoTransportKindV01,
 };
 pub use shader_interface::{
     GeneratedShaderSourceMapV01, ShaderDiagnosticPhaseV01, ShaderDiagnosticSeverityV01,

@@ -45,5 +45,8 @@
   "capabilities": [
     "clock.external-source.v0.1",
     "clock.midi-clock.v0.1"
-  ]
+  ],
+  "surface": {
+    "palette": "direct"
+  }
 }

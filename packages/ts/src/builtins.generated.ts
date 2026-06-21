@@ -50,6 +50,7 @@ export const builtinManifestV01 = {
     "core.comment",
     "core.panel",
     "core.message",
+    "core.unresolved-object",
     "core.string",
     "core.bang",
     "core.float",
@@ -178,7 +179,10 @@ export const builtinNodeDefinitionsV01 = [
     "capabilities": [
       "audio.clock-domain.v0.1",
       "validation-only.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -219,7 +223,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -259,7 +266,10 @@ export const builtinNodeDefinitionsV01 = [
     "capabilities": [
       "audio.input.v0.1",
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -300,7 +310,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -591,7 +604,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -635,7 +651,10 @@ export const builtinNodeDefinitionsV01 = [
     "capabilities": [
       "audio.backend.v0.1",
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -677,7 +696,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -719,7 +741,10 @@ export const builtinNodeDefinitionsV01 = [
     "capabilities": [
       "audio.resample.v0.1",
       "validation-only.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -760,7 +785,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -813,7 +841,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "pd.audio.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -899,7 +930,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "clock.transport.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -948,7 +982,10 @@ export const builtinNodeDefinitionsV01 = [
     "capabilities": [
       "clock.external-source.v0.1",
       "clock.midi-clock.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -980,7 +1017,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "clock.display.v0.1"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1018,7 +1058,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1067,7 +1110,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1120,7 +1166,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1149,7 +1198,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1200,7 +1252,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1243,7 +1298,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1294,7 +1352,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1332,7 +1393,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1780,7 +1844,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1811,7 +1878,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1860,7 +1930,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1911,7 +1984,29 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
+  },
+  {
+    "schema": "skenion.node.definition",
+    "schemaVersion": "0.1.0",
+    "id": "core.unresolved-object",
+    "version": "0.1.0",
+    "displayName": "Unresolved Object",
+    "category": "Diagnostics",
+    "ports": [],
+    "execution": {
+      "model": "event"
+    },
+    "state": {
+      "persistent": false
+    },
+    "permissions": [],
+    "capabilities": [
+      "diagnostic.unresolved-object.v0.1"
+    ]
   },
   {
     "schema": "skenion.node.definition",
@@ -1938,7 +2033,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -1979,7 +2077,10 @@ export const builtinNodeDefinitionsV01 = [
       "persistent": false
     },
     "permissions": [],
-    "capabilities": []
+    "capabilities": [],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -2011,7 +2112,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "render.output.clear-color"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -2043,7 +2147,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "render.output.fullscreen-shader"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   },
   {
     "schema": "skenion.node.definition",
@@ -2077,7 +2184,10 @@ export const builtinNodeDefinitionsV01 = [
     "permissions": [],
     "capabilities": [
       "render.output.surface"
-    ]
+    ],
+    "surface": {
+      "palette": "direct"
+    }
   }
 ] satisfies NodeDefinitionManifestV01[];
 
@@ -3069,6 +3179,43 @@ export const builtinNodeHelpV01 = [
       "title": "Trigger an integer value",
       "description": "Use bang to re-emit the current integer after a set event updates it silently.",
       "graph": "help/v0.1/nodes/core.uint.help.graph.json"
+    }
+  },
+  {
+    "schema": "skenion.node.help",
+    "schemaVersion": "0.1.0",
+    "id": "core.unresolved-object",
+    "summary": "Preserves object text that could not be resolved.",
+    "description": "Unresolved Object is a diagnostic placeholder for Pd-style object boxes whose text cannot currently resolve to a native or extension object. It stays on the canvas so the user can edit or fix the object text instead of losing the box.",
+    "helpGraph": "help/v0.1/nodes/core.unresolved-object.help.graph.json",
+    "tags": [
+      "diagnostic",
+      "object-text",
+      "runtime"
+    ],
+    "runtimeBehavior": "Runtime load and mutation stay successful, but the session diagnostics include an error describing the unresolved object text. The object has no ports and incident edges are removed when a node is replaced with this placeholder.",
+    "relatedNodes": [
+      "core.message",
+      "core.comment"
+    ],
+    "params": [
+      {
+        "id": "objectText",
+        "description": "Original object box text entered by the user."
+      },
+      {
+        "id": "diagnosticMessage",
+        "description": "Human-readable explanation of why the text could not be resolved."
+      },
+      {
+        "id": "requestedKind",
+        "description": "Resolved or requested node kind candidate, when one exists."
+      }
+    ],
+    "example": {
+      "title": "Keep invalid object text editable",
+      "description": "The unresolved box remains visible with its original text and diagnostic message.",
+      "graph": "help/v0.1/nodes/core.unresolved-object.help.graph.json"
     }
   },
   {
@@ -5370,6 +5517,38 @@ export const builtinNodeHelpGraphsV01 = [
           }
         }
       ]
+    }
+  },
+  {
+    "id": "core.unresolved-object",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "help-core-unresolved-object",
+      "revision": "1",
+      "nodes": [
+        {
+          "id": "note_1",
+          "kind": "core.comment",
+          "kindVersion": "0.1.0",
+          "params": {
+            "text": "Unresolved Object preserves object text that could not resolve, reports a Runtime diagnostic, and stays editable on the canvas."
+          },
+          "ports": []
+        },
+        {
+          "id": "unresolved_1",
+          "kind": "core.unresolved-object",
+          "kindVersion": "0.1.0",
+          "params": {
+            "objectText": "user.manipulator",
+            "diagnosticMessage": "extension object is not installed",
+            "requestedKind": "user.manipulator"
+          },
+          "ports": []
+        }
+      ],
+      "edges": []
     }
   },
   {

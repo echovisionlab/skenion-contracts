@@ -82,5 +82,8 @@
   "permissions": [],
   "capabilities": [
     "clock.transport.v0.1"
-  ]
+  ],
+  "surface": {
+    "palette": "direct"
+  }
 }

@@ -47,6 +47,9 @@
       "type": "string",
       "minLength": 1
     },
+    "surface": {
+      "$ref": "#/$defs/surface"
+    },
     "ports": {
       "type": "array",
       "items": {
@@ -218,6 +221,15 @@
         },
         "clock": {
           "enum": ["frame", "audio", "beat", "timecode", "external"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "surface": {
+      "type": "object",
+      "properties": {
+        "palette": {
+          "enum": ["direct"]
         }
       },
       "additionalProperties": false

@@ -15,6 +15,15 @@ Human-readable delivery and processing model docs live in
 - Golden fixtures and conformance tests for TypeScript/Rust compatibility.
 - Typed node interfaces for value, event, stream, and resource ports.
 
+The current v0 Runtime HTTP session contract is Runtime-authoritative: clients
+read project state from `RuntimeSessionSnapshot.project`, submit graph/view
+changes through `/v0/session/mutate`, and receive full canonical snapshots on
+the session event stream.
+
+Typed object boxes preserve user-entered `objectText`; Runtime resolution maps
+that text to implementation kinds and diagnostics without making unresolved text
+a separate user-facing node class.
+
 ## Repository Layout
 
 ```text
