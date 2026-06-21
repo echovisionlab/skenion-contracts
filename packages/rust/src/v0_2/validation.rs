@@ -1586,12 +1586,14 @@ fn runtime_session_snapshot_errors(snapshot: &RuntimeSessionSnapshot) -> Vec<Val
             "snapshot plan must be an object or null",
         ));
     }
-    if let Some(project) = &snapshot.project {
-        if let Err(report) = validate_project_document_v02(project) {
-            errors.extend(report.errors.into_iter().map(|error| {
+    if let Some(project) = &snapshot.project
+        && let Err(report) = validate_project_document_v02(project)
+    {
+        errors.extend(
+            report.errors.into_iter().map(|error| {
                 ValidationErrorV02::new(format!("snapshot project {}", error.message))
-            }));
-        }
+            }),
+        );
     }
     errors
 }
@@ -1666,12 +1668,14 @@ fn runtime_mutation_request_errors(
     label: &str,
 ) -> Vec<ValidationErrorV02> {
     let mut errors = Vec::new();
-    if let Some(operation) = &mutation.operation {
-        if let Err(report) = validate_runtime_operation_envelope(operation) {
-            errors.extend(report.errors.into_iter().map(|error| {
+    if let Some(operation) = &mutation.operation
+        && let Err(report) = validate_runtime_operation_envelope(operation)
+    {
+        errors.extend(
+            report.errors.into_iter().map(|error| {
                 ValidationErrorV02::new(format!("{label} operation {}", error.message))
-            }));
-        }
+            }),
+        );
     }
     if let Some(view_patch) = &mutation.view_patch {
         for operation in &view_patch.ops {
