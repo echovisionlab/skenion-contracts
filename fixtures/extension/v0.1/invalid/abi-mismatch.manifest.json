@@ -1,0 +1,21 @@
+{
+  "schema": "skenion.extension.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/bad-abi",
+  "version": "0.1.0",
+  "runtimeAbiVersion": "9.9.9",
+  "kind": "native-runtime",
+  "native": {
+    "entrypoint": "skenion_extension_init",
+    "artifacts": [
+      {
+        "os": "macos",
+        "arch": "aarch64",
+        "abi": "rust",
+        "path": "target/release/libbad_abi.dylib"
+      }
+    ]
+  },
+  "provides": {},
+  "permissions": []
+}

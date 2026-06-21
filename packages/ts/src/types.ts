@@ -183,10 +183,49 @@ export type RuntimeIoBindingConfig =
   | { kind: "inline"; frames: RuntimeIoInlineFrame[] };
 
 export type RuntimeDiagnosticSeverityV01 = "error" | "warning" | "info";
+export type RuntimeDiagnosticSeverity = RuntimeDiagnosticSeverityV01;
 
 export interface RuntimeDiagnosticV01 {
   severity: RuntimeDiagnosticSeverityV01;
   message: string;
+}
+
+export type RuntimeDiagnostic = RuntimeDiagnosticV01;
+
+export interface RuntimeHealth {
+  ok: boolean;
+  service: string;
+  version: string;
+}
+
+export interface RuntimeInfo {
+  name: string;
+  version: string;
+  apiVersion: string;
+  capabilities: string[];
+}
+
+export interface RuntimeLogEvent {
+  id: number;
+  timestamp: string;
+  source: "runtime";
+  level: RuntimeDiagnosticSeverity;
+  code: string | null;
+  message: string;
+}
+
+export interface RuntimeLogRetention {
+  replayLimit: number;
+  replayLevels: RuntimeDiagnosticSeverity[];
+}
+
+export interface RuntimeLogSnapshotResponse {
+  schema: "skenion.runtime.logs";
+  schemaVersion: string;
+  ok: boolean;
+  events: RuntimeLogEvent[];
+  retention: RuntimeLogRetention;
+  diagnostics: RuntimeDiagnostic[];
 }
 
 export interface RuntimeProjectSnapshot {
@@ -201,20 +240,90 @@ export interface RuntimeProjectRequest {
   viewState?: ViewStateV01;
 }
 
+export interface RuntimePlan {
+  graphId: string;
+  graphRevision: string;
+  nodes: RuntimePlanNode[];
+  edges: RuntimePlanEdge[];
+  groups: RuntimeExecutionGroup[];
+}
+
+export interface RuntimePlanNode {
+  nodeId: string;
+  kind: string;
+  kindVersion: string;
+  executionModel: string;
+  order: number;
+}
+
+export interface RuntimePlanEdge {
+  fromNode: string;
+  fromPort: string;
+  toNode: string;
+  toPort: string;
+  metadata?: RuntimePlanEdgeMetadata | null;
+}
+
+export interface RuntimePlanEdgeMetadata {
+  resolvedType?: string | null;
+  mergePolicy?: string | null;
+  fanOutPolicy?: string | null;
+  order?: number | null;
+  feedback?: {
+    boundary: string;
+    bufferMode?: string;
+    maxLatencyFrames?: number;
+  } | null;
+  cycleClassification?: string | null;
+}
+
+export interface RuntimeExecutionGroup {
+  executionModel: string;
+  nodeIds: string[];
+}
+
+export interface RuntimeDummyExecutionReport {
+  graphId: string;
+  graphRevision: string;
+  frameCount: number;
+  frames: RuntimeDummyFrameReport[];
+}
+
+export interface RuntimeDummyFrameReport {
+  index: number;
+  executedNodes: RuntimeDummyNodeExecution[];
+}
+
+export interface RuntimeDummyNodeExecution {
+  nodeId: string;
+  kind: string;
+  kindVersion: string;
+  executionModel: string;
+  order: number;
+  status: string;
+}
+
+export interface RuntimeApiResponse {
+  ok: boolean;
+  diagnostics: RuntimeDiagnostic[];
+  plan: RuntimePlan | null;
+  report: RuntimeDummyExecutionReport | null;
+}
+
 export interface RuntimeSessionSnapshot {
   sessionRevision: number;
   viewRevision: number;
   controlRevision: number;
   project: RuntimeProjectSnapshot | null;
   diagnostics: RuntimeDiagnosticV01[];
-  plan: unknown | null;
+  plan: RuntimePlan | null;
 }
 
 export interface RuntimeSessionResponse {
   ok: boolean;
   snapshot: RuntimeSessionSnapshot;
   diagnostics: RuntimeDiagnosticV01[];
-  report: unknown | null;
+  report: RuntimeDummyExecutionReport | null;
 }
 
 export interface RuntimeMutationRequest {
@@ -266,6 +375,8 @@ export interface RuntimeMutationResponse {
   diagnostics: RuntimeDiagnosticV01[];
 }
 
+export type RuntimePatchResponse = RuntimeMutationResponse;
+
 export type RuntimeSessionEventKind = "snapshot" | "load" | "clear" | "mutate" | "undo" | "redo";
 
 export interface RuntimeSessionEvent {
@@ -279,6 +390,296 @@ export interface RuntimeSessionEvent {
   mutation?: RuntimeHistoryEntry;
   diagnostics: RuntimeDiagnosticV01[];
   createdAt: string;
+}
+
+export type RuntimePreviewState = "stopped" | "starting" | "running" | "exited" | "error";
+
+export interface RuntimePreviewStatus {
+  ok: boolean;
+  state: RuntimePreviewState;
+  pid: number | null;
+  graphId: string | null;
+  graphRevision: string | null;
+  sessionRevision: number | null;
+  previewSessionRevision: number | null;
+  controlRevision: number | null;
+  previewControlRevision: number | null;
+  controlLive: boolean;
+  lastControlUpdateAt: string | null;
+  stale: boolean;
+  startedAt: string | null;
+  exitedAt: string | null;
+  exitCode: number | null;
+  message: string | null;
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export interface RuntimePreviewStartRequest {
+  restart: boolean;
+}
+
+export interface RuntimeAsset {
+  id: string;
+  name: string;
+  mimeType: string;
+  kind: string;
+  sizeBytes: number;
+  runtimeUri: string;
+}
+
+export interface RuntimeAssetImportResponse {
+  ok: boolean;
+  asset: RuntimeAsset | null;
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export interface RuntimeAssetListResponse {
+  ok: boolean;
+  assets: RuntimeAsset[];
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export interface RuntimeAssetGetResponse {
+  ok: boolean;
+  asset: RuntimeAsset | null;
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export type RuntimeControlValue =
+  | { type: "float"; representation: FloatRepresentationV01; value: number }
+  | { type: "int"; representation: IntRepresentationV01; value: number }
+  | { type: "uint"; representation: UintRepresentationV01; value: number }
+  | { type: "bool"; value: boolean }
+  | { type: "string"; value: string }
+  | {
+      type: "color";
+      representation: ColorRepresentationV01;
+      colorSpace: "linear" | "srgb";
+      value: [number, number, number, number];
+    };
+
+export type RuntimeControlAtom = RuntimeControlValue;
+
+export interface RuntimeControlMessage {
+  selector: string;
+  atoms: RuntimeControlAtom[];
+}
+
+export interface RuntimeControlEventRequest {
+  nodeId: string;
+  portId: "in" | "cold" | "value" | "out";
+  message: RuntimeControlMessage;
+}
+
+export interface RuntimeControlEmission {
+  nodeId: string;
+  portId: "in" | "out" | "value";
+  message: RuntimeControlMessage;
+}
+
+export interface RuntimeControlEventResponse {
+  ok: boolean;
+  changed: boolean;
+  controlRevision: number | null;
+  emitted: RuntimeControlEmission[];
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export interface RuntimeControlStateResponse {
+  ok: boolean;
+  controlRevision: number;
+  values: Record<string, RuntimeControlValue>;
+  channels: Record<string, RuntimeControlMessage>;
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export type RuntimeControlReadTarget = "param" | "port" | "state";
+
+export interface RuntimeControlReadRequest {
+  nodeId: string;
+  target: RuntimeControlReadTarget;
+  id: string;
+}
+
+export type RuntimeControlReadValue =
+  | RuntimeControlValue
+  | {
+      type: "json";
+      value: unknown;
+    };
+
+export interface RuntimeControlReadResponse {
+  ok: boolean;
+  address: RuntimeControlReadRequest;
+  value: RuntimeControlReadValue | null;
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export interface RuntimeTelemetrySnapshot {
+  schema: "skenion.runtime.telemetry";
+  schemaVersion: "0.1.0";
+  ok: boolean;
+  timestamp: string;
+  session: RuntimeTelemetrySession;
+  preview: RuntimeTelemetryPreview;
+  render: RuntimeTelemetryRender;
+  process: RuntimeTelemetryProcess;
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export interface RuntimeTelemetrySession {
+  loaded: boolean;
+  graphId: string | null;
+  graphRevision: string | null;
+  sessionRevision: number;
+  controlRevision: number;
+}
+
+export interface RuntimeTelemetryPreview {
+  state: RuntimePreviewState;
+  pid: number | null;
+  stale: boolean;
+  graphId: string | null;
+  graphRevision: string | null;
+  sessionRevision: number | null;
+  previewSessionRevision: number | null;
+  controlRevision: number | null;
+  previewControlRevision: number | null;
+  controlLive: boolean;
+  lastControlUpdateAt: string | null;
+}
+
+export interface RuntimeTelemetryRender {
+  active: boolean;
+  backend: string | null;
+  renderer: string | null;
+  framesRendered: number;
+  approxFps: number | null;
+  lastFrameMs: number | null;
+  lastError: string | null;
+  sourceNodeId: string | null;
+  diagnostics: ShaderDiagnosticV01[];
+  generatedSourceAvailable: boolean;
+  controlRevision: number | null;
+  previewControlRevision: number | null;
+  controlLive: boolean;
+  lastControlUpdateAt: string | null;
+}
+
+export interface RuntimeTelemetryProcess {
+  runtimeVersion: string;
+  uptimeMs: number;
+}
+
+export interface RuntimeGeneratedShaderResponse {
+  ok: boolean;
+  nodeId: string | null;
+  language: "wgsl" | null;
+  source: string | null;
+  sourceMap: GeneratedShaderSourceMapV01 | null;
+  diagnostics: ShaderDiagnosticV01[];
+}
+
+export interface RuntimeSessionRunRequest {
+  frames: number;
+}
+
+export type ExtensionKindV01 = "core-package" | "native-runtime" | "codec" | "node-pack";
+export type ExtensionNativeArtifactAbiV01 = "c";
+export type ExtensionCodecDirectionV01 = "decode" | "encode" | "duplex";
+export type ExtensionTestKindV01 = "node" | "codec" | "extension";
+export type RuntimeExtensionStatus = "loaded" | "disabled" | "failed";
+
+export interface ExtensionNativeArtifactV01 {
+  os: string;
+  arch: string;
+  abi: ExtensionNativeArtifactAbiV01;
+  path: string;
+  sha256?: string;
+}
+
+export interface ExtensionNativeBindingV01 {
+  entrypoint: string;
+  artifacts: ExtensionNativeArtifactV01[];
+}
+
+export interface ExtensionCodecDescriptorV01 {
+  id: string;
+  version: string;
+  transportKinds: RuntimeIoTransportKind[];
+  direction: ExtensionCodecDirectionV01;
+}
+
+export interface ExtensionTransportDescriptorV01 {
+  id: string;
+  version: string;
+  kind: string;
+}
+
+export interface ExtensionHelpEntryV01 {
+  nodeId: string;
+  nodeVersion?: string;
+  title?: string;
+  markdownPath?: string;
+  graphPath?: string;
+}
+
+export interface ExtensionProvidesV01 {
+  nodes?: NodeDefinitionManifestV01[];
+  codecs?: ExtensionCodecDescriptorV01[];
+  transports?: ExtensionTransportDescriptorV01[];
+  help?: ExtensionHelpEntryV01[];
+}
+
+export interface ExtensionFrontendMetadataV01 {
+  displayName?: string;
+  description?: string;
+  tags?: string[];
+}
+
+export interface ExtensionManifestV01 {
+  schema: "skenion.extension.manifest";
+  schemaVersion: "0.1.0";
+  id: string;
+  version: string;
+  sdkVersion?: string;
+  runtimeAbiVersion: string;
+  kind: ExtensionKindV01;
+  native?: ExtensionNativeBindingV01;
+  provides: ExtensionProvidesV01;
+  permissions: string[];
+  frontend?: ExtensionFrontendMetadataV01;
+  tests?: ExtensionTestDescriptorV01[];
+}
+
+export interface ExtensionTestDescriptorV01 {
+  id: string;
+  kind: ExtensionTestKindV01;
+  target: string;
+  fixturePath?: string;
+  expectedPath?: string;
+}
+
+export interface RuntimeExtensionDescriptor {
+  id: string;
+  version: string;
+  kind: ExtensionKindV01;
+  runtimeAbiVersion: string;
+  manifestPath: string;
+  status: RuntimeExtensionStatus;
+  capabilities: string[];
+  providedNodes: string[];
+  providedCodecs: string[];
+  providedTransports: string[];
+  providedHelp: string[];
+  testIds: string[];
+  diagnostics: RuntimeDiagnostic[];
+}
+
+export interface RuntimeExtensionListResponse {
+  ok: boolean;
+  extensions: RuntimeExtensionDescriptor[];
+  diagnostics: RuntimeDiagnostic[];
 }
 
 export interface AudioDeviceDescriptorV01 {

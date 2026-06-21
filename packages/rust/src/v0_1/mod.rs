@@ -1,6 +1,7 @@
 mod audio_clock;
 mod clock;
 mod control_message;
+mod extension;
 mod graph;
 mod node_definition;
 mod object_text;
@@ -27,6 +28,12 @@ pub use clock::{
     parse_midi_clock_message_v01,
 };
 pub use control_message::{ControlAtomV01, ControlMessageV01};
+pub use extension::{
+    ExtensionCodecDescriptorV01, ExtensionCodecDirectionV01, ExtensionFrontendMetadataV01,
+    ExtensionHelpEntryV01, ExtensionKindV01, ExtensionManifestV01, ExtensionNativeArtifactAbiV01,
+    ExtensionNativeArtifactV01, ExtensionNativeBindingV01, ExtensionProvidesV01,
+    ExtensionTestDescriptorV01, ExtensionTestKindV01, ExtensionTransportDescriptorV01,
+};
 pub use graph::{EdgeV01, GraphDocumentV01, GraphNodeV01, PortRefV01};
 pub use node_definition::{
     NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01, NodeSurfaceV01,

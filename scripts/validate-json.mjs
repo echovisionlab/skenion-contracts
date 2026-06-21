@@ -805,6 +805,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.object-text.parse-result" && document.schemaVersion === "0.1.0") {
     return validators.objectTextParseResultV01;
   }
+  if (document.schema === "skenion.extension.manifest" && document.schemaVersion === "0.1.0") {
+    return validators.extensionManifestV01;
+  }
 
   fail(file, `no validator for schema ${document.schema ?? "<missing>"} ${document.schemaVersion ?? "<missing>"}`);
 }
@@ -845,8 +848,10 @@ const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.sche
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const graphPatchV01Schema = await readJson("json-schema/graph/v0.1/patch.schema.json");
 const graphPatchEventV01Schema = await readJson("json-schema/graph/v0.1/patch-event.schema.json");
+const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
 ajv.addSchema(graphPatchV01Schema);
 ajv.addSchema(graphPatchEventV01Schema);
+ajv.addSchema(nodeDefinitionV01Schema);
 const validators = {
   graphV0: ajv.compile(await readJson("json-schema/graph/v0/graph.schema.json")),
   patchV0: ajv.compile(await readJson("json-schema/graph/v0/patch.schema.json")),
@@ -857,9 +862,7 @@ const validators = {
   patchV01: ajv.compile(graphPatchV01Schema),
   patchEventV01: ajv.compile(graphPatchEventV01Schema),
   patchHistoryV01: ajv.compile(await readJson("json-schema/graph/v0.1/patch-history.schema.json")),
-  nodeDefinitionV01: ajv.compile(
-    await readJson("json-schema/node/v0.1/node-definition.schema.json")
-  ),
+  nodeDefinitionV01: ajv.compile(nodeDefinitionV01Schema),
   nodeDefinitionV02: ajv.compile(
     await readJson("json-schema/node/v0.2/node-definition.schema.json")
   ),
@@ -868,6 +871,9 @@ const validators = {
   ),
   objectTextParseResultV01: ajv.compile(
     await readJson("json-schema/object-text/v0.1/parse-result.schema.json")
+  ),
+  extensionManifestV01: ajv.compile(
+    await readJson("json-schema/extension/v0.1/extension-manifest.schema.json")
   )
 };
 

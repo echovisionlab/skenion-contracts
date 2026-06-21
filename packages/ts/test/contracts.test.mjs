@@ -10,6 +10,7 @@ import {
   builtinNodeDefinitionsV01,
   createDefaultViewStateForGraph,
   controlMessageV01Schema,
+  extensionManifestV01Schema,
   getBuiltinNodeDefinition,
   getBuiltinNodeHelp,
   getBuiltinNodeHelpGraph,
@@ -42,6 +43,7 @@ import {
   validateGraphPatchHistory,
   validateGraphPatch,
   validateControlMessage,
+  validateExtensionManifestV01,
   validateObjectTextParseResult,
   validateGraphDocument,
   validateGraphDocumentV02,
@@ -75,6 +77,7 @@ test("exports v0.1 graph and node definition schemas", () => {
   assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
   assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
   assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
+  assert.equal(extensionManifestV01Schema.properties.schema.const, "skenion.extension.manifest");
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(controlMessageV01Schema.properties.selector.type, "string");
   assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
@@ -85,6 +88,22 @@ test("exports v0.1 graph and node definition schemas", () => {
     "render-pipeline",
     "render-frame"
   ]);
+});
+
+test("validates extension package manifests with help and tests", async () => {
+  const manifest = await readJson("fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json");
+  const result = validateExtensionManifestV01(manifest);
+
+  assert.equal(result.ok, true);
+  assert.equal(manifest.id, "example/native-sensor");
+  assert.equal(manifest.provides.help[0].markdownPath, "help/sensor-reading.md");
+  assert.equal(manifest.tests[0].fixturePath, "tests/sensor-reading.input.json");
+
+  const invalidAbi = await readJson("fixtures/extension/v0.1/invalid/abi-mismatch.manifest.json");
+  const invalidResult = validateExtensionManifestV01(invalidAbi);
+
+  assert.equal(invalidResult.ok, false);
+  assert.match(invalidResult.errors.join("\n"), /must be equal to constant/);
 });
 
 test("documents runtime IO discovery HTTP API", async () => {

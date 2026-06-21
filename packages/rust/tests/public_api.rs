@@ -1,15 +1,15 @@
 use skenion_contracts::{
     ApplyPatchErrorV01, AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01,
     AudioClockDomainV01, ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, DataFlowV01,
-    DataTypeV01, GraphDocumentV01, GraphDocumentV02, GraphPatchOperationV01, GraphPatchV01,
-    MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01,
-    NodeDefinitionManifestV02, NumberRangeV01, ObjectTextParseResultV01, StringOrStringsV01,
-    analyze_graph_document_v02, apply_graph_patch_v01, apply_midi_clock_message_v01,
-    compatible_data_types_v01, invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01,
-    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
-    type_label_v01, validate_graph_document_v01, validate_graph_document_v02,
-    validate_node_definition_v01, validate_node_definition_v02,
-    validate_object_text_parse_result_v01,
+    DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01, GraphDocumentV02,
+    GraphPatchOperationV01, GraphPatchV01, MidiClockMessageKindV01, MidiClockMessageV01,
+    MidiClockSnapshotV01, NodeDefinitionManifestV01, NodeDefinitionManifestV02, NumberRangeV01,
+    ObjectTextParseResultV01, StringOrStringsV01, analyze_graph_document_v02,
+    apply_graph_patch_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
+    invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01,
+    parse_object_text_v01, plan_audio_clock_bridge_v01, type_label_v01,
+    validate_graph_document_v01, validate_graph_document_v02, validate_node_definition_v01,
+    validate_node_definition_v02, validate_object_text_parse_result_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -100,6 +100,34 @@ fn reports_public_validation_errors() {
     let error = validate_node_definition_v01(&definition).expect_err("definition should fail");
     assert!(error.errors().len() >= 4);
     assert!(error.to_string().contains("wrong.node.definition"));
+}
+
+#[test]
+fn parses_extension_manifest_contract_surface() {
+    let manifest: ExtensionManifestV01 = serde_json::from_str(
+        r#"{
+          "schema": "skenion.extension.manifest",
+          "schemaVersion": "0.1.0",
+          "id": "skenion/core",
+          "version": "0.1.0",
+          "runtimeAbiVersion": "0.1.0",
+          "kind": "core-package",
+          "provides": {
+            "help": [
+              { "nodeId": "core.value", "markdownPath": "help/value.md" }
+            ]
+          },
+          "permissions": [],
+          "tests": [
+            { "id": "value-baseline", "kind": "node", "target": "core.value", "fixturePath": "tests/value.input.json" }
+          ]
+        }"#,
+    )
+    .expect("extension manifest should parse");
+
+    assert_eq!(manifest.kind, ExtensionKindV01::CorePackage);
+    assert_eq!(manifest.provides.help[0].node_id, "core.value");
+    assert_eq!(manifest.tests[0].id, "value-baseline");
 }
 
 #[test]

@@ -1,0 +1,92 @@
+{
+  "schema": "skenion.extension.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/native-sensor",
+  "version": "0.1.0",
+  "sdkVersion": "0.1.0",
+  "runtimeAbiVersion": "0.1.0",
+  "kind": "native-runtime",
+  "native": {
+    "entrypoint": "skenion_extension_init",
+    "artifacts": [
+      {
+        "os": "macos",
+        "arch": "aarch64",
+        "abi": "c",
+        "path": "target/aarch64-apple-darwin/release/libskenion_example_native_sensor.dylib"
+      }
+    ]
+  },
+  "provides": {
+    "nodes": [
+      {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": "example.sensor.reading",
+        "version": "0.1.0",
+        "displayName": "Sensor Reading",
+        "category": "IO",
+        "ports": [
+          {
+            "id": "out",
+            "direction": "output",
+            "type": {
+              "flow": "value",
+              "dataKind": "number.float"
+            }
+          }
+        ],
+        "execution": {
+          "model": "native_plugin"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": [
+          "io.sensor.reading.v0.1"
+        ]
+      }
+    ],
+    "codecs": [
+      {
+        "id": "example.sensor.line",
+        "version": "0.1.0",
+        "transportKinds": [
+          "serial"
+        ],
+        "direction": "decode"
+      }
+    ],
+    "transports": [],
+    "help": [
+      {
+        "nodeId": "example.sensor.reading",
+        "nodeVersion": "0.1.0",
+        "title": "Sensor Reading",
+        "markdownPath": "help/sensor-reading.md",
+        "graphPath": "help/sensor-reading.help.json"
+      }
+    ]
+  },
+  "permissions": [
+    "io.serial"
+  ],
+  "frontend": {
+    "displayName": "Native Sensor Example",
+    "description": "Example package for native sensor input.",
+    "tags": [
+      "sensor",
+      "native"
+    ]
+  },
+  "tests": [
+    {
+      "id": "sensor-reading-decodes-line",
+      "kind": "node",
+      "target": "example.sensor.reading",
+      "fixturePath": "tests/sensor-reading.input.json",
+      "expectedPath": "tests/sensor-reading.expected.json"
+    }
+  ]
+}
