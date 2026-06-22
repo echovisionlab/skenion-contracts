@@ -79,6 +79,10 @@
     "./object-text/v0.1/parse-result-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
+    },
+    "./release-train/v0.1/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
     }
   },
   "files": [

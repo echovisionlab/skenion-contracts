@@ -1,0 +1,1217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/release-train/v0.1/release-train.schema.json",
+  "title": "Skenion Release Train Manifest v0.1",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "trainId", "trainVersion", "protocolBaselines", "capabilitySet", "components", "releaseGates"],
+  "properties": {
+    "schema": {
+      "const": "skenion.release-train"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "trainId": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "trainVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "protocolBaselines": {
+      "$ref": "#/$defs/protocolBaselines"
+    },
+    "capabilitySet": {
+      "$ref": "#/$defs/capabilitySet"
+    },
+    "components": {
+      "$ref": "#/$defs/components"
+    },
+    "releaseGates": {
+      "$ref": "#/$defs/releaseGates"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "protocolBaselines": {
+      "type": "object",
+      "required": ["graph", "project", "node", "extension", "runtimeHttp", "runtimeCollaboration"],
+      "properties": {
+        "graph": {
+          "const": "0.1"
+        },
+        "project": {
+          "const": "0.1"
+        },
+        "node": {
+          "const": "0.1"
+        },
+        "extension": {
+          "const": "0.1"
+        },
+        "runtimeHttp": {
+          "const": "v0"
+        },
+        "runtimeCollaboration": {
+          "const": "v0"
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilitySet": {
+      "type": "object",
+      "required": ["protocolSurfaces", "runtime", "studio", "marketplace", "manual"],
+      "properties": {
+        "protocolSurfaces": {
+          "$ref": "#/$defs/protocolBaselines"
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtimeCapabilitySet"
+        },
+        "studio": {
+          "$ref": "#/$defs/studioCapabilitySet"
+        },
+        "marketplace": {
+          "$ref": "#/$defs/marketplaceCapabilitySet"
+        },
+        "manual": {
+          "$ref": "#/$defs/manualCapabilitySet"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeCapabilitySet": {
+      "type": "object",
+      "required": ["sessionAddressing", "eventReplay", "multiWindow", "connectionProfiles", "collaboration", "operationLog", "ioDiscovery", "authPolicy"],
+      "properties": {
+        "sessionAddressing": {
+          "const": true
+        },
+        "eventReplay": {
+          "const": true
+        },
+        "multiWindow": {
+          "const": true
+        },
+        "connectionProfiles": {
+          "type": "array",
+          "items": {
+            "enum": ["local-managed", "local-shared", "remote"]
+          },
+          "minItems": 3,
+          "uniqueItems": true
+        },
+        "collaboration": {
+          "const": "server-authoritative-ot"
+        },
+        "operationLog": {
+          "const": true
+        },
+        "ioDiscovery": {
+          "const": "raw-descriptor"
+        },
+        "authPolicy": {
+          "const": "deferred"
+        }
+      },
+      "additionalProperties": false
+    },
+    "studioCapabilitySet": {
+      "type": "object",
+      "required": ["graphEditor", "patchLibrary", "subpatches", "livingHelp", "graphClipboard", "desktopShell", "connectionProfiles"],
+      "properties": {
+        "graphEditor": {
+          "const": true
+        },
+        "patchLibrary": {
+          "const": true
+        },
+        "subpatches": {
+          "const": true
+        },
+        "livingHelp": {
+          "const": true
+        },
+        "graphClipboard": {
+          "const": true
+        },
+        "desktopShell": {
+          "const": "tauri"
+        },
+        "connectionProfiles": {
+          "type": "array",
+          "items": {
+            "enum": ["local-managed", "local-shared", "remote"]
+          },
+          "minItems": 3,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "marketplaceCapabilitySet": {
+      "type": "object",
+      "required": ["packageDiscovery", "packageInstall", "packageUpdate", "extensionPackages"],
+      "properties": {
+        "packageDiscovery": {
+          "const": true
+        },
+        "packageInstall": {
+          "const": true
+        },
+        "packageUpdate": {
+          "const": true
+        },
+        "extensionPackages": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "manualCapabilitySet": {
+      "type": "object",
+      "required": ["versionedPaths", "pagesDeployment", "latestPromotionRequiresMatrix", "patchReleasesUseMajorMinorPath"],
+      "properties": {
+        "versionedPaths": {
+          "const": true
+        },
+        "pagesDeployment": {
+          "const": true
+        },
+        "latestPromotionRequiresMatrix": {
+          "const": true
+        },
+        "patchReleasesUseMajorMinorPath": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "components": {
+      "type": "object",
+      "required": ["contracts", "runtime", "sdk", "studio", "examples", "docs"],
+      "properties": {
+        "contracts": {
+          "$ref": "#/$defs/contractsComponent"
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtimeComponent"
+        },
+        "sdk": {
+          "$ref": "#/$defs/sdkComponent"
+        },
+        "studio": {
+          "$ref": "#/$defs/studioComponent"
+        },
+        "examples": {
+          "$ref": "#/$defs/examplesComponent"
+        },
+        "docs": {
+          "$ref": "#/$defs/docsComponent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "contractsComponent": {
+      "type": "object",
+      "required": ["npm", "crate"],
+      "properties": {
+        "npm": {
+          "$ref": "#/$defs/registryPackage"
+        },
+        "crate": {
+          "$ref": "#/$defs/registryPackage"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeComponent": {
+      "type": "object",
+      "required": ["crate", "binaries"],
+      "properties": {
+        "crate": {
+          "$ref": "#/$defs/registryPackage"
+        },
+        "binaries": {
+          "$ref": "#/$defs/runtimeBinaryArtifactMap"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sdkComponent": {
+      "type": "object",
+      "required": ["npm"],
+      "properties": {
+        "npm": {
+          "$ref": "#/$defs/registryPackage"
+        }
+      },
+      "additionalProperties": false
+    },
+    "studioComponent": {
+      "type": "object",
+      "required": ["web", "desktop", "desktopPackages", "runtimeSidecars"],
+      "properties": {
+        "web": {
+          "$ref": "#/$defs/registryPackage"
+        },
+        "desktop": {
+          "$ref": "#/$defs/registryPackage"
+        },
+        "desktopPackages": {
+          "$ref": "#/$defs/studioDesktopArtifactMap"
+        },
+        "runtimeSidecars": {
+          "$ref": "#/$defs/studioRuntimeSidecarArtifactMap"
+        }
+      },
+      "additionalProperties": false
+    },
+    "examplesComponent": {
+      "type": "object",
+      "required": ["repository", "version", "tag"],
+      "properties": {
+        "repository": {
+          "$ref": "#/$defs/repository"
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "docsComponent": {
+      "type": "object",
+      "required": ["manual"],
+      "properties": {
+        "manual": {
+          "$ref": "#/$defs/manualComponent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "manualComponent": {
+      "type": "object",
+      "required": ["version", "path", "pagesUrl"],
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/manual/[0-9]+\\.[0-9]+/$"
+        },
+        "pagesUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "registryPackage": {
+      "type": "object",
+      "required": ["ecosystem", "name", "version"],
+      "properties": {
+        "ecosystem": {
+          "enum": ["npm", "crates.io"]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "url": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeBinaryArtifactMap": {
+      "type": "object",
+      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "properties": {
+        "aarch64-apple-darwin": {
+          "$ref": "#/$defs/runtimeBinaryAarch64AppleDarwin"
+        },
+        "x86_64-apple-darwin": {
+          "$ref": "#/$defs/runtimeBinaryX8664AppleDarwin"
+        },
+        "x86_64-pc-windows-msvc": {
+          "$ref": "#/$defs/runtimeBinaryX8664WindowsMsvc"
+        },
+        "aarch64-pc-windows-msvc": {
+          "$ref": "#/$defs/runtimeBinaryAarch64WindowsMsvc"
+        },
+        "x86_64-unknown-linux-gnu": {
+          "$ref": "#/$defs/runtimeBinaryX8664LinuxGnu"
+        },
+        "aarch64-unknown-linux-gnu": {
+          "$ref": "#/$defs/runtimeBinaryAarch64LinuxGnu"
+        }
+      },
+      "additionalProperties": false
+    },
+    "studioDesktopArtifactMap": {
+      "type": "object",
+      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "properties": {
+        "aarch64-apple-darwin": {
+          "$ref": "#/$defs/studioDesktopAarch64AppleDarwin"
+        },
+        "x86_64-apple-darwin": {
+          "$ref": "#/$defs/studioDesktopX8664AppleDarwin"
+        },
+        "x86_64-pc-windows-msvc": {
+          "$ref": "#/$defs/studioDesktopX8664WindowsMsvc"
+        },
+        "aarch64-pc-windows-msvc": {
+          "$ref": "#/$defs/studioDesktopAarch64WindowsMsvc"
+        },
+        "x86_64-unknown-linux-gnu": {
+          "$ref": "#/$defs/studioDesktopX8664LinuxGnu"
+        },
+        "aarch64-unknown-linux-gnu": {
+          "$ref": "#/$defs/studioDesktopAarch64LinuxGnu"
+        }
+      },
+      "additionalProperties": false
+    },
+    "studioRuntimeSidecarArtifactMap": {
+      "type": "object",
+      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "properties": {
+        "aarch64-apple-darwin": {
+          "$ref": "#/$defs/studioRuntimeSidecarAarch64AppleDarwin"
+        },
+        "x86_64-apple-darwin": {
+          "$ref": "#/$defs/studioRuntimeSidecarX8664AppleDarwin"
+        },
+        "x86_64-pc-windows-msvc": {
+          "$ref": "#/$defs/studioRuntimeSidecarX8664WindowsMsvc"
+        },
+        "aarch64-pc-windows-msvc": {
+          "$ref": "#/$defs/studioRuntimeSidecarAarch64WindowsMsvc"
+        },
+        "x86_64-unknown-linux-gnu": {
+          "$ref": "#/$defs/studioRuntimeSidecarX8664LinuxGnu"
+        },
+        "aarch64-unknown-linux-gnu": {
+          "$ref": "#/$defs/studioRuntimeSidecarAarch64LinuxGnu"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeBinaryAarch64AppleDarwin": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64AppleDarwinReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/runtimeBinaryKind"
+        }
+      ]
+    },
+    "runtimeBinaryX8664AppleDarwin": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664AppleDarwinReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/runtimeBinaryKind"
+        }
+      ]
+    },
+    "runtimeBinaryX8664WindowsMsvc": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664WindowsMsvcReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/runtimeBinaryKind"
+        }
+      ]
+    },
+    "runtimeBinaryAarch64WindowsMsvc": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64WindowsMsvcPreview"
+        },
+        {
+          "$ref": "#/$defs/runtimeBinaryKind"
+        }
+      ]
+    },
+    "runtimeBinaryX8664LinuxGnu": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664LinuxGnuReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/runtimeBinaryKind"
+        }
+      ]
+    },
+    "runtimeBinaryAarch64LinuxGnu": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64LinuxGnuPreview"
+        },
+        {
+          "$ref": "#/$defs/runtimeBinaryKind"
+        }
+      ]
+    },
+    "studioDesktopAarch64AppleDarwin": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64AppleDarwinReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioDesktopKind"
+        }
+      ]
+    },
+    "studioDesktopX8664AppleDarwin": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664AppleDarwinReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioDesktopKind"
+        }
+      ]
+    },
+    "studioDesktopX8664WindowsMsvc": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664WindowsMsvcReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioDesktopKind"
+        }
+      ]
+    },
+    "studioDesktopAarch64WindowsMsvc": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64WindowsMsvcPreview"
+        },
+        {
+          "$ref": "#/$defs/studioDesktopKind"
+        }
+      ]
+    },
+    "studioDesktopX8664LinuxGnu": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664LinuxGnuReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioDesktopKind"
+        }
+      ]
+    },
+    "studioDesktopAarch64LinuxGnu": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64LinuxGnuPreview"
+        },
+        {
+          "$ref": "#/$defs/studioDesktopKind"
+        }
+      ]
+    },
+    "studioRuntimeSidecarAarch64AppleDarwin": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64AppleDarwinReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioRuntimeSidecarKind"
+        }
+      ]
+    },
+    "studioRuntimeSidecarX8664AppleDarwin": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664AppleDarwinReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioRuntimeSidecarKind"
+        }
+      ]
+    },
+    "studioRuntimeSidecarX8664WindowsMsvc": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664WindowsMsvcReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioRuntimeSidecarKind"
+        }
+      ]
+    },
+    "studioRuntimeSidecarAarch64WindowsMsvc": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64WindowsMsvcPreview"
+        },
+        {
+          "$ref": "#/$defs/studioRuntimeSidecarKind"
+        }
+      ]
+    },
+    "studioRuntimeSidecarX8664LinuxGnu": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/x8664LinuxGnuReleaseBlocking"
+        },
+        {
+          "$ref": "#/$defs/studioRuntimeSidecarKind"
+        }
+      ]
+    },
+    "studioRuntimeSidecarAarch64LinuxGnu": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "$ref": "#/$defs/aarch64LinuxGnuPreview"
+        },
+        {
+          "$ref": "#/$defs/studioRuntimeSidecarKind"
+        }
+      ]
+    },
+    "aarch64AppleDarwinReleaseBlocking": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "const": "aarch64-apple-darwin"
+        },
+        "supportTier": {
+          "const": "release-blocking"
+        }
+      }
+    },
+    "x8664AppleDarwinReleaseBlocking": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "const": "x86_64-apple-darwin"
+        },
+        "supportTier": {
+          "const": "release-blocking"
+        }
+      }
+    },
+    "x8664WindowsMsvcReleaseBlocking": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "const": "x86_64-pc-windows-msvc"
+        },
+        "supportTier": {
+          "const": "release-blocking"
+        }
+      }
+    },
+    "aarch64WindowsMsvcPreview": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "const": "aarch64-pc-windows-msvc"
+        },
+        "supportTier": {
+          "const": "preview"
+        }
+      }
+    },
+    "x8664LinuxGnuReleaseBlocking": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "const": "x86_64-unknown-linux-gnu"
+        },
+        "supportTier": {
+          "const": "release-blocking"
+        }
+      }
+    },
+    "aarch64LinuxGnuPreview": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "const": "aarch64-unknown-linux-gnu"
+        },
+        "supportTier": {
+          "const": "preview"
+        }
+      }
+    },
+    "runtimeBinaryKind": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "runtime-binary"
+        }
+      }
+    },
+    "studioDesktopKind": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "studio-desktop-package"
+        }
+      }
+    },
+    "studioRuntimeSidecarKind": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "studio-runtime-sidecar"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["id", "target", "supportTier", "kind", "name", "version", "source", "checksum", "sizeBytes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "supportTier": {
+          "enum": ["release-blocking", "preview"]
+        },
+        "kind": {
+          "enum": ["runtime-binary", "studio-desktop-package", "studio-runtime-sidecar"]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "source": {
+          "$ref": "#/$defs/artifactSource"
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "sizeBytes": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "repository", "tag", "assetName", "url"],
+          "properties": {
+            "kind": {
+              "const": "github-release-asset"
+            },
+            "repository": {
+              "$ref": "#/$defs/repository"
+            },
+            "tag": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assetName": {
+              "type": "string",
+              "minLength": 1
+            },
+            "url": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "url"],
+          "properties": {
+            "kind": {
+              "const": "url"
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "checksum": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "releaseGates": {
+      "type": "object",
+      "required": ["registryPackages", "githubReleaseAssets", "checksumVerification", "runtimeSmoke", "studioPackageSmoke", "examplesConformance", "docsPagesDeployment"],
+      "properties": {
+        "registryPackages": {
+          "$ref": "#/$defs/registryPackageGates"
+        },
+        "githubReleaseAssets": {
+          "$ref": "#/$defs/githubReleaseAssetGates"
+        },
+        "checksumVerification": {
+          "$ref": "#/$defs/checksumGate"
+        },
+        "runtimeSmoke": {
+          "$ref": "#/$defs/runtimeSmokeGateMap"
+        },
+        "studioPackageSmoke": {
+          "$ref": "#/$defs/studioPackageSmokeGateMap"
+        },
+        "examplesConformance": {
+          "$ref": "#/$defs/examplesConformanceGate"
+        },
+        "docsPagesDeployment": {
+          "$ref": "#/$defs/docsPagesDeploymentGate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "registryPackageGates": {
+      "type": "object",
+      "required": ["contractsNpm", "contractsCrate", "runtimeCrate", "sdkNpm", "studioWeb", "studioDesktop"],
+      "properties": {
+        "contractsNpm": {
+          "$ref": "#/$defs/registryPackageGate"
+        },
+        "contractsCrate": {
+          "$ref": "#/$defs/registryPackageGate"
+        },
+        "runtimeCrate": {
+          "$ref": "#/$defs/registryPackageGate"
+        },
+        "sdkNpm": {
+          "$ref": "#/$defs/registryPackageGate"
+        },
+        "studioWeb": {
+          "$ref": "#/$defs/registryPackageGate"
+        },
+        "studioDesktop": {
+          "$ref": "#/$defs/registryPackageGate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "registryPackageGate": {
+      "type": "object",
+      "required": ["id", "status", "required", "package"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/gateStatus"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "package": {
+          "$ref": "#/$defs/registryPackage"
+        },
+        "evidenceUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "githubReleaseAssetGates": {
+      "type": "object",
+      "required": ["runtime", "studio"],
+      "properties": {
+        "runtime": {
+          "$ref": "#/$defs/artifactCollectionGate"
+        },
+        "studio": {
+          "$ref": "#/$defs/artifactCollectionGate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactCollectionGate": {
+      "type": "object",
+      "required": ["id", "status", "required", "repository", "tag", "artifactIds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/gateStatus"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "repository": {
+          "$ref": "#/$defs/repository"
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifactIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "evidenceUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "checksumGate": {
+      "type": "object",
+      "required": ["id", "status", "required", "artifactIds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/gateStatus"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "artifactIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "expectedChecksums": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/checksum"
+          }
+        },
+        "evidenceUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeSmokeGateMap": {
+      "type": "object",
+      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "properties": {
+        "aarch64-apple-darwin": {
+          "$ref": "#/$defs/runtimeSmokeGate"
+        },
+        "x86_64-apple-darwin": {
+          "$ref": "#/$defs/runtimeSmokeGate"
+        },
+        "x86_64-pc-windows-msvc": {
+          "$ref": "#/$defs/runtimeSmokeGate"
+        },
+        "aarch64-pc-windows-msvc": {
+          "$ref": "#/$defs/runtimeSmokeGate"
+        },
+        "x86_64-unknown-linux-gnu": {
+          "$ref": "#/$defs/runtimeSmokeGate"
+        },
+        "aarch64-unknown-linux-gnu": {
+          "$ref": "#/$defs/runtimeSmokeGate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeSmokeGate": {
+      "type": "object",
+      "required": ["id", "status", "required", "target", "artifactId"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/gateStatus"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "artifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "studioPackageSmokeGateMap": {
+      "type": "object",
+      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "properties": {
+        "aarch64-apple-darwin": {
+          "$ref": "#/$defs/studioPackageSmokeGate"
+        },
+        "x86_64-apple-darwin": {
+          "$ref": "#/$defs/studioPackageSmokeGate"
+        },
+        "x86_64-pc-windows-msvc": {
+          "$ref": "#/$defs/studioPackageSmokeGate"
+        },
+        "aarch64-pc-windows-msvc": {
+          "$ref": "#/$defs/studioPackageSmokeGate"
+        },
+        "x86_64-unknown-linux-gnu": {
+          "$ref": "#/$defs/studioPackageSmokeGate"
+        },
+        "aarch64-unknown-linux-gnu": {
+          "$ref": "#/$defs/studioPackageSmokeGate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "studioPackageSmokeGate": {
+      "type": "object",
+      "required": ["id", "status", "required", "target", "desktopPackageArtifactId", "runtimeSidecarArtifactId"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/gateStatus"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "desktopPackageArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeSidecarArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "examplesConformanceGate": {
+      "type": "object",
+      "required": ["id", "status", "required", "repository", "ref", "version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/gateStatus"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "repository": {
+          "$ref": "#/$defs/repository"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "evidenceUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "docsPagesDeploymentGate": {
+      "type": "object",
+      "required": ["id", "status", "required", "manualVersion", "manualPath", "pagesUrl"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/gateStatus"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "manualVersion": {
+          "$ref": "#/$defs/version"
+        },
+        "manualPath": {
+          "type": "string",
+          "pattern": "^/manual/[0-9]+\\.[0-9]+/$"
+        },
+        "pagesUrl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceUrl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "gateStatus": {
+      "enum": ["pending", "passed", "failed", "waived"]
+    },
+    "target": {
+      "enum": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    }
+  }
+}

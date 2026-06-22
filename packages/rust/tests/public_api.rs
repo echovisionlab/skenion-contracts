@@ -4,18 +4,19 @@ use skenion_contracts::{
     ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
     GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
     MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
-    ObjectTextParseResultV01, ProjectDocumentV01, RuntimeCollaborationEventEnvelope,
-    RuntimeCollaborationEventKind, RuntimeCollaborationOperationBatchResult,
-    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
-    RuntimeCollaborationRebaseStrategy, RuntimeOperationEnvelope, RuntimeSessionEvent,
-    RuntimeSessionEventKind, RuntimeSessionInfoResponse, StringOrStringsV01,
-    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
-    compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
-    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
-    plan_audio_clock_bridge_v01, type_label_v01, validate_extension_manifest_v01,
-    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
+    ObjectTextParseResultV01, ProjectDocumentV01, ReleaseTrainManifestV01, ReleaseTrainTargetV01,
+    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
+    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
+    RuntimeCollaborationOperationResult, RuntimeCollaborationRebaseStrategy,
+    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
+    RuntimeSessionInfoResponse, StringOrStringsV01, analyze_graph_document_v01,
+    analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
+    derive_patch_contract_v01, derive_patch_contracts_v01, midi_clock_snapshot_to_clock_state_v01,
+    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
+    type_label_v01, validate_extension_manifest_v01, validate_graph_document_v01,
+    validate_graph_fragment_v01, validate_node_definition_v01,
     validate_object_text_parse_result_v01, validate_project_document_v01,
-    validate_runtime_collaboration_event_envelope,
+    validate_release_train_manifest_v01, validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
     validate_runtime_collaboration_operation_result, validate_runtime_operation_envelope,
@@ -84,6 +85,33 @@ fn serializes_optional_contract_fields_as_absent() {
     assert!(!serialized_graph.contains("null"));
     assert!(serialized_graph.contains(r#""type":"number.float""#));
     assert!(validate_graph_document_v01(&graph).is_ok());
+}
+
+#[test]
+fn parses_public_release_train_manifest_contract() {
+    let manifest: ReleaseTrainManifestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/release-train/v0.1/valid/0.43.0.release-train.json"
+    ))
+    .expect("release train manifest should parse");
+
+    validate_release_train_manifest_v01(&manifest).expect("release train manifest should validate");
+    assert_eq!(manifest.schema, "skenion.release-train");
+    assert_eq!(manifest.train_id, "0.43");
+    assert_eq!(
+        manifest.capability_set.runtime.collaboration,
+        "server-authoritative-ot"
+    );
+    assert!(manifest.capability_set.marketplace.package_install);
+    assert_eq!(
+        manifest
+            .components
+            .runtime
+            .binaries
+            .get(&ReleaseTrainTargetV01::Aarch64AppleDarwin)
+            .expect("runtime artifact should exist")
+            .version,
+        "0.43.0"
+    );
 }
 
 #[test]

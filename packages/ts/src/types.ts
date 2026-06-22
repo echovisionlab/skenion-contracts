@@ -1710,6 +1710,272 @@ export interface ObjectTextParseResultV01 {
   diagnostics: ObjectTextDiagnosticV01[];
 }
 
+export type ReleaseTrainTargetV01 =
+  | "aarch64-apple-darwin"
+  | "x86_64-apple-darwin"
+  | "x86_64-pc-windows-msvc"
+  | "aarch64-pc-windows-msvc"
+  | "x86_64-unknown-linux-gnu"
+  | "aarch64-unknown-linux-gnu";
+
+export type ReleaseTrainSupportTierV01 = "release-blocking" | "preview";
+export type ReleaseTrainArtifactKindV01 =
+  | "runtime-binary"
+  | "studio-desktop-package"
+  | "studio-runtime-sidecar";
+export type ReleaseTrainPackageEcosystemV01 = "npm" | "crates.io";
+export type ReleaseTrainChecksumAlgorithmV01 = "sha256";
+export type ReleaseTrainGateStatusV01 = "pending" | "passed" | "failed" | "waived";
+
+export interface ReleaseTrainRegistryPackageV01 {
+  ecosystem: ReleaseTrainPackageEcosystemV01;
+  name: string;
+  version: string;
+  url?: string | null;
+}
+
+export interface ReleaseTrainChecksumV01 {
+  algorithm: ReleaseTrainChecksumAlgorithmV01;
+  value: string | null;
+}
+
+export interface ReleaseTrainGithubReleaseAssetSourceV01 {
+  kind: "github-release-asset";
+  repository: string;
+  tag: string;
+  assetName: string;
+  url: string | null;
+}
+
+export interface ReleaseTrainUrlSourceV01 {
+  kind: "url";
+  url: string;
+}
+
+export type ReleaseTrainArtifactSourceV01 =
+  | ReleaseTrainGithubReleaseAssetSourceV01
+  | ReleaseTrainUrlSourceV01;
+
+export interface ReleaseTrainArtifactV01 {
+  id: string;
+  target: ReleaseTrainTargetV01;
+  supportTier: ReleaseTrainSupportTierV01;
+  kind: ReleaseTrainArtifactKindV01;
+  name: string;
+  version: string;
+  source: ReleaseTrainArtifactSourceV01;
+  checksum: ReleaseTrainChecksumV01;
+  sizeBytes: number | null;
+}
+
+export type ReleaseTrainTargetArtifactMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainArtifactV01>;
+
+export interface ReleaseTrainProtocolBaselinesV01 {
+  graph: "0.1";
+  project: "0.1";
+  node: "0.1";
+  extension: "0.1";
+  runtimeHttp: "v0";
+  runtimeCollaboration: "v0";
+}
+
+export type ReleaseTrainConnectionProfileV01 = "local-managed" | "local-shared" | "remote";
+
+export interface ReleaseTrainRuntimeCapabilitySetV01 {
+  sessionAddressing: true;
+  eventReplay: true;
+  multiWindow: true;
+  connectionProfiles: ReleaseTrainConnectionProfileV01[];
+  collaboration: "server-authoritative-ot";
+  operationLog: true;
+  ioDiscovery: "raw-descriptor";
+  authPolicy: "deferred";
+}
+
+export interface ReleaseTrainStudioCapabilitySetV01 {
+  graphEditor: true;
+  patchLibrary: true;
+  subpatches: true;
+  livingHelp: true;
+  graphClipboard: true;
+  desktopShell: "tauri";
+  connectionProfiles: ReleaseTrainConnectionProfileV01[];
+}
+
+export interface ReleaseTrainMarketplaceCapabilitySetV01 {
+  packageDiscovery: true;
+  packageInstall: true;
+  packageUpdate: true;
+  extensionPackages: true;
+}
+
+export interface ReleaseTrainManualCapabilitySetV01 {
+  versionedPaths: true;
+  pagesDeployment: true;
+  latestPromotionRequiresMatrix: true;
+  patchReleasesUseMajorMinorPath: true;
+}
+
+export interface ReleaseTrainCapabilitySetV01 {
+  protocolSurfaces: ReleaseTrainProtocolBaselinesV01;
+  runtime: ReleaseTrainRuntimeCapabilitySetV01;
+  studio: ReleaseTrainStudioCapabilitySetV01;
+  marketplace: ReleaseTrainMarketplaceCapabilitySetV01;
+  manual: ReleaseTrainManualCapabilitySetV01;
+}
+
+export interface ReleaseTrainContractsComponentV01 {
+  npm: ReleaseTrainRegistryPackageV01;
+  crate: ReleaseTrainRegistryPackageV01;
+}
+
+export interface ReleaseTrainRuntimeComponentV01 {
+  crate: ReleaseTrainRegistryPackageV01;
+  binaries: ReleaseTrainTargetArtifactMapV01;
+}
+
+export interface ReleaseTrainSdkComponentV01 {
+  npm: ReleaseTrainRegistryPackageV01;
+}
+
+export interface ReleaseTrainStudioComponentV01 {
+  web: ReleaseTrainRegistryPackageV01;
+  desktop: ReleaseTrainRegistryPackageV01;
+  desktopPackages: ReleaseTrainTargetArtifactMapV01;
+  runtimeSidecars: ReleaseTrainTargetArtifactMapV01;
+}
+
+export interface ReleaseTrainExamplesComponentV01 {
+  repository: string;
+  version: string;
+  tag: string;
+  commit?: string;
+}
+
+export interface ReleaseTrainManualComponentV01 {
+  version: string;
+  path: string;
+  pagesUrl: string;
+}
+
+export interface ReleaseTrainDocsComponentV01 {
+  manual: ReleaseTrainManualComponentV01;
+}
+
+export interface ReleaseTrainComponentsV01 {
+  contracts: ReleaseTrainContractsComponentV01;
+  runtime: ReleaseTrainRuntimeComponentV01;
+  sdk: ReleaseTrainSdkComponentV01;
+  studio: ReleaseTrainStudioComponentV01;
+  examples: ReleaseTrainExamplesComponentV01;
+  docs: ReleaseTrainDocsComponentV01;
+}
+
+export interface ReleaseTrainRegistryPackageGateV01 {
+  id: string;
+  status: ReleaseTrainGateStatusV01;
+  required: boolean;
+  package: ReleaseTrainRegistryPackageV01;
+  evidenceUrl?: string;
+}
+
+export interface ReleaseTrainRegistryPackageGatesV01 {
+  contractsNpm: ReleaseTrainRegistryPackageGateV01;
+  contractsCrate: ReleaseTrainRegistryPackageGateV01;
+  runtimeCrate: ReleaseTrainRegistryPackageGateV01;
+  sdkNpm: ReleaseTrainRegistryPackageGateV01;
+  studioWeb: ReleaseTrainRegistryPackageGateV01;
+  studioDesktop: ReleaseTrainRegistryPackageGateV01;
+}
+
+export interface ReleaseTrainArtifactCollectionGateV01 {
+  id: string;
+  status: ReleaseTrainGateStatusV01;
+  required: boolean;
+  repository: string;
+  tag: string;
+  artifactIds: string[];
+  evidenceUrl?: string;
+}
+
+export interface ReleaseTrainGithubReleaseAssetGatesV01 {
+  runtime: ReleaseTrainArtifactCollectionGateV01;
+  studio: ReleaseTrainArtifactCollectionGateV01;
+}
+
+export interface ReleaseTrainChecksumGateV01 {
+  id: string;
+  status: ReleaseTrainGateStatusV01;
+  required: boolean;
+  artifactIds: string[];
+  expectedChecksums?: Record<string, ReleaseTrainChecksumV01>;
+  evidenceUrl?: string;
+}
+
+export interface ReleaseTrainRuntimeSmokeGateV01 {
+  id: string;
+  status: ReleaseTrainGateStatusV01;
+  required: boolean;
+  target: ReleaseTrainTargetV01;
+  artifactId: string;
+  evidenceUrl?: string;
+}
+
+export type ReleaseTrainRuntimeSmokeGateMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainRuntimeSmokeGateV01>;
+
+export interface ReleaseTrainStudioPackageSmokeGateV01 {
+  id: string;
+  status: ReleaseTrainGateStatusV01;
+  required: boolean;
+  target: ReleaseTrainTargetV01;
+  desktopPackageArtifactId: string;
+  runtimeSidecarArtifactId: string;
+  evidenceUrl?: string;
+}
+
+export type ReleaseTrainStudioPackageSmokeGateMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainStudioPackageSmokeGateV01>;
+
+export interface ReleaseTrainExamplesConformanceGateV01 {
+  id: string;
+  status: ReleaseTrainGateStatusV01;
+  required: boolean;
+  repository: string;
+  ref: string;
+  version: string;
+  evidenceUrl?: string;
+}
+
+export interface ReleaseTrainDocsPagesDeploymentGateV01 {
+  id: string;
+  status: ReleaseTrainGateStatusV01;
+  required: boolean;
+  manualVersion: string;
+  manualPath: string;
+  pagesUrl: string;
+  evidenceUrl?: string;
+}
+
+export interface ReleaseTrainGatesV01 {
+  registryPackages: ReleaseTrainRegistryPackageGatesV01;
+  githubReleaseAssets: ReleaseTrainGithubReleaseAssetGatesV01;
+  checksumVerification: ReleaseTrainChecksumGateV01;
+  runtimeSmoke: ReleaseTrainRuntimeSmokeGateMapV01;
+  studioPackageSmoke: ReleaseTrainStudioPackageSmokeGateMapV01;
+  examplesConformance: ReleaseTrainExamplesConformanceGateV01;
+  docsPagesDeployment: ReleaseTrainDocsPagesDeploymentGateV01;
+}
+
+export interface ReleaseTrainManifestV01 {
+  schema: "skenion.release-train";
+  schemaVersion: "0.1.0";
+  trainId: string;
+  trainVersion: string;
+  protocolBaselines: ReleaseTrainProtocolBaselinesV01;
+  capabilitySet: ReleaseTrainCapabilitySetV01;
+  components: ReleaseTrainComponentsV01;
+  releaseGates: ReleaseTrainGatesV01;
+}
+
 export interface ValidationSuccess<T> {
   ok: true;
   value: T;

@@ -36,6 +36,9 @@ const objectTextParseResultV01Schema = await readSchema(
 const extensionManifestV01Schema = await readSchema(
   "json-schema/extension/v0.1/extension-manifest.schema.json"
 );
+const releaseTrainV01Schema = await readSchema(
+  "json-schema/release-train/v0.1/release-train.schema.json"
+);
 
 await mkdir(generatedDir, { recursive: true });
 await writeFile(
@@ -68,6 +71,8 @@ await writeFile(
     `export const objectTextParseResultV01Schema = ${JSON.stringify(objectTextParseResultV01Schema, null, 2)} as const;`,
     "",
     `export const extensionManifestV01Schema = ${JSON.stringify(extensionManifestV01Schema, null, 2)} as const;`,
+    "",
+    `export const releaseTrainV01Schema = ${JSON.stringify(releaseTrainV01Schema, null, 2)} as const;`,
     ""
   ].join("\n")
 );

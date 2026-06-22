@@ -30,7 +30,7 @@ pub struct ValidationErrorV01 {
 }
 
 impl ValidationErrorV01 {
-    fn new(message: impl Into<String>) -> Self {
+    pub(crate) fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
         }
@@ -43,7 +43,7 @@ pub struct ValidationReportV01 {
 }
 
 impl ValidationReportV01 {
-    fn new(errors: Vec<ValidationErrorV01>) -> Self {
+    pub(crate) fn new(errors: Vec<ValidationErrorV01>) -> Self {
         Self { errors }
     }
 

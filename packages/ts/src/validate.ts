@@ -12,6 +12,7 @@ import {
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
   projectV01Schema,
+  releaseTrainV01Schema,
   runtimeCollaborationV0Schema,
   runtimeOperationV0Schema,
   runtimeSessionV0Schema,
@@ -38,6 +39,11 @@ import type {
   PasteGraphFragmentResponse,
   PortSpecV01,
   ProjectDocumentV01,
+  ReleaseTrainArtifactV01,
+  ReleaseTrainManifestV01,
+  ReleaseTrainRegistryPackageV01,
+  ReleaseTrainTargetArtifactMapV01,
+  ReleaseTrainTargetV01,
   RuntimeCollaborationAuthSubject,
   RuntimeCollaborationCausalMetadata,
   RuntimeCollaborationEventEnvelope,
@@ -136,6 +142,7 @@ const patchDefinitionV01Validator = ajv.compile({
   $ref: "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/patchDefinition"
 });
 const extensionManifestV01Validator = ajv.compile(extensionManifestV01Schema);
+const releaseTrainV01Validator = ajv.compile(releaseTrainV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
   return errors.map((error) => {
@@ -806,6 +813,301 @@ export function validateExtensionManifestV01(
   }
 
   return { ok: true, value: manifest };
+}
+
+function releaseTrainPackageVersions(manifest: ReleaseTrainManifestV01): Array<[string, ReleaseTrainRegistryPackageV01]> {
+  return [
+    ["contracts npm", manifest.components.contracts.npm],
+    ["contracts crate", manifest.components.contracts.crate],
+    ["runtime crate", manifest.components.runtime.crate],
+    ["sdk npm", manifest.components.sdk.npm],
+    ["studio web", manifest.components.studio.web],
+    ["studio desktop", manifest.components.studio.desktop]
+  ];
+}
+
+function releaseTrainRegistryPackageGatePackages(
+  manifest: ReleaseTrainManifestV01
+): Array<[string, ReleaseTrainRegistryPackageV01, ReleaseTrainRegistryPackageV01]> {
+  return [
+    [
+      "contractsNpm",
+      manifest.releaseGates.registryPackages.contractsNpm.package,
+      manifest.components.contracts.npm
+    ],
+    [
+      "contractsCrate",
+      manifest.releaseGates.registryPackages.contractsCrate.package,
+      manifest.components.contracts.crate
+    ],
+    [
+      "runtimeCrate",
+      manifest.releaseGates.registryPackages.runtimeCrate.package,
+      manifest.components.runtime.crate
+    ],
+    [
+      "sdkNpm",
+      manifest.releaseGates.registryPackages.sdkNpm.package,
+      manifest.components.sdk.npm
+    ],
+    [
+      "studioWeb",
+      manifest.releaseGates.registryPackages.studioWeb.package,
+      manifest.components.studio.web
+    ],
+    [
+      "studioDesktop",
+      manifest.releaseGates.registryPackages.studioDesktop.package,
+      manifest.components.studio.desktop
+    ]
+  ];
+}
+
+function releaseTrainRegistryPackageIdentity(packageRef: ReleaseTrainRegistryPackageV01): string {
+  return [packageRef.ecosystem, packageRef.name, packageRef.version].join("\u0000");
+}
+
+function releaseTrainRegistryPackageGateErrors(manifest: ReleaseTrainManifestV01): string[] {
+  return releaseTrainRegistryPackageGatePackages(manifest)
+    .filter(([, gatePackage, componentPackage]) =>
+      releaseTrainRegistryPackageIdentity(gatePackage) !==
+      releaseTrainRegistryPackageIdentity(componentPackage)
+    )
+    .map(([label]) => `registryPackages ${label} package must match component package`);
+}
+
+function releaseTrainArtifacts(manifest: ReleaseTrainManifestV01): ReleaseTrainArtifactV01[] {
+  return [
+    ...Object.values(manifest.components.runtime.binaries),
+    ...Object.values(manifest.components.studio.desktopPackages),
+    ...Object.values(manifest.components.studio.runtimeSidecars)
+  ];
+}
+
+function releaseTrainArtifactMap(manifest: ReleaseTrainManifestV01): Map<string, ReleaseTrainArtifactV01> {
+  return new Map(releaseTrainArtifacts(manifest).map((artifact) => [artifact.id, artifact]));
+}
+
+function releaseTrainArtifactVersionErrors(
+  artifacts: ReleaseTrainTargetArtifactMapV01,
+  label: string,
+  trainVersion: string
+): string[] {
+  return Object.values(artifacts)
+    .filter((artifact) => artifact.version !== trainVersion)
+    .map((artifact) => `${label} ${artifact.target} version must be ${trainVersion}`);
+}
+
+const releaseTrainTargetsV01: ReleaseTrainTargetV01[] = [
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+  "aarch64-pc-windows-msvc",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu"
+];
+
+function releaseTrainArtifactIdErrors(
+  artifactsById: Map<string, ReleaseTrainArtifactV01>,
+  label: string,
+  artifactId: string
+): string[] {
+  return artifactsById.has(artifactId)
+    ? []
+    : [`${label} references unknown artifact ${artifactId}`];
+}
+
+function releaseTrainArtifactCollectionGateErrors(
+  artifactsById: Map<string, ReleaseTrainArtifactV01>,
+  label: string,
+  artifactIds: string[]
+): string[] {
+  return artifactIds.flatMap((artifactId) =>
+    releaseTrainArtifactIdErrors(artifactsById, label, artifactId)
+  );
+}
+
+function releaseTrainRuntimeSmokeGateErrors(
+  manifest: ReleaseTrainManifestV01,
+  artifactsById: Map<string, ReleaseTrainArtifactV01>
+): string[] {
+  const errors: string[] = [];
+
+  for (const target of releaseTrainTargetsV01) {
+    const gate = manifest.releaseGates.runtimeSmoke[target];
+    const artifact = manifest.components.runtime.binaries[target];
+    errors.push(...releaseTrainArtifactIdErrors(artifactsById, "runtimeSmoke", gate.artifactId));
+    if (gate.target !== target) {
+      errors.push(`runtimeSmoke ${target} target must match map key`);
+    }
+    if (gate.artifactId !== artifact.id) {
+      errors.push(`runtimeSmoke ${target} artifactId must match runtime binary`);
+    }
+  }
+
+  return errors;
+}
+
+function releaseTrainStudioSmokeGateErrors(
+  manifest: ReleaseTrainManifestV01,
+  artifactsById: Map<string, ReleaseTrainArtifactV01>
+): string[] {
+  const errors: string[] = [];
+
+  for (const target of releaseTrainTargetsV01) {
+    const gate = manifest.releaseGates.studioPackageSmoke[target];
+    const desktopPackage = manifest.components.studio.desktopPackages[target];
+    const runtimeSidecar = manifest.components.studio.runtimeSidecars[target];
+
+    errors.push(
+      ...releaseTrainArtifactIdErrors(
+        artifactsById,
+        "studioPackageSmoke desktopPackageArtifactId",
+        gate.desktopPackageArtifactId
+      ),
+      ...releaseTrainArtifactIdErrors(
+        artifactsById,
+        "studioPackageSmoke runtimeSidecarArtifactId",
+        gate.runtimeSidecarArtifactId
+      )
+    );
+    if (gate.target !== target) {
+      errors.push(`studioPackageSmoke ${target} target must match map key`);
+    }
+    if (gate.desktopPackageArtifactId !== desktopPackage.id) {
+      errors.push(`studioPackageSmoke ${target} desktopPackageArtifactId must match desktop package`);
+    }
+    if (gate.runtimeSidecarArtifactId !== runtimeSidecar.id) {
+      errors.push(`studioPackageSmoke ${target} runtimeSidecarArtifactId must match runtime sidecar`);
+    }
+  }
+
+  return errors;
+}
+
+function validateReleaseTrainManifestV01Semantics(manifest: ReleaseTrainManifestV01): string[] {
+  const errors: string[] = [];
+
+  if (!manifest.trainVersion.startsWith(`${manifest.trainId}.`)) {
+    errors.push("trainVersion must match trainId major.minor");
+  }
+
+  for (const [label, packageRef] of releaseTrainPackageVersions(manifest)) {
+    if (packageRef.version !== manifest.trainVersion) {
+      errors.push(`${label} version must be ${manifest.trainVersion}`);
+    }
+  }
+
+  errors.push(
+    ...releaseTrainRegistryPackageGateErrors(manifest),
+    ...releaseTrainArtifactVersionErrors(
+      manifest.components.runtime.binaries,
+      "runtime binary",
+      manifest.trainVersion
+    ),
+    ...releaseTrainArtifactVersionErrors(
+      manifest.components.studio.desktopPackages,
+      "studio desktop package",
+      manifest.trainVersion
+    ),
+    ...releaseTrainArtifactVersionErrors(
+      manifest.components.studio.runtimeSidecars,
+      "studio runtimeSidecars",
+      manifest.trainVersion
+    )
+  );
+
+  if (manifest.components.examples.version !== manifest.trainVersion) {
+    errors.push(`examples version must be ${manifest.trainVersion}`);
+  }
+  if (manifest.releaseGates.examplesConformance.version !== manifest.components.examples.version) {
+    errors.push("examples conformance gate version must match examples version");
+  }
+  if (manifest.releaseGates.examplesConformance.repository !== manifest.components.examples.repository) {
+    errors.push("examples conformance gate repository must match examples repository");
+  }
+  if (manifest.releaseGates.examplesConformance.ref !== manifest.components.examples.tag) {
+    errors.push("examples conformance gate ref must match examples tag");
+  }
+
+  if (manifest.components.docs.manual.version !== manifest.trainVersion) {
+    errors.push(`docs manual version must be ${manifest.trainVersion}`);
+  }
+  const expectedManualPath = `/manual/${manifest.trainId}/`;
+  if (manifest.components.docs.manual.path !== expectedManualPath) {
+    errors.push(`docs manual path must be ${expectedManualPath}`);
+  }
+  if (manifest.releaseGates.docsPagesDeployment.manualVersion !== manifest.components.docs.manual.version) {
+    errors.push("docs Pages gate manualVersion must match docs manual version");
+  }
+  if (manifest.releaseGates.docsPagesDeployment.manualPath !== manifest.components.docs.manual.path) {
+    errors.push("docs Pages gate manualPath must match docs manual path");
+  }
+  if (manifest.releaseGates.docsPagesDeployment.pagesUrl !== manifest.components.docs.manual.pagesUrl) {
+    errors.push("docs Pages gate pagesUrl must match docs manual pagesUrl");
+  }
+
+  const artifactsById = releaseTrainArtifactMap(manifest);
+  errors.push(
+    ...releaseTrainArtifactCollectionGateErrors(
+      artifactsById,
+      "githubReleaseAssets runtime",
+      manifest.releaseGates.githubReleaseAssets.runtime.artifactIds
+    ),
+    ...releaseTrainArtifactCollectionGateErrors(
+      artifactsById,
+      "githubReleaseAssets studio",
+      manifest.releaseGates.githubReleaseAssets.studio.artifactIds
+    ),
+    ...releaseTrainArtifactCollectionGateErrors(
+      artifactsById,
+      "checksumVerification",
+      manifest.releaseGates.checksumVerification.artifactIds
+    ),
+    ...releaseTrainRuntimeSmokeGateErrors(manifest, artifactsById),
+    ...releaseTrainStudioSmokeGateErrors(manifest, artifactsById)
+  );
+
+  const expectedChecksums = manifest.releaseGates.checksumVerification.expectedChecksums ?? {};
+  for (const [artifactId, expectedChecksum] of Object.entries(expectedChecksums)) {
+    const artifact = artifactsById.get(artifactId);
+    if (artifact === undefined) {
+      errors.push(`checksum gate references unknown artifact ${artifactId}`);
+      continue;
+    }
+    if (
+      artifact.checksum.value !== null &&
+      expectedChecksum.value !== null &&
+      artifact.checksum.value !== expectedChecksum.value
+    ) {
+      errors.push(`checksum gate value must match artifact ${artifactId}`);
+    }
+    if (artifact.checksum.value === null && expectedChecksum.value !== null) {
+      errors.push(`artifact ${artifactId} checksum value must be populated before checksum gate can pin it`);
+    }
+  }
+
+  return errors;
+}
+
+export function validateReleaseTrainManifestV01(
+  document: unknown
+): ValidationResult<ReleaseTrainManifestV01> {
+  if (!releaseTrainV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(releaseTrainV01Validator.errors as ErrorObject[]) };
+  }
+
+  const manifest = document as ReleaseTrainManifestV01;
+  const errors = validateReleaseTrainManifestV01Semantics(manifest);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: manifest };
+}
+
+export function isReleaseTrainManifestV01(document: unknown): document is ReleaseTrainManifestV01 {
+  return validateReleaseTrainManifestV01(document).ok;
 }
 
 export function validateShaderInterface(document: unknown): ValidationResult<ShaderInterfaceV01> {

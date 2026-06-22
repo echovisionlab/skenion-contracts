@@ -19,6 +19,7 @@ import {
   planAudioClockBridgeV01,
   planConversion,
   projectV01Schema,
+  releaseTrainV01Schema,
   runtimeCollaborationV0Schema,
   runtimeOperationV0Schema,
   runtimeSessionV0Schema,
@@ -49,6 +50,7 @@ import {
   validatePasteGraphFragmentResponse,
   validateProjectDocument,
   validateProjectDocumentV01,
+  validateReleaseTrainManifestV01,
   validateRuntimeCollaborationEventEnvelope,
   validateRuntimeCollaborationOperationBatch,
   validateRuntimeCollaborationOperationBatchResult,
@@ -64,6 +66,7 @@ import {
   validateShaderInterface,
   isPasteGraphFragmentRequest,
   isPasteGraphFragmentResponse,
+  isReleaseTrainManifestV01,
   isRuntimeOperationEnvelope,
   isRuntimeSessionEvent,
   isRuntimeSessionInfoResponse
@@ -94,6 +97,8 @@ test("exports active schema contracts", () => {
   assert.equal(nodeDefinitionV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
   assert.equal(extensionManifestV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(releaseTrainV01Schema.properties.schema.const, "skenion.release-train");
+  assert.equal(releaseTrainV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(runtimeSessionV0Schema.properties.schema.const, "skenion.runtime.session.info");
   assert.equal(
@@ -109,6 +114,166 @@ test("exports active schema contracts", () => {
     "render-pipeline",
     "render-frame"
   ]);
+});
+
+test("validates release train manifest fixtures", async () => {
+  const manifest = await readJson("fixtures/release-train/v0.1/valid/0.43.0.release-train.json");
+  const result = validateReleaseTrainManifestV01(manifest);
+
+  assert.equal(result.ok, true);
+  assert.equal(isReleaseTrainManifestV01(manifest), true);
+  assert.equal(manifest.schema, "skenion.release-train");
+  assert.equal(manifest.schemaVersion, "0.1.0");
+  assert.equal(manifest.trainId, "0.43");
+  assert.equal(manifest.trainVersion, "0.43.0");
+  assert.equal(manifest.protocolBaselines.graph, "0.1");
+  assert.equal(manifest.protocolBaselines.runtimeHttp, "v0");
+  assert.equal(manifest.capabilitySet.protocolSurfaces.graph, "0.1");
+  assert.equal(manifest.capabilitySet.runtime.collaboration, "server-authoritative-ot");
+  assert.deepEqual(manifest.capabilitySet.studio.connectionProfiles, ["local-managed", "local-shared", "remote"]);
+  assert.equal(manifest.capabilitySet.marketplace.packageInstall, true);
+  assert.equal(manifest.capabilitySet.manual.versionedPaths, true);
+  assert.equal(manifest.components.runtime.binaries["aarch64-apple-darwin"].supportTier, "release-blocking");
+  assert.equal(manifest.components.runtime.binaries["aarch64-pc-windows-msvc"].supportTier, "preview");
+  assert.equal(manifest.components.studio.runtimeSidecars["x86_64-unknown-linux-gnu"].version, "0.43.0");
+  assert.equal(manifest.components.docs.manual.path, "/manual/0.43/");
+
+  const invalidCases = [
+    ["fixtures/release-train/v0.1/invalid/missing-runtime-artifact.release-train.json", /aarch64-apple-darwin/],
+    ["fixtures/release-train/v0.1/invalid/checksum-mismatch.release-train.json", /checksum gate value/],
+    ["fixtures/release-train/v0.1/invalid/invalid-checksum.release-train.json", /pattern|sha256/],
+    ["fixtures/release-train/v0.1/invalid/pinned-checksum-null-artifact.release-train.json", /must be populated/],
+    ["fixtures/release-train/v0.1/invalid/contracts-runtime-mismatch.release-train.json", /runtime crate version/],
+    ["fixtures/release-train/v0.1/invalid/studio-sidecar-mismatch.release-train.json", /studio runtimeSidecars/],
+    ["fixtures/release-train/v0.1/invalid/examples-mismatch.release-train.json", /examples version/],
+    ["fixtures/release-train/v0.1/invalid/manual-pages-mismatch.release-train.json", /pagesUrl/],
+    ["fixtures/release-train/v0.1/invalid/registry-package-gate-mismatch.release-train.json", /registryPackages contractsNpm/],
+    ["fixtures/release-train/v0.1/invalid/missing-capability-set.release-train.json", /capabilitySet/]
+  ];
+
+  for (const [fixture, expected] of invalidCases) {
+    const invalid = await readJson(fixture);
+    const invalidResult = validateReleaseTrainManifestV01(invalid);
+
+    assert.equal(invalidResult.ok, false, fixture);
+    assert.match(invalidResult.errors.join("\n"), expected, fixture);
+    assert.equal(isReleaseTrainManifestV01(invalid), false, fixture);
+  }
+
+  const trainIdMismatch = structuredClone(manifest);
+  trainIdMismatch.trainId = "0.44";
+  const trainIdMismatchResult = validateReleaseTrainManifestV01(trainIdMismatch);
+  assert.equal(trainIdMismatchResult.ok, false);
+  assert.match(trainIdMismatchResult.errors.join("\n"), /trainVersion/);
+
+  const registryGatePackageMismatch = structuredClone(manifest);
+  registryGatePackageMismatch.releaseGates.registryPackages.contractsNpm.package.version = "0.42.0";
+  const registryGatePackageMismatchResult = validateReleaseTrainManifestV01(registryGatePackageMismatch);
+  assert.equal(registryGatePackageMismatchResult.ok, false);
+  assert.match(registryGatePackageMismatchResult.errors.join("\n"), /registryPackages contractsNpm/);
+
+  const capabilitySurfaceMismatch = structuredClone(manifest);
+  capabilitySurfaceMismatch.capabilitySet.protocolSurfaces.graph = "0.2";
+  const capabilitySurfaceMismatchResult = validateReleaseTrainManifestV01(capabilitySurfaceMismatch);
+  assert.equal(capabilitySurfaceMismatchResult.ok, false);
+  assert.match(capabilitySurfaceMismatchResult.errors.join("\n"), /capabilitySet protocolSurfaces|constant/);
+
+  const runtimeProfileMismatch = structuredClone(manifest);
+  runtimeProfileMismatch.capabilitySet.runtime.connectionProfiles = ["local-managed"];
+  const runtimeProfileMismatchResult = validateReleaseTrainManifestV01(runtimeProfileMismatch);
+  assert.equal(runtimeProfileMismatchResult.ok, false);
+  assert.match(runtimeProfileMismatchResult.errors.join("\n"), /connectionProfiles/);
+
+  const examplesGateMismatch = structuredClone(manifest);
+  examplesGateMismatch.releaseGates.examplesConformance.version = "0.42.0";
+  const examplesGateMismatchResult = validateReleaseTrainManifestV01(examplesGateMismatch);
+  assert.equal(examplesGateMismatchResult.ok, false);
+  assert.match(examplesGateMismatchResult.errors.join("\n"), /examples conformance gate/);
+
+  const examplesGateRefMismatch = structuredClone(manifest);
+  examplesGateRefMismatch.releaseGates.examplesConformance.repository = "echovisionlab/Other-examples";
+  examplesGateRefMismatch.releaseGates.examplesConformance.ref = "skenion-examples-v0.42.0";
+  const examplesGateRefMismatchResult = validateReleaseTrainManifestV01(examplesGateRefMismatch);
+  assert.equal(examplesGateRefMismatchResult.ok, false);
+  assert.match(examplesGateRefMismatchResult.errors.join("\n"), /repository|ref/);
+
+  const docsGateVersionMismatch = structuredClone(manifest);
+  docsGateVersionMismatch.releaseGates.docsPagesDeployment.manualVersion = "0.42.0";
+  const docsGateVersionMismatchResult = validateReleaseTrainManifestV01(docsGateVersionMismatch);
+  assert.equal(docsGateVersionMismatchResult.ok, false);
+  assert.match(docsGateVersionMismatchResult.errors.join("\n"), /manualVersion/);
+
+  const docsManualPathMismatch = structuredClone(manifest);
+  docsManualPathMismatch.components.docs.manual.path = "/manual/0.42/";
+  docsManualPathMismatch.releaseGates.docsPagesDeployment.manualPath = "/manual/0.42/";
+  const docsManualPathMismatchResult = validateReleaseTrainManifestV01(docsManualPathMismatch);
+  assert.equal(docsManualPathMismatchResult.ok, false);
+  assert.match(docsManualPathMismatchResult.errors.join("\n"), /docs manual path/);
+
+  const docsManualVersionMismatch = structuredClone(manifest);
+  docsManualVersionMismatch.components.docs.manual.version = "0.42.0";
+  const docsManualVersionMismatchResult = validateReleaseTrainManifestV01(docsManualVersionMismatch);
+  assert.equal(docsManualVersionMismatchResult.ok, false);
+  assert.match(docsManualVersionMismatchResult.errors.join("\n"), /docs manual version/);
+
+  const docsGatePathMismatch = structuredClone(manifest);
+  docsGatePathMismatch.releaseGates.docsPagesDeployment.manualPath = "/manual/0.42/";
+  const docsGatePathMismatchResult = validateReleaseTrainManifestV01(docsGatePathMismatch);
+  assert.equal(docsGatePathMismatchResult.ok, false);
+  assert.match(docsGatePathMismatchResult.errors.join("\n"), /manualPath/);
+
+  const unknownChecksumArtifact = structuredClone(manifest);
+  unknownChecksumArtifact.releaseGates.checksumVerification.expectedChecksums = {
+    "missing-artifact": { algorithm: "sha256", value: null }
+  };
+  const unknownChecksumArtifactResult = validateReleaseTrainManifestV01(unknownChecksumArtifact);
+  assert.equal(unknownChecksumArtifactResult.ok, false);
+  assert.match(unknownChecksumArtifactResult.errors.join("\n"), /unknown artifact/);
+
+  const checksumArtifactIdMismatch = structuredClone(manifest);
+  checksumArtifactIdMismatch.releaseGates.checksumVerification.artifactIds = ["missing-artifact"];
+  const checksumArtifactIdMismatchResult = validateReleaseTrainManifestV01(checksumArtifactIdMismatch);
+  assert.equal(checksumArtifactIdMismatchResult.ok, false);
+  assert.match(checksumArtifactIdMismatchResult.errors.join("\n"), /checksumVerification/);
+
+  const githubAssetIdMismatch = structuredClone(manifest);
+  githubAssetIdMismatch.releaseGates.githubReleaseAssets.runtime.artifactIds = ["missing-artifact"];
+  const githubAssetIdMismatchResult = validateReleaseTrainManifestV01(githubAssetIdMismatch);
+  assert.equal(githubAssetIdMismatchResult.ok, false);
+  assert.match(githubAssetIdMismatchResult.errors.join("\n"), /githubReleaseAssets runtime/);
+
+  const runtimeSmokeTargetMismatch = structuredClone(manifest);
+  runtimeSmokeTargetMismatch.releaseGates.runtimeSmoke["aarch64-apple-darwin"].target = "x86_64-apple-darwin";
+  const runtimeSmokeTargetMismatchResult = validateReleaseTrainManifestV01(runtimeSmokeTargetMismatch);
+  assert.equal(runtimeSmokeTargetMismatchResult.ok, false);
+  assert.match(runtimeSmokeTargetMismatchResult.errors.join("\n"), /target must match map key/);
+
+  const runtimeSmokeMismatch = structuredClone(manifest);
+  runtimeSmokeMismatch.releaseGates.runtimeSmoke["aarch64-apple-darwin"].artifactId = "runtime-x86_64-apple-darwin";
+  const runtimeSmokeMismatchResult = validateReleaseTrainManifestV01(runtimeSmokeMismatch);
+  assert.equal(runtimeSmokeMismatchResult.ok, false);
+  assert.match(runtimeSmokeMismatchResult.errors.join("\n"), /runtimeSmoke/);
+
+  const studioSmokeTargetMismatch = structuredClone(manifest);
+  studioSmokeTargetMismatch.releaseGates.studioPackageSmoke["aarch64-apple-darwin"].target =
+    "x86_64-apple-darwin";
+  const studioSmokeTargetMismatchResult = validateReleaseTrainManifestV01(studioSmokeTargetMismatch);
+  assert.equal(studioSmokeTargetMismatchResult.ok, false);
+  assert.match(studioSmokeTargetMismatchResult.errors.join("\n"), /target must match map key/);
+
+  const studioDesktopSmokeMismatch = structuredClone(manifest);
+  studioDesktopSmokeMismatch.releaseGates.studioPackageSmoke["aarch64-apple-darwin"].desktopPackageArtifactId =
+    "studio-desktop-x86_64-apple-darwin";
+  const studioDesktopSmokeMismatchResult = validateReleaseTrainManifestV01(studioDesktopSmokeMismatch);
+  assert.equal(studioDesktopSmokeMismatchResult.ok, false);
+  assert.match(studioDesktopSmokeMismatchResult.errors.join("\n"), /desktopPackageArtifactId/);
+
+  const studioSmokeMismatch = structuredClone(manifest);
+  studioSmokeMismatch.releaseGates.studioPackageSmoke["aarch64-apple-darwin"].runtimeSidecarArtifactId =
+    "studio-runtime-sidecar-x86_64-apple-darwin";
+  const studioSmokeMismatchResult = validateReleaseTrainManifestV01(studioSmokeMismatch);
+  assert.equal(studioSmokeMismatchResult.ok, false);
+  assert.match(studioSmokeMismatchResult.errors.join("\n"), /studioPackageSmoke/);
 });
 
 test("validates runtime session profile and replay fixtures", async () => {

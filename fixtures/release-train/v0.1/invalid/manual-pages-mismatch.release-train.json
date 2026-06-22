@@ -1,0 +1,731 @@
+{
+  "schema": "skenion.release-train",
+  "schemaVersion": "0.1.0",
+  "trainId": "0.43",
+  "trainVersion": "0.43.0",
+  "protocolBaselines": {
+    "graph": "0.1",
+    "project": "0.1",
+    "node": "0.1",
+    "extension": "0.1",
+    "runtimeHttp": "v0",
+    "runtimeCollaboration": "v0"
+  },
+  "capabilitySet": {
+    "protocolSurfaces": {
+      "graph": "0.1",
+      "project": "0.1",
+      "node": "0.1",
+      "extension": "0.1",
+      "runtimeHttp": "v0",
+      "runtimeCollaboration": "v0"
+    },
+    "runtime": {
+      "sessionAddressing": true,
+      "eventReplay": true,
+      "multiWindow": true,
+      "connectionProfiles": [
+        "local-managed",
+        "local-shared",
+        "remote"
+      ],
+      "collaboration": "server-authoritative-ot",
+      "operationLog": true,
+      "ioDiscovery": "raw-descriptor",
+      "authPolicy": "deferred"
+    },
+    "studio": {
+      "graphEditor": true,
+      "patchLibrary": true,
+      "subpatches": true,
+      "livingHelp": true,
+      "graphClipboard": true,
+      "desktopShell": "tauri",
+      "connectionProfiles": [
+        "local-managed",
+        "local-shared",
+        "remote"
+      ]
+    },
+    "marketplace": {
+      "packageDiscovery": true,
+      "packageInstall": true,
+      "packageUpdate": true,
+      "extensionPackages": true
+    },
+    "manual": {
+      "versionedPaths": true,
+      "pagesDeployment": true,
+      "latestPromotionRequiresMatrix": true,
+      "patchReleasesUseMajorMinorPath": true
+    }
+  },
+  "components": {
+    "contracts": {
+      "npm": {
+        "ecosystem": "npm",
+        "name": "@skenion/contracts",
+        "version": "0.43.0",
+        "url": null
+      },
+      "crate": {
+        "ecosystem": "crates.io",
+        "name": "skenion-contracts",
+        "version": "0.43.0",
+        "url": null
+      }
+    },
+    "runtime": {
+      "crate": {
+        "ecosystem": "crates.io",
+        "name": "skenion-runtime",
+        "version": "0.43.0",
+        "url": null
+      },
+      "binaries": {
+        "aarch64-apple-darwin": {
+          "id": "runtime-aarch64-apple-darwin",
+          "target": "aarch64-apple-darwin",
+          "supportTier": "release-blocking",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-aarch64-apple-darwin.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-runtime",
+            "tag": "skenion-runtime-v0.43.0",
+            "assetName": "skenion-runtime-aarch64-apple-darwin.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-apple-darwin": {
+          "id": "runtime-x86_64-apple-darwin",
+          "target": "x86_64-apple-darwin",
+          "supportTier": "release-blocking",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-x86_64-apple-darwin.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-runtime",
+            "tag": "skenion-runtime-v0.43.0",
+            "assetName": "skenion-runtime-x86_64-apple-darwin.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-pc-windows-msvc": {
+          "id": "runtime-x86_64-pc-windows-msvc",
+          "target": "x86_64-pc-windows-msvc",
+          "supportTier": "release-blocking",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-x86_64-pc-windows-msvc.zip",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-runtime",
+            "tag": "skenion-runtime-v0.43.0",
+            "assetName": "skenion-runtime-x86_64-pc-windows-msvc.zip",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "aarch64-pc-windows-msvc": {
+          "id": "runtime-aarch64-pc-windows-msvc",
+          "target": "aarch64-pc-windows-msvc",
+          "supportTier": "preview",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-aarch64-pc-windows-msvc.zip",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-runtime",
+            "tag": "skenion-runtime-v0.43.0",
+            "assetName": "skenion-runtime-aarch64-pc-windows-msvc.zip",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-unknown-linux-gnu": {
+          "id": "runtime-x86_64-unknown-linux-gnu",
+          "target": "x86_64-unknown-linux-gnu",
+          "supportTier": "release-blocking",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-x86_64-unknown-linux-gnu.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-runtime",
+            "tag": "skenion-runtime-v0.43.0",
+            "assetName": "skenion-runtime-x86_64-unknown-linux-gnu.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "aarch64-unknown-linux-gnu": {
+          "id": "runtime-aarch64-unknown-linux-gnu",
+          "target": "aarch64-unknown-linux-gnu",
+          "supportTier": "preview",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-aarch64-unknown-linux-gnu.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-runtime",
+            "tag": "skenion-runtime-v0.43.0",
+            "assetName": "skenion-runtime-aarch64-unknown-linux-gnu.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        }
+      }
+    },
+    "sdk": {
+      "npm": {
+        "ecosystem": "npm",
+        "name": "@skenion/sdk",
+        "version": "0.43.0",
+        "url": null
+      }
+    },
+    "studio": {
+      "web": {
+        "ecosystem": "npm",
+        "name": "@skenion/studio-web",
+        "version": "0.43.0",
+        "url": null
+      },
+      "desktop": {
+        "ecosystem": "npm",
+        "name": "@skenion/studio-desktop",
+        "version": "0.43.0",
+        "url": null
+      },
+      "desktopPackages": {
+        "aarch64-apple-darwin": {
+          "id": "studio-desktop-aarch64-apple-darwin",
+          "target": "aarch64-apple-darwin",
+          "supportTier": "release-blocking",
+          "kind": "studio-desktop-package",
+          "name": "Skenion-Studio-aarch64-apple-darwin.dmg",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "Skenion-Studio-aarch64-apple-darwin.dmg",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-apple-darwin": {
+          "id": "studio-desktop-x86_64-apple-darwin",
+          "target": "x86_64-apple-darwin",
+          "supportTier": "release-blocking",
+          "kind": "studio-desktop-package",
+          "name": "Skenion-Studio-x86_64-apple-darwin.dmg",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "Skenion-Studio-x86_64-apple-darwin.dmg",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-pc-windows-msvc": {
+          "id": "studio-desktop-x86_64-pc-windows-msvc",
+          "target": "x86_64-pc-windows-msvc",
+          "supportTier": "release-blocking",
+          "kind": "studio-desktop-package",
+          "name": "Skenion-Studio-x86_64-pc-windows-msvc.msi",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "Skenion-Studio-x86_64-pc-windows-msvc.msi",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "aarch64-pc-windows-msvc": {
+          "id": "studio-desktop-aarch64-pc-windows-msvc",
+          "target": "aarch64-pc-windows-msvc",
+          "supportTier": "preview",
+          "kind": "studio-desktop-package",
+          "name": "Skenion-Studio-aarch64-pc-windows-msvc.msi",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "Skenion-Studio-aarch64-pc-windows-msvc.msi",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-unknown-linux-gnu": {
+          "id": "studio-desktop-x86_64-unknown-linux-gnu",
+          "target": "x86_64-unknown-linux-gnu",
+          "supportTier": "release-blocking",
+          "kind": "studio-desktop-package",
+          "name": "Skenion-Studio-x86_64-unknown-linux-gnu.AppImage",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "Skenion-Studio-x86_64-unknown-linux-gnu.AppImage",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "aarch64-unknown-linux-gnu": {
+          "id": "studio-desktop-aarch64-unknown-linux-gnu",
+          "target": "aarch64-unknown-linux-gnu",
+          "supportTier": "preview",
+          "kind": "studio-desktop-package",
+          "name": "Skenion-Studio-aarch64-unknown-linux-gnu.AppImage",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "Skenion-Studio-aarch64-unknown-linux-gnu.AppImage",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        }
+      },
+      "runtimeSidecars": {
+        "aarch64-apple-darwin": {
+          "id": "studio-runtime-sidecar-aarch64-apple-darwin",
+          "target": "aarch64-apple-darwin",
+          "supportTier": "release-blocking",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-aarch64-apple-darwin.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "skenion-runtime-sidecar-aarch64-apple-darwin.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-apple-darwin": {
+          "id": "studio-runtime-sidecar-x86_64-apple-darwin",
+          "target": "x86_64-apple-darwin",
+          "supportTier": "release-blocking",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-x86_64-apple-darwin.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "skenion-runtime-sidecar-x86_64-apple-darwin.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-pc-windows-msvc": {
+          "id": "studio-runtime-sidecar-x86_64-pc-windows-msvc",
+          "target": "x86_64-pc-windows-msvc",
+          "supportTier": "release-blocking",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-x86_64-pc-windows-msvc.zip",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "skenion-runtime-sidecar-x86_64-pc-windows-msvc.zip",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "aarch64-pc-windows-msvc": {
+          "id": "studio-runtime-sidecar-aarch64-pc-windows-msvc",
+          "target": "aarch64-pc-windows-msvc",
+          "supportTier": "preview",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-aarch64-pc-windows-msvc.zip",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "skenion-runtime-sidecar-aarch64-pc-windows-msvc.zip",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "x86_64-unknown-linux-gnu": {
+          "id": "studio-runtime-sidecar-x86_64-unknown-linux-gnu",
+          "target": "x86_64-unknown-linux-gnu",
+          "supportTier": "release-blocking",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-x86_64-unknown-linux-gnu.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "skenion-runtime-sidecar-x86_64-unknown-linux-gnu.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        },
+        "aarch64-unknown-linux-gnu": {
+          "id": "studio-runtime-sidecar-aarch64-unknown-linux-gnu",
+          "target": "aarch64-unknown-linux-gnu",
+          "supportTier": "preview",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-aarch64-unknown-linux-gnu.tar.gz",
+          "version": "0.43.0",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "echovisionlab/Skenion-studio",
+            "tag": "skenion-studio-v0.43.0",
+            "assetName": "skenion-runtime-sidecar-aarch64-unknown-linux-gnu.tar.gz",
+            "url": null
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": null
+          },
+          "sizeBytes": null
+        }
+      }
+    },
+    "examples": {
+      "repository": "echovisionlab/Skenion-examples",
+      "version": "0.43.0",
+      "tag": "skenion-examples-v0.43.0",
+      "commit": "fixture-0.43.0"
+    },
+    "docs": {
+      "manual": {
+        "version": "0.43.0",
+        "path": "/manual/0.43/",
+        "pagesUrl": "https://echovisionlab.github.io/Skenion-docs/manual/0.42/"
+      }
+    }
+  },
+  "releaseGates": {
+    "registryPackages": {
+      "contractsNpm": {
+        "id": "contracts-npm-exists",
+        "status": "pending",
+        "required": true,
+        "package": {
+          "ecosystem": "npm",
+          "name": "@skenion/contracts",
+          "version": "0.43.0",
+          "url": null
+        }
+      },
+      "contractsCrate": {
+        "id": "contracts-crate-exists",
+        "status": "pending",
+        "required": true,
+        "package": {
+          "ecosystem": "crates.io",
+          "name": "skenion-contracts",
+          "version": "0.43.0",
+          "url": null
+        }
+      },
+      "runtimeCrate": {
+        "id": "runtime-crate-exists",
+        "status": "pending",
+        "required": true,
+        "package": {
+          "ecosystem": "crates.io",
+          "name": "skenion-runtime",
+          "version": "0.43.0",
+          "url": null
+        }
+      },
+      "sdkNpm": {
+        "id": "sdk-npm-exists",
+        "status": "pending",
+        "required": true,
+        "package": {
+          "ecosystem": "npm",
+          "name": "@skenion/sdk",
+          "version": "0.43.0",
+          "url": null
+        }
+      },
+      "studioWeb": {
+        "id": "studio-web-package-exists",
+        "status": "pending",
+        "required": true,
+        "package": {
+          "ecosystem": "npm",
+          "name": "@skenion/studio-web",
+          "version": "0.43.0",
+          "url": null
+        }
+      },
+      "studioDesktop": {
+        "id": "studio-desktop-package-exists",
+        "status": "pending",
+        "required": true,
+        "package": {
+          "ecosystem": "npm",
+          "name": "@skenion/studio-desktop",
+          "version": "0.43.0",
+          "url": null
+        }
+      }
+    },
+    "githubReleaseAssets": {
+      "runtime": {
+        "id": "runtime-release-assets",
+        "status": "pending",
+        "required": true,
+        "repository": "echovisionlab/Skenion-runtime",
+        "tag": "skenion-runtime-v0.43.0",
+        "artifactIds": [
+          "runtime-aarch64-apple-darwin",
+          "runtime-x86_64-apple-darwin",
+          "runtime-x86_64-pc-windows-msvc",
+          "runtime-aarch64-pc-windows-msvc",
+          "runtime-x86_64-unknown-linux-gnu",
+          "runtime-aarch64-unknown-linux-gnu"
+        ]
+      },
+      "studio": {
+        "id": "studio-release-assets",
+        "status": "pending",
+        "required": true,
+        "repository": "echovisionlab/Skenion-studio",
+        "tag": "skenion-studio-v0.43.0",
+        "artifactIds": [
+          "studio-desktop-aarch64-apple-darwin",
+          "studio-desktop-x86_64-apple-darwin",
+          "studio-desktop-x86_64-pc-windows-msvc",
+          "studio-desktop-aarch64-pc-windows-msvc",
+          "studio-desktop-x86_64-unknown-linux-gnu",
+          "studio-desktop-aarch64-unknown-linux-gnu",
+          "studio-runtime-sidecar-aarch64-apple-darwin",
+          "studio-runtime-sidecar-x86_64-apple-darwin",
+          "studio-runtime-sidecar-x86_64-pc-windows-msvc",
+          "studio-runtime-sidecar-aarch64-pc-windows-msvc",
+          "studio-runtime-sidecar-x86_64-unknown-linux-gnu",
+          "studio-runtime-sidecar-aarch64-unknown-linux-gnu"
+        ]
+      }
+    },
+    "checksumVerification": {
+      "id": "artifact-checksums",
+      "status": "pending",
+      "required": true,
+      "artifactIds": [
+        "runtime-aarch64-apple-darwin",
+        "runtime-x86_64-apple-darwin",
+        "runtime-x86_64-pc-windows-msvc",
+        "runtime-aarch64-pc-windows-msvc",
+        "runtime-x86_64-unknown-linux-gnu",
+        "runtime-aarch64-unknown-linux-gnu",
+        "studio-desktop-aarch64-apple-darwin",
+        "studio-desktop-x86_64-apple-darwin",
+        "studio-desktop-x86_64-pc-windows-msvc",
+        "studio-desktop-aarch64-pc-windows-msvc",
+        "studio-desktop-x86_64-unknown-linux-gnu",
+        "studio-desktop-aarch64-unknown-linux-gnu",
+        "studio-runtime-sidecar-aarch64-apple-darwin",
+        "studio-runtime-sidecar-x86_64-apple-darwin",
+        "studio-runtime-sidecar-x86_64-pc-windows-msvc",
+        "studio-runtime-sidecar-aarch64-pc-windows-msvc",
+        "studio-runtime-sidecar-x86_64-unknown-linux-gnu",
+        "studio-runtime-sidecar-aarch64-unknown-linux-gnu"
+      ]
+    },
+    "runtimeSmoke": {
+      "aarch64-apple-darwin": {
+        "id": "runtime-smoke-aarch64-apple-darwin",
+        "status": "pending",
+        "required": true,
+        "target": "aarch64-apple-darwin",
+        "artifactId": "runtime-aarch64-apple-darwin"
+      },
+      "x86_64-apple-darwin": {
+        "id": "runtime-smoke-x86_64-apple-darwin",
+        "status": "pending",
+        "required": true,
+        "target": "x86_64-apple-darwin",
+        "artifactId": "runtime-x86_64-apple-darwin"
+      },
+      "x86_64-pc-windows-msvc": {
+        "id": "runtime-smoke-x86_64-pc-windows-msvc",
+        "status": "pending",
+        "required": true,
+        "target": "x86_64-pc-windows-msvc",
+        "artifactId": "runtime-x86_64-pc-windows-msvc"
+      },
+      "aarch64-pc-windows-msvc": {
+        "id": "runtime-smoke-aarch64-pc-windows-msvc",
+        "status": "pending",
+        "required": true,
+        "target": "aarch64-pc-windows-msvc",
+        "artifactId": "runtime-aarch64-pc-windows-msvc"
+      },
+      "x86_64-unknown-linux-gnu": {
+        "id": "runtime-smoke-x86_64-unknown-linux-gnu",
+        "status": "pending",
+        "required": true,
+        "target": "x86_64-unknown-linux-gnu",
+        "artifactId": "runtime-x86_64-unknown-linux-gnu"
+      },
+      "aarch64-unknown-linux-gnu": {
+        "id": "runtime-smoke-aarch64-unknown-linux-gnu",
+        "status": "pending",
+        "required": true,
+        "target": "aarch64-unknown-linux-gnu",
+        "artifactId": "runtime-aarch64-unknown-linux-gnu"
+      }
+    },
+    "studioPackageSmoke": {
+      "aarch64-apple-darwin": {
+        "id": "studio-smoke-aarch64-apple-darwin",
+        "status": "pending",
+        "required": true,
+        "target": "aarch64-apple-darwin",
+        "desktopPackageArtifactId": "studio-desktop-aarch64-apple-darwin",
+        "runtimeSidecarArtifactId": "studio-runtime-sidecar-aarch64-apple-darwin"
+      },
+      "x86_64-apple-darwin": {
+        "id": "studio-smoke-x86_64-apple-darwin",
+        "status": "pending",
+        "required": true,
+        "target": "x86_64-apple-darwin",
+        "desktopPackageArtifactId": "studio-desktop-x86_64-apple-darwin",
+        "runtimeSidecarArtifactId": "studio-runtime-sidecar-x86_64-apple-darwin"
+      },
+      "x86_64-pc-windows-msvc": {
+        "id": "studio-smoke-x86_64-pc-windows-msvc",
+        "status": "pending",
+        "required": true,
+        "target": "x86_64-pc-windows-msvc",
+        "desktopPackageArtifactId": "studio-desktop-x86_64-pc-windows-msvc",
+        "runtimeSidecarArtifactId": "studio-runtime-sidecar-x86_64-pc-windows-msvc"
+      },
+      "aarch64-pc-windows-msvc": {
+        "id": "studio-smoke-aarch64-pc-windows-msvc",
+        "status": "pending",
+        "required": true,
+        "target": "aarch64-pc-windows-msvc",
+        "desktopPackageArtifactId": "studio-desktop-aarch64-pc-windows-msvc",
+        "runtimeSidecarArtifactId": "studio-runtime-sidecar-aarch64-pc-windows-msvc"
+      },
+      "x86_64-unknown-linux-gnu": {
+        "id": "studio-smoke-x86_64-unknown-linux-gnu",
+        "status": "pending",
+        "required": true,
+        "target": "x86_64-unknown-linux-gnu",
+        "desktopPackageArtifactId": "studio-desktop-x86_64-unknown-linux-gnu",
+        "runtimeSidecarArtifactId": "studio-runtime-sidecar-x86_64-unknown-linux-gnu"
+      },
+      "aarch64-unknown-linux-gnu": {
+        "id": "studio-smoke-aarch64-unknown-linux-gnu",
+        "status": "pending",
+        "required": true,
+        "target": "aarch64-unknown-linux-gnu",
+        "desktopPackageArtifactId": "studio-desktop-aarch64-unknown-linux-gnu",
+        "runtimeSidecarArtifactId": "studio-runtime-sidecar-aarch64-unknown-linux-gnu"
+      }
+    },
+    "examplesConformance": {
+      "id": "examples-conformance",
+      "status": "pending",
+      "required": true,
+      "repository": "echovisionlab/Skenion-examples",
+      "ref": "skenion-examples-v0.43.0",
+      "version": "0.43.0"
+    },
+    "docsPagesDeployment": {
+      "id": "docs-pages-deployment",
+      "status": "pending",
+      "required": true,
+      "manualVersion": "0.43.0",
+      "manualPath": "/manual/0.43/",
+      "pagesUrl": "https://echovisionlab.github.io/Skenion-docs/manual/0.43/"
+    }
+  }
+}

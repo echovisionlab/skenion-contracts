@@ -5,15 +5,16 @@ use std::{fs, path::Path};
 use skenion_contracts::{
     GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
     NodeDefinitionManifestV01, ObjectTextParseResultV01, PasteGraphFragmentResponse,
-    ProjectDocumentV01, RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
-    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
-    RuntimeCollaborationOperationResult, RuntimeCollaborationPresenceEnvelope,
-    RuntimeCollaborationSelectionEnvelope, RuntimeOperationEnvelope, RuntimeSessionEvent,
-    RuntimeSessionInfoResponse, analyze_graph_document_v01, analyze_graph_fragment_v01,
-    parse_object_text_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_definition_v01, validate_object_text_parse_result_v01,
-    validate_paste_graph_fragment_response, validate_patch_definition_v01,
-    validate_project_document_v01, validate_runtime_collaboration_event_envelope,
+    ProjectDocumentV01, ReleaseTrainManifestV01, RuntimeCollaborationEventEnvelope,
+    RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationBatchResult,
+    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationPresenceEnvelope, RuntimeCollaborationSelectionEnvelope,
+    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionInfoResponse,
+    analyze_graph_document_v01, analyze_graph_fragment_v01, parse_object_text_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
+    validate_object_text_parse_result_v01, validate_paste_graph_fragment_response,
+    validate_patch_definition_v01, validate_project_document_v01,
+    validate_release_train_manifest_v01, validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
@@ -44,6 +45,32 @@ fn fixture_files(relative: &str) -> Vec<std::path::PathBuf> {
     collect_json_files(&root, &mut files);
     files.sort();
     files
+}
+
+#[test]
+fn validates_release_train_manifest_fixtures() {
+    for file in fixture_files("../../fixtures/release-train/v0.1/valid") {
+        let manifest: ReleaseTrainManifestV01 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+        validate_release_train_manifest_v01(&manifest)
+            .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+        assert_eq!(manifest.schema, "skenion.release-train");
+        assert_eq!(manifest.schema_version, "0.1.0");
+        assert_eq!(manifest.train_id, "0.43");
+        assert_eq!(manifest.train_version, "0.43.0");
+    }
+
+    for file in fixture_files("../../fixtures/release-train/v0.1/invalid") {
+        let document = fs::read(&file).expect("fixture should be readable");
+        if let Ok(manifest) = serde_json::from_slice::<ReleaseTrainManifestV01>(&document) {
+            assert!(
+                validate_release_train_manifest_v01(&manifest).is_err(),
+                "{} should be invalid",
+                file.display()
+            );
+        }
+    }
 }
 
 #[test]
