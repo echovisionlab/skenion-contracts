@@ -10,24 +10,14 @@
       "id": "asset",
       "direction": "input",
       "label": "Asset",
-      "type": {
-        "flow": "resource",
-        "dataKind": "asset.video"
-      },
-      "required": true,
-      "activation": "latched"
+      "type": "asset.video",
+      "required": true
     },
     {
       "id": "frames",
       "direction": "output",
       "label": "Frames",
-      "type": {
-        "flow": "stream",
-        "dataKind": "video.frame",
-        "frameRate": 60,
-        "colorSpace": "srgb",
-        "alphaPolicy": "black"
-      }
+      "type": "video.frame"
     }
   ],
   "execution": {

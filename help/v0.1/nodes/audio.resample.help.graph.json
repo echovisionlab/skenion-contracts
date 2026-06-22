@@ -15,10 +15,7 @@
         {
           "id": "left",
           "direction": "output",
-          "type": {
-            "flow": "signal",
-            "dataKind": "signal.audio"
-          }
+          "type": "signal.audio"
         }
       ]
     },
@@ -33,19 +30,12 @@
         {
           "id": "in",
           "direction": "input",
-          "type": {
-            "flow": "signal",
-            "dataKind": "signal.audio"
-          },
-          "activation": "latched"
+          "type": "signal.audio"
         },
         {
           "id": "out",
           "direction": "output",
-          "type": {
-            "flow": "signal",
-            "dataKind": "signal.audio"
-          }
+          "type": "signal.audio"
         }
       ]
     },
@@ -60,34 +50,32 @@
         {
           "id": "left",
           "direction": "input",
-          "type": {
-            "flow": "signal",
-            "dataKind": "signal.audio"
-          },
-          "activation": "latched"
+          "type": "signal.audio"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "input",
-        "port": "left"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "input",
+        "portId": "left"
       },
-      "to": {
-        "node": "resample",
-        "port": "in"
+      "target": {
+        "nodeId": "resample",
+        "portId": "in"
       }
     },
     {
-      "from": {
-        "node": "resample",
-        "port": "out"
+      "id": "edge-2",
+      "source": {
+        "nodeId": "resample",
+        "portId": "out"
       },
-      "to": {
-        "node": "output",
-        "port": "left"
+      "target": {
+        "nodeId": "output",
+        "portId": "left"
       }
     }
   ]

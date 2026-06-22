@@ -22,21 +22,14 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "out",
           "direction": "output",
           "label": "Bang",
-          "type": {
-            "flow": "event",
-            "dataKind": "event.bang"
-          }
+          "type": "event.bang"
         }
       ],
       "kind": "core.bang"
@@ -53,32 +46,21 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": {
-            "flow": "value",
-            "dataKind": "boolean"
-          },
-          "required": false,
-          "activation": "latched"
+          "type": "boolean",
+          "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Value",
-          "type": {
-            "flow": "value",
-            "dataKind": "boolean"
-          }
+          "type": "boolean"
         }
       ]
     },
@@ -94,32 +76,21 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": {
-            "flow": "value",
-            "dataKind": "boolean"
-          },
-          "required": false,
-          "activation": "latched"
+          "type": "boolean",
+          "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Value",
-          "type": {
-            "flow": "value",
-            "dataKind": "boolean"
-          }
+          "type": "boolean"
         }
       ],
       "kind": "core.bool"
@@ -127,23 +98,25 @@
   ],
   "edges": [
     {
-      "from": {
-        "node": "bang_1",
-        "port": "out"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "bang_1",
+        "portId": "out"
       },
-      "to": {
-        "node": "value_1",
-        "port": "in"
+      "target": {
+        "nodeId": "value_1",
+        "portId": "in"
       }
     },
     {
-      "from": {
-        "node": "value_1",
-        "port": "value"
+      "id": "edge-2",
+      "source": {
+        "nodeId": "value_1",
+        "portId": "value"
       },
-      "to": {
-        "node": "toggle_1",
-        "port": "cold"
+      "target": {
+        "nodeId": "toggle_1",
+        "portId": "cold"
       }
     }
   ]

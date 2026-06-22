@@ -10,33 +10,21 @@
       "id": "signal",
       "direction": "input",
       "label": "Signal",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "signal.audio",
+      "required": false
     },
     {
       "id": "trigger",
       "direction": "input",
       "label": "Trigger",
-      "type": {
-        "flow": "event",
-        "dataKind": "message.any"
-      },
-      "required": false,
-      "activation": "trigger"
+      "type": "message.any",
+      "required": false
     },
     {
       "id": "value",
       "direction": "output",
       "label": "Value",
-      "type": {
-        "flow": "value",
-        "dataKind": "number.float",
-        "format": "f32"
-      }
+      "type": "number.float"
     }
   ],
   "execution": {

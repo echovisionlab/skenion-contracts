@@ -10,66 +10,39 @@
       "id": "sync",
       "direction": "input",
       "label": "Sync",
-      "type": {
-        "flow": "value",
-        "dataKind": "clock.state"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "clock.state",
+      "required": false
     },
     {
       "id": "reset",
       "direction": "input",
       "label": "Reset",
-      "type": {
-        "flow": "event",
-        "dataKind": "event.bang"
-      },
-      "required": false,
-      "activation": "trigger"
+      "type": "event.bang",
+      "required": false
     },
     {
       "id": "state",
       "direction": "output",
       "label": "State",
-      "type": {
-        "flow": "value",
-        "dataKind": "clock.state"
-      }
+      "type": "clock.state"
     },
     {
       "id": "tick",
       "direction": "output",
       "label": "Tick",
-      "type": {
-        "flow": "event",
-        "dataKind": "event.bang"
-      }
+      "type": "event.bang"
     },
     {
       "id": "phase",
       "direction": "output",
       "label": "Phase",
-      "type": {
-        "flow": "value",
-        "dataKind": "number.float",
-        "format": "f32",
-        "range": {
-          "min": 0,
-          "max": 1
-        }
-      }
+      "type": "number.float"
     },
     {
       "id": "tempo",
       "direction": "output",
       "label": "Tempo",
-      "type": {
-        "flow": "value",
-        "dataKind": "number.float",
-        "unit": "bpm",
-        "format": "f32"
-      }
+      "type": "number.float"
     }
   ],
   "execution": {

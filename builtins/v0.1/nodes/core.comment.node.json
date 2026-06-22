@@ -10,12 +10,8 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": {
-        "flow": "event",
-        "dataKind": "message.any"
-      },
-      "required": false,
-      "activation": "trigger"
+      "type": "message.any",
+      "required": false
     }
   ],
   "execution": {

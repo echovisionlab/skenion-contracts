@@ -10,21 +10,14 @@
       "id": "phase",
       "direction": "input",
       "label": "Phase",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "signal.audio",
+      "required": false
     },
     {
       "id": "out",
       "direction": "output",
       "label": "Signal",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      }
+      "type": "signal.audio"
     }
   ],
   "execution": {

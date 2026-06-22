@@ -1,8 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json",
-  "title": "Skenion Graph Document v0.1 (legacy import)",
-  "description": "Frozen legacy graph document used only for import and migration fixtures. New authoring/runtime contracts use graph v0.2.",
+  "title": "Skenion Graph Document v0.1",
   "type": "object",
   "required": ["schema", "schemaVersion", "id", "revision", "nodes", "edges"],
   "properties": {
@@ -31,6 +30,9 @@
       "items": {
         "$ref": "#/$defs/edge"
       }
+    },
+    "cableStyles": {
+      "$ref": "#/$defs/cableStyleRegistry"
     }
   },
   "additionalProperties": false,
@@ -60,6 +62,12 @@
           "items": {
             "$ref": "#/$defs/port"
           }
+        },
+        "portGroups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/portGroup"
+          }
         }
       },
       "additionalProperties": false
@@ -75,138 +83,239 @@
         "direction": {
           "enum": ["input", "output"]
         },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
         "label": {
           "type": "string"
         },
-        "type": {
-          "$ref": "#/$defs/dataType"
+        "rate": {
+          "enum": ["event", "control", "audio", "render", "gpu", "resource", "io"]
+        },
+        "accepts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "minConnections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxConnections": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mergePolicy": {
+          "enum": ["forbid", "ordered-events", "mix", "array", "latest", "first", "custom"]
+        },
+        "fanOutPolicy": {
+          "enum": ["allow", "forbid", "copy", "share"]
+        },
+        "triggerMode": {
+          "enum": ["passive", "trigger", "latched"]
+        },
+        "defaultValue": true,
+        "latch": {
+          "type": "boolean"
         },
         "required": {
           "type": "boolean"
         },
-        "default": true,
-        "activation": {
-          "enum": ["trigger", "latched"]
+        "styleKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "group": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
         }
       },
       "additionalProperties": false
     },
-    "dataType": {
+    "portGroup": {
       "type": "object",
-      "required": ["flow", "dataKind"],
+      "required": ["id", "direction", "type", "minPorts"],
       "properties": {
-        "flow": {
-          "enum": ["value", "event", "signal", "stream", "resource"]
-        },
-        "dataKind": {
+        "id": {
           "type": "string",
           "minLength": 1
         },
-        "unit": {
+        "label": {
           "type": "string"
         },
-        "range": {
-          "type": "object",
-          "properties": {
-            "min": {
-              "type": "number"
-            },
-            "max": {
-              "type": "number"
-            },
-            "step": {
-              "type": "number",
-              "exclusiveMinimum": 0
-            }
-          },
-          "additionalProperties": false
+        "direction": {
+          "enum": ["input", "output"]
         },
-        "shape": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 1
-          }
+        "type": {
+          "type": "string",
+          "minLength": 1
         },
-        "channels": {
+        "rate": {
+          "enum": ["event", "control", "audio", "render", "gpu", "resource", "io"]
+        },
+        "minPorts": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 0
         },
-        "sampleRate": {
-          "type": "number",
-          "exclusiveMinimum": 0
+        "maxPorts": {
+          "type": "integer",
+          "minimum": 0
         },
-        "format": {
-          "oneOf": [
-            {
-              "type": "string",
-              "minLength": 1
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              }
-            }
-          ]
+        "ordered": {
+          "type": "boolean"
         },
-        "colorSpace": {
+        "portIdPattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createLabel": {
           "type": "string"
         },
-        "frameRate": {
-          "type": "number",
-          "exclusiveMinimum": 0
-        },
-        "alphaPolicy": {
-          "enum": ["error", "white", "black", "luminance"]
-        },
-        "values": {
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              }
-            ]
-          }
+        "defaultPortSpec": {
+          "$ref": "#/$defs/port"
         }
       },
       "additionalProperties": false
     },
     "edge": {
       "type": "object",
-      "required": ["from", "to"],
+      "required": ["id", "source", "target"],
       "properties": {
-        "from": {
-          "$ref": "#/$defs/portRef"
+        "id": {
+          "type": "string",
+          "minLength": 1
         },
-        "to": {
-          "$ref": "#/$defs/portRef"
+        "source": {
+          "$ref": "#/$defs/portEndpoint"
+        },
+        "target": {
+          "$ref": "#/$defs/portEndpoint"
+        },
+        "resolvedType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "adapter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "feedback": {
+          "$ref": "#/$defs/feedbackPolicy"
+        },
+        "styleOverride": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
         }
       },
       "additionalProperties": false
     },
-    "portRef": {
+    "portEndpoint": {
       "type": "object",
-      "required": ["node", "port"],
+      "required": ["nodeId", "portId"],
       "properties": {
-        "node": {
+        "nodeId": {
           "type": "string",
           "minLength": 1
         },
-        "port": {
+        "portId": {
           "type": "string",
           "minLength": 1
         }
       },
       "additionalProperties": false
+    },
+    "feedbackPolicy": {
+      "type": "object",
+      "required": ["enabled", "boundary"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "boundary": {
+          "enum": [
+            "same-turn",
+            "next-tick",
+            "control-frame",
+            "audio-sample",
+            "audio-block",
+            "render-frame",
+            "gpu-pingpong",
+            "manual"
+          ]
+        },
+        "initialValue": true,
+        "recursionLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxEventsPerTick": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxIterationsPerFrame": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bufferMode": {
+          "enum": ["latest", "queue", "ring", "pingpong"]
+        },
+        "intentional": {
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cableStyleRegistry": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "pattern": {
+            "enum": ["solid", "dashed", "dotted"]
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "marker": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
     }
   }
 }

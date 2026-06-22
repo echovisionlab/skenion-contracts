@@ -24,13 +24,13 @@
       },
       "fragment": {
         "schema": "skenion.graph.fragment",
-        "schemaVersion": "0.2.0",
+        "schemaVersion": "0.1.0",
         "id": "fragment-collab-paste",
         "nodes": [
           {
             "id": "source",
             "kind": "core.float",
-            "kindVersion": "0.2.0",
+            "kindVersion": "0.1.0",
             "params": {
               "value": 0.5
             },
@@ -46,7 +46,7 @@
           {
             "id": "sink",
             "kind": "core.preview",
-            "kindVersion": "0.2.0",
+            "kindVersion": "0.1.0",
             "params": {},
             "ports": [
               {

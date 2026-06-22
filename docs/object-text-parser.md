@@ -31,5 +31,6 @@ The first baseline covers control arithmetic, audio arithmetic, audio sources,
 and unary DSP examples such as `[+ 1]`, `[*~ 0.5]`, `[osc~ 440]`, and `[sqrt~]`.
 
 Object text is an authoring surface and the visible source for typed object
-boxes. The migration target is a canonical object-box node, such as
-`core.object`, whose resolution state points at the Runtime implementation kind.
+boxes. Current v0 object boxes must use the active `0.1` graph shape and carry
+resolution state that points at the Runtime implementation kind. Unsupported
+old import or migration-only object-box shapes are rejected with diagnostics.

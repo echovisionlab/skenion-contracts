@@ -1,0 +1,30 @@
+{
+  "schema": "skenion.extension.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/legacy-node",
+  "version": "0.1.0",
+  "runtimeAbiVersion": "0.1.0",
+  "kind": "node-pack",
+  "provides": {
+    "nodes": [
+      {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "9.9.9",
+        "id": "example.legacy",
+        "version": "0.1.0",
+        "displayName": "Legacy",
+        "category": "Example",
+        "ports": [],
+        "execution": {
+          "model": "value"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": []
+      }
+    ]
+  },
+  "permissions": []
+}

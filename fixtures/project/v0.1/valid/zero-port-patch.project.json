@@ -1,0 +1,51 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-zero-port-patch",
+  "revision": "1",
+  "metadata": {
+    "title": "Zero Port Patch"
+  },
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-zero-port-patch",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [
+    {
+      "id": "zero_port",
+      "revision": "1",
+      "metadata": {
+        "title": "Zero Port"
+      },
+      "graph": {
+        "schema": "skenion.graph",
+        "schemaVersion": "0.1.0",
+        "id": "patch-zero-port",
+        "revision": "1",
+        "nodes": [
+          {
+            "id": "note",
+            "kind": "core.note",
+            "kindVersion": "0.1.0",
+            "params": {
+              "text": "No boundary ports."
+            },
+            "ports": []
+          }
+        ],
+        "edges": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-n-m-boundary-patch",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-n-m-boundary-patch",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [
+    {
+      "id": "two_in_two_out",
+      "revision": "1",
+      "metadata": {
+        "title": "Two In Two Out"
+      },
+      "graph": {
+        "schema": "skenion.graph",
+        "schemaVersion": "0.1.0",
+        "id": "patch-two-in-two-out",
+        "revision": "1",
+        "nodes": [
+          {
+            "id": "left_in",
+            "kind": "core.inlet",
+            "kindVersion": "0.1.0",
+            "params": {
+              "portId": "left",
+              "label": "Left"
+            },
+            "ports": [
+              {
+                "id": "out",
+                "direction": "output",
+                "type": "number.float",
+                "rate": "control",
+                "description": "Left input value."
+              }
+            ]
+          },
+          {
+            "id": "right_in",
+            "kind": "core.inlet",
+            "kindVersion": "0.1.0",
+            "params": {
+              "portId": "right",
+              "label": "Right"
+            },
+            "ports": [
+              {
+                "id": "out",
+                "direction": "output",
+                "type": "number.float",
+                "rate": "control",
+                "description": "Right input value."
+              }
+            ]
+          },
+          {
+            "id": "sum_out",
+            "kind": "core.outlet",
+            "kindVersion": "0.1.0",
+            "params": {
+              "portId": "sum",
+              "label": "Sum"
+            },
+            "ports": [
+              {
+                "id": "in",
+                "direction": "input",
+                "type": "number.float",
+                "rate": "control",
+                "mergePolicy": "latest",
+                "maxConnections": null,
+                "description": "Combined sum output."
+              }
+            ]
+          },
+          {
+            "id": "difference_out",
+            "kind": "core.outlet",
+            "kindVersion": "0.1.0",
+            "params": {
+              "portId": "difference",
+              "label": "Difference"
+            },
+            "ports": [
+              {
+                "id": "in",
+                "direction": "input",
+                "type": "number.float",
+                "rate": "control",
+                "description": "Difference output."
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "edge_left_sum",
+            "source": {
+              "nodeId": "left_in",
+              "portId": "out"
+            },
+            "target": {
+              "nodeId": "sum_out",
+              "portId": "in"
+            },
+            "resolvedType": "number.float",
+            "order": 0
+          },
+          {
+            "id": "edge_right_sum",
+            "source": {
+              "nodeId": "right_in",
+              "portId": "out"
+            },
+            "target": {
+              "nodeId": "sum_out",
+              "portId": "in"
+            },
+            "resolvedType": "number.float",
+            "order": 1
+          },
+          {
+            "id": "edge_left_difference",
+            "source": {
+              "nodeId": "left_in",
+              "portId": "out"
+            },
+            "target": {
+              "nodeId": "difference_out",
+              "portId": "in"
+            },
+            "resolvedType": "number.float"
+          }
+        ]
+      },
+      "viewState": {
+        "schema": "skenion.view-state",
+        "schemaVersion": "0.1.0",
+        "canvas": {
+          "nodes": {
+            "left_in": {
+              "x": 96,
+              "y": 96
+            },
+            "right_in": {
+              "x": 96,
+              "y": 216
+            },
+            "sum_out": {
+              "x": 420,
+              "y": 96
+            },
+            "difference_out": {
+              "x": 420,
+              "y": 216
+            }
+          }
+        }
+      }
+    }
+  ]
+}

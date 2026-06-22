@@ -56,6 +56,12 @@
         "$ref": "#/$defs/port"
       }
     },
+    "portGroups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/portGroup"
+      }
+    },
     "execution": {
       "$ref": "#/$defs/execution"
     },
@@ -88,107 +94,110 @@
         "direction": {
           "enum": ["input", "output"]
         },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
         "label": {
           "type": "string"
         },
-        "type": {
-          "$ref": "#/$defs/dataType"
+        "rate": {
+          "enum": ["event", "control", "audio", "render", "gpu", "resource", "io"]
+        },
+        "accepts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "minConnections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxConnections": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mergePolicy": {
+          "enum": ["forbid", "ordered-events", "mix", "array", "latest", "first", "custom"]
+        },
+        "fanOutPolicy": {
+          "enum": ["allow", "forbid", "copy", "share"]
+        },
+        "triggerMode": {
+          "enum": ["passive", "trigger", "latched"]
+        },
+        "defaultValue": true,
+        "latch": {
+          "type": "boolean"
         },
         "required": {
           "type": "boolean"
         },
-        "default": true,
-        "activation": {
-          "enum": ["trigger", "latched"]
+        "styleKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "group": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
         }
       },
       "additionalProperties": false
     },
-    "dataType": {
+    "portGroup": {
       "type": "object",
-      "required": ["flow", "dataKind"],
+      "required": ["id", "direction", "type", "minPorts"],
       "properties": {
-        "flow": {
-          "enum": ["value", "event", "signal", "stream", "resource"]
-        },
-        "dataKind": {
+        "id": {
           "type": "string",
           "minLength": 1
         },
-        "unit": {
+        "label": {
           "type": "string"
         },
-        "range": {
-          "type": "object",
-          "properties": {
-            "min": {
-              "type": "number"
-            },
-            "max": {
-              "type": "number"
-            },
-            "step": {
-              "type": "number",
-              "exclusiveMinimum": 0
-            }
-          },
-          "additionalProperties": false
+        "direction": {
+          "enum": ["input", "output"]
         },
-        "shape": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 1
-          }
+        "type": {
+          "type": "string",
+          "minLength": 1
         },
-        "channels": {
+        "rate": {
+          "enum": ["event", "control", "audio", "render", "gpu", "resource", "io"]
+        },
+        "minPorts": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 0
         },
-        "sampleRate": {
-          "type": "number",
-          "exclusiveMinimum": 0
+        "maxPorts": {
+          "type": "integer",
+          "minimum": 0
         },
-        "format": {
-          "oneOf": [
-            {
-              "type": "string",
-              "minLength": 1
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              }
-            }
-          ]
+        "ordered": {
+          "type": "boolean"
         },
-        "colorSpace": {
+        "portIdPattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createLabel": {
           "type": "string"
         },
-        "frameRate": {
-          "type": "number",
-          "exclusiveMinimum": 0
-        },
-        "alphaPolicy": {
-          "enum": ["error", "white", "black", "luminance"]
-        },
-        "values": {
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              }
-            ]
-          }
+        "defaultPortSpec": {
+          "$ref": "#/$defs/port"
         }
       },
       "additionalProperties": false

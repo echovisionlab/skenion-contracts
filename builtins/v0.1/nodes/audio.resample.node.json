@@ -10,21 +10,14 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "signal.audio",
+      "required": false
     },
     {
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      }
+      "type": "signal.audio"
     }
   ],
   "execution": {

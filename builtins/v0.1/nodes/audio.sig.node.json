@@ -10,21 +10,14 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": {
-        "flow": "event",
-        "dataKind": "message.any"
-      },
-      "required": false,
-      "activation": "trigger"
+      "type": "message.any",
+      "required": false
     },
     {
       "id": "out",
       "direction": "output",
       "label": "Signal",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      }
+      "type": "signal.audio"
     }
   ],
   "execution": {

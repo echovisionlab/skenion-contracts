@@ -49,8 +49,9 @@ categories. In the contract, those concepts are expressed through `flow`,
 | `stream` | Ordered media/block data with backpressure or drop policy. |
 | `resource` | Asset or runtime resource handle. |
 
-v0.0.0 used `constant` and `sampled`. Those remain part of the legacy baseline
-only. v0.1 uses `value` and `signal` instead.
+Current v0 graphs use `value` and `signal`. Older `constant` and `sampled`
+flow names are not valid `0.1` contract values and must be rejected with
+diagnostics.
 
 ## Data Kind
 

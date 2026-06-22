@@ -211,7 +211,7 @@
           "$ref": "#/$defs/graphTargetRef"
         },
         "fragment": {
-          "$ref": "https://skenion.dev/schemas/graph/v0.2/fragment.schema.json"
+          "$ref": "https://skenion.dev/schemas/graph/v0.1/fragment.schema.json"
         },
         "placement": {
           "$ref": "#/$defs/pastePlacement"

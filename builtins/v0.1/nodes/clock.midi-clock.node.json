@@ -10,28 +10,19 @@
       "id": "state",
       "direction": "output",
       "label": "State",
-      "type": {
-        "flow": "value",
-        "dataKind": "clock.state"
-      }
+      "type": "clock.state"
     },
     {
       "id": "tick",
       "direction": "output",
       "label": "Tick",
-      "type": {
-        "flow": "event",
-        "dataKind": "event.bang"
-      }
+      "type": "event.bang"
     },
     {
       "id": "running",
       "direction": "output",
       "label": "Running",
-      "type": {
-        "flow": "value",
-        "dataKind": "boolean"
-      }
+      "type": "boolean"
     }
   ],
   "execution": {

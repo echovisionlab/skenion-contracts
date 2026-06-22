@@ -3,37 +3,22 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import {
-  applyGraphPatch,
-  applyLegacyGraphPatchV01,
-  builtinManifestV01,
-  builtinNodeHelpGraphsV01,
-  builtinNodeHelpV01,
   builtinNodeDefinitionsV01,
-  createDefaultViewStateForGraph,
-  derivePatchContractV02,
-  derivePatchContractsV02,
-  controlMessageV01Schema,
-  extensionManifestV01Schema,
   getBuiltinNodeDefinition,
   getBuiltinNodeHelp,
   getBuiltinNodeHelpGraph,
-  graphFragmentV02Schema,
-  graphPatchEventV01Schema,
-  graphPatchHistoryV01Schema,
-  graphPatchV01Schema,
+  createDefaultViewStateForGraph,
+  derivePatchContractV01,
+  derivePatchContractsV01,
+  controlMessageV01Schema,
+  extensionManifestV01Schema,
+  graphFragmentV01Schema,
   graphV01Schema,
-  graphV02Schema,
-  invertGraphPatch,
-  invertLegacyGraphPatchV01,
-  migrateGraphDocumentV01ToV02,
-  migrateProjectDocumentV01ToV02,
   nodeDefinitionV01Schema,
-  nodeDefinitionV02Schema,
   objectTextParseResultV01Schema,
   planAudioClockBridgeV01,
   planConversion,
   projectV01Schema,
-  projectV02Schema,
   runtimeCollaborationV0Schema,
   runtimeOperationV0Schema,
   runtimeSessionV0Schema,
@@ -45,28 +30,25 @@ import {
   viewStateV01Schema,
   analyzeShaderInterfaceV01,
   shaderInterfaceToPortsV01,
-  analyzeGraphDocumentV02,
-  analyzeGraphFragmentV02,
+  analyzeGraphDocumentV01,
+  analyzeGraphFragmentV01,
   applyMidiClockMessageV01,
   createInitialMidiClockSnapshotV01,
   midiClockSnapshotToClockStateV01,
   parseMidiClockMessageV01,
-  validateGraphPatchEvent,
-  validateGraphPatchHistory,
-  validateGraphPatch,
   validateControlMessage,
   validateExtensionManifestV01,
   validateObjectTextParseResult,
   validateGraphDocument,
-  validateGraphDocumentV02,
-  validateGraphFragmentV02,
+  validateGraphDocumentV01,
+  validateGraphFragmentV01,
   validateNodeDefinition,
-  validateNodeDefinitionV02,
-  validatePatchDefinitionV02,
+  validateNodeDefinitionV01,
+  validatePatchDefinitionV01,
   validatePasteGraphFragmentRequest,
   validatePasteGraphFragmentResponse,
   validateProjectDocument,
-  validateProjectDocumentV02,
+  validateProjectDocumentV01,
   validateRuntimeCollaborationEventEnvelope,
   validateRuntimeCollaborationOperationBatch,
   validateRuntimeCollaborationOperationBatchResult,
@@ -78,6 +60,7 @@ import {
   validateRuntimeSessionEvent,
   validateRuntimeSessionInfoResponse,
   validateViewState,
+  validateViewStateV01,
   validateShaderInterface,
   isPasteGraphFragmentRequest,
   isPasteGraphFragmentResponse,
@@ -100,16 +83,17 @@ async function fixtureFiles(relativePath) {
     .map((fileName) => path.join(relativePath, fileName));
 }
 
-test("exports v0.1 graph and node definition schemas", () => {
+test("exports active schema contracts", () => {
+  assert.ok(builtinNodeDefinitionsV01.length > 0);
+  assert.equal(getBuiltinNodeDefinition("render.output")?.id, "render.output");
+  assert.equal(getBuiltinNodeHelp("render.output")?.id, "render.output");
+  assert.equal(getBuiltinNodeHelpGraph("render.output")?.id, "help-render-output");
   assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
-  assert.equal(projectV01Schema.properties.schema.const, "skenion.project");
-  assert.equal(viewStateV01Schema.properties.schema.const, "skenion.view-state");
-  assert.equal(graphPatchV01Schema.properties.schema.const, "skenion.graph.patch");
-  assert.equal(graphPatchEventV01Schema.properties.schema.const, "skenion.graph.patch.event");
-  assert.equal(graphPatchHistoryV01Schema.properties.schema.const, "skenion.graph.patch.history");
-  assert.equal(nodeDefinitionV01Schema.properties.schema.const, "skenion.node.definition");
+  assert.equal(projectV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(viewStateV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(nodeDefinitionV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
-  assert.equal(extensionManifestV01Schema.properties.schema.const, "skenion.extension.manifest");
+  assert.equal(extensionManifestV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(runtimeSessionV0Schema.properties.schema.const, "skenion.runtime.session.info");
   assert.equal(
@@ -245,19 +229,37 @@ test("validates runtime session profile and replay fixtures", async () => {
 });
 
 test("validates extension package manifests with help and tests", async () => {
-  const manifest = await readJson("fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json");
-  const result = validateExtensionManifestV01(manifest);
+  const currentManifest = await readJson("fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json");
+  const currentResult = validateExtensionManifestV01(currentManifest);
 
-  assert.equal(result.ok, true);
-  assert.equal(manifest.id, "example/native-sensor");
-  assert.equal(manifest.provides.help[0].markdownPath, "help/sensor-reading.md");
-  assert.equal(manifest.tests[0].fixturePath, "tests/sensor-reading.input.json");
+  assert.equal(currentResult.ok, true);
+  assert.equal(currentManifest.schemaVersion, "0.1.0");
+  assert.equal(currentManifest.provides.nodes[0].schemaVersion, "0.1.0");
 
-  const invalidAbi = await readJson("fixtures/extension/v0.1/invalid/abi-mismatch.manifest.json");
-  const invalidResult = validateExtensionManifestV01(invalidAbi);
+  const noNodeCurrentManifest = structuredClone(currentManifest);
+  noNodeCurrentManifest.kind = "core-package";
+  delete noNodeCurrentManifest.native;
+  delete noNodeCurrentManifest.provides.nodes;
+  const noNodeCurrentResult = validateExtensionManifestV01(noNodeCurrentManifest);
+  assert.equal(noNodeCurrentResult.ok, true);
 
-  assert.equal(invalidResult.ok, false);
-  assert.match(invalidResult.errors.join("\n"), /must be equal to constant/);
+  const semanticInvalidCurrentManifest = structuredClone(currentManifest);
+  semanticInvalidCurrentManifest.provides.nodes[0].permissions = ["runtime.unsupported"];
+  const semanticInvalidCurrentResult = validateExtensionManifestV01(semanticInvalidCurrentManifest);
+  assert.equal(semanticInvalidCurrentResult.ok, false);
+  assert.match(semanticInvalidCurrentResult.errors.join("\n"), /provided node example\.sensor-reading/);
+
+  const duplicateProvidedNodeManifest =
+    await readJson("fixtures/extension/v0.1/invalid/duplicate-provided-node-id.manifest.json");
+  const duplicateProvidedNodeResult = validateExtensionManifestV01(duplicateProvidedNodeManifest);
+  assert.equal(duplicateProvidedNodeResult.ok, false);
+  assert.match(duplicateProvidedNodeResult.errors.join("\n"), /duplicate provided node id: example\.sensor-reading/);
+
+  const legacyNodeManifest = await readJson("fixtures/extension/v0.1/invalid/legacy-node.manifest.json");
+  const legacyNodeResult = validateExtensionManifestV01(legacyNodeManifest);
+
+  assert.equal(legacyNodeResult.ok, false);
+  assert.match(legacyNodeResult.errors.join("\n"), /schemaVersion must be equal to constant/);
 });
 
 test("documents runtime IO discovery HTTP API", async () => {
@@ -309,12 +311,13 @@ test("documents runtime IO discovery HTTP API", async () => {
   assert.match(openApi, /\/v0\/sessions\/\{sessionId\}:/);
   assert.match(openApi, /\/v0\/sessions\/\{sessionId\}\/operations:/);
   assert.match(openApi, /\/v0\/sessions\/\{sessionId\}\/events\/stream:/);
-  assert.match(openApi, /Compatibility\/default-session alias/);
+  assert.doesNotMatch(openApi, /^  \/v0\/session(?:\/|:)/m);
+  assert.doesNotMatch(openApi, /Compatibility\/default-session alias|defaultSessionAlias|legacy \/v0\/session/);
   assert.match(openApi, /name: since/);
   assert.match(openApi, /authPolicy:/);
   assert.match(openApi, /sessions\.events\.stream/);
   assert.match(openApi, /sessionId:/);
-  assert.match(openApi, /RuntimeProjectSnapshot:\n\s+\$ref: "#\/components\/schemas\/ProjectDocumentV02"/);
+  assert.match(openApi, /RuntimeProjectSnapshot:\n\s+\$ref: "#\/components\/schemas\/ProjectDocumentV01"/);
   assert.match(openApi, /RuntimeMutationRequest:[\s\S]*?operation:\n\s+\$ref: "#\/components\/schemas\/RuntimeOperationEnvelope"/);
   assert.doesNotMatch(openApi, /RuntimeMutationGraphPatch:/);
   assert.doesNotMatch(openApi, /GraphDocumentV01:|GraphPatchV01:|GraphPatchEventV01:|GraphPatchHistoryV01:/);
@@ -329,18 +332,6 @@ test("runtime protobuf wire uses active runtime operations", async () => {
   assert.match(envelopeProto, /reserved "apply_graph_patch";/);
   assert.match(envelopeProto, /ApplyRuntimeOperation apply_runtime_operation = 22;/);
   assert.doesNotMatch(envelopeProto, /ApplyRuntimeOperation apply_runtime_operation = 20;|ApplyGraphPatch|patch_json/);
-});
-
-test("documents v0.1 graph patch helpers as legacy root API", async () => {
-  const indexSource = await readFile(path.join(repoRoot, "packages/ts/src/index.ts"), "utf8");
-  const patchSource = await readFile(path.join(repoRoot, "packages/ts/src/patch.ts"), "utf8");
-
-  assert.equal(applyLegacyGraphPatchV01, applyGraphPatch);
-  assert.equal(invertLegacyGraphPatchV01, invertGraphPatch);
-  assert.match(indexSource, /@deprecated Legacy v0\.1 graph patch helpers/);
-  assert.match(indexSource, /applyLegacyGraphPatchV01/);
-  assert.match(indexSource, /invertLegacyGraphPatchV01/);
-  assert.match(patchSource, /Active graph mutation uses RuntimeOperationEnvelope/);
 });
 
 test("validates object text parse result fixtures", async () => {
@@ -455,444 +446,85 @@ test("validates control messages as selector and atoms", () => {
   assert.match(invalidLegacyBang.errors.join("\n"), /must have required property 'selector'/);
 });
 
-test("validates project documents and view state fixtures", async () => {
-  const project = await readJson("fixtures/project/v0.1/valid/minimal.project.json");
-  const result = validateProjectDocument(project);
+test("default graph project view and node validators are strict v0.1", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/render-output.graph.json");
+  const project = await readJson("fixtures/project/v0.1/valid/input-only-patch.project.json");
+  const node = await readJson("fixtures/node/v0.1/valid/render-clear-color.node.json");
+  const viewState = createDefaultViewStateForGraph(graph);
 
-  assert.equal(result.ok, true);
-  assert.equal(validateViewState(project.viewState).ok, true);
+  assert.equal(validateGraphDocument(graph).ok, true);
+  assert.equal(validateProjectDocument(project).ok, true);
+  assert.equal(validateNodeDefinition(node).ok, true);
+  assert.equal(validateViewState(viewState).ok, true);
 
-  const partialViewProject = await readJson("fixtures/project/v0.1/valid/object-routing-panel.project.json");
-  assert.equal(validateProjectDocument(partialViewProject).ok, true);
-});
-
-test("rejects invalid project view state", async () => {
-  const missingNode = await readJson("fixtures/project/v0.1/invalid/view-references-missing-node.project.json");
-  const missingNodeResult = validateProjectDocument(missingNode);
-  assert.equal(missingNodeResult.ok, false);
-  assert.match(missingNodeResult.errors.join("\n"), /viewState references missing graph node/);
-
-  const invalidPosition = await readJson("fixtures/project/v0.1/invalid/invalid-view-position.project.json");
-  const invalidPositionResult = validateProjectDocument(invalidPosition);
-  assert.equal(invalidPositionResult.ok, false);
-  assert.match(invalidPositionResult.errors.join("\n"), /must be number/);
-
-  const invalidViewStateResult = validateViewState({
+  const unsupportedGraph = {
+    schema: "skenion.graph",
+    schemaVersion: "9.9.9",
+    id: "unsupported-graph",
+    revision: "1",
+    nodes: [],
+    edges: []
+  };
+  const unsupportedViewState = {
     schema: "skenion.view-state",
-    schemaVersion: "0.1.0",
-    canvas: {
-      nodes: {
-        value_1: {
-          x: 0,
-          y: 0,
-          width: 0
-        }
-      }
-    }
-  });
-  assert.equal(invalidViewStateResult.ok, false);
-  assert.match(invalidViewStateResult.errors.join("\n"), /must be > 0/);
+    schemaVersion: "9.9.9",
+    canvas: { nodes: {} }
+  };
+  const unsupportedProject = {
+    schema: "skenion.project",
+    schemaVersion: "9.9.9",
+    id: "unsupported-project",
+    revision: "1",
+    graph: unsupportedGraph,
+    viewState: unsupportedViewState,
+    patchLibrary: []
+  };
+  const unsupportedNode = {
+    schema: "skenion.node.definition",
+    schemaVersion: "9.9.9",
+    id: "unsupported.node",
+    version: "0.1.0",
+    displayName: "Unsupported Node",
+    category: "Unsupported",
+    ports: [],
+    execution: { model: "value" },
+    state: { persistent: false },
+    permissions: [],
+    capabilities: []
+  };
+
+  assert.equal(validateGraphDocument(unsupportedGraph).ok, false);
+  assert.equal(validateGraphDocumentV01(unsupportedGraph).ok, false);
+  assert.equal(validateProjectDocument(unsupportedProject).ok, false);
+  assert.equal(validateProjectDocumentV01(unsupportedProject).ok, false);
+  assert.equal(validateViewState(unsupportedViewState).ok, false);
+  assert.equal(validateViewStateV01(unsupportedViewState).ok, false);
+  assert.equal(validateNodeDefinition(unsupportedNode).ok, false);
+  assert.equal(validateNodeDefinitionV01(unsupportedNode).ok, false);
+
+  const orphanViewProject = structuredClone(project);
+  orphanViewProject.viewState.canvas.nodes["missing-node"] = { x: 0, y: 0 };
+  const orphanViewResult = validateProjectDocument(orphanViewProject);
+  assert.equal(orphanViewResult.ok, false);
+  assert.match(orphanViewResult.errors.join("\n"), /missing-node/);
 });
 
 test("creates default view state for graph nodes", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
+  const graph = await readJson("fixtures/graph/v0.1/valid/render-output.graph.json");
   const viewState = createDefaultViewStateForGraph(graph);
 
   assert.equal(viewState.schema, "skenion.view-state");
-  assert.deepEqual(Object.keys(viewState.canvas.nodes), ["slider_1", "blur_1"]);
-  assert.deepEqual(viewState.canvas.nodes.slider_1, { x: 96, y: 96 });
-  assert.deepEqual(viewState.canvas.nodes.blur_1, { x: 376, y: 96 });
+  assert.equal(viewState.schemaVersion, "0.1.0");
+  assert.equal(validateViewState(viewState).ok, true);
+  assert.equal(validateViewStateV01(viewState).ok, true);
+  const invalidCurrentViewState = structuredClone(viewState);
+  invalidCurrentViewState.schemaVersion = "9.9.9";
+  assert.equal(validateViewState(invalidCurrentViewState).ok, false);
+  assert.equal(validateViewStateV01(invalidCurrentViewState).ok, false);
+  assert.deepEqual(Object.keys(viewState.canvas.nodes), ["clear_color", "output"]);
+  assert.deepEqual(viewState.canvas.nodes.clear_color, { x: 96, y: 96 });
+  assert.deepEqual(viewState.canvas.nodes.output, { x: 376, y: 96 });
   assert.deepEqual(viewState.canvas.viewport, { x: 0, y: 0, zoom: 1 });
-});
-
-test("validates a v0.1 graph fixture", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/bang-event.graph.json");
-  const result = validateGraphDocument(graph);
-
-  assert.equal(result.ok, true);
-});
-
-test("migrates legacy v0.1 graph and project fixtures to active v0.2 contracts", async () => {
-  for (const name of ["minimal-value", "core-panel-help"]) {
-    const input = await readJson(`fixtures/migration/v0.1-to-v0.2/${name}.input.graph.json`);
-    const expected = await readJson(`fixtures/migration/v0.1-to-v0.2/${name}.expected.graph.json`);
-    const migrated = migrateGraphDocumentV01ToV02(input);
-
-    assert.deepEqual(migrated, expected, name);
-    assert.equal(validateGraphDocument(input).ok, true, name);
-    assert.equal(validateGraphDocumentV02(migrated).ok, true, name);
-  }
-
-  const projectInput = await readJson("fixtures/migration/v0.1-to-v0.2/minimal-project.input.project.json");
-  const projectExpected = await readJson("fixtures/migration/v0.1-to-v0.2/minimal-project.expected.project.json");
-  const projectMigrated = migrateProjectDocumentV01ToV02(projectInput);
-
-  assert.deepEqual(projectMigrated, projectExpected);
-  assert.equal(validateProjectDocument(projectInput).ok, true);
-  assert.equal(validateProjectDocumentV02(projectMigrated).ok, true);
-  assert.deepEqual(projectMigrated.patchLibrary, []);
-});
-
-test("migrates legacy v0.1 edge-case flows without optional project fields", () => {
-  const graph = {
-    schema: "skenion.graph",
-    schemaVersion: "0.1.0",
-    id: "legacy-flow-edge-cases",
-    revision: "edge-cases",
-    nodes: [
-      {
-        id: "source",
-        kind: "legacy.source",
-        kindVersion: "0.1.0",
-        params: {},
-        ports: [
-          { id: "signal", direction: "output", type: { flow: "signal", dataKind: "number.float" } },
-          { id: "stream", direction: "output", type: { flow: "stream", dataKind: "video.frame" } },
-          { id: "gpu", direction: "output", type: { flow: "resource", dataKind: "gpu.texture2d" } },
-          { id: "file", direction: "output", type: { flow: "resource", dataKind: "file.blob" } },
-          { id: "plain", direction: "output", type: { flow: "value", dataKind: "boolean" } }
-        ]
-      },
-      {
-        id: "!!!",
-        kind: "legacy.endpoint",
-        kindVersion: "0.1.0",
-        params: {},
-        ports: [{ id: "###", direction: "output", type: { flow: "value", dataKind: "number.float" } }]
-      },
-      {
-        id: "???",
-        kind: "legacy.endpoint",
-        kindVersion: "0.1.0",
-        params: {},
-        ports: [{ id: "***", direction: "input", type: { flow: "value", dataKind: "number.float" } }]
-      }
-    ],
-    edges: [
-      { from: { node: "!!!", port: "###" }, to: { node: "???", port: "***" } },
-      { from: { node: "!!!", port: "###" }, to: { node: "???", port: "***" } }
-    ]
-  };
-
-  const migrated = migrateGraphDocumentV01ToV02(graph);
-  assert.deepEqual(migrated.nodes[0].ports.map((port) => port.rate), [
-    "audio",
-    "render",
-    "gpu",
-    "resource",
-    "control"
-  ]);
-  assert.deepEqual(migrated.edges.map((edge) => edge.id), [
-    "edge_endpoint_endpoint_to_endpoint_endpoint",
-    "edge_endpoint_endpoint_to_endpoint_endpoint_2"
-  ]);
-  assert.equal("label" in migrated.nodes[0].ports[0], false);
-  assert.equal("defaultValue" in migrated.nodes[0].ports[0], false);
-  assert.equal("required" in migrated.nodes[0].ports[0], false);
-  assert.equal("triggerMode" in migrated.nodes[0].ports[0], false);
-
-  const project = {
-    schema: "skenion.project",
-    schemaVersion: "0.1.0",
-    id: "legacy-no-optionals",
-    revision: "1",
-    graph,
-    viewState: {
-      schema: "skenion.view-state",
-      schemaVersion: "0.1.0",
-      canvas: {
-        nodes: {},
-        viewport: { x: 0, y: 0, zoom: 1 }
-      }
-    }
-  };
-  const migratedProject = migrateProjectDocumentV01ToV02(project);
-  assert.equal("metadata" in migratedProject, false);
-  assert.equal("tutorial" in migratedProject, false);
-  assert.equal("help" in migratedProject, false);
-  assert.deepEqual(migratedProject.patchLibrary, []);
-
-  const migratedProjectWithHelp = migrateProjectDocumentV01ToV02({
-    ...project,
-    id: "legacy-with-help",
-    tutorial: { steps: [{ title: "Open", body: "Inspect the migrated graph." }] },
-    help: { topic: "legacy-migration" }
-  });
-  assert.deepEqual(migratedProjectWithHelp.tutorial, {
-    steps: [{ title: "Open", body: "Inspect the migrated graph." }]
-  });
-  assert.deepEqual(migratedProjectWithHelp.help, { topic: "legacy-migration" });
-});
-
-test("rejects incompatible bool to bang graph wiring", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/invalid/bool-to-bang.graph.json");
-  const result = validateGraphDocument(graph);
-
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /incompatible edge/);
-});
-
-test("accepts message.any targets across control message flows", () => {
-  const graph = {
-    schema: "skenion.graph",
-    schemaVersion: "0.1.0",
-    id: "message-any-control",
-    revision: "1",
-    nodes: [
-      {
-        id: "string_1",
-        kind: "core.string",
-        kindVersion: "0.1.0",
-        params: { value: "ready" },
-        ports: [
-          {
-            id: "value",
-            direction: "output",
-            label: "Value",
-            type: { flow: "value", dataKind: "string" }
-          }
-        ]
-      },
-      {
-        id: "message_1",
-        kind: "core.message",
-        kindVersion: "0.1.0",
-        params: { value: "perform" },
-        ports: [
-          {
-            id: "in",
-            direction: "input",
-            label: "In",
-            type: { flow: "event", dataKind: "message.any" },
-            required: false,
-            activation: "trigger"
-          }
-        ]
-      }
-    ],
-    edges: [
-      {
-        from: { node: "string_1", port: "value" },
-        to: { node: "message_1", port: "in" }
-      }
-    ]
-  };
-
-  assert.equal(validateGraphDocument(graph).ok, true);
-});
-
-test("rejects schema-invalid graph documents", () => {
-  const result = validateGraphDocument({
-    schema: "skenion.graph",
-    schemaVersion: "0.1.0"
-  });
-
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /required property/);
-});
-
-test("reports nested schema paths for invalid graph documents", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.schemaVersion = "0.2.0";
-
-  const result = validateGraphDocument(graph);
-
-  assert.equal(result.ok, false);
-  assert.equal(result.errors.join("\n").includes("/schemaVersion"), true);
-});
-
-test("rejects graph semantic failures", async () => {
-  const cases = [
-    ["fixtures/graph/v0.1/invalid/duplicate-node-id.graph.json", /duplicate node id/],
-    ["fixtures/graph/v0.1/invalid/edge-to-missing-port.graph.json", /edge references missing target port/],
-    ["fixtures/graph/v0.1/invalid/input-to-input-edge.graph.json", /is not an output port/],
-    ["fixtures/graph/v0.1/invalid/resource-video-direct-stream.graph.json", /resource<asset.video>/],
-    ["fixtures/graph/v0.1/invalid/video-stream-direct-gpu.graph.json", /stream<video.frame>/]
-  ];
-
-  for (const [fixture, expected] of cases) {
-    const graph = await readJson(fixture);
-    const result = validateGraphDocument(graph);
-
-    assert.equal(result.ok, false, fixture);
-    assert.match(result.errors.join("\n"), expected, fixture);
-  }
-});
-
-test("rejects edges with missing source ports and non-input targets", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.edges[0].from.port = "missing";
-  graph.edges.push({
-    from: {
-      node: "slider_1",
-      port: "out"
-    },
-    to: {
-      node: "slider_1",
-      port: "out"
-    }
-  });
-
-  const result = validateGraphDocument(graph);
-
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /edge references missing source port slider_1:missing/);
-  assert.match(result.errors.join("\n"), /edge target slider_1:out is not an input port/);
-});
-
-test("accepts numeric representation mismatches as implicit conversion", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.nodes[0].ports[0].type.format = "f32";
-  graph.nodes[1].ports[0].type.format = "f16";
-
-  const result = validateGraphDocument(graph);
-
-  assert.equal(result.ok, true);
-});
-
-test("accepts source formats included by a target port", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.nodes[0].ports[0].type.format = "f32";
-  graph.nodes[1].ports[0].type.format = ["f16", "f32"];
-
-  const result = validateGraphDocument(graph);
-
-  assert.equal(result.ok, true);
-});
-
-test("accepts absent source or target format constraints", async () => {
-  const graphWithOnlyTargetFormat = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graphWithOnlyTargetFormat.nodes[1].ports[0].type.format = "f32";
-  assert.equal(validateGraphDocument(graphWithOnlyTargetFormat).ok, true);
-
-  const graphWithOnlySourceFormat = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graphWithOnlySourceFormat.nodes[0].ports[0].type.format = "f32";
-  assert.equal(validateGraphDocument(graphWithOnlySourceFormat).ok, true);
-});
-
-test("accepts target scalar formats that include every source format", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.nodes[0].ports[0].type.format = ["f32"];
-  graph.nodes[1].ports[0].type.format = "f32";
-
-  const result = validateGraphDocument(graph);
-
-  assert.equal(result.ok, true);
-});
-
-test("validates a script node manifest fixture", async () => {
-  const definition = await readJson("fixtures/node/v0.1/valid/script-control.node.json");
-  const result = validateNodeDefinition(definition);
-
-  assert.equal(result.ok, true);
-});
-
-test("exports canonical v0.1 builtin node definitions", () => {
-  const ids = builtinNodeDefinitionsV01.map((definition) => definition.id);
-
-  assert.deepEqual([...ids].sort(), [...builtinManifestV01.nodes].sort());
-
-  const valueDefinition = getBuiltinNodeDefinition("core.float");
-  assert.deepEqual(valueDefinition?.surface, { palette: "direct" });
-  assert.deepEqual(valueDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
-  assert.equal(valueDefinition?.ports.find((port) => port.id === "in")?.activation, "trigger");
-  assert.equal(valueDefinition?.ports.find((port) => port.id === "cold")?.activation, "latched");
-  const valueOutputType = valueDefinition?.ports.find((port) => port.id === "value")?.type;
-  assert.equal(valueOutputType?.dataKind, "number.float");
-  assert.equal(Boolean(valueOutputType && "range" in valueOutputType), false);
-
-  const i32Definition = getBuiltinNodeDefinition("core.int");
-  assert.deepEqual(i32Definition?.ports.map((port) => port.id), ["in", "cold", "value"]);
-  assert.equal(i32Definition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.int");
-  assert.equal(i32Definition?.ports.find((port) => port.id === "value")?.type.format, "i32");
-
-  const uintDefinition = getBuiltinNodeDefinition("core.uint");
-  assert.deepEqual(uintDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
-  assert.equal(uintDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "number.uint");
-  assert.equal(uintDefinition?.ports.find((port) => port.id === "value")?.type.format, "u32");
-
-  const boolDefinition = getBuiltinNodeDefinition("core.bool");
-  assert.deepEqual(boolDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
-  assert.equal(boolDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "boolean");
-
-  const colorDefinition = getBuiltinNodeDefinition("core.color");
-  assert.deepEqual(colorDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
-  assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "color");
-  assert.equal(colorDefinition?.ports.find((port) => port.id === "value")?.type.format, "rgba32f");
-
-  const stringDefinition = getBuiltinNodeDefinition("core.string");
-  assert.deepEqual(stringDefinition?.ports.map((port) => port.id), ["in", "cold", "value"]);
-  assert.equal(stringDefinition?.ports.find((port) => port.id === "value")?.type.dataKind, "string");
-
-  const commentDefinition = getBuiltinNodeDefinition("core.comment");
-  assert.deepEqual(commentDefinition?.ports.map((port) => port.id), ["in"]);
-  assert.equal(commentDefinition?.ports.find((port) => port.id === "in")?.type.flow, "event");
-  assert.equal(commentDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
-
-  const panelDefinition = getBuiltinNodeDefinition("core.panel");
-  assert.deepEqual(panelDefinition?.ports.map((port) => port.id), ["in"]);
-  assert.equal(panelDefinition?.ports.find((port) => port.id === "in")?.type.flow, "event");
-  assert.equal(panelDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
-
-  const messageDefinition = getBuiltinNodeDefinition("core.message");
-  assert.deepEqual(messageDefinition?.ports.map((port) => port.id), ["in", "out"]);
-  assert.equal(messageDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
-  assert.equal(messageDefinition?.ports.find((port) => port.id === "out")?.type.dataKind, "message.any");
-
-  const bangDefinition = getBuiltinNodeDefinition("core.bang");
-  assert.deepEqual(bangDefinition?.ports.map((port) => port.id), ["in", "out"]);
-  assert.equal(bangDefinition?.ports.find((port) => port.id === "in")?.type.dataKind, "message.any");
-  assert.equal(bangDefinition?.ports.find((port) => port.id === "out")?.type.dataKind, "event.bang");
-
-  for (const removedId of [
-    ["core", "target"],
-    ["core", "event-log"],
-    ["core", "bang-button"],
-    ["core", "toggle"],
-    ["ui", "button"],
-    ["ui", "slider-float"],
-    ["ui", "toggle"]
-  ].map((parts) => parts.join("."))) {
-    assert.equal(getBuiltinNodeDefinition(removedId), undefined);
-  }
-
-  const shaderDefinition = getBuiltinNodeDefinition("render.fullscreen-shader");
-  assert.deepEqual(shaderDefinition?.ports.map((port) => port.id), ["out"]);
-  assert.equal(shaderDefinition?.ports.find((port) => port.id === "out")?.type.dataKind, "gpu.texture2d");
-  assert.equal(getBuiltinNodeDefinition("missing.node"), undefined);
-  assert.equal(
-    builtinNodeDefinitionsV01.flatMap((definition) => definition.ports).some((port) => port.type.dataKind === "f32"),
-    false
-  );
-});
-
-test("exports the canonical v0.1 builtin manifest", () => {
-  assert.equal(builtinManifestV01.schema, "skenion.builtins.manifest");
-  assert.equal(builtinManifestV01.schemaVersion, "0.1.0");
-  assert.equal(builtinManifestV01.version, "0.1");
-  assert.deepEqual(
-    [...builtinManifestV01.nodes].sort(),
-    builtinNodeDefinitionsV01.map((definition) => definition.id).sort()
-  );
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.float"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.int"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.uint"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("boolean"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("string"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("message.any"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("event.bang"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("clock.state"), true);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("f32"), false);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("number.f32"), false);
-  assert.equal(builtinManifestV01.canonicalDataKinds.includes("bang"), false);
-  assert.deepEqual(builtinManifestV01.representations["number.float"].includes("f8.e4m3"), true);
-  assert.deepEqual(builtinManifestV01.representations.color.includes("rgba8unorm"), true);
-  assert.equal(getBuiltinNodeDefinition("clock.midi-clock")?.ports.map((port) => port.id).join(","), "state,tick,running");
-  assert.equal(getBuiltinNodeDefinition("audio.input")?.ports.map((port) => port.id).join(","), "left,right");
-  assert.equal(getBuiltinNodeDefinition("audio.clock-bridge")?.ports.map((port) => port.id).join(","), "in,out");
-  assert.equal(getBuiltinNodeDefinition("audio.resample")?.ports.map((port) => port.id).join(","), "in,out");
-  assert.equal(getBuiltinNodeDefinition("core.operator.add")?.surface?.palette, undefined);
-  assert.equal(getBuiltinNodeDefinition("audio.operator.mul")?.surface?.palette, undefined);
 });
 
 test("parses MIDI Clock messages into clock state authority", () => {
@@ -1357,173 +989,96 @@ test("rejects schema-invalid shader interfaces", () => {
   assert.match(result.errors.join("\n"), /must NOT be valid/);
 });
 
-test("exports builtin node help", () => {
-  const helpIds = builtinNodeHelpV01.map((help) => help.id);
-  const helpNodeIds = builtinManifestV01.nodes;
+test("exports and validates v0.1 graph and node schemas", async () => {
+  assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(nodeDefinitionV01Schema.properties.schemaVersion.const, "0.1.0");
 
-  assert.deepEqual([...helpIds].sort(), [...helpNodeIds].sort());
-  assert.deepEqual(
-    builtinNodeHelpGraphsV01.map((helpGraph) => helpGraph.id).sort(),
-    [...helpNodeIds].sort()
-  );
+  const graph = await readJson("fixtures/graph/v0.1/valid/render-output.graph.json");
+  const node = await readJson("fixtures/node/v0.1/valid/render-clear-color.node.json");
 
-  const valueHelp = getBuiltinNodeHelp("core.float");
-  assert.match(valueHelp?.summary ?? "", /floating-point/);
-  assert.deepEqual(valueHelp?.ports?.map((port) => port.id), ["in", "cold", "value"]);
-  assert.equal(valueHelp?.docsPath, "docs/nodes/core.float.md");
-  assert.equal(valueHelp?.helpGraph, "help/v0.1/nodes/core.float.help.graph.json");
-  assert.equal(valueHelp?.tags.includes("control"), true);
+  assert.equal(validateGraphDocument(graph).ok, true);
+  assert.equal(validateGraphDocumentV01(graph).ok, true);
+  assert.equal(validateNodeDefinition(node).ok, true);
+  assert.equal(validateNodeDefinitionV01(node).ok, true);
 
-  const bangHelp = getBuiltinNodeHelp("core.bang");
-  assert.match(bangHelp?.description ?? "", /event\.bang.*selector/);
-  assert.match(bangHelp?.runtimeBehavior ?? "", /any message/);
-  assert.deepEqual(bangHelp?.ports?.map((port) => port.id), ["in", "out"]);
+  const legacyVersion = await readJson("fixtures/graph/v0.1/invalid/legacy-000-version.graph.json");
+  const legacyInputsOutputs = await readJson("fixtures/unsupported/v0.1/invalid/legacy-inputs-outputs.graph.json");
+  const legacySampledFlow = await readJson("fixtures/unsupported/v0.1/invalid/legacy-sampled-flow.graph.json");
+  const legacyPatch = await readJson("fixtures/unsupported/v0.1/invalid/legacy-graph-patch.patch.json");
 
-  const unresolvedHelp = getBuiltinNodeHelp("core.unresolved-object");
-  assert.match(unresolvedHelp?.summary ?? "", /object text/);
-  assert.match(unresolvedHelp?.runtimeBehavior ?? "", /diagnostics/);
-  assert.deepEqual(unresolvedHelp?.params?.map((param) => param.id), [
-    "objectText",
-    "diagnosticMessage",
-    "requestedKind"
-  ]);
-
-  const shaderHelp = getBuiltinNodeHelp("render.fullscreen-shader");
-  assert.match(shaderHelp?.runtimeBehavior ?? "", /dynamic uniform layout/);
-  assert.equal(shaderHelp?.relatedNodes?.includes("render.output"), true);
-
-  const valueHelpGraph = getBuiltinNodeHelpGraph("core.float");
-  assert.equal(valueHelpGraph?.id, "help-core-float");
-  assert.equal(validateGraphDocument(valueHelpGraph).ok, true);
-  assert.deepEqual(valueHelpGraph?.edges[0], {
-    from: { node: "bang_1", port: "out" },
-    to: { node: "value_1", port: "in" }
-  });
-
-  const shaderHelpGraph = getBuiltinNodeHelpGraph("render.fullscreen-shader");
-  assert.equal(shaderHelpGraph?.nodes.find((node) => node.id === "shader_1")?.ports.map((port) => port.id).join(","), "speed,tint,out");
-  assert.equal(validateGraphDocument(shaderHelpGraph).ok, true);
-
-  assert.equal(getBuiltinNodeHelp("missing.node"), undefined);
-  assert.equal(getBuiltinNodeHelpGraph("missing.node"), undefined);
+  assert.equal(validateGraphDocument(legacyVersion).ok, false);
+  assert.equal(validateGraphDocument(legacyInputsOutputs).ok, false);
+  assert.equal(validateGraphDocument(legacySampledFlow).ok, false);
+  assert.equal(validateGraphDocument(legacyPatch).ok, false);
 });
 
-test("rejects schema-invalid node definitions", () => {
-  const result = validateNodeDefinition({
-    schema: "skenion.node.definition",
-    schemaVersion: "0.1.0"
-  });
+test("exports and validates v0.1 graph fragment contracts", async () => {
+  assert.equal(graphFragmentV01Schema.properties.schema.const, "skenion.graph.fragment");
+  assert.equal(graphFragmentV01Schema.properties.schemaVersion.const, "0.1.0");
 
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /required property/);
-});
-
-test("reports nested schema paths for invalid node definitions", async () => {
-  const definition = await readJson("fixtures/node/v0.1/valid/script-control.node.json");
-  definition.schemaVersion = "0.2.0";
-
-  const result = validateNodeDefinition(definition);
-
-  assert.equal(result.ok, false);
-  assert.equal(result.errors.join("\n").includes("/schemaVersion"), true);
-});
-
-test("rejects output activation in node definitions", async () => {
-  const definition = await readJson("fixtures/node/v0.1/valid/script-control.node.json");
-  definition.ports.find((port) => port.direction === "output").activation = "trigger";
-
-  const result = validateNodeDefinition(definition);
-
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /must not declare activation/);
-});
-
-test("rejects unsupported permissions in node manifests", async () => {
-  const definition = await readJson("fixtures/node/v0.1/invalid/unsupported-permission.node.json");
-  const result = validateNodeDefinition(definition);
-
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /unsupported permission/);
-});
-
-test("exports and validates v0.2 graph and node schemas", async () => {
-  assert.equal(graphV02Schema.properties.schemaVersion.const, "0.2.0");
-  assert.equal(nodeDefinitionV02Schema.properties.schemaVersion.const, "0.2.0");
-
-  const graph = await readJson("fixtures/graph/v0.2/valid/render-output.graph.json");
-  const node = await readJson("fixtures/node/v0.2/valid/render-clear-color.node.json");
-
-  assert.equal(validateGraphDocumentV02(graph).ok, true);
-  assert.equal(validateNodeDefinitionV02(node).ok, true);
-});
-
-test("exports and validates v0.2 graph fragment contracts", async () => {
-  assert.equal(graphFragmentV02Schema.properties.schema.const, "skenion.graph.fragment");
-  assert.equal(graphFragmentV02Schema.properties.schemaVersion.const, "0.2.0");
-
-  const fragment = await readJson("fixtures/graph-fragment/v0.2/valid/internal-edge.fragment.json");
-  const result = validateGraphFragmentV02(fragment);
+  const fragment = await readJson("fixtures/graph-fragment/v0.1/valid/internal-edge.fragment.json");
+  const result = validateGraphFragmentV01(fragment);
   assert.equal(result.ok, true);
   assert.deepEqual(fragment.edges.map((edge) => edge.id), ["edge-source-sink"]);
 
-  const analysis = analyzeGraphFragmentV02(fragment);
+  const analysis = analyzeGraphFragmentV01(fragment);
   assert.equal(analysis.ok, true);
   assert.deepEqual(analysis.omittedEdgeIds, []);
 
-  const outside = await readJson("fixtures/graph-fragment/v0.2/invalid/outside-endpoint.fragment.json");
-  const rejected = validateGraphFragmentV02(outside);
+  const outside = await readJson("fixtures/graph-fragment/v0.1/invalid/outside-endpoint.fragment.json");
+  const rejected = validateGraphFragmentV01(outside);
   assert.equal(rejected.ok, false);
   assert.match(rejected.errors.join("\n"), /fragment-edge-outside-selection/);
 
-  const omitted = analyzeGraphFragmentV02(outside, { outsideEndpointPolicy: "omit" });
+  const omitted = analyzeGraphFragmentV01(outside, { outsideEndpointPolicy: "omit" });
   assert.equal(omitted.ok, true);
   assert.equal(omitted.diagnostics[0].severity, "warning");
   assert.deepEqual(omitted.omittedEdgeIds, ["edge-to-outside"]);
 
   const schemaInvalid = structuredClone(fragment);
   delete schemaInvalid.nodes;
-  assert.equal(validateGraphFragmentV02(schemaInvalid).ok, false);
+  assert.equal(validateGraphFragmentV01(schemaInvalid).ok, false);
 
   const duplicateNode = structuredClone(fragment);
   duplicateNode.nodes.push(structuredClone(duplicateNode.nodes[0]));
-  assert.match(validateGraphFragmentV02(duplicateNode).errors.join("\n"), /duplicate-node-id/);
+  assert.match(validateGraphFragmentV01(duplicateNode).errors.join("\n"), /duplicate-node-id/);
 
   const duplicatePort = structuredClone(fragment);
   duplicatePort.nodes[0].ports.push(structuredClone(duplicatePort.nodes[0].ports[0]));
-  assert.match(validateGraphFragmentV02(duplicatePort).errors.join("\n"), /duplicate-port-id/);
+  assert.match(validateGraphFragmentV01(duplicatePort).errors.join("\n"), /duplicate-port-id/);
 
   const duplicateEdge = structuredClone(fragment);
   duplicateEdge.edges.push(structuredClone(duplicateEdge.edges[0]));
-  assert.match(validateGraphFragmentV02(duplicateEdge).errors.join("\n"), /duplicate-edge-id/);
+  assert.match(validateGraphFragmentV01(duplicateEdge).errors.join("\n"), /duplicate-edge-id/);
 
   const missingSource = structuredClone(fragment);
   missingSource.edges[0].source.portId = "missing";
-  assert.match(validateGraphFragmentV02(missingSource).errors.join("\n"), /missing-source-port/);
+  assert.match(validateGraphFragmentV01(missingSource).errors.join("\n"), /missing-source-port/);
 
   const missingTarget = structuredClone(fragment);
   missingTarget.edges[0].target.portId = "missing";
-  assert.match(validateGraphFragmentV02(missingTarget).errors.join("\n"), /missing-target-port/);
+  assert.match(validateGraphFragmentV01(missingTarget).errors.join("\n"), /missing-target-port/);
 
   const badSourceDirection = structuredClone(fragment);
   badSourceDirection.nodes[0].ports[0].direction = "input";
-  assert.match(validateGraphFragmentV02(badSourceDirection).errors.join("\n"), /invalid-source-direction/);
+  assert.match(validateGraphFragmentV01(badSourceDirection).errors.join("\n"), /invalid-source-direction/);
 
   const badTargetDirection = structuredClone(fragment);
   badTargetDirection.nodes[1].ports[0].direction = "output";
-  assert.match(validateGraphFragmentV02(badTargetDirection).errors.join("\n"), /invalid-target-direction/);
+  assert.match(validateGraphFragmentV01(badTargetDirection).errors.join("\n"), /invalid-target-direction/);
 
   const incompatible = structuredClone(fragment);
   incompatible.nodes[1].ports[0].type = "string";
-  assert.match(validateGraphFragmentV02(incompatible).errors.join("\n"), /incompatible-type/);
+  assert.match(validateGraphFragmentV01(incompatible).errors.join("\n"), /incompatible-type/);
 
   const acceptsList = structuredClone(fragment);
   acceptsList.nodes[1].ports[0].type = "number.int";
   acceptsList.nodes[1].ports[0].accepts = ["number.float"];
-  assert.equal(validateGraphFragmentV02(acceptsList).ok, true);
+  assert.equal(validateGraphFragmentV01(acceptsList).ok, true);
 
   const messageAny = structuredClone(fragment);
   messageAny.nodes[1].ports[0].type = "message.any";
-  assert.equal(validateGraphFragmentV02(messageAny).ok, true);
+  assert.equal(validateGraphFragmentV01(messageAny).ok, true);
 });
 
 test("validates session-addressed paste operation contracts", async () => {
@@ -1581,7 +1136,7 @@ test("validates session-addressed paste operation contracts", async () => {
   assert.equal(validatePasteGraphFragmentRequest(invalidRequest).ok, false);
   assert.equal(isPasteGraphFragmentRequest(invalidRequest), false);
 
-  const outsideFragment = await readJson("fixtures/graph-fragment/v0.2/invalid/outside-endpoint.fragment.json");
+  const outsideFragment = await readJson("fixtures/graph-fragment/v0.1/invalid/outside-endpoint.fragment.json");
   const defaultOutsideRequest = structuredClone(root.request);
   defaultOutsideRequest.fragment = outsideFragment;
   assert.equal(validatePasteGraphFragmentRequest(defaultOutsideRequest).ok, false);
@@ -1657,7 +1212,7 @@ test("validates realtime collaboration operation, presence, causality, and undo 
 
   const invalidPastePayload = await readJson("fixtures/runtime-collaboration/v0/valid/paste-fragment.operation.json");
   invalidPastePayload.payload.request.fragment = await readJson(
-    "fixtures/graph-fragment/v0.2/invalid/outside-endpoint.fragment.json"
+    "fixtures/graph-fragment/v0.1/invalid/outside-endpoint.fragment.json"
   );
   const invalidPastePayloadResult = validateRuntimeCollaborationOperationEnvelope(invalidPastePayload);
   assert.equal(invalidPastePayloadResult.ok, false);
@@ -1895,52 +1450,53 @@ test("runtime session events are session-addressed", () => {
   assert.equal(isRuntimeSessionEvent(missingSession), false);
 });
 
-test("exports and validates v0.2 project patch library contracts", async () => {
-  assert.equal(projectV02Schema.properties.schemaVersion.const, "0.2.0");
-  assert.equal(projectV02Schema.properties.patchLibrary.items.$ref, "#/$defs/patchDefinition");
-  assert.equal(projectV02Schema.$defs.patchDefinition.properties.contract, undefined);
+test("exports and validates v0.1 project patch library contracts", async () => {
+  assert.equal(projectV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(projectV01Schema.properties.patchLibrary.items.$ref, "#/$defs/patchDefinition");
+  assert.equal(projectV01Schema.$defs.patchDefinition.properties.contract, undefined);
 
-  for (const fixture of await fixtureFiles("fixtures/project/v0.2/valid")) {
+  for (const fixture of await fixtureFiles("fixtures/project/v0.1/valid")) {
     const project = await readJson(fixture);
-    const result = validateProjectDocumentV02(project);
+    const result = validateProjectDocumentV01(project);
+    assert.equal(validateProjectDocument(project).ok, true, fixture);
     assert.equal(result.ok, true, fixture);
-    assert.equal(validatePatchDefinitionV02(project.patchLibrary[0]).ok, true, fixture);
+    assert.equal(validatePatchDefinitionV01(project.patchLibrary[0]).ok, true, fixture);
   }
 
-  for (const fixture of await fixtureFiles("fixtures/project/v0.2/invalid")) {
-    const result = validateProjectDocumentV02(await readJson(fixture));
+  for (const fixture of await fixtureFiles("fixtures/project/v0.1/invalid")) {
+    const result = validateProjectDocumentV01(await readJson(fixture));
     assert.equal(result.ok, false, fixture);
     assert.match(result.errors.join("\n"), /duplicate boundary port id/, fixture);
   }
 
-  const validProject = await readJson("fixtures/project/v0.2/valid/input-only-patch.project.json");
+  const validProject = await readJson("fixtures/project/v0.1/valid/input-only-patch.project.json");
   const schemaInvalidProject = structuredClone(validProject);
   delete schemaInvalidProject.patchLibrary;
-  const schemaInvalidProjectResult = validateProjectDocumentV02(schemaInvalidProject);
+  const schemaInvalidProjectResult = validateProjectDocumentV01(schemaInvalidProject);
   assert.equal(schemaInvalidProjectResult.ok, false);
   assert.match(schemaInvalidProjectResult.errors.join("\n"), /patchLibrary/);
 
   const schemaInvalidPatch = structuredClone(validProject.patchLibrary[0]);
   schemaInvalidPatch.id = "";
-  const schemaInvalidPatchResult = validatePatchDefinitionV02(schemaInvalidPatch);
+  const schemaInvalidPatchResult = validatePatchDefinitionV01(schemaInvalidPatch);
   assert.equal(schemaInvalidPatchResult.ok, false);
   assert.match(schemaInvalidPatchResult.errors.join("\n"), /must NOT have fewer than 1 characters/);
 
-  const semanticInvalidProject = await readJson("fixtures/project/v0.2/invalid/duplicate-boundary-port-id.project.json");
-  const semanticInvalidPatchResult = validatePatchDefinitionV02(semanticInvalidProject.patchLibrary[0]);
+  const semanticInvalidProject = await readJson("fixtures/project/v0.1/invalid/duplicate-boundary-port-id.project.json");
+  const semanticInvalidPatchResult = validatePatchDefinitionV01(semanticInvalidProject.patchLibrary[0]);
   assert.equal(semanticInvalidPatchResult.ok, false);
   assert.match(semanticInvalidPatchResult.errors.join("\n"), /duplicate boundary port id/);
 
   const graphInvalidPatch = structuredClone(validProject.patchLibrary[0]);
   graphInvalidPatch.graph.nodes.push(structuredClone(graphInvalidPatch.graph.nodes[0]));
-  const graphInvalidPatchResult = validatePatchDefinitionV02(graphInvalidPatch);
+  const graphInvalidPatchResult = validatePatchDefinitionV01(graphInvalidPatch);
   assert.equal(graphInvalidPatchResult.ok, false);
   assert.match(graphInvalidPatchResult.errors.join("\n"), /duplicate node id/);
 });
 
-test("derives v0.2 patch contracts from core inlet and outlet boundary nodes", async () => {
-  const inputProject = await readJson("fixtures/project/v0.2/valid/input-only-patch.project.json");
-  const inputContract = derivePatchContractV02(inputProject.patchLibrary[0]);
+test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", async () => {
+  const inputProject = await readJson("fixtures/project/v0.1/valid/input-only-patch.project.json");
+  const inputContract = derivePatchContractV01(inputProject.patchLibrary[0]);
   assert.deepEqual(inputContract.ports.map((port) => port.id), ["frequency"]);
   assert.equal(inputContract.ports[0].direction, "input");
   assert.equal(inputContract.ports[0].boundaryNodeId, "frequency_in");
@@ -1949,15 +1505,15 @@ test("derives v0.2 patch contracts from core inlet and outlet boundary nodes", a
   assert.equal(inputContract.ports[0].description, "Frequency value entering the patch.");
   assert.equal("tooltip" in inputContract.ports[0], false);
 
-  const outputProject = await readJson("fixtures/project/v0.2/valid/output-only-patch.project.json");
-  const outputContract = derivePatchContractsV02(outputProject)[0];
+  const outputProject = await readJson("fixtures/project/v0.1/valid/output-only-patch.project.json");
+  const outputContract = derivePatchContractsV01(outputProject)[0];
   assert.deepEqual(outputContract.ports.map((port) => `${port.id}:${port.direction}`), [
     "amplitude:output"
   ]);
   assert.equal(outputContract.ports[0].description, "Amplitude value leaving the patch.");
 
-  const boundaryProject = await readJson("fixtures/project/v0.2/valid/n-m-boundary-patch.project.json");
-  const boundaryContract = derivePatchContractV02(boundaryProject.patchLibrary[0]);
+  const boundaryProject = await readJson("fixtures/project/v0.1/valid/n-m-boundary-patch.project.json");
+  const boundaryContract = derivePatchContractV01(boundaryProject.patchLibrary[0]);
   assert.deepEqual(boundaryContract.ports.map((port) => `${port.id}:${port.direction}`), [
     "left:input",
     "right:input",
@@ -1965,8 +1521,8 @@ test("derives v0.2 patch contracts from core inlet and outlet boundary nodes", a
     "difference:output"
   ]);
 
-  const recursiveProject = await readJson("fixtures/project/v0.2/valid/recursive-reference.project.json");
-  const recursiveContract = derivePatchContractV02(recursiveProject.patchLibrary[0]);
+  const recursiveProject = await readJson("fixtures/project/v0.1/valid/recursive-reference.project.json");
+  const recursiveContract = derivePatchContractV01(recursiveProject.patchLibrary[0]);
   assert.deepEqual(recursiveContract.ports.map((port) => port.id), ["value", "result"]);
 
   const fallbackPatch = {
@@ -1974,14 +1530,14 @@ test("derives v0.2 patch contracts from core inlet and outlet boundary nodes", a
     revision: "1",
     graph: {
       schema: "skenion.graph",
-      schemaVersion: "0.2.0",
+      schemaVersion: "0.1.0",
       id: "fallback-boundary-graph",
       revision: "1",
       nodes: [
         {
           id: "single_boundary",
           kind: "core.inlet",
-          kindVersion: "0.2.0",
+          kindVersion: "0.1.0",
           params: {},
           ports: [
             { id: "out", direction: "output", type: "number.float", rate: "control" }
@@ -1990,7 +1546,7 @@ test("derives v0.2 patch contracts from core inlet and outlet boundary nodes", a
         {
           id: "multi_boundary",
           kind: "core.outlet",
-          kindVersion: "0.2.0",
+          kindVersion: "0.1.0",
           params: {},
           ports: [
             { id: "left", direction: "input", type: "number.float", rate: "control" },
@@ -2001,7 +1557,7 @@ test("derives v0.2 patch contracts from core inlet and outlet boundary nodes", a
       edges: []
     }
   };
-  const fallbackContract = derivePatchContractV02(fallbackPatch);
+  const fallbackContract = derivePatchContractV01(fallbackPatch);
   assert.deepEqual(fallbackContract.ports.map((port) => `${port.id}:${port.direction}`), [
     "single_boundary:input",
     "left:output",
@@ -2009,48 +1565,48 @@ test("derives v0.2 patch contracts from core inlet and outlet boundary nodes", a
   ]);
 });
 
-test("v0.2 validates fan-out, fan-in, accepts, and feedback fixtures", async () => {
+test("v0.1 validates fan-out, fan-in, accepts, and feedback fixtures", async () => {
   for (const fixture of [
-    "fixtures/graph/v0.2/valid/zero-port-node.graph.json",
-    "fixtures/graph/v0.2/valid/n-input-output-node.graph.json",
-    "fixtures/graph/v0.2/valid/source-fan-out.graph.json",
-    "fixtures/graph/v0.2/valid/ordered-event-fan-in.graph.json",
-    "fixtures/graph/v0.2/valid/audio-mix-fan-in.graph.json",
-    "fixtures/graph/v0.2/valid/render-frame-feedback.graph.json"
+    "fixtures/graph/v0.1/valid/zero-port-node.graph.json",
+    "fixtures/graph/v0.1/valid/n-input-output-node.graph.json",
+    "fixtures/graph/v0.1/valid/source-fan-out.graph.json",
+    "fixtures/graph/v0.1/valid/ordered-event-fan-in.graph.json",
+    "fixtures/graph/v0.1/valid/audio-mix-fan-in.graph.json",
+    "fixtures/graph/v0.1/valid/render-frame-feedback.graph.json"
   ]) {
-    const result = validateGraphDocumentV02(await readJson(fixture));
+    const result = validateGraphDocumentV01(await readJson(fixture));
     assert.equal(result.ok, true, fixture);
   }
 
-  const feedbackGraph = await readJson("fixtures/graph/v0.2/valid/render-frame-feedback.graph.json");
-  const feedbackAnalysis = analyzeGraphDocumentV02(feedbackGraph);
+  const feedbackGraph = await readJson("fixtures/graph/v0.1/valid/render-frame-feedback.graph.json");
+  const feedbackAnalysis = analyzeGraphDocumentV01(feedbackGraph);
   assert.equal(feedbackAnalysis.ok, true);
   assert.equal(feedbackAnalysis.cycles[0].classification, "valid-feedback");
   assert.match(feedbackAnalysis.cycles[0].message, /render-frame|explicit boundary/);
 
   feedbackGraph.edges[0].feedback.boundary = "same-turn";
-  const riskyAnalysis = analyzeGraphDocumentV02(feedbackGraph);
+  const riskyAnalysis = analyzeGraphDocumentV01(feedbackGraph);
   assert.equal(riskyAnalysis.ok, true);
   assert.equal(riskyAnalysis.diagnostics[0].severity, "warning");
   assert.equal(riskyAnalysis.cycles[0].classification, "risky-feedback");
 
   delete feedbackGraph.edges[0].feedback;
-  const invalidCycle = analyzeGraphDocumentV02(feedbackGraph);
+  const invalidCycle = analyzeGraphDocumentV01(feedbackGraph);
   assert.equal(invalidCycle.ok, false);
   assert.equal(invalidCycle.cycles[0].classification, "invalid-cycle");
 });
 
-test("v0.2 message.any inlets accept bang events", () => {
+test("v0.1 message.any inlets accept bang events", () => {
   const graph = {
     schema: "skenion.graph",
-    schemaVersion: "0.2.0",
+    schemaVersion: "0.1.0",
     id: "message-any-bang",
     revision: "1",
     nodes: [
       {
         id: "button",
         kind: "core.bang",
-        kindVersion: "0.2.0",
+        kindVersion: "0.1.0",
         params: {},
         ports: [
           { id: "out", direction: "output", type: "event.bang", rate: "event" }
@@ -2059,7 +1615,7 @@ test("v0.2 message.any inlets accept bang events", () => {
       {
         id: "message",
         kind: "core.message",
-        kindVersion: "0.2.0",
+        kindVersion: "0.1.0",
         params: {},
         ports: [
           { id: "in", direction: "input", type: "message.any", rate: "event", triggerMode: "trigger" }
@@ -2075,47 +1631,47 @@ test("v0.2 message.any inlets accept bang events", () => {
     ]
   };
 
-  assert.equal(validateGraphDocumentV02(graph).ok, true);
+  assert.equal(validateGraphDocumentV01(graph).ok, true);
 });
 
-test("v0.2 rejects invalid direction fan-in and algebraic-loop fixtures", async () => {
+test("v0.1 rejects invalid direction fan-in and algebraic-loop fixtures", async () => {
   const cases = [
-    ["fixtures/graph/v0.2/invalid/input-to-input-edge.graph.json", /invalid-source-direction/],
-    ["fixtures/graph/v0.2/invalid/output-to-output-edge.graph.json", /invalid-target-direction/],
-    ["fixtures/graph/v0.2/invalid/fan-in-without-merge-policy.graph.json", /fan-in-without-merge-policy/],
-    ["fixtures/graph/v0.2/invalid/render-input-fan-in-default.graph.json", /fan-in-cardinality/],
-    ["fixtures/graph/v0.2/invalid/ambiguous-value-algebraic-loop.graph.json", /ambiguous-algebraic-loop/]
+    ["fixtures/graph/v0.1/invalid/input-to-input-edge.graph.json", /invalid-source-direction/],
+    ["fixtures/graph/v0.1/invalid/output-to-output-edge.graph.json", /invalid-target-direction/],
+    ["fixtures/graph/v0.1/invalid/fan-in-without-merge-policy.graph.json", /fan-in-without-merge-policy/],
+    ["fixtures/graph/v0.1/invalid/render-input-fan-in-default.graph.json", /fan-in-cardinality/],
+    ["fixtures/graph/v0.1/invalid/ambiguous-value-algebraic-loop.graph.json", /ambiguous-algebraic-loop/]
   ];
 
   for (const [fixture, expected] of cases) {
-    const result = validateGraphDocumentV02(await readJson(fixture));
+    const result = validateGraphDocumentV01(await readJson(fixture));
     assert.equal(result.ok, false, fixture);
     assert.match(result.errors.join("\n"), expected, fixture);
   }
 
-  const controlLoop = await readJson("fixtures/graph/v0.2/invalid/ambiguous-value-algebraic-loop.graph.json");
+  const controlLoop = await readJson("fixtures/graph/v0.1/invalid/ambiguous-value-algebraic-loop.graph.json");
   for (const node of controlLoop.nodes) {
     for (const port of node.ports) {
       port.type = "control.number";
     }
   }
-  const controlLoopResult = validateGraphDocumentV02(controlLoop);
+  const controlLoopResult = validateGraphDocumentV01(controlLoop);
   assert.equal(controlLoopResult.ok, false);
   assert.match(controlLoopResult.errors.join("\n"), /ambiguous-algebraic-loop/);
 
-  const missingPortCycle = await readJson("fixtures/graph/v0.2/valid/zero-port-node.graph.json");
+  const missingPortCycle = await readJson("fixtures/graph/v0.1/valid/zero-port-node.graph.json");
   missingPortCycle.edges.push({
     id: "edge_missing_cycle",
     source: { nodeId: "note_1", portId: "missing_out" },
     target: { nodeId: "note_1", portId: "missing_in" }
   });
-  const missingPortCycleAnalysis = analyzeGraphDocumentV02(missingPortCycle);
+  const missingPortCycleAnalysis = analyzeGraphDocumentV01(missingPortCycle);
   assert.equal(missingPortCycleAnalysis.ok, false);
   assert.equal(missingPortCycleAnalysis.cycles[0].classification, "invalid-cycle");
 });
 
-test("v0.2 reports detailed semantic diagnostics", async () => {
-  const graph = await readJson("fixtures/graph/v0.2/valid/source-fan-out.graph.json");
+test("v0.1 reports detailed semantic diagnostics", async () => {
+  const graph = await readJson("fixtures/graph/v0.1/valid/source-fan-out.graph.json");
   graph.nodes[0].ports[0].fanOutPolicy = "forbid";
   graph.nodes[1].ports[0].required = true;
   graph.nodes[2].ports[0].type = "render.frame";
@@ -2147,7 +1703,7 @@ test("v0.2 reports detailed semantic diagnostics", async () => {
     ...graph.nodes[1].ports[0]
   });
 
-  const analysis = analyzeGraphDocumentV02(graph);
+  const analysis = analyzeGraphDocumentV01(graph);
 
   assert.equal(analysis.ok, false);
   assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /missing-source-port/);
@@ -2159,40 +1715,40 @@ test("v0.2 reports detailed semantic diagnostics", async () => {
   assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /incompatible-type/);
   assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /fan-out-forbidden/);
 
-  const acceptingGraph = await readJson("fixtures/graph/v0.2/valid/render-output.graph.json");
+  const acceptingGraph = await readJson("fixtures/graph/v0.1/valid/render-output.graph.json");
   acceptingGraph.nodes[1].ports[0].accepts = ["gpu.texture2d"];
   acceptingGraph.nodes[0].ports[0].type = "gpu.texture2d";
   acceptingGraph.edges[0].resolvedType = "gpu.texture2d";
-  assert.equal(validateGraphDocumentV02(acceptingGraph).ok, true);
+  assert.equal(validateGraphDocumentV01(acceptingGraph).ok, true);
 
-  const unlimitedGraph = await readJson("fixtures/graph/v0.2/invalid/render-input-fan-in-default.graph.json");
+  const unlimitedGraph = await readJson("fixtures/graph/v0.1/invalid/render-input-fan-in-default.graph.json");
   unlimitedGraph.nodes[2].ports[0].maxConnections = null;
   unlimitedGraph.nodes[2].ports[0].mergePolicy = "array";
-  assert.equal(validateGraphDocumentV02(unlimitedGraph).ok, true);
+  assert.equal(validateGraphDocumentV01(unlimitedGraph).ok, true);
 
-  const requiredGraph = await readJson("fixtures/graph/v0.2/valid/zero-port-node.graph.json");
+  const requiredGraph = await readJson("fixtures/graph/v0.1/valid/zero-port-node.graph.json");
   requiredGraph.nodes[0].ports.push({
     id: "in",
     direction: "input",
     type: "value.number",
     required: true
   });
-  const requiredResult = validateGraphDocumentV02(requiredGraph);
+  const requiredResult = validateGraphDocumentV01(requiredGraph);
   assert.equal(requiredResult.ok, false);
   assert.match(requiredResult.errors.join("\n"), /missing-required-input/);
 });
 
-test("v0.2 rejects schema and node-definition semantic failures", async () => {
-  assert.equal(validateGraphDocumentV02({
+test("v0.1 rejects schema and node-definition semantic failures", async () => {
+  assert.equal(validateGraphDocumentV01({
     schema: "skenion.graph",
-    schemaVersion: "0.2.0"
+    schemaVersion: "0.1.0"
   }).ok, false);
-  assert.equal(validateNodeDefinitionV02({
+  assert.equal(validateNodeDefinitionV01({
     schema: "skenion.node.definition",
-    schemaVersion: "0.2.0"
+    schemaVersion: "0.1.0"
   }).ok, false);
 
-  const badGroupGraph = await readJson("fixtures/graph/v0.2/valid/zero-port-node.graph.json");
+  const badGroupGraph = await readJson("fixtures/graph/v0.1/valid/zero-port-node.graph.json");
   badGroupGraph.nodes[0].portGroups = [
     {
       id: "bad",
@@ -2202,870 +1758,25 @@ test("v0.2 rejects schema and node-definition semantic failures", async () => {
       maxPorts: 1
     }
   ];
-  const badGroupResult = validateGraphDocumentV02(badGroupGraph);
+  const badGroupResult = validateGraphDocumentV01(badGroupGraph);
   assert.equal(badGroupResult.ok, false);
   assert.match(badGroupResult.errors.join("\n"), /invalid-port-group/);
 
-  const invalidNode = await readJson("fixtures/node/v0.2/invalid/unsupported-permission.node.json");
-  const invalidNodeResult = validateNodeDefinitionV02(invalidNode);
+  const invalidNode = await readJson("fixtures/node/v0.1/invalid/unsupported-permission.node.json");
+  const invalidNodeResult = validateNodeDefinitionV01(invalidNode);
   assert.equal(invalidNodeResult.ok, false);
   assert.match(invalidNodeResult.errors.join("\n"), /unsupported permission/);
 
-  const duplicatePortNode = await readJson("fixtures/node/v0.2/valid/render-clear-color.node.json");
+  const duplicatePortNode = await readJson("fixtures/node/v0.1/valid/render-clear-color.node.json");
   duplicatePortNode.ports.push({ ...duplicatePortNode.ports[0] });
-  const duplicatePortResult = validateNodeDefinitionV02(duplicatePortNode);
+  const duplicatePortResult = validateNodeDefinitionV01(duplicatePortNode);
   assert.equal(duplicatePortResult.ok, false);
   assert.match(duplicatePortResult.errors.join("\n"), /duplicate port id/);
 
-  const badNodeGroup = await readJson("fixtures/node/v0.2/valid/dynamic-input-group.node.json");
-  badNodeGroup.portGroups[0].maxPorts = 0;
-  const badNodeGroupResult = validateNodeDefinitionV02(badNodeGroup);
+  const badNodeGroup = await readJson("fixtures/node/v0.1/valid/dynamic-input-group.node.json");
+  badNodeGroup.portGroups[0].minPorts = 2;
+  badNodeGroup.portGroups[0].maxPorts = 1;
+  const badNodeGroupResult = validateNodeDefinitionV01(badNodeGroup);
   assert.equal(badNodeGroupResult.ok, false);
   assert.match(badNodeGroupResult.errors.join("\n"), /maxPorts/);
-});
-
-test("validates v0.1 graph patch fixtures", async () => {
-  const patch = await readJson("fixtures/graph-patch/v0.1/valid/set-node-param.patch.json");
-  const result = validateGraphPatch(patch);
-
-  assert.equal(result.ok, true);
-});
-
-test("rejects schema-invalid graph patches", async () => {
-  const patch = await readJson("fixtures/graph-patch/v0.1/invalid/unsupported-op.patch.json");
-  const result = validateGraphPatch(patch);
-
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /must match exactly one schema/);
-});
-
-test("validates graph patch event and history fixtures", async () => {
-  const event = await readJson("fixtures/graph-patch-event/v0.1/valid/apply-event.json");
-  const history = await readJson("fixtures/graph-patch-history/v0.1/valid/history-with-events.json");
-
-  assert.equal(validateGraphPatchEvent(event).ok, true);
-  assert.equal(validateGraphPatchHistory(history).ok, true);
-});
-
-test("rejects schema-invalid graph patch events and histories", async () => {
-  const event = await readJson("fixtures/graph-patch-event/v0.1/invalid/invalid-kind.json");
-  const history = await readJson("fixtures/graph-patch-history/v0.1/valid/empty-history.json");
-  history.events.push({ schema: "skenion.graph.patch.event", schemaVersion: "0.1.0" });
-
-  const eventResult = validateGraphPatchEvent(event);
-  const historyResult = validateGraphPatchHistory(history);
-
-  assert.equal(eventResult.ok, false);
-  assert.match(eventResult.errors.join("\n"), /allowed values/);
-  assert.equal(historyResult.ok, false);
-  assert.match(historyResult.errors.join("\n"), /required property/);
-});
-
-test("applies graph patches atomically and updates revision", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-  const patch = {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_001",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "setNodeParam",
-        nodeId: "slider_1",
-        key: "value",
-        value: 0.75
-      }
-    ]
-  };
-
-  const result = applyGraphPatch(graph, patch, { nextRevision: "2" });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.graph.revision, "2");
-  assert.equal(result.graph.nodes[0].params.value, 0.75);
-  assert.equal(graph.revision, "1");
-  assert.equal(graph.nodes[0].params.value, 0.5);
-});
-
-test("removeNode removes incident edges", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-
-  const result = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_remove",
-    baseRevision: "1",
-    ops: [{ op: "removeNode", nodeId: "slider_1" }]
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.graph.revision, "2");
-  assert.equal(result.graph.edges.length, 0);
-  assert.equal(result.graph.nodes.some((node) => node.id === "slider_1"), false);
-});
-
-test("setNodeParams addNode and removeNode apply in order", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-
-  const result = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_ordered",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "addNode",
-        node: {
-          id: "value_2",
-          kind: "core.float",
-          kindVersion: "0.1.0",
-          params: {},
-          ports: []
-        }
-      },
-      { op: "setNodeParams", nodeId: "value_2", params: { value: 1 } },
-      { op: "removeNode", nodeId: "value_2" }
-    ]
-  }, { nextRevision: "accepted" });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.graph.revision, "accepted");
-  assert.equal(result.graph.nodes.some((node) => node.id === "value_2"), false);
-});
-
-test("rejects graph patch conflicts duplicate edges and invalid resulting graphs", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-
-  const conflict = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_conflict",
-    baseRevision: "0",
-    ops: []
-  });
-  assert.equal(conflict.ok, false);
-  assert.match(conflict.errors.join("\n"), /baseRevision 0/);
-
-  const duplicateEdge = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_duplicate_edge",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "addEdge",
-        edge: graph.edges[0]
-      }
-    ]
-  });
-  assert.equal(duplicateEdge.ok, false);
-  assert.match(duplicateEdge.errors.join("\n"), /already exists/);
-
-  const invalidEdge = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_invalid_edge",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "addEdge",
-        edge: {
-          from: { node: "slider_1", port: "out" },
-          to: { node: "missing", port: "value" }
-        }
-      }
-    ]
-  });
-  assert.equal(invalidEdge.ok, false);
-  assert.match(invalidEdge.errors.join("\n"), /missing target port/);
-});
-
-test("rejects missing patch targets and absent edges", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-
-  const missingNode = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_missing_node",
-    baseRevision: "1",
-    ops: [{ op: "setNodeParam", nodeId: "missing", key: "value", value: 1 }]
-  });
-  assert.equal(missingNode.ok, false);
-  assert.match(missingNode.errors.join("\n"), /node missing does not exist/);
-
-  const missingEdge = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_missing_edge",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "removeEdge",
-        edge: {
-          from: { node: "slider_1", port: "out" },
-          to: { node: "blur_1", port: "missing" }
-        }
-      }
-    ]
-  });
-  assert.equal(missingEdge.ok, false);
-  assert.match(missingEdge.errors.join("\n"), /does not exist/);
-});
-
-test("rejects structurally invalid patches and missing add or remove targets", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-
-  const invalidPatch = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "invalid",
-    baseRevision: "1",
-    ops: [{ op: "moveNode", nodeId: "slider_1" }]
-  });
-  assert.equal(invalidPatch.ok, false);
-  assert.match(invalidPatch.errors.join("\n"), /must match exactly one schema/);
-
-  const duplicateNode = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "duplicate_node",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "addNode",
-        node: graph.nodes[0]
-      }
-    ]
-  });
-  assert.equal(duplicateNode.ok, false);
-  assert.match(duplicateNode.errors.join("\n"), /node slider_1 already exists/);
-
-  const missingRemoveNode = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "remove_missing_node",
-    baseRevision: "1",
-    ops: [{ op: "removeNode", nodeId: "missing" }]
-  });
-  assert.equal(missingRemoveNode.ok, false);
-  assert.match(missingRemoveNode.errors.join("\n"), /node missing does not exist/);
-
-  const missingSetParamsNode = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "set_params_missing_node",
-    baseRevision: "1",
-    ops: [{ op: "setNodeParams", nodeId: "missing", params: {} }]
-  });
-  assert.equal(missingSetParamsNode.ok, false);
-  assert.match(missingSetParamsNode.errors.join("\n"), /node missing does not exist/);
-});
-
-test("replaceNodeInterface updates ports and removes invalid incident edges", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-  graph.nodes.push(
-    {
-      id: "source_2",
-      kind: "core.float",
-      kindVersion: "0.1.0",
-      params: {},
-      ports: [
-        {
-          id: "value",
-          direction: "output",
-          type: { flow: "value", dataKind: "number.float" }
-        }
-      ]
-    },
-    {
-      id: "target_2",
-      kind: "core.preview",
-      kindVersion: "0.1.0",
-      params: {},
-      ports: [
-        {
-          id: "value",
-          direction: "input",
-          type: { flow: "value", dataKind: "number.float" },
-          required: false,
-          activation: "latched"
-        }
-      ]
-    }
-  );
-  graph.edges.push({
-    from: { node: "source_2", port: "value" },
-    to: { node: "target_2", port: "value" }
-  });
-
-  const result = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "replace_interface",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "replaceNodeInterface",
-        nodeId: "blur_1",
-        edgePolicy: "removeInvalidEdges",
-        ports: [
-          {
-            id: "enabled",
-            direction: "input",
-            label: "Enabled",
-            type: { flow: "value", dataKind: "boolean" },
-            required: false,
-            activation: "latched"
-          }
-        ]
-      }
-    ]
-  }, { nextRevision: "2" });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.graph.nodes.find((node) => node.id === "blur_1").ports[0].id, "enabled");
-  assert.equal(result.graph.edges.length, 1);
-  assert.equal(result.graph.edges[0].from.node, "source_2");
-});
-
-test("replaceNodeInterface keeps compatible edges and inverts removed edges", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-  const noFormatResult = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "replace_interface_no_format",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "replaceNodeInterface",
-        nodeId: "blur_1",
-        edgePolicy: "removeInvalidEdges",
-        ports: [
-          {
-            id: "radius",
-            direction: "input",
-            label: "Radius",
-            type: { flow: "value", dataKind: "number.float" },
-            required: false,
-            activation: "latched"
-          }
-        ]
-      }
-    ]
-  }, { nextRevision: "2" });
-  assert.equal(noFormatResult.ok, true);
-  assert.equal(noFormatResult.graph.edges.length, 1);
-
-  const scalarSourceFormatGraph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  scalarSourceFormatGraph.revision = "1";
-  scalarSourceFormatGraph.nodes[0].ports[0].type.format = "f32";
-  const scalarSourceFormatResult = applyGraphPatch(scalarSourceFormatGraph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "replace_interface_scalar_source_format",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "replaceNodeInterface",
-        nodeId: "blur_1",
-        edgePolicy: "removeInvalidEdges",
-        ports: [
-          {
-            id: "radius",
-            direction: "input",
-            label: "Radius",
-            type: { flow: "value", dataKind: "number.float", format: ["f32"] },
-            required: false,
-            activation: "latched"
-          }
-        ]
-      }
-    ]
-  }, { nextRevision: "2" });
-  assert.equal(scalarSourceFormatResult.ok, true);
-  assert.equal(scalarSourceFormatResult.graph.edges.length, 1);
-
-  const formatMismatchGraph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  formatMismatchGraph.revision = "1";
-  formatMismatchGraph.nodes[0].ports[0].type.format = ["f16"];
-  const formatMismatchResult = applyGraphPatch(formatMismatchGraph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "replace_interface_format_mismatch",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "replaceNodeInterface",
-        nodeId: "blur_1",
-        edgePolicy: "removeInvalidEdges",
-        ports: [
-          {
-            id: "radius",
-            direction: "input",
-            label: "Radius",
-            type: { flow: "value", dataKind: "number.float", format: "f32" },
-            required: false,
-            activation: "latched"
-          }
-        ]
-      }
-    ]
-  }, { nextRevision: "2" });
-  assert.equal(formatMismatchResult.ok, true);
-  assert.equal(formatMismatchResult.graph.edges.length, 1);
-
-  graph.nodes[0].ports[0].type.format = ["f32"];
-  const replacementPorts = [
-    {
-      id: "radius",
-      direction: "input",
-      label: "Radius",
-      type: { flow: "value", dataKind: "number.float", format: ["f32"] },
-      required: false,
-      activation: "latched"
-    },
-    {
-      id: "enabled",
-      direction: "input",
-      label: "Enabled",
-      type: { flow: "value", dataKind: "boolean" },
-      required: false,
-      activation: "latched"
-    }
-  ];
-  const patch = {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "replace_interface",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "replaceNodeInterface",
-        nodeId: "blur_1",
-        edgePolicy: "removeInvalidEdges",
-        ports: replacementPorts
-      }
-    ]
-  };
-
-  const result = applyGraphPatch(graph, patch, { nextRevision: "2" });
-  assert.equal(result.ok, true);
-  assert.equal(result.graph.edges.length, 1);
-
-  const inverse = invertGraphPatch(graph, patch);
-  assert.equal(inverse.ok, true);
-  assert.deepEqual(inverse.inversePatch.ops[0].ports.map((port) => port.id), ["radius"]);
-
-  const removedEdgePatch = {
-    ...patch,
-    ops: [
-      {
-        ...patch.ops[0],
-        ports: [
-          {
-            id: "enabled",
-            direction: "input",
-            type: { flow: "value", dataKind: "boolean" },
-            required: false,
-            activation: "latched"
-          }
-        ]
-      }
-    ]
-  };
-  const inverseWithRemovedEdge = invertGraphPatch(graph, removedEdgePatch);
-  assert.equal(inverseWithRemovedEdge.ok, true);
-  assert.equal(inverseWithRemovedEdge.inversePatch.ops.length, 2);
-  assert.equal(inverseWithRemovedEdge.inversePatch.ops[1].op, "addEdge");
-
-  const missingApply = applyGraphPatch(graph, {
-    ...patch,
-    id: "replace_missing",
-    ops: [{ ...patch.ops[0], nodeId: "missing" }]
-  });
-  assert.equal(missingApply.ok, false);
-  assert.match(missingApply.errors.join("\n"), /node missing does not exist/);
-
-  const missingInvert = invertGraphPatch(graph, {
-    ...patch,
-    id: "replace_missing",
-    ops: [{ ...patch.ops[0], nodeId: "missing" }]
-  });
-  assert.equal(missingInvert.ok, false);
-  assert.match(missingInvert.errors.join("\n"), /node missing does not exist/);
-});
-
-test("replaceNode swaps node snapshots and keeps only compatible incident edges", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-  graph.nodes.push(
-    {
-      id: "source_2",
-      kind: "core.float",
-      kindVersion: "0.1.0",
-      params: {},
-      ports: [
-        {
-          id: "value",
-          direction: "output",
-          type: { flow: "value", dataKind: "number.float" }
-        }
-      ]
-    },
-    {
-      id: "target_2",
-      kind: "core.preview",
-      kindVersion: "0.1.0",
-      params: {},
-      ports: [
-        {
-          id: "value",
-          direction: "input",
-          type: { flow: "value", dataKind: "number.float" },
-          required: false,
-          activation: "latched"
-        }
-      ]
-    }
-  );
-  graph.edges.push({
-    from: { node: "source_2", port: "value" },
-    to: { node: "target_2", port: "value" }
-  });
-  const replacement = {
-    ...graph.nodes[1],
-    params: { objectText: "gpu.blur 12" }
-  };
-  const patch = {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "replace_node",
-    baseRevision: "1",
-    ops: [
-      {
-        op: "replaceNode",
-        nodeId: "blur_1",
-        node: replacement,
-        edgePolicy: "removeInvalidEdges"
-      }
-    ]
-  };
-
-  const result = applyGraphPatch(graph, patch, { nextRevision: "2" });
-  assert.equal(result.ok, true);
-  assert.equal(result.graph.nodes.find((node) => node.id === "blur_1").params.objectText, "gpu.blur 12");
-  assert.equal(result.graph.edges.length, 2);
-
-  const inverse = invertGraphPatch(graph, patch);
-  assert.equal(inverse.ok, true);
-  assert.equal(inverse.inversePatch.ops[0].op, "replaceNode");
-  assert.equal(inverse.inversePatch.ops[0].node.params.value, undefined);
-
-  const missingPatch = {
-    ...patch,
-    id: "replace_node_missing",
-    ops: [{ ...patch.ops[0], nodeId: "missing" }]
-  };
-  const missingApply = applyGraphPatch(graph, missingPatch);
-  assert.equal(missingApply.ok, false);
-  assert.match(missingApply.errors.join("\n"), /node missing does not exist/);
-  const missingInvert = invertGraphPatch(graph, missingPatch);
-  assert.equal(missingInvert.ok, false);
-  assert.match(missingInvert.errors.join("\n"), /node missing does not exist/);
-
-  const mismatchedPatch = {
-    ...patch,
-    id: "replace_node_mismatched",
-    ops: [{ ...patch.ops[0], node: { ...replacement, id: "other_1" } }]
-  };
-  const mismatchedApply = applyGraphPatch(graph, mismatchedPatch);
-  assert.equal(mismatchedApply.ok, false);
-  assert.match(mismatchedApply.errors.join("\n"), /must match nodeId/);
-  const mismatchedInvert = invertGraphPatch(graph, mismatchedPatch);
-  assert.equal(mismatchedInvert.ok, false);
-  assert.match(mismatchedInvert.errors.join("\n"), /must match nodeId/);
-
-  const unresolved = {
-    id: "blur_1",
-    kind: "core.unresolved-object",
-    kindVersion: "0.1.0",
-    params: {
-      objectText: "user.blur",
-      diagnosticMessage: "user.blur is unavailable",
-      requestedKind: "user.blur"
-    },
-    ports: []
-  };
-  const unresolvedPatch = {
-    ...patch,
-    id: "replace_node_unresolved",
-    ops: [
-      {
-        op: "replaceNode",
-        nodeId: "blur_1",
-        node: unresolved,
-        edgePolicy: "removeInvalidEdges"
-      }
-    ]
-  };
-  const unresolvedResult = applyGraphPatch(graph, unresolvedPatch, { nextRevision: "2" });
-  assert.equal(unresolvedResult.ok, true);
-  assert.equal(unresolvedResult.graph.edges.length, 1);
-
-  const inverseWithRemovedEdge = invertGraphPatch(graph, unresolvedPatch);
-  assert.equal(inverseWithRemovedEdge.ok, true);
-  assert.equal(inverseWithRemovedEdge.inversePatch.ops.length, 2);
-  assert.equal(inverseWithRemovedEdge.inversePatch.ops[1].op, "addEdge");
-});
-
-test("appends deterministic suffix for non-numeric graph revisions", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  const result = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_suffix",
-    baseRevision: "rev_0001",
-    ops: []
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.graph.revision, "rev_0001+1");
-});
-
-test("inverts add node and add edge patches in reverse order", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  const addedNode = {
-    id: "meter_1",
-    kind: "core.meter",
-    kindVersion: "0.1.0",
-    params: {},
-    ports: [
-      {
-        id: "value",
-        direction: "input",
-        type: { flow: "value", dataKind: "number.float" },
-        activation: "latched"
-      }
-    ]
-  };
-  const edge = {
-    from: { node: "slider_1", port: "out" },
-    to: { node: "meter_1", port: "value" }
-  };
-
-  const result = invertGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_add_meter",
-    baseRevision: "rev_0001",
-    clientId: "studio-local",
-    description: "Add meter.",
-    ops: [
-      { op: "addNode", node: addedNode },
-      { op: "addEdge", edge }
-    ]
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.inversePatch.baseRevision, "rev_0001+1");
-  assert.equal(result.inversePatch.clientId, "studio-local");
-  assert.equal(result.inversePatch.description, "Inverse of patch_add_meter: Add meter.");
-  assert.deepEqual(result.inversePatch.ops, [
-    { op: "removeEdge", edge },
-    { op: "removeNode", nodeId: "meter_1" }
-  ]);
-});
-
-test("inverts remove node by restoring node and incident edges", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-
-  const inverse = invertGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_remove_slider",
-    baseRevision: "1",
-    ops: [{ op: "removeNode", nodeId: "slider_1" }]
-  });
-  assert.equal(inverse.ok, true);
-  assert.equal(inverse.inversePatch.baseRevision, "2");
-  assert.deepEqual(inverse.inversePatch.ops.map((op) => op.op), ["addNode", "addEdge"]);
-
-  const removed = applyGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_remove_slider",
-    baseRevision: "1",
-    ops: [{ op: "removeNode", nodeId: "slider_1" }]
-  }, { nextRevision: "2" });
-  assert.equal(removed.ok, true);
-
-  const restored = applyGraphPatch(removed.graph, inverse.inversePatch, { nextRevision: "3" });
-  assert.equal(restored.ok, true);
-  assert.equal(restored.graph.nodes.length, graph.nodes.length);
-  assert.equal(restored.graph.edges.length, graph.edges.length);
-
-  const inverseTarget = invertGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_remove_blur",
-    baseRevision: "1",
-    ops: [{ op: "removeNode", nodeId: "blur_1" }]
-  });
-  assert.equal(inverseTarget.ok, true);
-  assert.deepEqual(inverseTarget.inversePatch.ops.map((op) => op.op), ["addNode", "addEdge"]);
-});
-
-test("inverts param and edge removal operations", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-
-  const result = invertGraphPatch(graph, {
-    schema: "skenion.graph.patch",
-    schemaVersion: "0.1.0",
-    id: "patch_params_edges",
-    baseRevision: "1",
-    ops: [
-      { op: "setNodeParam", nodeId: "slider_1", key: "value", value: 0.75 },
-      { op: "setNodeParams", nodeId: "slider_1", params: { value: 0.25, mode: "fine" } },
-      { op: "removeEdge", edge: graph.edges[0] }
-    ]
-  });
-
-  assert.equal(result.ok, true);
-  assert.deepEqual(result.inversePatch.ops, [
-    { op: "addEdge", edge: graph.edges[0] },
-    { op: "setNodeParams", nodeId: "slider_1", params: { value: 0.75 } },
-    { op: "setNodeParams", nodeId: "slider_1", params: { value: 0.5 } }
-  ]);
-});
-
-test("reports invert failures without mutating input graph", async () => {
-  const graph = await readJson("fixtures/graph/v0.1/valid/minimal-value.graph.json");
-  graph.revision = "1";
-  const cases = [
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "bad_op",
-        baseRevision: "1",
-        ops: [{ op: "moveNode", nodeId: "slider_1" }]
-      },
-      /must match exactly one schema/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "wrong_base",
-        baseRevision: "0",
-        ops: []
-      },
-      /baseRevision 0/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "duplicate_node",
-        baseRevision: "1",
-        ops: [{ op: "addNode", node: graph.nodes[0] }]
-      },
-      /already exists/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "remove_missing_node",
-        baseRevision: "1",
-        ops: [{ op: "removeNode", nodeId: "missing" }]
-      },
-      /does not exist/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "set_params_missing_node",
-        baseRevision: "1",
-        ops: [{ op: "setNodeParams", nodeId: "missing", params: {} }]
-      },
-      /does not exist/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "set_param_missing_node",
-        baseRevision: "1",
-        ops: [{ op: "setNodeParam", nodeId: "missing", key: "value", value: 1 }]
-      },
-      /does not exist/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "duplicate_edge",
-        baseRevision: "1",
-        ops: [{ op: "addEdge", edge: graph.edges[0] }]
-      },
-      /already exists/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "missing_edge",
-        baseRevision: "1",
-        ops: [
-          {
-            op: "removeEdge",
-            edge: {
-              from: { node: "slider_1", port: "out" },
-              to: { node: "blur_1", port: "missing" }
-            }
-          }
-        ]
-      },
-      /does not exist/
-    ],
-    [
-      {
-        schema: "skenion.graph.patch",
-        schemaVersion: "0.1.0",
-        id: "invalid_result",
-        baseRevision: "1",
-        ops: [
-          {
-            op: "addEdge",
-            edge: {
-              from: { node: "slider_1", port: "out" },
-              to: { node: "missing", port: "value" }
-            }
-          }
-        ]
-      },
-      /missing target port/
-    ]
-  ];
-
-  for (const [patch, expected] of cases) {
-    const result = invertGraphPatch(graph, patch);
-    assert.equal(result.ok, false, patch.id);
-    assert.match(result.errors.join("\n"), expected, patch.id);
-  }
-
-  assert.equal(graph.nodes.length, 2);
-  assert.equal(graph.edges.length, 1);
 });

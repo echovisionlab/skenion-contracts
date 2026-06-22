@@ -1,0 +1,34 @@
+{
+  "schema": "skenion.graph.fragment",
+  "schemaVersion": "0.1.0",
+  "id": "fragment-outside-endpoint",
+  "nodes": [
+    {
+      "id": "source",
+      "kind": "core.float",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "type": "number.float",
+          "rate": "control"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-to-outside",
+      "source": {
+        "nodeId": "source",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "outside",
+        "portId": "in"
+      }
+    }
+  ]
+}

@@ -8,13 +8,13 @@ Skenion builtin help is a validated artifact, not only prose. Each builtin node 
 
 The help JSON gives Studio a compact panel surface: summary, description, port explanations, parameter explanations, runtime behavior, related nodes, tags, and the help graph path.
 
-The checked-in `help/v0.1` graphs are legacy import/migration fixtures. The
-active help-patch surface is the graph v0.2 project/patch-library contract:
-first-party and package help should be represented as `PatchDefinitionV02`
-entries opened as real graph views, with selected fragments copied as
-`GraphFragmentV02`.
+The checked-in `help/v0.1` graphs are normal active `skenion.graph` `0.1.0`
+documents. First-party and package help can also be represented as
+`PatchDefinitionV01` entries opened as real graph views, with selected fragments
+copied as `GraphFragmentV01`.
 
-Legacy help graph fixtures are normal `skenion.graph` `0.1.0` documents. They must validate with the same legacy graph validator as migration fixtures, use canonical builtin node kinds, and keep a stable id:
+Help graph documents must validate with the current graph validator, use
+canonical builtin node kinds, and keep a stable id:
 
 ```text
 help-<node-id-with-dots-replaced-by-hyphens>

@@ -10,12 +10,8 @@
       "id": "clock",
       "direction": "input",
       "label": "Clock",
-      "type": {
-        "flow": "value",
-        "dataKind": "clock.state"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "clock.state",
+      "required": false
     }
   ],
   "execution": {

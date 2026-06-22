@@ -10,28 +10,16 @@ async function readSchema(relativePath) {
 }
 
 const graphV01Schema = await readSchema("json-schema/graph/v0.1/graph.schema.json");
-const graphV02Schema = await readSchema("json-schema/graph/v0.2/graph.schema.json");
-const graphFragmentV02Schema = await readSchema("json-schema/graph/v0.2/fragment.schema.json");
+const graphFragmentV01Schema = await readSchema("json-schema/graph/v0.1/fragment.schema.json");
 const viewStateV01Schema = await readSchema("json-schema/view/v0.1/view-state.schema.json");
 const projectV01Schema = await readSchema("json-schema/project/v0.1/project.schema.json");
-const projectV02Schema = await readSchema("json-schema/project/v0.2/project.schema.json");
 const runtimeOperationV0Schema = await readSchema("json-schema/runtime/v0/operation.schema.json");
 const runtimeSessionV0Schema = await readSchema("json-schema/runtime/v0/session.schema.json");
 const runtimeCollaborationV0Schema = await readSchema(
   "json-schema/runtime/v0/collaboration.schema.json"
 );
-const graphPatchV01Schema = await readSchema("json-schema/graph/v0.1/patch.schema.json");
-const graphPatchEventV01Schema = await readSchema(
-  "json-schema/graph/v0.1/patch-event.schema.json"
-);
-const graphPatchHistoryV01Schema = await readSchema(
-  "json-schema/graph/v0.1/patch-history.schema.json"
-);
 const nodeDefinitionV01Schema = await readSchema(
   "json-schema/node/v0.1/node-definition.schema.json"
-);
-const nodeDefinitionV02Schema = await readSchema(
-  "json-schema/node/v0.2/node-definition.schema.json"
 );
 const shaderInterfaceV01Schema = await readSchema(
   "json-schema/shader/v0.1/shader-interface.schema.json"
@@ -57,15 +45,11 @@ await writeFile(
     "",
     `export const graphV01Schema = ${JSON.stringify(graphV01Schema, null, 2)} as const;`,
     "",
-    `export const graphV02Schema = ${JSON.stringify(graphV02Schema, null, 2)} as const;`,
-    "",
-    `export const graphFragmentV02Schema = ${JSON.stringify(graphFragmentV02Schema, null, 2)} as const;`,
+    `export const graphFragmentV01Schema = ${JSON.stringify(graphFragmentV01Schema, null, 2)} as const;`,
     "",
     `export const viewStateV01Schema = ${JSON.stringify(viewStateV01Schema, null, 2)} as const;`,
     "",
     `export const projectV01Schema = ${JSON.stringify(projectV01Schema, null, 2)} as const;`,
-    "",
-    `export const projectV02Schema = ${JSON.stringify(projectV02Schema, null, 2)} as const;`,
     "",
     `export const runtimeOperationV0Schema = ${JSON.stringify(runtimeOperationV0Schema, null, 2)} as const;`,
     "",
@@ -73,15 +57,7 @@ await writeFile(
     "",
     `export const runtimeCollaborationV0Schema = ${JSON.stringify(runtimeCollaborationV0Schema, null, 2)} as const;`,
     "",
-    `export const graphPatchV01Schema = ${JSON.stringify(graphPatchV01Schema, null, 2)} as const;`,
-    "",
-    `export const graphPatchEventV01Schema = ${JSON.stringify(graphPatchEventV01Schema, null, 2)} as const;`,
-    "",
-    `export const graphPatchHistoryV01Schema = ${JSON.stringify(graphPatchHistoryV01Schema, null, 2)} as const;`,
-    "",
     `export const nodeDefinitionV01Schema = ${JSON.stringify(nodeDefinitionV01Schema, null, 2)} as const;`,
-    "",
-    `export const nodeDefinitionV02Schema = ${JSON.stringify(nodeDefinitionV02Schema, null, 2)} as const;`,
     "",
     `export const shaderInterfaceV01Schema = ${JSON.stringify(shaderInterfaceV01Schema, null, 2)} as const;`,
     "",

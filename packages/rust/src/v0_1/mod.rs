@@ -1,12 +1,7 @@
 mod audio_clock;
 mod clock;
 mod control_message;
-mod extension;
-mod graph;
-mod node_definition;
 mod object_text;
-mod patch;
-mod project;
 mod runtime_clock;
 mod shader_interface;
 mod types;
@@ -28,30 +23,11 @@ pub use clock::{
     parse_midi_clock_message_v01,
 };
 pub use control_message::{ControlAtomV01, ControlMessageV01};
-pub use extension::{
-    ExtensionCodecDescriptorV01, ExtensionCodecDirectionV01, ExtensionFrontendMetadataV01,
-    ExtensionHelpEntryV01, ExtensionKindV01, ExtensionManifestV01, ExtensionNativeArtifactAbiV01,
-    ExtensionNativeArtifactV01, ExtensionNativeBindingV01, ExtensionProvidesV01,
-    ExtensionTestDescriptorV01, ExtensionTestKindV01, ExtensionTransportDescriptorV01,
-};
-pub use graph::{EdgeV01, GraphDocumentV01, GraphNodeV01, PortRefV01};
-pub use node_definition::{
-    NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01, NodeSurfaceV01,
-};
 pub use object_text::{
     ObjectTextAtomV01, ObjectTextDiagnosticSeverityV01, ObjectTextDiagnosticV01,
     ObjectTextParseResultV01, ObjectTextPortActivationV01, ObjectTextPortDirectionV01,
     ObjectTextPortRateV01, ObjectTextPortV01, ObjectTextValidationErrorV01, parse_object_text_v01,
     validate_object_text_parse_result_v01,
-};
-pub use patch::{
-    ApplyPatchErrorV01, GraphPatchEventKindV01, GraphPatchEventV01, GraphPatchHistoryV01,
-    GraphPatchOperationV01, GraphPatchV01, InvertPatchErrorV01, ReplaceNodeInterfaceEdgePolicyV01,
-    apply_graph_patch_v01, invert_graph_patch_v01,
-};
-pub use project::{
-    CanvasNodeViewV01, CanvasViewStateV01, CanvasViewportV01, ProjectDocumentV01,
-    ProjectMetadataV01, ViewStateV01, create_default_view_state_for_graph_v01,
 };
 pub use runtime_clock::{
     RuntimeClockDiagnosticSeverityV01, RuntimeClockDiagnosticV01, RuntimeIoBindingConfigV01,
@@ -66,11 +42,19 @@ pub use shader_interface::{
     ShaderLanguageV01, ShaderUniformV01, analyze_shader_interface_v01,
     shader_interface_to_ports_v01,
 };
-pub use types::{
-    DataFlowV01, DataTypeV01, ExecutionModelV01, NumberRangeV01, PortActivationV01,
-    PortDirectionV01, PortV01, StringOrStringsV01,
-};
+pub use types::*;
 pub use validation::{
-    ValidationErrorV01, ValidationReportV01, compatible_data_types_v01, type_label_v01,
-    validate_graph_document_v01, validate_node_definition_v01,
+    ValidationErrorV01, ValidationReportV01, analyze_graph_document_v01,
+    analyze_graph_fragment_v01, compatible_data_types_v01, type_label_v01,
+    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
+    validate_node_definition_v01, validate_paste_graph_fragment_request,
+    validate_paste_graph_fragment_response, validate_patch_definition_v01,
+    validate_project_document_v01, validate_runtime_collaboration_event_envelope,
+    validate_runtime_collaboration_operation_batch,
+    validate_runtime_collaboration_operation_batch_result,
+    validate_runtime_collaboration_operation_envelope,
+    validate_runtime_collaboration_operation_result,
+    validate_runtime_collaboration_presence_envelope,
+    validate_runtime_collaboration_selection_envelope, validate_runtime_operation_envelope,
+    validate_runtime_session_event, validate_runtime_session_info_response,
 };

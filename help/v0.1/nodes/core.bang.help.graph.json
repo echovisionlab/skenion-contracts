@@ -14,21 +14,14 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "out",
           "direction": "output",
           "label": "Bang",
-          "type": {
-            "flow": "event",
-            "dataKind": "event.bang"
-          }
+          "type": "event.bang"
         }
       ]
     },
@@ -46,47 +39,35 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": {
-            "flow": "value",
-            "dataKind": "number.float",
-            "format": "f32"
-          },
-          "required": false,
-          "activation": "latched"
+          "type": "number.float",
+          "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Value",
-          "type": {
-            "flow": "value",
-            "dataKind": "number.float",
-            "format": "f32"
-          }
+          "type": "number.float"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "bang_1",
-        "port": "out"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "bang_1",
+        "portId": "out"
       },
-      "to": {
-        "node": "value_1",
-        "port": "in"
+      "target": {
+        "nodeId": "value_1",
+        "portId": "in"
       }
     }
   ]

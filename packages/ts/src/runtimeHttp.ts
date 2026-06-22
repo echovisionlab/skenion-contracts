@@ -1,7 +1,7 @@
 import {
   validateExtensionManifestV01,
-  validateGraphFragmentV02,
-  validateProjectDocumentV02
+  validateGraphFragmentV01,
+  validateProjectDocumentV01
 } from "./validate.js";
 import type {
   CanvasNodeViewV01,
@@ -48,7 +48,6 @@ import type {
   RuntimeOperationDiagnostic,
   RuntimeOperationEnvelope,
   RuntimeOwnershipMode,
-  RuntimePatchResponse,
   RuntimeProcessMetadata,
   RuntimePreviewStatus,
   RuntimeSessionCapabilitySet,
@@ -177,23 +176,6 @@ export function isRuntimeSessionInfoResponse(value: unknown): value is RuntimeSe
   );
 }
 
-export function isRuntimePatchResponse(value: unknown): value is RuntimePatchResponse {
-  return (
-    isRecord(value) &&
-    typeof value.ok === "boolean" &&
-    typeof value.applied === "boolean" &&
-    typeof value.conflict === "boolean" &&
-    !("graph" in value) &&
-    !("viewState" in value) &&
-    !("session" in value) &&
-    !("event" in value) &&
-    isRuntimeSessionSnapshot(value.snapshot) &&
-    isRuntimeHistory(value.history) &&
-    Array.isArray(value.diagnostics) &&
-    value.diagnostics.every(isRuntimeDiagnostic)
-  );
-}
-
 export function isRuntimeOperationEnvelope(value: unknown): value is RuntimeOperationEnvelope {
   return (
     isRecord(value) &&
@@ -213,7 +195,7 @@ export function isPasteGraphFragmentRequest(value: unknown): value is PasteGraph
   return (
     isRecord(value) &&
     isGraphTargetRef(value.target) &&
-    validateGraphFragmentV02(value.fragment, { outsideEndpointPolicy: options?.outsideEndpointPolicy }).ok &&
+    validateGraphFragmentV01(value.fragment, { outsideEndpointPolicy: options?.outsideEndpointPolicy }).ok &&
     (value.placement === undefined || isPastePlacement(value.placement)) &&
     (value.options === undefined || options !== undefined)
   );
@@ -334,9 +316,8 @@ function isRuntimeEventReplayWindow(value: unknown): value is RuntimeEventReplay
 function isRuntimeSessionCapabilitySet(value: unknown): value is RuntimeSessionCapabilitySet {
   return (
     isRecord(value) &&
-    hasOnlyKeys(value, ["sessionAddressing", "defaultSessionAlias", "eventReplay", "multiWindow", "profiles", "authPolicy"]) &&
+    hasOnlyKeys(value, ["sessionAddressing", "eventReplay", "multiWindow", "profiles", "authPolicy"]) &&
     typeof value.sessionAddressing === "boolean" &&
-    typeof value.defaultSessionAlias === "boolean" &&
     typeof value.eventReplay === "boolean" &&
     typeof value.multiWindow === "boolean" &&
     Array.isArray(value.profiles) &&
@@ -549,7 +530,7 @@ function isRuntimeSessionSnapshot(value: unknown): value is RuntimeSessionSnapsh
 }
 
 function isRuntimeProjectSnapshot(value: unknown): boolean {
-  return validateProjectDocumentV02(value).ok;
+  return validateProjectDocumentV01(value).ok;
 }
 
 function isRuntimeSessionEventKind(value: unknown): value is RuntimeSessionEventKind {

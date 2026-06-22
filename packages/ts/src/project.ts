@@ -1,18 +1,17 @@
 import type {
   GraphDocumentV01,
-  GraphDocumentV02,
-  GraphNodeV02,
-  PatchContractPortV02,
-  PatchContractV02,
-  PatchDefinitionV02,
+  GraphNodeV01,
+  PatchContractPortV01,
+  PatchContractV01,
+  PatchDefinitionV01,
   PortDirection,
-  PortSpecV02,
-  ProjectDocumentV02,
+  PortSpecV01,
+  ProjectDocumentV01,
   ViewStateV01
 } from "./types.js";
 
 export function createDefaultViewStateForGraph(
-  graph: GraphDocumentV01 | GraphDocumentV02
+  graph: GraphDocumentV01
 ): ViewStateV01 {
   const nodes = Object.fromEntries(
     graph.nodes.map((node, index) => [
@@ -38,14 +37,14 @@ export function createDefaultViewStateForGraph(
   };
 }
 
-function stringParam(node: GraphNodeV02, key: string): string | undefined {
+function stringParam(node: GraphNodeV01, key: string): string | undefined {
   const value = node.params[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function boundaryPortId(
-  node: GraphNodeV02,
-  port: PortSpecV02,
+  node: GraphNodeV01,
+  port: PortSpecV01,
   eligiblePortCount: number
 ): string {
   return (
@@ -55,15 +54,15 @@ function boundaryPortId(
   );
 }
 
-function boundaryPortLabel(node: GraphNodeV02, port: PortSpecV02): string | undefined {
+function boundaryPortLabel(node: GraphNodeV01, port: PortSpecV01): string | undefined {
   return port.label ?? stringParam(node, "label");
 }
 
 function deriveBoundaryPorts(
-  node: GraphNodeV02,
+  node: GraphNodeV01,
   internalDirection: PortDirection,
   externalDirection: PortDirection
-): PatchContractPortV02[] {
+): PatchContractPortV01[] {
   const ports = node.ports.filter((port) => port.direction === internalDirection);
 
   return ports.map((port) => ({
@@ -76,8 +75,8 @@ function deriveBoundaryPorts(
   }));
 }
 
-export function derivePatchContractV02(patch: PatchDefinitionV02): PatchContractV02 {
-  const ports = patch.graph.nodes.flatMap((node): PatchContractPortV02[] => {
+export function derivePatchContractV01(patch: PatchDefinitionV01): PatchContractV01 {
+  const ports = patch.graph.nodes.flatMap((node): PatchContractPortV01[] => {
     if (node.kind === "core.inlet") {
       return deriveBoundaryPorts(node, "output", "input");
     }
@@ -95,6 +94,6 @@ export function derivePatchContractV02(patch: PatchDefinitionV02): PatchContract
   };
 }
 
-export function derivePatchContractsV02(project: ProjectDocumentV02): PatchContractV02[] {
-  return project.patchLibrary.map((patch) => derivePatchContractV02(patch));
+export function derivePatchContractsV01(project: ProjectDocumentV01): PatchContractV01[] {
+  return project.patchLibrary.map((patch) => derivePatchContractV01(patch));
 }

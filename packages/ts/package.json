@@ -36,31 +36,11 @@
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
-    "./graph/v0.2/schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./graph/v0.2/fragment-schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./graph/v0.1/patch-schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./graph/v0.1/patch-event-schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./graph/v0.1/patch-history-schema": {
+    "./graph/v0.1/fragment-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
     "./node/v0.1/schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./node/v0.2/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
@@ -73,10 +53,6 @@
       "import": "./dist/generated/schemas.js"
     },
     "./project/v0.1/schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./project/v0.2/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
@@ -109,7 +85,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm run generate && tsc -p tsconfig.json",
+    "build": "pnpm run clean && pnpm run generate && tsc -p tsconfig.json",
+    "clean": "node scripts/clean-dist.mjs",
     "ci": "pnpm run build && pnpm run coverage",
     "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/generated/**' --test-coverage-exclude='dist/runtimeHttp.js' test/*.test.mjs",
     "generate": "node scripts/generate-schemas.mjs && node scripts/generate-builtins.mjs",

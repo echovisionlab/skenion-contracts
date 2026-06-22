@@ -56,9 +56,10 @@ and then apply `replaceNodeInterface` with
 `edgePolicy: "removeInvalidEdges"`. When ports disappear, invalid incident edges
 are removed by that explicit patch. There is no implicit adapter insertion.
 
-When applied through `/v0/session/mutate`, `replaceNodeInterface` is recorded
-as part of Runtime mutation history, so global undo/redo can restore the
-previous port list and the removed compatible edges.
+When applied through `/v0/sessions/{sessionId}/operations`, the
+`replaceNodeInterface` change is submitted in a `RuntimeOperationEnvelope` and
+recorded as part of Runtime mutation history, so global undo/redo can restore
+the previous port list and the removed compatible edges.
 
 ## Source Boundary
 
