@@ -142,7 +142,7 @@
               "$ref": "#/$defs/nonEmptyString"
             },
             "node": {
-              "$ref": "https://skenion.dev/schemas/graph/v0.2/graph.schema.json#/$defs/node"
+              "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json#/$defs/node"
             },
             "view": {
               "$ref": "#/$defs/canvasPosition"
@@ -202,7 +202,7 @@
               "$ref": "#/$defs/nonEmptyString"
             },
             "edge": {
-              "$ref": "https://skenion.dev/schemas/graph/v0.2/graph.schema.json#/$defs/edge"
+              "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json#/$defs/edge"
             }
           },
           "additionalProperties": false

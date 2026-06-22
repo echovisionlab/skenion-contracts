@@ -1,0 +1,86 @@
+{
+  "schema": "skenion.extension.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/duplicate-native-sensor",
+  "version": "0.1.0",
+  "runtimeAbiVersion": "0.1.0",
+  "kind": "native-runtime",
+  "native": {
+    "entrypoint": "skenion_extension_init",
+    "artifacts": [
+      {
+        "os": "macos",
+        "arch": "aarch64",
+        "abi": "c",
+        "path": "native/macos-aarch64/libsensor.dylib"
+      }
+    ]
+  },
+  "provides": {
+    "nodes": [
+      {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": "example.sensor-reading",
+        "version": "0.1.0",
+        "displayName": "Sensor Reading",
+        "category": "Example",
+        "ports": [
+          {
+            "id": "out",
+            "direction": "output",
+            "type": "number.float",
+            "rate": "control"
+          }
+        ],
+        "execution": {
+          "model": "native_plugin"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": []
+      },
+      {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": "example.sensor-reading",
+        "version": "0.1.0",
+        "displayName": "Sensor Reading Copy",
+        "category": "Example",
+        "ports": [
+          {
+            "id": "out",
+            "direction": "output",
+            "type": "number.float",
+            "rate": "control"
+          }
+        ],
+        "execution": {
+          "model": "native_plugin"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": []
+      }
+    ],
+    "help": [
+      {
+        "nodeId": "example.sensor-reading",
+        "markdownPath": "help/sensor-reading.md"
+      }
+    ]
+  },
+  "permissions": [],
+  "tests": [
+    {
+      "id": "sensor-reading-baseline",
+      "kind": "node",
+      "target": "example.sensor-reading",
+      "fixturePath": "tests/sensor-reading.input.json"
+    }
+  ]
+}

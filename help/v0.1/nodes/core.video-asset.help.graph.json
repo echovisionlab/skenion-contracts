@@ -25,10 +25,7 @@
           "id": "asset",
           "direction": "output",
           "label": "Asset",
-          "type": {
-            "flow": "resource",
-            "dataKind": "asset.video"
-          }
+          "type": "asset.video"
         }
       ]
     },
@@ -42,24 +39,21 @@
           "id": "asset",
           "direction": "input",
           "label": "Asset",
-          "type": {
-            "flow": "resource",
-            "dataKind": "asset.video"
-          },
-          "activation": "latched"
+          "type": "asset.video"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "asset_1",
-        "port": "asset"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "asset_1",
+        "portId": "asset"
       },
-      "to": {
-        "node": "decode_1",
-        "port": "asset"
+      "target": {
+        "nodeId": "decode_1",
+        "portId": "asset"
       }
     }
   ]

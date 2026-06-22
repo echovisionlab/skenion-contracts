@@ -251,7 +251,6 @@ export interface RuntimeEventReplayWindow {
 
 export interface RuntimeSessionCapabilitySet {
   sessionAddressing: boolean;
-  defaultSessionAlias: boolean;
   eventReplay: boolean;
   multiWindow: boolean;
   profiles: RuntimeConnectionProfileMode[];
@@ -281,8 +280,8 @@ export interface RuntimeLogSnapshotResponse {
   diagnostics: RuntimeDiagnostic[];
 }
 
-export type RuntimeProjectSnapshot = ProjectDocumentV02;
-export type RuntimeProjectRequest = ProjectDocumentV02;
+export type RuntimeProjectSnapshot = ProjectDocumentV01;
+export type RuntimeProjectRequest = ProjectDocumentV01;
 
 export interface RuntimePlan {
   graphId: string;
@@ -431,8 +430,6 @@ export interface RuntimeMutationResponse {
   history: RuntimeHistory;
   diagnostics: RuntimeDiagnosticV01[];
 }
-
-export type RuntimePatchResponse = RuntimeMutationResponse;
 
 export type RuntimeSessionEventKind = "snapshot" | "load" | "clear" | "mutate" | "undo" | "redo";
 
@@ -661,6 +658,7 @@ export interface RuntimeSessionRunRequest {
 export type ExtensionKindV01 = "core-package" | "native-runtime" | "codec" | "node-pack";
 export type ExtensionNativeArtifactAbiV01 = "c";
 export type ExtensionCodecDirectionV01 = "decode" | "encode" | "duplex";
+export type ExtensionTransportKindV01 = "midi" | "hid" | "serial" | "inline";
 export type ExtensionTestKindV01 = "node" | "codec" | "extension";
 export type RuntimeExtensionStatus = "loaded" | "disabled" | "failed";
 
@@ -680,7 +678,7 @@ export interface ExtensionNativeBindingV01 {
 export interface ExtensionCodecDescriptorV01 {
   id: string;
   version: string;
-  transportKinds: RuntimeIoTransportKind[];
+  transportKinds: ExtensionTransportKindV01[];
   direction: ExtensionCodecDirectionV01;
 }
 
@@ -711,6 +709,14 @@ export interface ExtensionFrontendMetadataV01 {
   tags?: string[];
 }
 
+export interface ExtensionTestDescriptorV01 {
+  id: string;
+  kind: ExtensionTestKindV01;
+  target: string;
+  fixturePath?: string;
+  expectedPath?: string;
+}
+
 export interface ExtensionManifestV01 {
   schema: "skenion.extension.manifest";
   schemaVersion: "0.1.0";
@@ -724,14 +730,6 @@ export interface ExtensionManifestV01 {
   permissions: string[];
   frontend?: ExtensionFrontendMetadataV01;
   tests?: ExtensionTestDescriptorV01[];
-}
-
-export interface ExtensionTestDescriptorV01 {
-  id: string;
-  kind: ExtensionTestKindV01;
-  target: string;
-  fixturePath?: string;
-  expectedPath?: string;
 }
 
 export interface RuntimeExtensionDescriptor {
@@ -906,23 +904,108 @@ export interface PortV01 {
   activation?: PortActivation;
 }
 
+export type PortRateV01 = "event" | "control" | "audio" | "render" | "gpu" | "resource" | "io";
+export type MergePolicyV01 = "forbid" | "ordered-events" | "mix" | "array" | "latest" | "first" | "custom";
+export type FanOutPolicyV01 = "allow" | "forbid" | "copy" | "share";
+export type TriggerModeV01 = "passive" | "trigger" | "latched";
+export type FeedbackBoundaryV01 =
+  | "same-turn"
+  | "next-tick"
+  | "control-frame"
+  | "audio-sample"
+  | "audio-block"
+  | "render-frame"
+  | "gpu-pingpong"
+  | "manual";
+export type FeedbackBufferModeV01 = "latest" | "queue" | "ring" | "pingpong";
+export type CycleValidationV01 =
+  | "no-cycle"
+  | "valid-feedback"
+  | "risky-feedback"
+  | "ambiguous-algebraic-loop"
+  | "invalid-cycle";
+
+export interface PortSpecV01 {
+  id: string;
+  direction: PortDirection;
+  type: string;
+  label?: string;
+  rate?: PortRateV01;
+  accepts?: string[];
+  minConnections?: number;
+  maxConnections?: number | null;
+  mergePolicy?: MergePolicyV01;
+  fanOutPolicy?: FanOutPolicyV01;
+  triggerMode?: TriggerModeV01;
+  defaultValue?: unknown;
+  latch?: boolean;
+  required?: boolean;
+  styleKey?: string;
+  group?: string;
+  description?: string;
+}
+
+export interface PortGroupSpecV01 {
+  id: string;
+  direction: PortDirection;
+  type: string;
+  minPorts: number;
+  label?: string;
+  rate?: PortRateV01;
+  maxPorts?: number;
+  ordered?: boolean;
+  portIdPattern?: string;
+  createLabel?: string;
+  defaultPortSpec?: PortSpecV01;
+}
+
+export interface FeedbackPolicyV01 {
+  enabled: boolean;
+  boundary: FeedbackBoundaryV01;
+  initialValue?: unknown;
+  recursionLimit?: number;
+  maxEventsPerTick?: number;
+  maxIterationsPerFrame?: number;
+  bufferMode?: FeedbackBufferModeV01;
+  intentional?: boolean;
+  label?: string;
+}
+
+export interface EdgeEndpointV01 {
+  nodeId: string;
+  portId: string;
+}
+
+export interface EdgeSpecV01 {
+  id: string;
+  source: EdgeEndpointV01;
+  target: EdgeEndpointV01;
+  resolvedType?: string;
+  order?: number;
+  enabled?: boolean;
+  adapter?: string;
+  feedback?: FeedbackPolicyV01;
+  styleOverride?: string;
+  label?: string;
+  description?: string;
+}
+
+export interface CableStyleV01 {
+  color?: string;
+  pattern?: "solid" | "dashed" | "dotted";
+  width?: number;
+  marker?: string;
+}
+
+export type CableStyleRegistryV01 = Record<string, CableStyleV01>;
+
 export interface GraphNodeV01 {
   id: string;
   kind: string;
   kindVersion: string;
   params: Record<string, unknown>;
-  ports: PortV01[];
-}
-
-export interface EdgeV01 {
-  from: {
-    node: string;
-    port: string;
-  };
-  to: {
-    node: string;
-    port: string;
-  };
+  ports: PortSpecV01[];
+  portGroups?: PortGroupSpecV01[];
 }
 
 export interface GraphDocumentV01 {
@@ -931,7 +1014,8 @@ export interface GraphDocumentV01 {
   id: string;
   revision: string;
   nodes: GraphNodeV01[];
-  edges: EdgeV01[];
+  edges: EdgeSpecV01[];
+  cableStyles?: CableStyleRegistryV01;
 }
 
 export interface CanvasNodeViewV01 {
@@ -957,167 +1041,35 @@ export interface ViewStateV01 {
   };
 }
 
-export interface ProjectDocumentV01 {
-  schema: "skenion.project";
-  schemaVersion: "0.1.0";
-  id: string;
-  revision: string;
-  metadata?: {
-    title?: string;
-    description?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    [key: string]: unknown;
-  };
-  graph: GraphDocumentV01;
-  viewState: ViewStateV01;
-  tutorial?: Record<string, unknown>;
-  help?: Record<string, unknown>;
-}
-
-export type PortRateV02 = "event" | "control" | "audio" | "render" | "gpu" | "resource" | "io";
-export type MergePolicyV02 = "forbid" | "ordered-events" | "mix" | "array" | "latest" | "first" | "custom";
-export type FanOutPolicyV02 = "allow" | "forbid" | "copy" | "share";
-export type TriggerModeV02 = "passive" | "trigger" | "latched";
-export type FeedbackBoundaryV02 =
-  | "same-turn"
-  | "next-tick"
-  | "control-frame"
-  | "audio-sample"
-  | "audio-block"
-  | "render-frame"
-  | "gpu-pingpong"
-  | "manual";
-export type FeedbackBufferModeV02 = "latest" | "queue" | "ring" | "pingpong";
-export type CycleValidationV02 =
-  | "no-cycle"
-  | "valid-feedback"
-  | "risky-feedback"
-  | "ambiguous-algebraic-loop"
-  | "invalid-cycle";
-
-export interface PortSpecV02 {
-  id: string;
-  direction: PortDirection;
-  type: string;
-  label?: string;
-  rate?: PortRateV02;
-  accepts?: string[];
-  minConnections?: number;
-  maxConnections?: number | null;
-  mergePolicy?: MergePolicyV02;
-  fanOutPolicy?: FanOutPolicyV02;
-  triggerMode?: TriggerModeV02;
-  defaultValue?: unknown;
-  latch?: boolean;
-  required?: boolean;
-  styleKey?: string;
-  group?: string;
-  description?: string;
-}
-
-export interface PortGroupSpecV02 {
-  id: string;
-  direction: PortDirection;
-  type: string;
-  minPorts: number;
-  label?: string;
-  rate?: PortRateV02;
-  maxPorts?: number;
-  ordered?: boolean;
-  portIdPattern?: string;
-  createLabel?: string;
-  defaultPortSpec?: PortSpecV02;
-}
-
-export interface FeedbackPolicyV02 {
-  enabled: boolean;
-  boundary: FeedbackBoundaryV02;
-  initialValue?: unknown;
-  recursionLimit?: number;
-  maxEventsPerTick?: number;
-  maxIterationsPerFrame?: number;
-  bufferMode?: FeedbackBufferModeV02;
-  intentional?: boolean;
-  label?: string;
-}
-
-export interface EdgeEndpointV02 {
-  nodeId: string;
-  portId: string;
-}
-
-export interface EdgeSpecV02 {
-  id: string;
-  source: EdgeEndpointV02;
-  target: EdgeEndpointV02;
-  resolvedType?: string;
-  order?: number;
-  enabled?: boolean;
-  adapter?: string;
-  feedback?: FeedbackPolicyV02;
-  styleOverride?: string;
-  label?: string;
-  description?: string;
-}
-
-export interface CableStyleV02 {
-  color?: string;
-  pattern?: "solid" | "dashed" | "dotted";
-  width?: number;
-  marker?: string;
-}
-
-export type CableStyleRegistryV02 = Record<string, CableStyleV02>;
-
-export interface GraphNodeV02 {
-  id: string;
-  kind: string;
-  kindVersion: string;
-  params: Record<string, unknown>;
-  ports: PortSpecV02[];
-  portGroups?: PortGroupSpecV02[];
-}
-
-export interface GraphDocumentV02 {
-  schema: "skenion.graph";
-  schemaVersion: "0.2.0";
-  id: string;
-  revision: string;
-  nodes: GraphNodeV02[];
-  edges: EdgeSpecV02[];
-  cableStyles?: CableStyleRegistryV02;
-}
-
-export interface GraphFragmentViewV02 {
+export interface GraphFragmentViewV01 {
   nodes?: Record<string, CanvasNodeViewV01>;
 }
 
-export interface GraphFragmentOmittedEdgeV02 {
+export interface GraphFragmentOmittedEdgeV01 {
   id: string;
-  source: EdgeEndpointV02;
-  target: EdgeEndpointV02;
+  source: EdgeEndpointV01;
+  target: EdgeEndpointV01;
   reason: "outside-fragment" | "policy-omit";
 }
 
-export interface GraphFragmentV02 {
+export interface GraphFragmentV01 {
   schema: "skenion.graph.fragment";
-  schemaVersion: "0.2.0";
+  schemaVersion: "0.1.0";
   id?: string;
-  nodes: GraphNodeV02[];
-  edges: EdgeSpecV02[];
-  view?: GraphFragmentViewV02;
-  omittedEdges?: GraphFragmentOmittedEdgeV02[];
+  nodes: GraphNodeV01[];
+  edges: EdgeSpecV01[];
+  view?: GraphFragmentViewV01;
+  omittedEdges?: GraphFragmentOmittedEdgeV01[];
   metadata?: Record<string, unknown>;
 }
 
-export type GraphFragmentOutsideEndpointPolicyV02 = "reject" | "omit";
+export type GraphFragmentOutsideEndpointPolicyV01 = "reject" | "omit";
 
-export interface GraphFragmentValidationOptionsV02 {
-  outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV02;
+export interface GraphFragmentValidationOptionsV01 {
+  outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV01;
 }
 
-export interface GraphFragmentDiagnosticV02 {
+export interface GraphFragmentDiagnosticV01 {
   severity: "error" | "warning";
   code: string;
   message: string;
@@ -1125,9 +1077,9 @@ export interface GraphFragmentDiagnosticV02 {
   edges?: string[];
 }
 
-export interface GraphFragmentValidationResultV02 {
+export interface GraphFragmentValidationResultV01 {
   ok: boolean;
-  diagnostics: GraphFragmentDiagnosticV02[];
+  diagnostics: GraphFragmentDiagnosticV01[];
   omittedEdgeIds: string[];
 }
 
@@ -1154,14 +1106,14 @@ export type PastePlacement =
   | { kind: "anchor"; nodeId: string; offsetX?: number; offsetY?: number };
 
 export interface PasteGraphFragmentOptions {
-  outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV02;
+  outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV01;
   idConflictPolicy?: "remap" | "reject";
   preserveRelativePositions?: boolean;
 }
 
 export interface PasteGraphFragmentRequest {
   target: GraphTargetRef;
-  fragment: GraphFragmentV02;
+  fragment: GraphFragmentV01;
   placement?: PastePlacement;
   options?: PasteGraphFragmentOptions;
 }
@@ -1253,7 +1205,7 @@ export type RuntimeCollaborationChange =
   | {
       op: "node.add";
       changeId: string;
-      node: GraphNodeV02;
+      node: GraphNodeV01;
       view?: RuntimeCollaborationCanvasPosition;
     }
   | {
@@ -1272,7 +1224,7 @@ export type RuntimeCollaborationChange =
   | {
       op: "edge.connect";
       changeId: string;
-      edge: EdgeSpecV02;
+      edge: EdgeSpecV01;
     }
   | {
       op: "edge.disconnect";
@@ -1540,7 +1492,7 @@ export interface RuntimeCollaborationEventEnvelope {
   createdAt: string;
 }
 
-export interface ProjectMetadataV02 {
+export interface ProjectMetadataV01 {
   title?: string;
   description?: string;
   createdAt?: string;
@@ -1548,40 +1500,40 @@ export interface ProjectMetadataV02 {
   [key: string]: unknown;
 }
 
-export interface PatchDefinitionV02 {
+export interface PatchDefinitionV01 {
   id: string;
   revision: string;
-  metadata?: ProjectMetadataV02;
-  graph: GraphDocumentV02;
+  metadata?: ProjectMetadataV01;
+  graph: GraphDocumentV01;
   viewState?: ViewStateV01;
 }
 
-export interface PatchContractPortV02 extends PortSpecV02 {
+export interface PatchContractPortV01 extends PortSpecV01 {
   boundaryNodeId: string;
   boundaryPortId: string;
 }
 
-export interface PatchContractV02 {
+export interface PatchContractV01 {
   id: string;
   revision: string;
-  metadata?: ProjectMetadataV02;
-  ports: PatchContractPortV02[];
+  metadata?: ProjectMetadataV01;
+  ports: PatchContractPortV01[];
 }
 
-export interface ProjectDocumentV02 {
+export interface ProjectDocumentV01 {
   schema: "skenion.project";
-  schemaVersion: "0.2.0";
+  schemaVersion: "0.1.0";
   id: string;
   revision: string;
-  metadata?: ProjectMetadataV02;
-  graph: GraphDocumentV02;
+  metadata?: ProjectMetadataV01;
+  graph: GraphDocumentV01;
   viewState: ViewStateV01;
-  patchLibrary: PatchDefinitionV02[];
+  patchLibrary: PatchDefinitionV01[];
   tutorial?: Record<string, unknown>;
   help?: Record<string, unknown>;
 }
 
-export interface GraphValidationDiagnosticV02 {
+export interface GraphValidationDiagnosticV01 {
   severity: "error" | "warning";
   code: string;
   message: string;
@@ -1589,122 +1541,18 @@ export interface GraphValidationDiagnosticV02 {
   edges?: string[];
 }
 
-export interface GraphCycleValidationV02 {
-  classification: CycleValidationV02;
+export interface GraphCycleValidationV01 {
+  classification: CycleValidationV01;
   nodes: string[];
   edges: string[];
   message: string;
 }
 
-export interface GraphValidationResultV02 {
+export interface GraphValidationResultV01 {
   ok: boolean;
-  diagnostics: GraphValidationDiagnosticV02[];
-  cycles: GraphCycleValidationV02[];
+  diagnostics: GraphValidationDiagnosticV01[];
+  cycles: GraphCycleValidationV01[];
 }
-
-export interface AddNodeOperationV01 {
-  op: "addNode";
-  node: GraphNodeV01;
-}
-
-export interface RemoveNodeOperationV01 {
-  op: "removeNode";
-  nodeId: string;
-}
-
-export interface ReplaceNodeOperationV01 {
-  op: "replaceNode";
-  nodeId: string;
-  node: GraphNodeV01;
-  edgePolicy: "removeInvalidEdges";
-}
-
-export interface SetNodeParamsOperationV01 {
-  op: "setNodeParams";
-  nodeId: string;
-  params: Record<string, unknown>;
-}
-
-export interface SetNodeParamOperationV01 {
-  op: "setNodeParam";
-  nodeId: string;
-  key: string;
-  value: unknown;
-}
-
-export interface AddEdgeOperationV01 {
-  op: "addEdge";
-  edge: EdgeV01;
-}
-
-export interface RemoveEdgeOperationV01 {
-  op: "removeEdge";
-  edge: EdgeV01;
-}
-
-export interface ReplaceNodeInterfaceOperationV01 {
-  op: "replaceNodeInterface";
-  nodeId: string;
-  ports: PortV01[];
-  edgePolicy: "removeInvalidEdges";
-}
-
-export type GraphPatchOperationV01 =
-  | AddNodeOperationV01
-  | RemoveNodeOperationV01
-  | ReplaceNodeOperationV01
-  | SetNodeParamsOperationV01
-  | SetNodeParamOperationV01
-  | AddEdgeOperationV01
-  | RemoveEdgeOperationV01
-  | ReplaceNodeInterfaceOperationV01;
-
-export interface GraphPatchV01 {
-  schema: "skenion.graph.patch";
-  schemaVersion: "0.1.0";
-  id: string;
-  baseRevision: string;
-  clientId?: string;
-  createdAt?: string;
-  description?: string;
-  ops: GraphPatchOperationV01[];
-}
-
-export type GraphPatchEventKindV01 = "apply" | "undo" | "redo";
-
-export interface GraphPatchEventV01 {
-  schema: "skenion.graph.patch.event";
-  schemaVersion: "0.1.0";
-  id: string;
-  sequence: number;
-  kind: GraphPatchEventKindV01;
-  patch: GraphPatchV01;
-  inversePatch: GraphPatchV01;
-  revisionBefore: string;
-  revisionAfter: string;
-  clientId?: string;
-  description?: string;
-  subjectEventId?: string;
-  createdAt: string;
-}
-
-export interface GraphPatchHistoryV01 {
-  schema: "skenion.graph.patch.history";
-  schemaVersion: "0.1.0";
-  events: GraphPatchEventV01[];
-  canUndo: boolean;
-  canRedo: boolean;
-  undoDepth: number;
-  redoDepth: number;
-}
-
-export type ApplyGraphPatchResult =
-  | { ok: true; graph: GraphDocumentV01 }
-  | { ok: false; errors: string[] };
-
-export type InvertGraphPatchResult =
-  | { ok: true; inversePatch: GraphPatchV01 }
-  | { ok: false; errors: string[] };
 
 export type ExecutionModelV01 =
   | "event"
@@ -1740,25 +1588,8 @@ export interface NodeDefinitionManifestV01 {
   scriptApiVersion?: string;
   bundleHash?: string;
   surface?: NodeSurfaceV01;
-  ports: PortV01[];
-  execution: NodeExecutionV01;
-  state: NodeStateV01;
-  permissions: string[];
-  capabilities: string[];
-}
-
-export interface NodeDefinitionManifestV02 {
-  schema: "skenion.node.definition";
-  schemaVersion: "0.2.0";
-  id: string;
-  version: string;
-  displayName: string;
-  category: string;
-  scriptApiVersion?: string;
-  bundleHash?: string;
-  surface?: NodeSurfaceV01;
-  ports: PortSpecV02[];
-  portGroups?: PortGroupSpecV02[];
+  ports: PortSpecV01[];
+  portGroups?: PortGroupSpecV01[];
   execution: NodeExecutionV01;
   state: NodeStateV01;
   permissions: string[];
@@ -1852,7 +1683,7 @@ export interface ObjectTextPortV01 {
   id: string;
   direction: PortDirection;
   type: string;
-  rate?: PortRateV02;
+  rate?: PortRateV01;
   activation?: "trigger" | "latched" | "passive";
   defaultValue?: unknown;
   description?: string;

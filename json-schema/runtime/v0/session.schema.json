@@ -228,8 +228,8 @@
       ]
     },
     "runtimeProjectSnapshot": {
-      "description": "Active Runtime project snapshots are ProjectDocument v0.2 documents. v0.1 graphs remain valid only as legacy import/migration inputs.",
-      "$ref": "https://skenion.dev/schemas/project/v0.2/project.schema.json"
+      "description": "Active Runtime project snapshots are current ProjectDocument v0.1 documents.",
+      "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json"
     },
     "runtimeSessionSnapshot": {
       "type": "object",
@@ -488,12 +488,9 @@
     },
     "runtimeSessionCapabilitySet": {
       "type": "object",
-      "required": ["sessionAddressing", "defaultSessionAlias", "eventReplay", "multiWindow", "profiles", "authPolicy"],
+      "required": ["sessionAddressing", "eventReplay", "multiWindow", "profiles", "authPolicy"],
       "properties": {
         "sessionAddressing": {
-          "type": "boolean"
-        },
-        "defaultSessionAlias": {
           "type": "boolean"
         },
         "eventReplay": {

@@ -91,26 +91,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeApiResponse"
-  /v0/session:
-    get:
-      summary: Compatibility/default-session alias: return the current local runtime session state.
-      description: Compatibility alias for the default local session. New desktop and multi-window clients should use GET /v0/sessions/{sessionId} for session profile and capability metadata.
-      responses:
-        "200":
-          description: Current session state.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeSessionResponse"
-    delete:
-      summary: Compatibility/default-session alias: clear the current local runtime session.
-      responses:
-        "200":
-          description: Cleared session state.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeSessionResponse"
   /v0/sessions/{sessionId}:
     get:
       summary: Return canonical session info, profile, and capabilities for an explicit session.
@@ -129,30 +109,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeSessionInfoResponse"
-  /v0/session/events/stream:
-    get:
-      summary: Compatibility/default-session alias for Runtime-authoritative session events.
-      description: New clients should stream explicit session events from /v0/sessions/{sessionId}/events/stream.
-      parameters:
-        - name: since
-          in: query
-          required: false
-          schema:
-            type: string
-            minLength: 1
-          description: Optional replay cursor. For v0 this is a decimal session event sequence encoded as a string.
-      responses:
-        "200":
-          description: Default-session event stream. Each event carries a full canonical snapshot, history, session id, sequence/revision metadata, and replay/gap diagnostics.
-          content:
-            text/event-stream:
-              schema:
-                type: string
-              examples:
-                session:
-                  value: |
-                    event: session
-                    data: {"schema":"skenion.runtime.session.event","schemaVersion":"0.1.0","id":"event-1","sessionId":"default","sequence":1,"sessionRevision":1,"kind":"snapshot","snapshot":{"sessionRevision":1,"viewRevision":1,"controlRevision":1,"project":null,"diagnostics":[],"plan":null},"history":{"schema":"skenion.runtime.history","schemaVersion":"0.1.0","entries":[],"canUndo":false,"canRedo":false,"undoDepth":0,"redoDepth":0},"replay":{"cursor":"1","previousCursor":null,"replayed":false,"gap":null,"overflow":false},"diagnostics":[],"createdAt":"2026-06-22T00:00:00.000Z"}
   /v0/sessions/{sessionId}/events/stream:
     get:
       summary: Stream Runtime-authoritative events for an explicit session.
@@ -183,79 +139,10 @@ paths:
                   value: |
                     event: session
                     data: {"schema":"skenion.runtime.session.event","schemaVersion":"0.1.0","id":"event-1","sessionId":"session-a","sequence":1,"sessionRevision":1,"kind":"snapshot","snapshot":{"sessionRevision":1,"viewRevision":1,"controlRevision":1,"project":null,"diagnostics":[],"plan":null},"history":{"schema":"skenion.runtime.history","schemaVersion":"0.1.0","entries":[],"canUndo":false,"canRedo":false,"undoDepth":0,"redoDepth":0},"replay":{"cursor":"1","previousCursor":null,"replayed":false,"gap":null,"overflow":false},"diagnostics":[],"createdAt":"2026-06-22T00:00:00.000Z"}
-  /v0/session/load:
-    post:
-      summary: Compatibility/default-session alias: validate and load a project payload.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProjectRequest"
-      responses:
-        "200":
-          description: Session state after load attempt.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeSessionResponse"
-  /v0/session/validate:
-    post:
-      summary: Compatibility/default-session alias: validate the loaded session.
-      responses:
-        "200":
-          description: Session validation result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeSessionResponse"
-  /v0/session/plan:
-    post:
-      summary: Compatibility/default-session alias: build an execution plan.
-      responses:
-        "200":
-          description: Session planning result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeSessionResponse"
-  /v0/session/run:
-    post:
-      summary: Compatibility/default-session alias: run a dummy execution.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SessionRunRequest"
-      responses:
-        "200":
-          description: Session dummy execution result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeSessionResponse"
-  /v0/session/mutate:
-    post:
-      summary: Compatibility/default-session alias for legacy graph and view mutation.
-      description: New high-level Runtime operations, including graph-fragment paste, use POST /v0/sessions/{sessionId}/operations.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RuntimeMutationRequest"
-      responses:
-        "200":
-          description: Mutation result and current Runtime-authoritative session snapshot.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeMutationResponse"
   /v0/sessions/{sessionId}/operations:
     post:
       summary: Apply a Runtime operation to an explicit session.
-      description: Canonical v0 session-addressed operation endpoint. The legacy /v0/session paths remain compatibility/default-session aliases only.
+      description: Canonical v0 session-addressed operation endpoint.
       parameters:
         - name: sessionId
           in: path
@@ -328,159 +215,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RuntimeCollaborationSelectionEnvelope"
-  /v0/session/history:
-    get:
-      summary: Compatibility/default-session alias: return mutation history.
-      responses:
-        "200":
-          description: Current session mutation history.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeHistory"
-  /v0/session/control/event:
-    post:
-      summary: Compatibility/default-session alias: dispatch a runtime-only control event.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RuntimeControlEventRequest"
-      responses:
-        "200":
-          description: Control event dispatch result and emitted output values.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeControlEventResponse"
-  /v0/session/control/state:
-    get:
-      summary: Compatibility/default-session alias: return runtime-only control state.
-      responses:
-        "200":
-          description: Current control values by stateful value node id.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeControlStateResponse"
-  /v0/session/control/read:
-    post:
-      summary: Compatibility/default-session alias: read graph param, port metadata, or runtime control state.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RuntimeControlReadRequest"
-      responses:
-        "200":
-          description: Addressed control read result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeControlReadResponse"
-  /v0/session/undo:
-    post:
-      summary: Compatibility/default-session alias: undo the latest accepted mutation.
-      responses:
-        "200":
-          description: Undo result and current session state.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeMutationResponse"
-  /v0/session/redo:
-    post:
-      summary: Compatibility/default-session alias: redo the latest undone mutation.
-      responses:
-        "200":
-          description: Redo result and current session state.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeMutationResponse"
-  /v0/session/preview:
-    get:
-      summary: Compatibility/default-session alias: return preview status.
-      responses:
-        "200":
-          description: Current session preview status.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
-  /v0/session/preview/start:
-    post:
-      summary: Compatibility/default-session alias: start the local native preview.
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RuntimePreviewStartRequest"
-      responses:
-        "200":
-          description: Preview status after start attempt.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
-  /v0/session/preview/stop:
-    post:
-      summary: Compatibility/default-session alias: stop the local native preview.
-      responses:
-        "200":
-          description: Preview status after stop attempt.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
-  /v0/session/preview/restart:
-    post:
-      summary: Compatibility/default-session alias: restart the local native preview.
-      responses:
-        "200":
-          description: Preview status after restart attempt.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimePreviewStatusResponse"
-  /v0/session/telemetry:
-    get:
-      summary: Compatibility/default-session alias: return runtime telemetry.
-      responses:
-        "200":
-          description: Current session, preview, render, and process telemetry.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RuntimeTelemetrySnapshot"
-  /v0/session/telemetry/stream:
-    get:
-      summary: Compatibility/default-session alias: stream runtime telemetry snapshots.
-      responses:
-        "200":
-          description: Runtime telemetry event stream.
-          content:
-            text/event-stream:
-              schema:
-                type: string
-              examples:
-                telemetry:
-                  value: |
-                    event: telemetry
-                    data: {"schema":"skenion.runtime.telemetry","schemaVersion":"0.1.0","ok":true}
-  /v0/session/render/generated-shader:
-    get:
-      summary: Compatibility/default-session alias: return generated WGSL source.
-      responses:
-        "200":
-          description: Generated shader source or diagnostics explaining why it is unavailable.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GeneratedShaderResponse"
   /v0/assets/import:
     post:
       summary: Import a local asset into the Runtime's local asset store.
@@ -728,7 +462,6 @@ components:
       type: object
       required:
         - sessionAddressing
-        - defaultSessionAlias
         - eventReplay
         - multiWindow
         - profiles
@@ -736,9 +469,6 @@ components:
       properties:
         sessionAddressing:
           type: boolean
-        defaultSessionAlias:
-          type: boolean
-          description: True when /v0/session compatibility routes target the default local session.
         eventReplay:
           type: boolean
         multiWindow:
@@ -1094,7 +824,7 @@ components:
                 $ref: "#/components/schemas/RuntimeIoInlineFrame"
           additionalProperties: false
     ProjectRequest:
-      $ref: "#/components/schemas/ProjectDocumentV02"
+      $ref: "#/components/schemas/ProjectDocumentV01"
     RunProjectRequest:
       allOf:
         - $ref: "#/components/schemas/ProjectRequest"
@@ -1180,7 +910,7 @@ components:
             - type: "null"
       additionalProperties: false
     RuntimeProjectSnapshot:
-      $ref: "#/components/schemas/ProjectDocumentV02"
+      $ref: "#/components/schemas/ProjectDocumentV01"
     SessionRunRequest:
       type: object
       properties:
@@ -1200,10 +930,10 @@ components:
         description:
           type: string
       additionalProperties: false
-    ProjectDocumentV02:
-      $ref: "../json-schema/project/v0.2/project.schema.json"
-    GraphFragmentV02:
-      $ref: "../json-schema/graph/v0.2/fragment.schema.json"
+    ProjectDocumentV01:
+      $ref: "../json-schema/project/v0.1/project.schema.json"
+    GraphFragmentV01:
+      $ref: "../json-schema/graph/v0.1/fragment.schema.json"
     PatchPath:
       $ref: "../json-schema/runtime/v0/operation.schema.json#/$defs/patchPath"
     GraphTargetRef:

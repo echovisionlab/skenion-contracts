@@ -3,19 +3,16 @@
 use std::{fs, path::Path};
 
 use skenion_contracts::{
-    GraphDocumentV01, GraphDocumentV02, GraphFragmentOutsideEndpointPolicyV02, GraphFragmentV02,
-    GraphPatchEventV01, GraphPatchHistoryV01, GraphPatchV01, NodeDefinitionManifestV01,
-    NodeDefinitionManifestV02, ObjectTextParseResultV01, PasteGraphFragmentResponse,
-    ProjectDocumentV01, ProjectDocumentV02, RuntimeCollaborationEventEnvelope,
-    RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationBatchResult,
-    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
-    RuntimeCollaborationPresenceEnvelope, RuntimeCollaborationSelectionEnvelope,
-    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionInfoResponse,
-    analyze_graph_document_v02, analyze_graph_fragment_v02, migrate_graph_document_v01_to_v02,
-    migrate_project_document_v01_to_v02, parse_object_text_v01, validate_graph_document_v01,
-    validate_graph_document_v02, validate_graph_fragment_v02, validate_node_definition_v01,
-    validate_node_definition_v02, validate_object_text_parse_result_v01,
-    validate_paste_graph_fragment_response, validate_project_document_v02,
+    GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
+    NodeDefinitionManifestV01, ObjectTextParseResultV01, PasteGraphFragmentResponse,
+    ProjectDocumentV01, RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
+    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
+    RuntimeCollaborationOperationResult, RuntimeCollaborationPresenceEnvelope,
+    RuntimeCollaborationSelectionEnvelope, RuntimeOperationEnvelope, RuntimeSessionEvent,
+    RuntimeSessionInfoResponse, analyze_graph_document_v01, analyze_graph_fragment_v01,
+    parse_object_text_v01, validate_graph_document_v01, validate_graph_fragment_v01,
+    validate_node_definition_v01, validate_object_text_parse_result_v01,
+    validate_paste_graph_fragment_response, validate_project_document_v01,
     validate_runtime_collaboration_event_envelope, validate_runtime_collaboration_operation_batch,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
@@ -71,96 +68,49 @@ fn validates_graph_fixtures() {
 }
 
 #[test]
-fn validates_v02_graph_fixtures() {
-    for file in fixture_files("../../fixtures/graph/v0.2/valid") {
-        let graph: GraphDocumentV02 =
+fn validates_v01_graph_fixtures() {
+    for file in fixture_files("../../fixtures/graph/v0.1/valid") {
+        let graph: GraphDocumentV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
                 .expect("valid graph fixture should parse");
-        validate_graph_document_v02(&graph)
+        validate_graph_document_v01(&graph)
             .unwrap_or_else(|error| panic!("{} should be valid: {error}", file.display()));
     }
 
-    for file in fixture_files("../../fixtures/graph/v0.2/invalid") {
-        let graph: GraphDocumentV02 =
+    for file in fixture_files("../../fixtures/graph/v0.1/invalid") {
+        let graph: GraphDocumentV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
                 .expect("invalid graph fixture should still parse");
         assert!(
-            validate_graph_document_v02(&graph).is_err(),
+            validate_graph_document_v01(&graph).is_err(),
             "{} should be invalid",
             file.display()
         );
     }
 }
-
 #[test]
-fn migrates_legacy_v01_fixtures_to_v02_active_contracts() {
-    for name in ["minimal-value", "core-panel-help"] {
-        let input_path = format!("../../fixtures/migration/v0.1-to-v0.2/{name}.input.graph.json");
-        let expected_path =
-            format!("../../fixtures/migration/v0.1-to-v0.2/{name}.expected.graph.json");
-        let input: GraphDocumentV01 = serde_json::from_slice(
-            &fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join(&input_path))
-                .expect("input graph fixture should be readable"),
-        )
-        .expect("input graph fixture should parse");
-        let expected: GraphDocumentV02 = serde_json::from_slice(
-            &fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join(&expected_path))
-                .expect("expected graph fixture should be readable"),
-        )
-        .expect("expected graph fixture should parse");
-        let migrated = migrate_graph_document_v01_to_v02(&input);
-
-        assert_eq!(migrated, expected, "{name}");
-        validate_graph_document_v01(&input).expect("legacy graph input should validate");
-        validate_graph_document_v02(&migrated).expect("migrated graph should validate");
-    }
-
-    let project_input: ProjectDocumentV01 = serde_json::from_slice(
-        &fs::read(
-            Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../../fixtures/migration/v0.1-to-v0.2/minimal-project.input.project.json"),
-        )
-        .expect("input project fixture should be readable"),
-    )
-    .expect("input project fixture should parse");
-    let project_expected: ProjectDocumentV02 =
-        serde_json::from_slice(
-            &fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join(
-                "../../fixtures/migration/v0.1-to-v0.2/minimal-project.expected.project.json",
-            ))
-            .expect("expected project fixture should be readable"),
-        )
-        .expect("expected project fixture should parse");
-    let project_migrated = migrate_project_document_v01_to_v02(&project_input);
-
-    assert_eq!(project_migrated, project_expected);
-    assert!(project_migrated.patch_library.is_empty());
-    validate_project_document_v02(&project_migrated).expect("migrated project should validate");
-}
-
-#[test]
-fn validates_v02_graph_fragment_fixtures() {
-    for file in fixture_files("../../fixtures/graph-fragment/v0.2/valid") {
-        let fragment: GraphFragmentV02 =
+fn validates_v01_graph_fragment_fixtures() {
+    for file in fixture_files("../../fixtures/graph-fragment/v0.1/valid") {
+        let fragment: GraphFragmentV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
                 .expect("valid graph fragment fixture should parse");
-        let result = validate_graph_fragment_v02(&fragment)
+        let result = validate_graph_fragment_v01(&fragment)
             .unwrap_or_else(|error| panic!("{} should be valid: {error}", file.display()));
         assert!(result.ok);
         assert!(result.omitted_edge_ids.is_empty());
     }
 
-    for file in fixture_files("../../fixtures/graph-fragment/v0.2/invalid") {
-        let fragment: GraphFragmentV02 =
+    for file in fixture_files("../../fixtures/graph-fragment/v0.1/invalid") {
+        let fragment: GraphFragmentV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
                 .expect("invalid graph fragment fixture should still parse");
         assert!(
-            validate_graph_fragment_v02(&fragment).is_err(),
+            validate_graph_fragment_v01(&fragment).is_err(),
             "{} should be invalid",
             file.display()
         );
         let omitted =
-            analyze_graph_fragment_v02(&fragment, GraphFragmentOutsideEndpointPolicyV02::Omit);
+            analyze_graph_fragment_v01(&fragment, GraphFragmentOutsideEndpointPolicyV01::Omit);
         assert!(omitted.ok);
         assert_eq!(omitted.omitted_edge_ids, vec!["edge-to-outside".to_owned()]);
     }
@@ -386,12 +336,12 @@ fn validates_runtime_session_fixtures() {
 
 #[test]
 fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
-    let duplicate_ports: NodeDefinitionManifestV02 = serde_json::from_str(
+    let duplicate_ports: NodeDefinitionManifestV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.node.definition",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "core.duplicate-port",
-          "version": "0.2.0",
+          "version": "0.1.0",
           "displayName": "Duplicate Port",
           "category": "Core",
           "ports": [
@@ -406,20 +356,20 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
     )
     .expect("duplicate port definition should parse");
     let duplicate_report =
-        validate_node_definition_v02(&duplicate_ports).expect_err("duplicate port should fail");
+        validate_node_definition_v01(&duplicate_ports).expect_err("duplicate port should fail");
     assert!(duplicate_report.to_string().contains("duplicate port id"));
 
-    let message_any_graph: GraphDocumentV02 = serde_json::from_str(
+    let message_any_graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "message-any-control-types",
           "revision": "1",
           "nodes": [
             {
               "id": "button",
               "kind": "core.bang",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "out", "direction": "output", "type": "event.bang", "rate": "event" }
@@ -428,7 +378,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "float_value",
               "kind": "core.float",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "value", "direction": "output", "type": "number.float", "rate": "event" }
@@ -437,7 +387,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "int_value",
               "kind": "core.int",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "value", "direction": "output", "type": "number.int", "rate": "event" }
@@ -446,7 +396,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "uint_value",
               "kind": "core.uint",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "value", "direction": "output", "type": "number.uint", "rate": "event" }
@@ -455,7 +405,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "bool_value",
               "kind": "core.bool",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "value", "direction": "output", "type": "boolean", "rate": "event" }
@@ -464,7 +414,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "color_value",
               "kind": "core.color",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "value", "direction": "output", "type": "color", "rate": "event" }
@@ -473,7 +423,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "string_value",
               "kind": "core.string",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "value", "direction": "output", "type": "string", "rate": "event" }
@@ -482,7 +432,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "message",
               "kind": "core.message",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "message.any", "rate": "event", "maxConnections": 7, "mergePolicy": "ordered-events" }
@@ -529,19 +479,19 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
         }"#,
     )
     .expect("message-any graph should parse");
-    validate_graph_document_v02(&message_any_graph).expect("message-any graph should validate");
+    validate_graph_document_v01(&message_any_graph).expect("message-any graph should validate");
 
-    let invalid_cycle_graph: GraphDocumentV02 = serde_json::from_str(
+    let invalid_cycle_graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "invalid-render-cycle",
           "revision": "1",
           "nodes": [
             {
               "id": "a",
               "kind": "render.a",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "render.frame" },
@@ -551,7 +501,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "b",
               "kind": "render.b",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "render.frame" },
@@ -575,20 +525,20 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
     )
     .expect("invalid cycle graph should parse");
     let invalid_cycle_report =
-        validate_graph_document_v02(&invalid_cycle_graph).expect_err("cycle should fail");
+        validate_graph_document_v01(&invalid_cycle_graph).expect_err("cycle should fail");
     assert!(invalid_cycle_report.to_string().contains("invalid-cycle"));
 
-    let warning_graph: GraphDocumentV02 = serde_json::from_str(
+    let warning_graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "risky-feedback-cycle",
           "revision": "1",
           "nodes": [
             {
               "id": "a",
               "kind": "core.a",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "value.number" },
@@ -598,7 +548,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             {
               "id": "b",
               "kind": "core.b",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "value.number" },
@@ -622,9 +572,9 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
         }"#,
     )
     .expect("warning graph should parse");
-    let warning_project: ProjectDocumentV02 = serde_json::from_value(serde_json::json!({
+    let warning_project: ProjectDocumentV01 = serde_json::from_value(serde_json::json!({
         "schema": "skenion.project",
-        "schemaVersion": "0.2.0",
+        "schemaVersion": "0.1.0",
         "id": "project-with-warning-graph",
         "revision": "1",
         "graph": warning_graph,
@@ -641,7 +591,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
         "patchLibrary": []
     }))
     .expect("warning project should parse");
-    validate_project_document_v02(&warning_project).expect("warnings should not fail project");
+    validate_project_document_v01(&warning_project).expect("warnings should not fail project");
 
     let invalid_event: RuntimeSessionEvent = serde_json::from_value(serde_json::json!({
         "schema": "skenion.runtime.session.event",
@@ -682,7 +632,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
                                 },
                                 "fragment": {
                                     "schema": "skenion.graph.fragment",
-                                    "schemaVersion": "0.2.0",
+                                    "schemaVersion": "0.1.0",
                                     "nodes": [
                                         {
                                             "id": "",
@@ -696,7 +646,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
                                         {
                                             "id": "",
                                             "kind": "core.float",
-                                            "kindVersion": "0.2.0",
+                                            "kindVersion": "0.1.0",
                                             "params": {},
                                             "ports": []
                                         }
@@ -750,19 +700,19 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
                         },
                         "fragment": {
                             "schema": "skenion.graph.fragment",
-                            "schemaVersion": "0.2.0",
+                            "schemaVersion": "0.1.0",
                             "nodes": [
                                 {
                                     "id": "",
                                     "kind": "core.float",
-                                    "kindVersion": "0.2.0",
+                                    "kindVersion": "0.1.0",
                                     "params": {},
                                     "ports": []
                                 },
                                 {
                                     "id": "",
                                     "kind": "core.float",
-                                    "kindVersion": "0.2.0",
+                                    "kindVersion": "0.1.0",
                                     "params": {},
                                     "ports": []
                                 }
@@ -808,17 +758,17 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
 
 #[test]
 fn validates_remaining_collaboration_integration_coverage_paths() {
-    let accepted_disabled_graph: GraphDocumentV02 = serde_json::from_str(
+    let accepted_disabled_graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "accepted-disabled-graph",
           "revision": "1",
           "nodes": [
             {
               "id": "texture",
               "kind": "gpu.texture",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "out", "direction": "output", "type": "gpu.texture2d" }
@@ -836,7 +786,7 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
             {
               "id": "viewer",
               "kind": "render.viewer",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 {
@@ -859,20 +809,20 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
         }"#,
     )
     .expect("accepted disabled graph should parse");
-    validate_graph_document_v02(&accepted_disabled_graph)
+    validate_graph_document_v01(&accepted_disabled_graph)
         .expect("accepted disabled graph should validate");
 
-    let missing_source_graph: GraphDocumentV02 = serde_json::from_str(
+    let missing_source_graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "missing-source-graph",
           "revision": "1",
           "nodes": [
             {
               "id": "viewer",
               "kind": "render.viewer",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "render.frame" }
@@ -889,7 +839,7 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
         }"#,
     )
     .expect("missing source graph should parse");
-    let missing_source = analyze_graph_document_v02(&missing_source_graph);
+    let missing_source = analyze_graph_document_v01(&missing_source_graph);
     assert!(!missing_source.ok);
     assert!(
         missing_source
@@ -898,17 +848,17 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
             .any(|diagnostic| diagnostic.code == "missing-source-port")
     );
 
-    let value_to_render_cycle: GraphDocumentV02 = serde_json::from_str(
+    let value_to_render_cycle: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "value-to-render-cycle",
           "revision": "1",
           "nodes": [
             {
               "id": "loop",
               "kind": "core.loop",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 {
@@ -932,7 +882,7 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
     )
     .expect("value-to-render cycle should parse");
     assert!(
-        validate_graph_document_v02(&value_to_render_cycle)
+        validate_graph_document_v01(&value_to_render_cycle)
             .expect_err("mixed family self-cycle should fail")
             .to_string()
             .contains("invalid-cycle")
@@ -964,7 +914,7 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
                 "node": {
                   "id": "gain",
                   "kind": "core.float",
-                  "kindVersion": "0.2.0",
+                  "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
                     { "id": "out", "direction": "output", "type": "number.float" }
@@ -1078,12 +1028,12 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
             },
             "fragment": {
               "schema": "skenion.graph.fragment",
-              "schemaVersion": "0.2.0",
+              "schemaVersion": "0.1.0",
               "nodes": [
                 {
                   "id": "source",
                   "kind": "core.float",
-                  "kindVersion": "0.2.0",
+                  "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
                     { "id": "out", "direction": "output", "type": "number.float" }
@@ -1147,12 +1097,12 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
 	                      },
 	                      "fragment": {
 	                        "schema": "skenion.graph.fragment",
-	                        "schemaVersion": "0.2.0",
+	                        "schemaVersion": "0.1.0",
 	                        "nodes": [
 	                          {
 	                            "id": "value_2",
 	                            "kind": "core.float",
-	                            "kindVersion": "0.2.0",
+	                            "kindVersion": "0.1.0",
 	                            "params": { "value": 0.75 },
 	                            "ports": [
 	                              { "id": "out", "direction": "output", "type": "number.float", "rate": "control" }
@@ -1238,21 +1188,21 @@ fn validates_node_definition_fixtures() {
 }
 
 #[test]
-fn validates_v02_node_definition_fixtures() {
-    for file in fixture_files("../../fixtures/node/v0.2/valid") {
-        let definition: NodeDefinitionManifestV02 =
+fn validates_v01_node_definition_fixtures() {
+    for file in fixture_files("../../fixtures/node/v0.1/valid") {
+        let definition: NodeDefinitionManifestV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
                 .expect("valid node fixture should parse");
-        validate_node_definition_v02(&definition)
+        validate_node_definition_v01(&definition)
             .unwrap_or_else(|error| panic!("{} should be valid: {error}", file.display()));
     }
 
-    for file in fixture_files("../../fixtures/node/v0.2/invalid") {
-        let definition: NodeDefinitionManifestV02 =
+    for file in fixture_files("../../fixtures/node/v0.1/invalid") {
+        let definition: NodeDefinitionManifestV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
                 .expect("invalid node fixture should still parse");
         assert!(
-            validate_node_definition_v02(&definition).is_err(),
+            validate_node_definition_v01(&definition).is_err(),
             "{} should be invalid",
             file.display()
         );
@@ -1260,88 +1210,26 @@ fn validates_v02_node_definition_fixtures() {
 }
 
 #[test]
-fn validates_v02_project_patch_library_fixtures() {
-    for file in fixture_files("../../fixtures/project/v0.2/valid") {
-        let project: ProjectDocumentV02 =
+fn validates_v01_project_patch_library_fixtures() {
+    for file in fixture_files("../../fixtures/project/v0.1/valid") {
+        let project: ProjectDocumentV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
-                .expect("valid v0.2 project fixture should parse");
-        validate_project_document_v02(&project)
+                .expect("valid v0.1 project fixture should parse");
+        validate_project_document_v01(&project)
             .unwrap_or_else(|error| panic!("{} should be valid: {error}", file.display()));
     }
 
-    for file in fixture_files("../../fixtures/project/v0.2/invalid") {
-        let project: ProjectDocumentV02 =
+    for file in fixture_files("../../fixtures/project/v0.1/invalid") {
+        let project: ProjectDocumentV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
-                .expect("invalid v0.2 project fixture should still parse");
+                .expect("invalid v0.1 project fixture should still parse");
         assert!(
-            validate_project_document_v02(&project).is_err(),
+            validate_project_document_v01(&project).is_err(),
             "{} should be invalid",
             file.display()
         );
     }
 }
-
-#[test]
-fn parses_graph_patch_fixtures() {
-    for file in fixture_files("../../fixtures/graph-patch/v0.1/valid") {
-        let patch: GraphPatchV01 =
-            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
-                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
-        assert_eq!(patch.schema, "skenion.graph.patch");
-        assert_eq!(patch.schema_version, "0.1.0");
-    }
-
-    let schema_invalid = [
-        "add-edge-missing-endpoint.patch.json",
-        "add-node-missing-node.patch.json",
-        "missing-base-revision.patch.json",
-        "unsupported-op.patch.json",
-    ];
-    for file_name in schema_invalid {
-        let file = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../fixtures/graph-patch/v0.1/invalid")
-            .join(file_name);
-        let parsed = serde_json::from_slice::<GraphPatchV01>(
-            &fs::read(&file).expect("fixture should be readable"),
-        );
-        assert!(
-            parsed.is_err(),
-            "{} should be structurally invalid",
-            file.display()
-        );
-    }
-}
-
-#[test]
-fn parses_graph_patch_event_and_history_fixtures() {
-    for file in fixture_files("../../fixtures/graph-patch-event/v0.1/valid") {
-        let event: GraphPatchEventV01 =
-            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
-                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
-        assert_eq!(event.schema, "skenion.graph.patch.event");
-        assert_eq!(event.schema_version, "0.1.0");
-    }
-
-    for file in fixture_files("../../fixtures/graph-patch-event/v0.1/invalid") {
-        let parsed = serde_json::from_slice::<GraphPatchEventV01>(
-            &fs::read(&file).expect("fixture should be readable"),
-        );
-        assert!(
-            parsed.is_err(),
-            "{} should be structurally invalid",
-            file.display()
-        );
-    }
-
-    for file in fixture_files("../../fixtures/graph-patch-history/v0.1/valid") {
-        let history: GraphPatchHistoryV01 =
-            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
-                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
-        assert_eq!(history.schema, "skenion.graph.patch.history");
-        assert_eq!(history.schema_version, "0.1.0");
-    }
-}
-
 #[test]
 fn parses_object_text_parse_result_fixtures() {
     for file in fixture_files("../../fixtures/object-text/v0.1/valid") {

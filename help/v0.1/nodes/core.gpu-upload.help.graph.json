@@ -16,10 +16,7 @@
           "id": "asset",
           "direction": "output",
           "label": "Asset",
-          "type": {
-            "flow": "resource",
-            "dataKind": "asset.video"
-          }
+          "type": "asset.video"
         }
       ]
     },
@@ -33,23 +30,13 @@
           "id": "asset",
           "direction": "input",
           "label": "Asset",
-          "type": {
-            "flow": "resource",
-            "dataKind": "asset.video"
-          },
-          "activation": "latched"
+          "type": "asset.video"
         },
         {
           "id": "frames",
           "direction": "output",
           "label": "Frames",
-          "type": {
-            "flow": "stream",
-            "dataKind": "video.frame",
-            "frameRate": 60,
-            "colorSpace": "srgb",
-            "alphaPolicy": "black"
-          }
+          "type": "video.frame"
         }
       ]
     },
@@ -63,25 +50,13 @@
           "id": "frames",
           "direction": "input",
           "label": "Frames",
-          "type": {
-            "flow": "stream",
-            "dataKind": "video.frame",
-            "frameRate": 60,
-            "colorSpace": "srgb",
-            "alphaPolicy": "black"
-          },
-          "activation": "latched"
+          "type": "video.frame"
         },
         {
           "id": "texture",
           "direction": "output",
           "label": "Texture",
-          "type": {
-            "flow": "resource",
-            "dataKind": "gpu.texture2d",
-            "format": "rgba8unorm",
-            "colorSpace": "srgb"
-          }
+          "type": "gpu.texture2d"
         }
       ]
     },
@@ -95,46 +70,43 @@
           "id": "texture",
           "direction": "input",
           "label": "Texture",
-          "type": {
-            "flow": "resource",
-            "dataKind": "gpu.texture2d",
-            "format": "rgba8unorm",
-            "colorSpace": "srgb"
-          },
-          "activation": "latched"
+          "type": "gpu.texture2d"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "asset_1",
-        "port": "asset"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "asset_1",
+        "portId": "asset"
       },
-      "to": {
-        "node": "decode_1",
-        "port": "asset"
+      "target": {
+        "nodeId": "decode_1",
+        "portId": "asset"
       }
     },
     {
-      "from": {
-        "node": "decode_1",
-        "port": "frames"
+      "id": "edge-2",
+      "source": {
+        "nodeId": "decode_1",
+        "portId": "frames"
       },
-      "to": {
-        "node": "upload_1",
-        "port": "frames"
+      "target": {
+        "nodeId": "upload_1",
+        "portId": "frames"
       }
     },
     {
-      "from": {
-        "node": "upload_1",
-        "port": "texture"
+      "id": "edge-3",
+      "source": {
+        "nodeId": "upload_1",
+        "portId": "texture"
       },
-      "to": {
-        "node": "preview_1",
-        "port": "texture"
+      "target": {
+        "nodeId": "preview_1",
+        "portId": "texture"
       }
     }
   ]

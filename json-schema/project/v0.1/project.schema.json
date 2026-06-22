@@ -1,10 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/project/v0.1/project.schema.json",
-  "title": "Skenion Project Document v0.1 (legacy import)",
-  "description": "Frozen legacy project document used only for import and migration fixtures. New authoring/runtime contracts use project v0.2.",
+  "title": "Skenion Project Document v0.1",
   "type": "object",
-  "required": ["schema", "schemaVersion", "id", "revision", "graph", "viewState"],
+  "required": ["schema", "schemaVersion", "id", "revision", "graph", "viewState", "patchLibrary"],
   "properties": {
     "schema": {
       "const": "skenion.project"
@@ -20,6 +19,32 @@
       "type": "string",
       "minLength": 1
     },
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "graph": {
+      "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json"
+    },
+    "viewState": {
+      "$ref": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json"
+    },
+    "patchLibrary": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/patchDefinition"
+      }
+    },
+    "tutorial": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "help": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
     "metadata": {
       "type": "object",
       "properties": {
@@ -38,20 +63,29 @@
       },
       "additionalProperties": true
     },
-    "graph": {
-      "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json"
-    },
-    "viewState": {
-      "$ref": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json"
-    },
-    "tutorial": {
+    "patchDefinition": {
       "type": "object",
-      "additionalProperties": true
-    },
-    "help": {
-      "type": "object",
-      "additionalProperties": true
+      "required": ["id", "revision", "graph"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        },
+        "graph": {
+          "$ref": "https://skenion.dev/schemas/graph/v0.1/graph.schema.json"
+        },
+        "viewState": {
+          "$ref": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json"
+        }
+      },
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  }
 }

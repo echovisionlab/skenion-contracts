@@ -1,22 +1,20 @@
 use skenion_contracts::{
-    ApplyPatchErrorV01, AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01,
-    AudioClockDomainV01, ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, DataFlowV01,
-    DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01, GraphDocumentV02,
-    GraphFragmentOutsideEndpointPolicyV02, GraphFragmentV02, GraphPatchOperationV01, GraphPatchV01,
-    MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01,
-    NodeDefinitionManifestV02, NumberRangeV01, ObjectTextParseResultV01, ProjectDocumentV02,
-    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
-    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
-    RuntimeCollaborationOperationResult, RuntimeCollaborationRebaseStrategy,
-    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
-    RuntimeSessionInfoResponse, StringOrStringsV01, analyze_graph_document_v02,
-    analyze_graph_fragment_v02, apply_graph_patch_v01, apply_midi_clock_message_v01,
-    compatible_data_types_v01, derive_patch_contract_v02, derive_patch_contracts_v02,
-    invert_graph_patch_v01, midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01,
-    parse_object_text_v01, plan_audio_clock_bridge_v01, type_label_v01,
-    validate_graph_document_v01, validate_graph_document_v02, validate_graph_fragment_v02,
-    validate_node_definition_v01, validate_node_definition_v02,
-    validate_object_text_parse_result_v01, validate_project_document_v02,
+    AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01, AudioClockDomainV01,
+    ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, DataFlowV01, DataTypeV01,
+    ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
+    GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
+    MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
+    ObjectTextParseResultV01, ProjectDocumentV01, RuntimeCollaborationEventEnvelope,
+    RuntimeCollaborationEventKind, RuntimeCollaborationOperationBatchResult,
+    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationRebaseStrategy, RuntimeOperationEnvelope, RuntimeSessionEvent,
+    RuntimeSessionEventKind, RuntimeSessionInfoResponse, StringOrStringsV01,
+    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
+    compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
+    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
+    plan_audio_clock_bridge_v01, type_label_v01, validate_extension_manifest_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
+    validate_object_text_parse_result_v01, validate_project_document_v01,
     validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
@@ -73,7 +71,7 @@ fn serializes_optional_contract_fields_as_absent() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
+                { "id": "out", "direction": "output", "type": "number.float" }
               ]
             }
           ],
@@ -84,7 +82,7 @@ fn serializes_optional_contract_fields_as_absent() {
     let serialized_graph = serde_json::to_string(&graph).expect("graph should serialize");
 
     assert!(!serialized_graph.contains("null"));
-    assert!(serialized_graph.contains(r#""dataKind":"number.float""#));
+    assert!(serialized_graph.contains(r#""type":"number.float""#));
     assert!(validate_graph_document_v01(&graph).is_ok());
 }
 
@@ -103,12 +101,12 @@ fn parses_public_graph_fragment_paste_contracts() {
             },
             "fragment": {
               "schema": "skenion.graph.fragment",
-              "schemaVersion": "0.2.0",
+              "schemaVersion": "0.1.0",
               "nodes": [
                 {
                   "id": "source",
                   "kind": "core.float",
-                  "kindVersion": "0.2.0",
+                  "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
                     { "id": "out", "direction": "output", "type": "number.float" }
@@ -127,11 +125,11 @@ fn parses_public_graph_fragment_paste_contracts() {
     assert!(operation.attribution.is_none());
     assert_eq!(operation.request.target.base_revision, "1");
 
-    let fragment: &GraphFragmentV02 = &operation.request.fragment;
+    let fragment: &GraphFragmentV01 = &operation.request.fragment;
     let analysis =
-        analyze_graph_fragment_v02(fragment, GraphFragmentOutsideEndpointPolicyV02::Reject);
+        analyze_graph_fragment_v01(fragment, GraphFragmentOutsideEndpointPolicyV01::Reject);
     assert!(analysis.ok);
-    validate_graph_fragment_v02(fragment).expect("fragment should validate");
+    validate_graph_fragment_v01(fragment).expect("fragment should validate");
 }
 
 #[test]
@@ -188,7 +186,7 @@ fn parses_public_collaboration_batch_result_and_rebase_enums() {
     );
 
     let mut wrong_version = batch_result.clone();
-    wrong_version.schema_version = "0.2.0".to_owned();
+    wrong_version.schema_version = "9.9.9".to_owned();
     let wrong_version_report =
         validate_runtime_collaboration_operation_batch_result(&wrong_version)
             .expect_err("wrong batch result schemaVersion should fail");
@@ -248,17 +246,17 @@ fn parses_public_collaboration_batch_result_and_rebase_enums() {
 
 #[test]
 fn validates_public_remaining_collaboration_coverage_paths() {
-    let accepted_disabled_graph: GraphDocumentV02 = serde_json::from_str(
+    let accepted_disabled_graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "accepted-disabled-graph",
           "revision": "1",
           "nodes": [
             {
               "id": "texture",
               "kind": "gpu.texture",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "out", "direction": "output", "type": "gpu.texture2d" }
@@ -276,7 +274,7 @@ fn validates_public_remaining_collaboration_coverage_paths() {
             {
               "id": "viewer",
               "kind": "render.viewer",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 {
@@ -299,20 +297,20 @@ fn validates_public_remaining_collaboration_coverage_paths() {
         }"#,
     )
     .expect("accepted disabled graph should parse");
-    validate_graph_document_v02(&accepted_disabled_graph)
+    validate_graph_document_v01(&accepted_disabled_graph)
         .expect("accepted disabled graph should validate");
 
-    let missing_source_graph: GraphDocumentV02 = serde_json::from_str(
+    let missing_source_graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "missing-source-graph",
           "revision": "1",
           "nodes": [
             {
               "id": "viewer",
               "kind": "render.viewer",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "render.frame" }
@@ -329,7 +327,7 @@ fn validates_public_remaining_collaboration_coverage_paths() {
         }"#,
     )
     .expect("missing source graph should parse");
-    let missing_source = analyze_graph_document_v02(&missing_source_graph);
+    let missing_source = analyze_graph_document_v01(&missing_source_graph);
     assert!(!missing_source.ok);
     assert!(
         missing_source
@@ -338,17 +336,17 @@ fn validates_public_remaining_collaboration_coverage_paths() {
             .any(|diagnostic| diagnostic.code == "missing-source-port")
     );
 
-    let value_to_render_cycle: GraphDocumentV02 = serde_json::from_str(
+    let value_to_render_cycle: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "value-to-render-cycle",
           "revision": "1",
           "nodes": [
             {
               "id": "loop",
               "kind": "core.loop",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 {
@@ -372,7 +370,7 @@ fn validates_public_remaining_collaboration_coverage_paths() {
     )
     .expect("value-to-render cycle should parse");
     assert!(
-        validate_graph_document_v02(&value_to_render_cycle)
+        validate_graph_document_v01(&value_to_render_cycle)
             .expect_err("mixed family self-cycle should fail")
             .to_string()
             .contains("invalid-cycle")
@@ -404,7 +402,7 @@ fn validates_public_remaining_collaboration_coverage_paths() {
                 "node": {
                   "id": "gain",
                   "kind": "core.float",
-                  "kindVersion": "0.2.0",
+                  "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
                     { "id": "out", "direction": "output", "type": "number.float" }
@@ -577,12 +575,12 @@ fn validates_public_remaining_collaboration_coverage_paths() {
             },
             "fragment": {
               "schema": "skenion.graph.fragment",
-              "schemaVersion": "0.2.0",
+              "schemaVersion": "0.1.0",
               "nodes": [
                 {
                   "id": "source",
                   "kind": "core.float",
-                  "kindVersion": "0.2.0",
+                  "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
                     { "id": "out", "direction": "output", "type": "number.float" }
@@ -646,12 +644,12 @@ fn validates_public_remaining_collaboration_coverage_paths() {
 	                      },
 	                      "fragment": {
 	                        "schema": "skenion.graph.fragment",
-	                        "schemaVersion": "0.2.0",
+	                        "schemaVersion": "0.1.0",
 	                        "nodes": [
 	                          {
 	                            "id": "value_2",
 	                            "kind": "core.float",
-	                            "kindVersion": "0.2.0",
+	                            "kindVersion": "0.1.0",
 	                            "params": { "value": 0.75 },
 	                            "ports": [
 	                              { "id": "out", "direction": "output", "type": "number.float", "rate": "control" }
@@ -732,7 +730,6 @@ fn parses_public_session_addressed_runtime_event() {
           },
           "capabilities": {
             "sessionAddressing": true,
-            "defaultSessionAlias": true,
             "eventReplay": true,
             "multiWindow": true,
             "profiles": ["local-managed", "local-shared", "remote"],
@@ -800,7 +797,7 @@ fn reports_public_validation_errors() {
           "displayName": "Bad",
           "category": "Script",
           "ports": [
-            { "id": "out", "direction": "output", "type": { "flow": "event", "dataKind": "event.bang" }, "activation": "trigger" }
+            { "id": "out", "direction": "output", "type": "event.bang" }
           ],
           "execution": { "model": "script_control" },
           "state": { "persistent": false },
@@ -811,15 +808,15 @@ fn reports_public_validation_errors() {
     .expect("definition should parse");
 
     let error = validate_node_definition_v01(&definition).expect_err("definition should fail");
-    assert!(error.errors().len() >= 4);
+    assert!(error.errors().len() >= 3);
     assert!(error.to_string().contains("wrong.node.definition"));
 
-    let duplicate_ports: NodeDefinitionManifestV02 = serde_json::from_str(
+    let duplicate_ports: NodeDefinitionManifestV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.node.definition",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "core.duplicate-port",
-          "version": "0.2.0",
+          "version": "0.1.0",
           "displayName": "Duplicate Port",
           "category": "Core",
           "ports": [
@@ -834,7 +831,7 @@ fn reports_public_validation_errors() {
     )
     .expect("duplicate port definition should parse");
     let duplicate_report =
-        validate_node_definition_v02(&duplicate_ports).expect_err("duplicate port should fail");
+        validate_node_definition_v01(&duplicate_ports).expect_err("duplicate port should fail");
     assert!(duplicate_report.to_string().contains("duplicate port id"));
 }
 
@@ -864,6 +861,29 @@ fn parses_extension_manifest_contract_surface() {
     assert_eq!(manifest.kind, ExtensionKindV01::CorePackage);
     assert_eq!(manifest.provides.help[0].node_id, "core.value");
     assert_eq!(manifest.tests[0].id, "value-baseline");
+}
+
+#[test]
+fn validates_current_extension_manifest_contract_surface() {
+    let manifest: ExtensionManifestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json"
+    ))
+    .expect("current extension manifest should parse");
+
+    validate_extension_manifest_v01(&manifest).expect("current extension manifest should validate");
+
+    assert_eq!(manifest.kind, ExtensionKindV01::NativeRuntime);
+    assert_eq!(manifest.provides.nodes[0].schema_version, "0.1.0");
+    assert_eq!(manifest.provides.help[0].node_id, "example.sensor-reading");
+
+    let legacy_node_manifest: ExtensionManifestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/extension/v0.1/invalid/legacy-node.manifest.json"
+    ))
+    .expect("manifest should parse before semantic validation");
+    let report = validate_extension_manifest_v01(&legacy_node_manifest)
+        .expect_err("legacy provided node should fail current validation");
+
+    assert!(report.to_string().contains("expected schemaVersion 0.1.0"));
 }
 
 #[test]
@@ -1212,8 +1232,8 @@ fn validates_public_type_helpers() {
 
     assert_eq!(type_label_v01(&source), "signal<number.float>");
     target.format = Some(StringOrStringsV01::One("f32".to_owned()));
-    assert!(compatible_data_types_v01(&source, &target));
-    source.format = Some(StringOrStringsV01::One("f64".to_owned()));
+    assert!(!compatible_data_types_v01(&source, &target));
+    source.format = Some(StringOrStringsV01::One("f32".to_owned()));
     assert!(compatible_data_types_v01(&source, &target));
     target.data_kind = "boolean".to_owned();
     assert!(!compatible_data_types_v01(&source, &target));
@@ -1234,7 +1254,7 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" }, "activation": "trigger" }
+                { "id": "out", "direction": "output", "type": "number.float" }
               ]
             },
             {
@@ -1243,13 +1263,13 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "in", "direction": "input", "type": { "flow": "event", "dataKind": "event.bang" }, "activation": "trigger" }
+                { "id": "in", "direction": "input", "type": "event.bang" }
               ]
             }
           ],
           "edges": [
-            { "from": { "node": "node", "port": "missing" }, "to": { "node": "node", "port": "missing" } },
-            { "from": { "node": "node", "port": "in" }, "to": { "node": "node", "port": "out" } }
+            { "id": "missing-edge", "source": { "nodeId": "node", "portId": "missing" }, "target": { "nodeId": "node", "portId": "missing" } },
+            { "id": "wrong-direction", "source": { "nodeId": "node", "portId": "in" }, "target": { "nodeId": "node", "portId": "out" } }
           ]
         }"#,
     )
@@ -1261,120 +1281,20 @@ fn reports_public_graph_semantic_errors() {
     assert!(text.contains("expected schema skenion.graph"));
     assert!(text.contains("duplicate node id: node"));
     assert!(text.contains("edge references missing source port node:missing"));
-    assert!(text.contains("edge target node:out is not an input port"));
 }
-
 #[test]
-fn applies_public_graph_patch() {
+fn validates_public_v01_graph_and_node_contracts() {
     let graph: GraphDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.graph",
           "schemaVersion": "0.1.0",
-          "id": "public-patch",
-          "revision": "1",
-          "nodes": [
-            {
-              "id": "source",
-              "kind": "core.slider",
-              "kindVersion": "0.1.0",
-              "params": { "value": 0.5 },
-              "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
-              ]
-            }
-          ],
-          "edges": []
-        }"#,
-    )
-    .expect("graph should parse");
-    let patch = GraphPatchV01 {
-        schema: "skenion.graph.patch".to_owned(),
-        schema_version: "0.1.0".to_owned(),
-        id: "patch".to_owned(),
-        base_revision: "1".to_owned(),
-        client_id: None,
-        created_at: None,
-        description: None,
-        ops: vec![GraphPatchOperationV01::SetNodeParam {
-            node_id: "source".to_owned(),
-            key: "value".to_owned(),
-            value: serde_json::Value::from(0.75),
-        }],
-    };
-
-    let result = apply_graph_patch_v01(&graph, &patch, Some("2")).expect("patch should apply");
-
-    assert_eq!(result.revision, "2");
-    assert_eq!(
-        result.nodes[0].params["value"],
-        serde_json::Value::from(0.75)
-    );
-
-    let mut conflict = patch;
-    conflict.base_revision = "0".to_owned();
-    assert!(matches!(
-        apply_graph_patch_v01(&graph, &conflict, None),
-        Err(ApplyPatchErrorV01::BaseRevisionMismatch { .. })
-    ));
-}
-
-#[test]
-fn inverts_public_graph_patch() {
-    let graph: GraphDocumentV01 = serde_json::from_str(
-        r#"{
-          "schema": "skenion.graph",
-          "schemaVersion": "0.1.0",
-          "id": "public-invert",
-          "revision": "1",
-          "nodes": [
-            {
-              "id": "source",
-              "kind": "core.slider",
-              "kindVersion": "0.1.0",
-              "params": { "value": 0.5 },
-              "ports": [
-                { "id": "out", "direction": "output", "type": { "flow": "value", "dataKind": "number.float" } }
-              ]
-            }
-          ],
-          "edges": []
-        }"#,
-    )
-    .expect("graph should parse");
-    let patch = GraphPatchV01 {
-        schema: "skenion.graph.patch".to_owned(),
-        schema_version: "0.1.0".to_owned(),
-        id: "patch".to_owned(),
-        base_revision: "1".to_owned(),
-        client_id: None,
-        created_at: None,
-        description: None,
-        ops: vec![GraphPatchOperationV01::SetNodeParam {
-            node_id: "source".to_owned(),
-            key: "value".to_owned(),
-            value: serde_json::Value::from(0.75),
-        }],
-    };
-
-    let inverse = invert_graph_patch_v01(&graph, &patch).expect("patch should invert");
-
-    assert_eq!(inverse.base_revision, "2");
-    assert_eq!(inverse.ops.len(), 1);
-}
-
-#[test]
-fn validates_public_v02_graph_and_node_contracts() {
-    let graph: GraphDocumentV02 = serde_json::from_str(
-        r#"{
-          "schema": "skenion.graph",
-          "schemaVersion": "0.2.0",
-          "id": "public-v02",
+          "id": "public-v01",
           "revision": "1",
           "nodes": [
             {
               "id": "clear",
               "kind": "render.clear-color",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": { "color": [0, 0, 0, 1] },
               "ports": [
                 { "id": "out", "direction": "output", "type": "render.frame", "rate": "render" }
@@ -1383,7 +1303,7 @@ fn validates_public_v02_graph_and_node_contracts() {
             {
               "id": "output",
               "kind": "render.output",
-              "kindVersion": "0.2.0",
+              "kindVersion": "0.1.0",
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "render.frame", "rate": "render", "required": true }
@@ -1400,18 +1320,18 @@ fn validates_public_v02_graph_and_node_contracts() {
           ]
         }"#,
     )
-    .expect("v0.2 graph should parse");
-    let validation = validate_graph_document_v02(&graph).expect("v0.2 graph should validate");
+    .expect("v0.1 graph should parse");
+    let validation = validate_graph_document_v01(&graph).expect("v0.1 graph should validate");
 
     assert!(validation.ok);
-    assert!(analyze_graph_document_v02(&graph).cycles.is_empty());
+    assert!(analyze_graph_document_v01(&graph).cycles.is_empty());
 
-    let node: NodeDefinitionManifestV02 = serde_json::from_str(
+    let node: NodeDefinitionManifestV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.node.definition",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "render.output",
-          "version": "0.2.0",
+          "version": "0.1.0",
           "displayName": "Render Output",
           "category": "Render",
           "ports": [
@@ -1420,24 +1340,24 @@ fn validates_public_v02_graph_and_node_contracts() {
           "execution": { "model": "gpu_pass", "clock": "frame" },
           "state": { "persistent": false },
           "permissions": [],
-          "capabilities": ["render.output.v0.2"]
+          "capabilities": ["render.output.v0.1"]
         }"#,
     )
-    .expect("v0.2 node should parse");
+    .expect("v0.1 node should parse");
 
-    validate_node_definition_v02(&node).expect("v0.2 node should validate");
+    validate_node_definition_v01(&node).expect("v0.1 node should validate");
 }
 
 #[test]
-fn validates_public_v02_project_and_derived_patch_contracts() {
-    let project: ProjectDocumentV02 = serde_json::from_str(include_str!(
-        "../../../fixtures/project/v0.2/valid/n-m-boundary-patch.project.json"
+fn validates_public_v01_project_and_derived_patch_contracts() {
+    let project: ProjectDocumentV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/project/v0.1/valid/n-m-boundary-patch.project.json"
     ))
-    .expect("v0.2 project should parse");
+    .expect("v0.1 project should parse");
 
-    validate_project_document_v02(&project).expect("v0.2 project should validate");
+    validate_project_document_v01(&project).expect("v0.1 project should validate");
 
-    let contract = derive_patch_contract_v02(&project.patch_library[0]);
+    let contract = derive_patch_contract_v01(&project.patch_library[0]);
     let port_labels: Vec<String> = contract
         .ports
         .iter()
@@ -1462,16 +1382,16 @@ fn validates_public_v02_project_and_derived_patch_contracts() {
 }
 
 #[test]
-fn derives_public_v02_patch_contract_fallback_port_ids() {
-    let project: ProjectDocumentV02 = serde_json::from_str(
+fn derives_public_v01_patch_contract_fallback_port_ids() {
+    let project: ProjectDocumentV01 = serde_json::from_str(
         r#"{
           "schema": "skenion.project",
-          "schemaVersion": "0.2.0",
+          "schemaVersion": "0.1.0",
           "id": "project-fallback-boundaries",
           "revision": "1",
           "graph": {
             "schema": "skenion.graph",
-            "schemaVersion": "0.2.0",
+            "schemaVersion": "0.1.0",
             "id": "root",
             "revision": "1",
             "nodes": [],
@@ -1488,14 +1408,14 @@ fn derives_public_v02_patch_contract_fallback_port_ids() {
               "revision": "1",
               "graph": {
                 "schema": "skenion.graph",
-                "schemaVersion": "0.2.0",
+                "schemaVersion": "0.1.0",
                 "id": "patch-fallbacks",
                 "revision": "1",
                 "nodes": [
                   {
                     "id": "fallback_input",
                     "kind": "core.inlet",
-                    "kindVersion": "0.2.0",
+                    "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
                       { "id": "out", "direction": "output", "type": "number.float" }
@@ -1504,7 +1424,7 @@ fn derives_public_v02_patch_contract_fallback_port_ids() {
                   {
                     "id": "multi_input",
                     "kind": "core.inlet",
-                    "kindVersion": "0.2.0",
+                    "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
                       { "id": "first", "direction": "output", "type": "number.float" },
@@ -1514,7 +1434,7 @@ fn derives_public_v02_patch_contract_fallback_port_ids() {
                   {
                     "id": "fallback_output",
                     "kind": "core.outlet",
-                    "kindVersion": "0.2.0",
+                    "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
                       { "id": "in", "direction": "input", "type": "number.float" }
@@ -1527,11 +1447,11 @@ fn derives_public_v02_patch_contract_fallback_port_ids() {
           ]
         }"#,
     )
-    .expect("v0.2 project should parse");
+    .expect("v0.1 project should parse");
 
-    validate_project_document_v02(&project).expect("v0.2 project should validate");
+    validate_project_document_v01(&project).expect("v0.1 project should validate");
 
-    let contracts = derive_patch_contracts_v02(&project);
+    let contracts = derive_patch_contracts_v01(&project);
     let port_labels: Vec<String> = contracts[0]
         .ports
         .iter()
@@ -1555,8 +1475,8 @@ fn derives_public_v02_patch_contract_fallback_port_ids() {
 }
 
 #[test]
-fn reports_public_v02_project_and_patch_definition_errors() {
-    let project: ProjectDocumentV02 = serde_json::from_value(serde_json::json!({
+fn reports_public_v01_project_and_patch_definition_errors() {
+    let project: ProjectDocumentV01 = serde_json::from_value(serde_json::json!({
         "schema": "wrong.project",
         "schemaVersion": "9.9.9",
         "id": "",
@@ -1570,7 +1490,7 @@ fn reports_public_v02_project_and_patch_definition_errors() {
                 {
                     "id": "source",
                     "kind": "core.value",
-                    "kindVersion": "0.2.0",
+                    "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
                         { "id": "out", "direction": "output", "type": "value.number" }
@@ -1579,7 +1499,7 @@ fn reports_public_v02_project_and_patch_definition_errors() {
                 {
                     "id": "target",
                     "kind": "render.output",
-                    "kindVersion": "0.2.0",
+                    "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
                         { "id": "in", "direction": "input", "type": "render.frame" }
@@ -1616,7 +1536,7 @@ fn reports_public_v02_project_and_patch_definition_errors() {
                         {
                             "id": "inlet_a",
                             "kind": "core.inlet",
-                            "kindVersion": "0.2.0",
+                            "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
                                 { "id": "out", "direction": "output", "type": "value.number" }
@@ -1625,7 +1545,7 @@ fn reports_public_v02_project_and_patch_definition_errors() {
                         {
                             "id": "inlet_b",
                             "kind": "core.inlet",
-                            "kindVersion": "0.2.0",
+                            "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
                                 { "id": "out", "direction": "output", "type": "value.number" }
@@ -1634,7 +1554,7 @@ fn reports_public_v02_project_and_patch_definition_errors() {
                         {
                             "id": "sink",
                             "kind": "render.output",
-                            "kindVersion": "0.2.0",
+                            "kindVersion": "0.1.0",
                             "params": {},
                             "ports": [
                                 { "id": "in", "direction": "input", "type": "render.frame" }
@@ -1664,22 +1584,22 @@ fn reports_public_v02_project_and_patch_definition_errors() {
     .expect("invalid project should still parse");
 
     let report =
-        validate_project_document_v02(&project).expect_err("project should fail validation");
+        validate_project_document_v01(&project).expect_err("project should fail validation");
     let text = report.to_string();
 
     for expected in [
         "expected schema skenion.project, found wrong.project",
-        "expected schemaVersion 0.2.0, found 9.9.9",
+        "expected schemaVersion 0.1.0, found 9.9.9",
         "project id must not be empty",
         "project revision must not be empty",
         "root graph expected schema skenion.graph, found wrong.graph",
-        "root graph expected schemaVersion 0.2.0, found 9.9.9",
+        "root graph expected schemaVersion 0.1.0, found 9.9.9",
         "root graph incompatible-type",
         "viewState references missing graph node: missing_root_view",
         "patch id must not be empty",
         "patch revision must not be empty",
         "patch  graph expected schema skenion.graph, found wrong.patch.graph",
-        "patch  graph expected schemaVersion 0.2.0, found 9.9.9",
+        "patch  graph expected schemaVersion 0.1.0, found 9.9.9",
         "patch  graph incompatible-type",
         "patch  viewState references missing graph node: missing_patch_view",
         "duplicate boundary port id on patch : same",

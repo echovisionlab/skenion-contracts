@@ -7,52 +7,37 @@ import type {
 import {
   controlMessageV01Schema,
   extensionManifestV01Schema,
-  graphFragmentV02Schema,
-  graphPatchEventV01Schema,
-  graphPatchHistoryV01Schema,
-  graphPatchV01Schema,
+  graphFragmentV01Schema,
   graphV01Schema,
-  graphV02Schema,
   nodeDefinitionV01Schema,
-  nodeDefinitionV02Schema,
   objectTextParseResultV01Schema,
   projectV01Schema,
-  projectV02Schema,
   runtimeCollaborationV0Schema,
   runtimeOperationV0Schema,
   runtimeSessionV0Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
-import { planConversion } from "./conversion.js";
-import { derivePatchContractV02 } from "./project.js";
+import { derivePatchContractV01 } from "./project.js";
 import type {
   ControlMessageV01,
-  DataTypeV01,
-  EdgeSpecV02,
+  EdgeSpecV01,
   ExtensionManifestV01,
-  GraphCycleValidationV02,
+  GraphCycleValidationV01,
   GraphDocumentV01,
-  GraphDocumentV02,
-  GraphFragmentDiagnosticV02,
-  GraphFragmentValidationOptionsV02,
-  GraphFragmentValidationResultV02,
-  GraphFragmentV02,
-  GraphPatchEventV01,
-  GraphPatchHistoryV01,
-  GraphPatchV01,
-  GraphValidationDiagnosticV02,
-  GraphValidationResultV02,
+  GraphFragmentDiagnosticV01,
+  GraphFragmentValidationOptionsV01,
+  GraphFragmentValidationResultV01,
+  GraphFragmentV01,
+  GraphValidationDiagnosticV01,
+  GraphValidationResultV01,
   NodeDefinitionManifestV01,
-  NodeDefinitionManifestV02,
   ObjectTextParseResultV01,
-  PatchDefinitionV02,
+  PatchDefinitionV01,
   PasteGraphFragmentRequest,
   PasteGraphFragmentResponse,
-  PortV01,
-  PortSpecV02,
+  PortSpecV01,
   ProjectDocumentV01,
-  ProjectDocumentV02,
   RuntimeCollaborationAuthSubject,
   RuntimeCollaborationCausalMetadata,
   RuntimeCollaborationEventEnvelope,
@@ -79,18 +64,13 @@ const Ajv2020 = Ajv2020Runtime as unknown as new (opts?: Options) => {
 };
 const ajv = new Ajv2020({ allErrors: true });
 ajv.addSchema(graphV01Schema);
-ajv.addSchema(graphV02Schema);
-ajv.addSchema(graphFragmentV02Schema);
-ajv.addSchema(graphPatchV01Schema);
-ajv.addSchema(graphPatchEventV01Schema);
-ajv.addSchema(nodeDefinitionV01Schema);
+ajv.addSchema(graphFragmentV01Schema);
 ajv.addSchema(viewStateV01Schema);
-ajv.addSchema(projectV02Schema);
+ajv.addSchema(projectV01Schema);
 ajv.addSchema(runtimeOperationV0Schema);
 ajv.addSchema(runtimeSessionV0Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
-const graphV02Validator = ajv.compile(graphV02Schema);
-const graphFragmentV02Validator = ajv.compile(graphFragmentV02Schema);
+const graphFragmentV01Validator = ajv.compile(graphFragmentV01Schema);
 const runtimeOperationV0Validator = ajv.compile(runtimeOperationV0Schema);
 ajv.compile(runtimeCollaborationV0Schema);
 const runtimeCollaborationOperationEnvelopeValidator = ajv.compile({
@@ -144,21 +124,16 @@ const pasteGraphFragmentResponseValidator = ajv.compile({
   $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-response.schema.json",
   $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
 });
-const graphPatchV01Validator = ajv.compile(graphPatchV01Schema);
-const graphPatchEventV01Validator = ajv.compile(graphPatchEventV01Schema);
-const graphPatchHistoryV01Validator = ajv.compile(graphPatchHistoryV01Schema);
 const controlMessageV01Validator = ajv.compile(controlMessageV01Schema);
 const objectTextParseResultV01Validator = ajv.compile(objectTextParseResultV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
-const nodeDefinitionV02Validator = ajv.compile(nodeDefinitionV02Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
-const projectV02Validator = ajv.compile(projectV02Schema);
-const patchDefinitionV02Validator = ajv.compile({
+const patchDefinitionV01Validator = ajv.compile({
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/project/v0.2/patch-definition.schema.json",
-  $ref: "https://skenion.dev/schemas/project/v0.2/project.schema.json#/$defs/patchDefinition"
+  $id: "https://skenion.dev/schemas/project/v0.1/patch-definition.schema.json",
+  $ref: "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/patchDefinition"
 });
 const extensionManifestV01Validator = ajv.compile(extensionManifestV01Schema);
 
@@ -183,91 +158,9 @@ function duplicateErrors(values: string[], label: string): string[] {
   return errors;
 }
 
-function portKey(nodeId: string, portId: string): string {
-  return `${nodeId}:${portId}`;
-}
-
-function typeLabel(type: DataTypeV01): string {
-  return `${type.flow}<${type.dataKind}>`;
-}
-
-function compatibleTypes(sourceType: DataTypeV01, targetType: DataTypeV01): boolean {
-  return planConversion(sourceType, targetType).ok;
-}
-
-function validatePorts(ownerId: string, ports: PortV01[]): string[] {
-  const errors = duplicateErrors(
-    ports.map((port) => port.id),
-    `port id on ${ownerId}`
-  );
-
-  for (const port of ports) {
-    if (port.direction !== "input" && "activation" in port) {
-      errors.push(`output port ${ownerId}.${port.id} must not declare activation`);
-    }
-  }
-
-  return errors;
-}
-
-function validateGraphV01Semantics(graph: GraphDocumentV01): string[] {
-  const errors = duplicateErrors(
-    graph.nodes.map((node) => node.id),
-    "node id"
-  );
-  const ports = new Map<string, PortV01>();
-
-  for (const node of graph.nodes) {
-    errors.push(...validatePorts(node.id, node.ports));
-    for (const port of node.ports) {
-      ports.set(portKey(node.id, port.id), port);
-    }
-  }
-
-  for (const edge of graph.edges) {
-    const fromKey = portKey(edge.from.node, edge.from.port);
-    const toKey = portKey(edge.to.node, edge.to.port);
-    const from = ports.get(fromKey);
-    const to = ports.get(toKey);
-
-    if (!from) {
-      errors.push(`edge references missing source port ${fromKey}`);
-    }
-    if (!to) {
-      errors.push(`edge references missing target port ${toKey}`);
-    }
-    if (!from || !to) {
-      continue;
-    }
-    if (from.direction !== "output") {
-      errors.push(`edge source ${fromKey} is not an output port`);
-    }
-    if (to.direction !== "input") {
-      errors.push(`edge target ${toKey} is not an input port`);
-    }
-    if (!compatibleTypes(from.type, to.type)) {
-      errors.push(`incompatible edge ${fromKey} ${typeLabel(from.type)} -> ${toKey} ${typeLabel(to.type)}`);
-    }
-  }
-
-  return errors;
-}
-
-function validateNodeDefinitionV01Semantics(definition: NodeDefinitionManifestV01): string[] {
-  const errors = validatePorts(definition.id, definition.ports);
-
-  for (const permission of definition.permissions) {
-    if (!allowedNodePermissions.has(permission)) {
-      errors.push(`unsupported permission: ${permission}`);
-    }
-  }
-
-  return errors;
-}
-
 function validateViewStateNodeReferences(
   viewState: ViewStateV01,
-  graph: Pick<GraphDocumentV01 | GraphDocumentV02, "nodes">,
+  graph: Pick<GraphDocumentV01, "nodes">,
   label = "viewState"
 ): string[] {
   const errors: string[] = [];
@@ -282,22 +175,15 @@ function validateViewStateNodeReferences(
   return errors;
 }
 
-function validateProjectDocumentV01Semantics(project: ProjectDocumentV01): string[] {
-  return [
-    ...validateGraphV01Semantics(project.graph),
-    ...validateViewStateNodeReferences(project.viewState, project.graph)
-  ];
-}
-
-function graphV02SemanticErrors(graph: GraphDocumentV02, label: string): string[] {
-  const result = analyzeGraphDocumentV02(graph);
+function graphV01SemanticErrors(graph: GraphDocumentV01, label: string): string[] {
+  const result = analyzeGraphDocumentV01(graph);
   return result.diagnostics
     .filter((diagnostic) => diagnostic.severity === "error")
     .map((diagnostic) => `${label} ${diagnostic.code}: ${diagnostic.message}`);
 }
 
-function validatePatchDefinitionV02Semantics(patch: PatchDefinitionV02): string[] {
-  const errors = graphV02SemanticErrors(patch.graph, `patch ${patch.id} graph`);
+function validatePatchDefinitionV01Semantics(patch: PatchDefinitionV01): string[] {
+  const errors = graphV01SemanticErrors(patch.graph, `patch ${patch.id} graph`);
 
   if (patch.viewState) {
     errors.push(
@@ -309,7 +195,7 @@ function validatePatchDefinitionV02Semantics(patch: PatchDefinitionV02): string[
     );
   }
 
-  const contract = derivePatchContractV02(patch);
+  const contract = derivePatchContractV01(patch);
   errors.push(
     ...duplicateErrors(
       contract.ports.map((port) => port.id),
@@ -320,9 +206,9 @@ function validatePatchDefinitionV02Semantics(patch: PatchDefinitionV02): string[
   return errors;
 }
 
-function validateProjectDocumentV02Semantics(project: ProjectDocumentV02): string[] {
+function validateProjectDocumentV01Semantics(project: ProjectDocumentV01): string[] {
   const errors = [
-    ...graphV02SemanticErrors(project.graph, "root graph"),
+    ...graphV01SemanticErrors(project.graph, "root graph"),
     ...validateViewStateNodeReferences(project.viewState, project.graph),
     ...duplicateErrors(
       project.patchLibrary.map((patch) => patch.id),
@@ -331,18 +217,18 @@ function validateProjectDocumentV02Semantics(project: ProjectDocumentV02): strin
   ];
 
   for (const patch of project.patchLibrary) {
-    errors.push(...validatePatchDefinitionV02Semantics(patch));
+    errors.push(...validatePatchDefinitionV01Semantics(patch));
   }
 
   return errors;
 }
 
 function diagnostic(
-  diagnostics: GraphValidationDiagnosticV02[],
-  severity: GraphValidationDiagnosticV02["severity"],
+  diagnostics: GraphValidationDiagnosticV01[],
+  severity: GraphValidationDiagnosticV01["severity"],
   code: string,
   message: string,
-  refs: Pick<GraphValidationDiagnosticV02, "nodes" | "edges"> = {}
+  refs: Pick<GraphValidationDiagnosticV01, "nodes" | "edges"> = {}
 ): void {
   diagnostics.push({ severity, code, message, ...refs });
 }
@@ -351,30 +237,30 @@ function portSpecKey(nodeId: string, portId: string): string {
   return `${nodeId}:${portId}`;
 }
 
-function edgeEndpointKey(edge: EdgeSpecV02): string {
+function edgeEndpointKey(edge: EdgeSpecV01): string {
   return `${edge.source.nodeId}:${edge.source.portId}->${edge.target.nodeId}:${edge.target.portId}`;
 }
 
-function isEdgeEnabled(edge: EdgeSpecV02): boolean {
+function isEdgeEnabled(edge: EdgeSpecV01): boolean {
   return edge.enabled !== false;
 }
 
-function inputMaxConnections(port: PortSpecV02): number {
+function inputMaxConnections(port: PortSpecV01): number {
   if (port.maxConnections === null) {
     return Number.POSITIVE_INFINITY;
   }
   return port.maxConnections ?? 1;
 }
 
-function portMergePolicy(port: PortSpecV02): string {
+function portMergePolicy(port: PortSpecV01): string {
   return port.mergePolicy ?? "forbid";
 }
 
-function portFanOutPolicy(port: PortSpecV02): string {
+function portFanOutPolicy(port: PortSpecV01): string {
   return port.fanOutPolicy ?? "allow";
 }
 
-function portTypeAccepts(source: PortSpecV02, target: PortSpecV02): boolean {
+function portTypeAccepts(source: PortSpecV01, target: PortSpecV01): boolean {
   if (target.type === "message.any" && isControlMessagePortType(source.type)) {
     return true;
   }
@@ -395,25 +281,25 @@ function isControlMessagePortType(type: string): boolean {
 }
 
 function fragmentDiagnostic(
-  diagnostics: GraphFragmentDiagnosticV02[],
-  severity: GraphFragmentDiagnosticV02["severity"],
+  diagnostics: GraphFragmentDiagnosticV01[],
+  severity: GraphFragmentDiagnosticV01["severity"],
   code: string,
   message: string,
-  refs: Pick<GraphFragmentDiagnosticV02, "nodes" | "edges"> = {}
+  refs: Pick<GraphFragmentDiagnosticV01, "nodes" | "edges"> = {}
 ): void {
   diagnostics.push({ severity, code, message, ...refs });
 }
 
 function analyzeFragmentSemantics(
-  fragment: GraphFragmentV02,
-  options: GraphFragmentValidationOptionsV02
-): GraphFragmentValidationResultV02 {
-  const diagnostics: GraphFragmentDiagnosticV02[] = [];
+  fragment: GraphFragmentV01,
+  options: GraphFragmentValidationOptionsV01
+): GraphFragmentValidationResultV01 {
+  const diagnostics: GraphFragmentDiagnosticV01[] = [];
   const omittedEdgeIds: string[] = [];
   const outsideEndpointPolicy = options.outsideEndpointPolicy ?? "reject";
   const nodeIds = new Set<string>();
   const edgeIds = new Set<string>();
-  const ports = new Map<string, PortSpecV02>();
+  const ports = new Map<string, PortSpecV01>();
 
   for (const node of fragment.nodes) {
     if (nodeIds.has(node.id)) {
@@ -539,7 +425,7 @@ function portFamily(type: string): string {
   return type.split(".", 1).join("");
 }
 
-function controlCycleTypes(edges: EdgeSpecV02[], ports: Map<string, PortSpecV02>): boolean {
+function controlCycleTypes(edges: EdgeSpecV01[], ports: Map<string, PortSpecV01>): boolean {
   return edges.every((edge) => {
     const source = ports.get(portSpecKey(edge.source.nodeId, edge.source.portId));
     const target = ports.get(portSpecKey(edge.target.nodeId, edge.target.portId));
@@ -554,9 +440,9 @@ function controlCycleTypes(edges: EdgeSpecV02[], ports: Map<string, PortSpecV02>
 
 function classifyCycle(
   nodes: string[],
-  edges: EdgeSpecV02[],
-  ports: Map<string, PortSpecV02>
-): GraphCycleValidationV02 {
+  edges: EdgeSpecV01[],
+  ports: Map<string, PortSpecV01>
+): GraphCycleValidationV01 {
   const feedback = edges.find((edge) => edge.feedback?.enabled === true);
   if (!feedback) {
     const classification = controlCycleTypes(edges, ports)
@@ -589,7 +475,7 @@ function classifyCycle(
   };
 }
 
-function stronglyConnectedComponents(nodes: string[], edges: EdgeSpecV02[]): string[][] {
+function stronglyConnectedComponents(nodes: string[], edges: EdgeSpecV01[]): string[][] {
   const outgoing = new Map<string, string[]>();
   for (const node of nodes) {
     outgoing.set(node, []);
@@ -646,7 +532,7 @@ function stronglyConnectedComponents(nodes: string[], edges: EdgeSpecV02[]): str
   return components;
 }
 
-function cycleEdgesFor(component: string[], edges: EdgeSpecV02[]): EdgeSpecV02[] {
+function cycleEdgesFor(component: string[], edges: EdgeSpecV01[]): EdgeSpecV01[] {
   const componentSet = new Set(component);
   return edges.filter((edge) => (
     isEdgeEnabled(edge) &&
@@ -656,7 +542,7 @@ function cycleEdgesFor(component: string[], edges: EdgeSpecV02[]): EdgeSpecV02[]
   ));
 }
 
-function validateNodeDefinitionV02Semantics(definition: NodeDefinitionManifestV02): string[] {
+function validateNodeDefinitionV01Semantics(definition: NodeDefinitionManifestV01): string[] {
   const errors = duplicateErrors(
     definition.ports.map((port) => port.id),
     `port id on ${definition.id}`
@@ -677,13 +563,13 @@ function validateNodeDefinitionV02Semantics(definition: NodeDefinitionManifestV0
   return errors;
 }
 
-export function analyzeGraphDocumentV02(graph: GraphDocumentV02): GraphValidationResultV02 {
-  const diagnostics: GraphValidationDiagnosticV02[] = [];
-  const cycles: GraphCycleValidationV02[] = [];
+export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidationResultV01 {
+  const diagnostics: GraphValidationDiagnosticV01[] = [];
+  const cycles: GraphCycleValidationV01[] = [];
   const nodeIds = new Set<string>();
-  const ports = new Map<string, PortSpecV02>();
-  const incoming = new Map<string, EdgeSpecV02[]>();
-  const outgoing = new Map<string, EdgeSpecV02[]>();
+  const ports = new Map<string, PortSpecV01>();
+  const incoming = new Map<string, EdgeSpecV01[]>();
+  const outgoing = new Map<string, EdgeSpecV01[]>();
   const edgeIds = new Set<string>();
   const edgeKeys = new Set<string>();
 
@@ -812,27 +698,13 @@ export function analyzeGraphDocumentV02(graph: GraphDocumentV02): GraphValidatio
   };
 }
 
-export function validateGraphDocument(document: unknown): ValidationResult<GraphDocumentV01> {
+export function validateGraphDocumentV01(document: unknown): ValidationResult<GraphDocumentV01> {
   if (!graphV01Validator(document)) {
     return { ok: false, errors: schemaErrors(graphV01Validator.errors as ErrorObject[]) };
   }
 
   const graph = document as GraphDocumentV01;
-  const errors = validateGraphV01Semantics(graph);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: graph };
-}
-
-export function validateGraphDocumentV02(document: unknown): ValidationResult<GraphDocumentV02> {
-  if (!graphV02Validator(document)) {
-    return { ok: false, errors: schemaErrors(graphV02Validator.errors as ErrorObject[]) };
-  }
-
-  const graph = document as GraphDocumentV02;
-  const result = analyzeGraphDocumentV02(graph);
+  const result = analyzeGraphDocumentV01(graph);
   if (!result.ok) {
     return { ok: false, errors: result.diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`) };
   }
@@ -840,54 +712,32 @@ export function validateGraphDocumentV02(document: unknown): ValidationResult<Gr
   return { ok: true, value: graph };
 }
 
-export function analyzeGraphFragmentV02(
-  fragment: GraphFragmentV02,
-  options: GraphFragmentValidationOptionsV02 = {}
-): GraphFragmentValidationResultV02 {
+export function validateGraphDocument(document: unknown): ValidationResult<GraphDocumentV01> {
+  return validateGraphDocumentV01(document);
+}
+
+export function analyzeGraphFragmentV01(
+  fragment: GraphFragmentV01,
+  options: GraphFragmentValidationOptionsV01 = {}
+): GraphFragmentValidationResultV01 {
   return analyzeFragmentSemantics(fragment, options);
 }
 
-export function validateGraphFragmentV02(
+export function validateGraphFragmentV01(
   document: unknown,
-  options: GraphFragmentValidationOptionsV02 = {}
-): ValidationResult<GraphFragmentV02> {
-  if (!graphFragmentV02Validator(document)) {
-    return { ok: false, errors: schemaErrors(graphFragmentV02Validator.errors as ErrorObject[]) };
+  options: GraphFragmentValidationOptionsV01 = {}
+): ValidationResult<GraphFragmentV01> {
+  if (!graphFragmentV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(graphFragmentV01Validator.errors as ErrorObject[]) };
   }
 
-  const fragment = document as GraphFragmentV02;
-  const result = analyzeGraphFragmentV02(fragment, options);
+  const fragment = document as GraphFragmentV01;
+  const result = analyzeGraphFragmentV01(fragment, options);
   if (!result.ok) {
     return { ok: false, errors: result.diagnostics.map((entry) => `${entry.code}: ${entry.message}`) };
   }
 
   return { ok: true, value: fragment };
-}
-
-export function validateGraphPatch(document: unknown): ValidationResult<GraphPatchV01> {
-  if (!graphPatchV01Validator(document)) {
-    return { ok: false, errors: schemaErrors(graphPatchV01Validator.errors as ErrorObject[]) };
-  }
-
-  return { ok: true, value: document as GraphPatchV01 };
-}
-
-export function validateGraphPatchEvent(document: unknown): ValidationResult<GraphPatchEventV01> {
-  if (!graphPatchEventV01Validator(document)) {
-    return { ok: false, errors: schemaErrors(graphPatchEventV01Validator.errors as ErrorObject[]) };
-  }
-
-  return { ok: true, value: document as GraphPatchEventV01 };
-}
-
-export function validateGraphPatchHistory(
-  document: unknown
-): ValidationResult<GraphPatchHistoryV01> {
-  if (!graphPatchHistoryV01Validator(document)) {
-    return { ok: false, errors: schemaErrors(graphPatchHistoryV01Validator.errors as ErrorObject[]) };
-  }
-
-  return { ok: true, value: document as GraphPatchHistoryV01 };
 }
 
 export function validateControlMessage(document: unknown): ValidationResult<ControlMessageV01> {
@@ -911,7 +761,7 @@ export function validateObjectTextParseResult(
   return { ok: true, value: document as ObjectTextParseResultV01 };
 }
 
-export function validateNodeDefinition(
+export function validateNodeDefinitionV01(
   document: unknown
 ): ValidationResult<NodeDefinitionManifestV01> {
   if (!nodeDefinitionV01Validator(document)) {
@@ -927,20 +777,10 @@ export function validateNodeDefinition(
   return { ok: true, value: definition };
 }
 
-export function validateNodeDefinitionV02(
+export function validateNodeDefinition(
   document: unknown
-): ValidationResult<NodeDefinitionManifestV02> {
-  if (!nodeDefinitionV02Validator(document)) {
-    return { ok: false, errors: schemaErrors(nodeDefinitionV02Validator.errors as ErrorObject[]) };
-  }
-
-  const definition = document as NodeDefinitionManifestV02;
-  const errors = validateNodeDefinitionV02Semantics(definition);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: definition };
+): ValidationResult<NodeDefinitionManifestV01> {
+  return validateNodeDefinitionV01(document);
 }
 
 export function validateExtensionManifestV01(
@@ -950,7 +790,22 @@ export function validateExtensionManifestV01(
     return { ok: false, errors: schemaErrors(extensionManifestV01Validator.errors as ErrorObject[]) };
   }
 
-  return { ok: true, value: document as ExtensionManifestV01 };
+  const manifest = document as ExtensionManifestV01;
+  const providedNodes = manifest.provides.nodes ?? [];
+  const errors = [
+    ...duplicateErrors(
+      providedNodes.map((node) => node.id),
+      "provided node id"
+    ),
+    ...providedNodes.flatMap((node) =>
+      validateNodeDefinitionV01Semantics(node).map((error) => `provided node ${node.id}: ${error}`)
+    )
+  ];
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: manifest };
 }
 
 export function validateShaderInterface(document: unknown): ValidationResult<ShaderInterfaceV01> {
@@ -961,7 +816,7 @@ export function validateShaderInterface(document: unknown): ValidationResult<Sha
   return { ok: true, value: document as ShaderInterfaceV01 };
 }
 
-export function validateViewState(document: unknown): ValidationResult<ViewStateV01> {
+export function validateViewStateV01(document: unknown): ValidationResult<ViewStateV01> {
   if (!viewStateV01Validator(document)) {
     return { ok: false, errors: schemaErrors(viewStateV01Validator.errors as ErrorObject[]) };
   }
@@ -969,7 +824,29 @@ export function validateViewState(document: unknown): ValidationResult<ViewState
   return { ok: true, value: document as ViewStateV01 };
 }
 
-export function validateProjectDocument(document: unknown): ValidationResult<ProjectDocumentV01> {
+export function validateViewState(document: unknown): ValidationResult<ViewStateV01> {
+  return validateViewStateV01(document);
+}
+
+export function validatePatchDefinitionV01(
+  document: unknown
+): ValidationResult<PatchDefinitionV01> {
+  if (!patchDefinitionV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(patchDefinitionV01Validator.errors as ErrorObject[]) };
+  }
+
+  const patch = document as PatchDefinitionV01;
+  const errors = validatePatchDefinitionV01Semantics(patch);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: patch };
+}
+
+export function validateProjectDocumentV01(
+  document: unknown
+): ValidationResult<ProjectDocumentV01> {
   if (!projectV01Validator(document)) {
     return { ok: false, errors: schemaErrors(projectV01Validator.errors as ErrorObject[]) };
   }
@@ -983,36 +860,8 @@ export function validateProjectDocument(document: unknown): ValidationResult<Pro
   return { ok: true, value: project };
 }
 
-export function validatePatchDefinitionV02(
-  document: unknown
-): ValidationResult<PatchDefinitionV02> {
-  if (!patchDefinitionV02Validator(document)) {
-    return { ok: false, errors: schemaErrors(patchDefinitionV02Validator.errors as ErrorObject[]) };
-  }
-
-  const patch = document as PatchDefinitionV02;
-  const errors = validatePatchDefinitionV02Semantics(patch);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: patch };
-}
-
-export function validateProjectDocumentV02(
-  document: unknown
-): ValidationResult<ProjectDocumentV02> {
-  if (!projectV02Validator(document)) {
-    return { ok: false, errors: schemaErrors(projectV02Validator.errors as ErrorObject[]) };
-  }
-
-  const project = document as ProjectDocumentV02;
-  const errors = validateProjectDocumentV02Semantics(project);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: project };
+export function validateProjectDocument(document: unknown): ValidationResult<ProjectDocumentV01> {
+  return validateProjectDocumentV01(document);
 }
 
 export function validateRuntimeOperationEnvelope(
@@ -1391,7 +1240,7 @@ export function validatePasteGraphFragmentRequest(
   }
 
   const request = document as PasteGraphFragmentRequest;
-  const fragmentResult = validateGraphFragmentV02(request.fragment, {
+  const fragmentResult = validateGraphFragmentV01(request.fragment, {
     outsideEndpointPolicy: request.options?.outsideEndpointPolicy
   });
   if (!fragmentResult.ok) {

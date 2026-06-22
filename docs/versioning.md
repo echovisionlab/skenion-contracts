@@ -37,21 +37,14 @@ Never reuse Protobuf field numbers or enum numbers.
 
 ## Graph Schema Baseline
 
-`graph-document@0.0.0` is frozen as the bootstrap baseline. Its schema remains
-available for fixtures and migration tests.
+`graph-document@0.1.0` is the active authoring/runtime contract. Product code
+should use `ProjectDocumentV01`, `GraphDocumentV01`, `PatchDefinitionV01`,
+`PatchContractV01`, `GraphFragmentV01`, and v0.1 `GraphTargetRef` target paths
+for project, help, runtime, and collaboration work. The v0.1 label carries the
+current rich graph shape, including directioned string-typed ports, edge
+policies, patch libraries, graph fragments, view state, runtime operation, and
+collaboration surfaces.
 
-`graph-document@0.1.0` introduces directioned ports, `flow + dataKind`, and
-node-definition references through `kind` and `kindVersion`.
-
-`graph-document@0.2.0` is the active authoring/runtime contract. Product code
-should use `ProjectDocumentV02`, `GraphDocumentV02`, `PatchDefinitionV02`,
-`PatchContractV02`, `GraphFragmentV02`, and v0.2 `GraphTargetRef` target paths
-for new project, help, runtime, and collaboration work.
-
-`graph-document@0.1.0` and its graph patch/history schemas are frozen legacy
-surfaces. They may be parsed by migration/import tooling and validated as
-fixtures, but they are not active authoring, runtime mutation, collaboration, or
-help patch contracts.
-
-Do not mutate old schema files in place when a persisted document shape changes.
-Add a new schema version and migration fixture instead.
+Unsupported graph, project, package, manifest, and protocol versions are
+rejected with structured diagnostics. Do not add import-only compatibility
+paths, migration fixtures, or deprecated aliases for old v0 shapes during v0.

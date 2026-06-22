@@ -10,19 +10,13 @@
       "id": "left",
       "direction": "output",
       "label": "Left",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      }
+      "type": "signal.audio"
     },
     {
       "id": "right",
       "direction": "output",
       "label": "Right",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      }
+      "type": "signal.audio"
     }
   ],
   "execution": {

@@ -15,12 +15,12 @@
     },
     "fragment": {
       "schema": "skenion.graph.fragment",
-      "schemaVersion": "0.2.0",
+      "schemaVersion": "0.1.0",
       "nodes": [
         {
           "id": "comment",
           "kind": "core.comment",
-          "kindVersion": "0.2.0",
+          "kindVersion": "0.1.0",
           "params": {
             "text": "Try changing the value."
           },

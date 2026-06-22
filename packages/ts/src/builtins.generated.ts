@@ -151,21 +151,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Out",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -196,21 +189,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "phase",
         "direction": "input",
         "label": "Phase",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -240,19 +226,13 @@ export const builtinNodeDefinitionsV01 = [
         "id": "left",
         "direction": "output",
         "label": "Left",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       },
       {
         "id": "right",
         "direction": "output",
         "label": "Right",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -283,21 +263,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "seed",
         "direction": "input",
         "label": "Seed",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -327,32 +300,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "left",
         "direction": "input",
         "label": "Left",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -379,32 +341,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "left",
         "direction": "input",
         "label": "Left",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -431,32 +382,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "left",
         "direction": "input",
         "label": "Left",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -483,21 +423,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -524,32 +457,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "left",
         "direction": "input",
         "label": "Left",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -576,22 +498,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "frequency",
         "direction": "input",
         "label": "Frequency",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -621,23 +535,15 @@ export const builtinNodeDefinitionsV01 = [
         "id": "left",
         "direction": "input",
         "label": "Left",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       }
     ],
     "execution": {
@@ -668,22 +574,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "frequency",
         "direction": "input",
         "label": "Frequency",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -713,21 +611,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Out",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -758,21 +649,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        }
+        "type": "signal.audio"
       }
     ],
     "execution": {
@@ -802,33 +686,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "signal",
         "direction": "input",
         "label": "Signal",
-        "type": {
-          "flow": "signal",
-          "dataKind": "signal.audio"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "signal.audio",
+        "required": false
       },
       {
         "id": "trigger",
         "direction": "input",
         "label": "Trigger",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "value",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -858,66 +730,39 @@ export const builtinNodeDefinitionsV01 = [
         "id": "sync",
         "direction": "input",
         "label": "Sync",
-        "type": {
-          "flow": "value",
-          "dataKind": "clock.state"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "clock.state",
+        "required": false
       },
       {
         "id": "reset",
         "direction": "input",
         "label": "Reset",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "event.bang",
+        "required": false
       },
       {
         "id": "state",
         "direction": "output",
         "label": "State",
-        "type": {
-          "flow": "value",
-          "dataKind": "clock.state"
-        }
+        "type": "clock.state"
       },
       {
         "id": "tick",
         "direction": "output",
         "label": "Tick",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        }
+        "type": "event.bang"
       },
       {
         "id": "phase",
         "direction": "output",
         "label": "Phase",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32",
-          "range": {
-            "min": 0,
-            "max": 1
-          }
-        }
+        "type": "number.float"
       },
       {
         "id": "tempo",
         "direction": "output",
         "label": "Tempo",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "unit": "bpm",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -947,28 +792,19 @@ export const builtinNodeDefinitionsV01 = [
         "id": "state",
         "direction": "output",
         "label": "State",
-        "type": {
-          "flow": "value",
-          "dataKind": "clock.state"
-        }
+        "type": "clock.state"
       },
       {
         "id": "tick",
         "direction": "output",
         "label": "Tick",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        }
+        "type": "event.bang"
       },
       {
         "id": "running",
         "direction": "output",
         "label": "Running",
-        "type": {
-          "flow": "value",
-          "dataKind": "boolean"
-        }
+        "type": "boolean"
       }
     ],
     "execution": {
@@ -999,12 +835,8 @@ export const builtinNodeDefinitionsV01 = [
         "id": "clock",
         "direction": "input",
         "label": "Clock",
-        "type": {
-          "flow": "value",
-          "dataKind": "clock.state"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "clock.state",
+        "required": false
       }
     ],
     "execution": {
@@ -1034,21 +866,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Bang",
-        "type": {
-          "flow": "event",
-          "dataKind": "event.bang"
-        }
+        "type": "event.bang"
       }
     ],
     "execution": {
@@ -1075,32 +900,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "cold",
         "direction": "input",
         "label": "Cold",
-        "type": {
-          "flow": "value",
-          "dataKind": "boolean"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "boolean",
+        "required": false
       },
       {
         "id": "value",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "boolean"
-        }
+        "type": "boolean"
       }
     ],
     "execution": {
@@ -1127,36 +941,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "cold",
         "direction": "input",
         "label": "Cold",
-        "type": {
-          "flow": "value",
-          "dataKind": "color",
-          "format": "rgba32f",
-          "colorSpace": "linear"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "color",
+        "required": false
       },
       {
         "id": "value",
         "direction": "output",
         "label": "Color",
-        "type": {
-          "flow": "value",
-          "dataKind": "color",
-          "format": "rgba32f",
-          "colorSpace": "linear"
-        }
+        "type": "color"
       }
     ],
     "execution": {
@@ -1183,12 +982,8 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       }
     ],
     "execution": {
@@ -1215,34 +1010,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "cold",
         "direction": "input",
         "label": "Cold",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "value",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1269,26 +1051,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "frames",
         "direction": "input",
         "label": "Frames",
-        "type": {
-          "flow": "stream",
-          "dataKind": "video.frame",
-          "frameRate": 60,
-          "colorSpace": "srgb",
-          "alphaPolicy": "black"
-        },
-        "required": true,
-        "activation": "latched"
+        "type": "video.frame",
+        "required": true
       },
       {
         "id": "texture",
         "direction": "output",
         "label": "Texture",
-        "type": {
-          "flow": "resource",
-          "dataKind": "gpu.texture2d",
-          "format": "rgba8unorm",
-          "colorSpace": "srgb"
-        }
+        "type": "gpu.texture2d"
       }
     ],
     "execution": {
@@ -1315,34 +1085,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "cold",
         "direction": "input",
         "label": "Cold",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.int",
-          "format": "i32"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "number.int",
+        "required": false
       },
       {
         "id": "value",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.int",
-          "format": "i32"
-        }
+        "type": "number.int"
       }
     ],
     "execution": {
@@ -1369,21 +1126,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Message",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        }
+        "type": "message.any"
       }
     ],
     "execution": {
@@ -1410,35 +1160,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched",
-        "default": 0
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1464,35 +1200,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched",
-        "default": 1
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1518,35 +1240,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched",
-        "default": 0
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1572,35 +1280,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched",
-        "default": 0
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1626,35 +1320,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched",
-        "default": 1
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1680,35 +1360,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched",
-        "default": 1
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1734,22 +1400,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1775,35 +1433,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "right",
         "direction": "input",
         "label": "Right",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        },
-        "required": false,
-        "activation": "latched",
-        "default": 0
+        "type": "number.float",
+        "required": false
       },
       {
         "id": "out",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.float",
-          "format": "f32"
-        }
+        "type": "number.float"
       }
     ],
     "execution": {
@@ -1829,12 +1473,8 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       }
     ],
     "execution": {
@@ -1861,14 +1501,8 @@ export const builtinNodeDefinitionsV01 = [
         "id": "texture",
         "direction": "input",
         "label": "Texture",
-        "type": {
-          "flow": "resource",
-          "dataKind": "gpu.texture2d",
-          "format": "rgba8unorm",
-          "colorSpace": "srgb"
-        },
-        "required": true,
-        "activation": "latched"
+        "type": "gpu.texture2d",
+        "required": true
       }
     ],
     "execution": {
@@ -1895,32 +1529,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "cold",
         "direction": "input",
         "label": "Cold",
-        "type": {
-          "flow": "value",
-          "dataKind": "string"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "string",
+        "required": false
       },
       {
         "id": "value",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "string"
-        }
+        "type": "string"
       }
     ],
     "execution": {
@@ -1947,34 +1570,21 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "event",
-          "dataKind": "message.any"
-        },
-        "required": false,
-        "activation": "trigger"
+        "type": "message.any",
+        "required": false
       },
       {
         "id": "cold",
         "direction": "input",
         "label": "Cold",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.uint",
-          "format": "u32"
-        },
-        "required": false,
-        "activation": "latched"
+        "type": "number.uint",
+        "required": false
       },
       {
         "id": "value",
         "direction": "output",
         "label": "Value",
-        "type": {
-          "flow": "value",
-          "dataKind": "number.uint",
-          "format": "u32"
-        }
+        "type": "number.uint"
       }
     ],
     "execution": {
@@ -2020,10 +1630,7 @@ export const builtinNodeDefinitionsV01 = [
         "id": "asset",
         "direction": "output",
         "label": "Asset",
-        "type": {
-          "flow": "resource",
-          "dataKind": "asset.video"
-        }
+        "type": "asset.video"
       }
     ],
     "execution": {
@@ -2050,24 +1657,14 @@ export const builtinNodeDefinitionsV01 = [
         "id": "asset",
         "direction": "input",
         "label": "Asset",
-        "type": {
-          "flow": "resource",
-          "dataKind": "asset.video"
-        },
-        "required": true,
-        "activation": "latched"
+        "type": "asset.video",
+        "required": true
       },
       {
         "id": "frames",
         "direction": "output",
         "label": "Frames",
-        "type": {
-          "flow": "stream",
-          "dataKind": "video.frame",
-          "frameRate": 60,
-          "colorSpace": "srgb",
-          "alphaPolicy": "black"
-        }
+        "type": "video.frame"
       }
     ],
     "execution": {
@@ -2094,12 +1691,7 @@ export const builtinNodeDefinitionsV01 = [
         "id": "out",
         "direction": "output",
         "label": "Out",
-        "type": {
-          "flow": "resource",
-          "dataKind": "gpu.texture2d",
-          "format": "rgba8unorm",
-          "colorSpace": "srgb"
-        }
+        "type": "gpu.texture2d"
       }
     ],
     "execution": {
@@ -2129,12 +1721,7 @@ export const builtinNodeDefinitionsV01 = [
         "id": "out",
         "direction": "output",
         "label": "Out",
-        "type": {
-          "flow": "resource",
-          "dataKind": "gpu.texture2d",
-          "format": "rgba8unorm",
-          "colorSpace": "srgb"
-        }
+        "type": "gpu.texture2d"
       }
     ],
     "execution": {
@@ -2164,14 +1751,8 @@ export const builtinNodeDefinitionsV01 = [
         "id": "in",
         "direction": "input",
         "label": "In",
-        "type": {
-          "flow": "resource",
-          "dataKind": "gpu.texture2d",
-          "format": "rgba8unorm",
-          "colorSpace": "srgb"
-        },
-        "required": true,
-        "activation": "latched"
+        "type": "gpu.texture2d",
+        "required": true
       }
     ],
     "execution": {
@@ -3423,10 +3004,7 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "left",
               "direction": "output",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              }
+              "type": "signal.audio"
             }
           ]
         },
@@ -3439,19 +3017,12 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "in",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             },
             {
               "id": "out",
               "direction": "output",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              }
+              "type": "signal.audio"
             }
           ]
         },
@@ -3466,34 +3037,32 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "left",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "input",
-            "port": "left"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "input",
+            "portId": "left"
           },
-          "to": {
-            "node": "bridge",
-            "port": "in"
+          "target": {
+            "nodeId": "bridge",
+            "portId": "in"
           }
         },
         {
-          "from": {
-            "node": "bridge",
-            "port": "out"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "bridge",
+            "portId": "out"
           },
-          "to": {
-            "node": "output",
-            "port": "left"
+          "target": {
+            "nodeId": "output",
+            "portId": "left"
           }
         }
       ]
@@ -3527,18 +3096,12 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "left",
               "direction": "output",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              }
+              "type": "signal.audio"
             },
             {
               "id": "right",
               "direction": "output",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              }
+              "type": "signal.audio"
             }
           ]
         },
@@ -3553,43 +3116,37 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "left",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             },
             {
               "id": "right",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "input",
-            "port": "left"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "input",
+            "portId": "left"
           },
-          "to": {
-            "node": "output",
-            "port": "left"
+          "target": {
+            "nodeId": "output",
+            "portId": "left"
           }
         },
         {
-          "from": {
-            "node": "input",
-            "port": "right"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "input",
+            "portId": "right"
           },
-          "to": {
-            "node": "output",
-            "port": "right"
+          "target": {
+            "nodeId": "output",
+            "portId": "right"
           }
         }
       ]
@@ -3691,20 +3248,12 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "frequency",
               "direction": "input",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "activation": "latched"
+              "type": "number.float"
             },
             {
               "id": "out",
               "direction": "output",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              }
+              "type": "signal.audio"
             }
           ]
         },
@@ -3717,43 +3266,37 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "left",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             },
             {
               "id": "right",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "osc",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "osc",
+            "portId": "out"
           },
-          "to": {
-            "node": "output",
-            "port": "left"
+          "target": {
+            "nodeId": "output",
+            "portId": "left"
           }
         },
         {
-          "from": {
-            "node": "osc",
-            "port": "out"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "osc",
+            "portId": "out"
           },
-          "to": {
-            "node": "output",
-            "port": "right"
+          "target": {
+            "nodeId": "output",
+            "portId": "right"
           }
         }
       ]
@@ -3789,10 +3332,7 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "left",
               "direction": "output",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              }
+              "type": "signal.audio"
             }
           ]
         },
@@ -3807,19 +3347,12 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "in",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             },
             {
               "id": "out",
               "direction": "output",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              }
+              "type": "signal.audio"
             }
           ]
         },
@@ -3834,34 +3367,32 @@ export const builtinNodeHelpGraphsV01 = [
             {
               "id": "left",
               "direction": "input",
-              "type": {
-                "flow": "signal",
-                "dataKind": "signal.audio"
-              },
-              "activation": "latched"
+              "type": "signal.audio"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "input",
-            "port": "left"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "input",
+            "portId": "left"
           },
-          "to": {
-            "node": "resample",
-            "port": "in"
+          "target": {
+            "nodeId": "resample",
+            "portId": "in"
           }
         },
         {
-          "from": {
-            "node": "resample",
-            "port": "out"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "resample",
+            "portId": "out"
           },
-          "to": {
-            "node": "output",
-            "port": "left"
+          "target": {
+            "nodeId": "output",
+            "portId": "left"
           }
         }
       ]
@@ -3910,66 +3441,39 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "sync",
               "direction": "input",
               "label": "Sync",
-              "type": {
-                "flow": "value",
-                "dataKind": "clock.state"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "clock.state",
+              "required": false
             },
             {
               "id": "reset",
               "direction": "input",
               "label": "Reset",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "event.bang",
+              "required": false
             },
             {
               "id": "state",
               "direction": "output",
               "label": "State",
-              "type": {
-                "flow": "value",
-                "dataKind": "clock.state"
-              }
+              "type": "clock.state"
             },
             {
               "id": "tick",
               "direction": "output",
               "label": "Tick",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             },
             {
               "id": "phase",
               "direction": "output",
               "label": "Phase",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32",
-                "range": {
-                  "min": 0,
-                  "max": 1
-                }
-              }
+              "type": "number.float"
             },
             {
               "id": "tempo",
               "direction": "output",
               "label": "Tempo",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "unit": "bpm",
-                "format": "f32"
-              }
+              "type": "number.float"
             }
           ]
         },
@@ -3983,25 +3487,22 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "clock",
               "direction": "input",
               "label": "Clock",
-              "type": {
-                "flow": "value",
-                "dataKind": "clock.state"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "clock.state",
+              "required": false
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "clock_1",
-            "port": "state"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "clock_1",
+            "portId": "state"
           },
-          "to": {
-            "node": "display_1",
-            "port": "clock"
+          "target": {
+            "nodeId": "display_1",
+            "portId": "clock"
           }
         }
       ]
@@ -4029,28 +3530,19 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "state",
               "direction": "output",
               "label": "State",
-              "type": {
-                "flow": "value",
-                "dataKind": "clock.state"
-              }
+              "type": "clock.state"
             },
             {
               "id": "tick",
               "direction": "output",
               "label": "Tick",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             },
             {
               "id": "running",
               "direction": "output",
               "label": "Running",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              }
+              "type": "boolean"
             }
           ]
         },
@@ -4064,25 +3556,22 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "clock",
               "direction": "input",
               "label": "Clock",
-              "type": {
-                "flow": "value",
-                "dataKind": "clock.state"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "clock.state",
+              "required": false
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "midi_clock_1",
-            "port": "state"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "midi_clock_1",
+            "portId": "state"
           },
-          "to": {
-            "node": "display_1",
-            "port": "clock"
+          "target": {
+            "nodeId": "display_1",
+            "portId": "clock"
           }
         }
       ]
@@ -4109,10 +3598,7 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "state",
               "direction": "output",
               "label": "State",
-              "type": {
-                "flow": "value",
-                "dataKind": "clock.state"
-              }
+              "type": "clock.state"
             }
           ]
         },
@@ -4134,25 +3620,22 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "clock",
               "direction": "input",
               "label": "Clock",
-              "type": {
-                "flow": "value",
-                "dataKind": "clock.state"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "clock.state",
+              "required": false
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "clock_1",
-            "port": "state"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "clock_1",
+            "portId": "state"
           },
-          "to": {
-            "node": "display_1",
-            "port": "clock"
+          "target": {
+            "nodeId": "display_1",
+            "portId": "clock"
           }
         }
       ]
@@ -4176,21 +3659,14 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             }
           ]
         },
@@ -4208,47 +3684,35 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "number.float",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              }
+              "type": "number.float"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "bang_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "bang_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "value_1",
-            "port": "in"
+          "target": {
+            "nodeId": "value_1",
+            "portId": "in"
           }
         }
       ]
@@ -4280,21 +3744,14 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             }
           ],
           "kind": "core.bang"
@@ -4311,32 +3768,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "boolean",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              }
+              "type": "boolean"
             }
           ]
         },
@@ -4352,32 +3798,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "boolean",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "boolean"
-              }
+              "type": "boolean"
             }
           ],
           "kind": "core.bool"
@@ -4385,23 +3820,25 @@ export const builtinNodeHelpGraphsV01 = [
       ],
       "edges": [
         {
-          "from": {
-            "node": "bang_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "bang_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "value_1",
-            "port": "in"
+          "target": {
+            "nodeId": "value_1",
+            "portId": "in"
           }
         },
         {
-          "from": {
-            "node": "value_1",
-            "port": "value"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "value_1",
+            "portId": "value"
           },
-          "to": {
-            "node": "toggle_1",
-            "port": "cold"
+          "target": {
+            "nodeId": "toggle_1",
+            "portId": "cold"
           }
         }
       ]
@@ -4443,36 +3880,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "color",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Color",
-              "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              }
+              "type": "color"
             }
           ]
         },
@@ -4489,24 +3911,13 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "tint",
               "direction": "input",
               "label": "Tint",
-              "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              },
-              "activation": "latched"
+              "type": "color"
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Out",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              }
+              "type": "gpu.texture2d"
             }
           ]
         },
@@ -4520,36 +3931,32 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              },
-              "activation": "latched"
+              "type": "gpu.texture2d"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "tint_1",
-            "port": "value"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "tint_1",
+            "portId": "value"
           },
-          "to": {
-            "node": "shader_1",
-            "port": "tint"
+          "target": {
+            "nodeId": "shader_1",
+            "portId": "tint"
           }
         },
         {
-          "from": {
-            "node": "shader_1",
-            "port": "out"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "shader_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "output_1",
-            "port": "in"
+          "target": {
+            "nodeId": "output_1",
+            "portId": "in"
           }
         }
       ]
@@ -4575,12 +3982,8 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             }
           ]
         },
@@ -4596,12 +3999,8 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             }
           ]
         }
@@ -4635,21 +4034,14 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             }
           ],
           "kind": "core.bang"
@@ -4667,34 +4059,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "number.float",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              }
+              "type": "number.float"
             }
           ]
         },
@@ -4707,34 +4086,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "number.float",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              }
+              "type": "number.float"
             }
           ],
           "kind": "core.float"
@@ -4742,23 +4108,25 @@ export const builtinNodeHelpGraphsV01 = [
       ],
       "edges": [
         {
-          "from": {
-            "node": "bang_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "bang_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "value_1",
-            "port": "in"
+          "target": {
+            "nodeId": "value_1",
+            "portId": "in"
           }
         },
         {
-          "from": {
-            "node": "value_1",
-            "port": "value"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "value_1",
+            "portId": "value"
           },
-          "to": {
-            "node": "target_1",
-            "port": "in"
+          "target": {
+            "nodeId": "target_1",
+            "portId": "in"
           }
         }
       ]
@@ -4784,10 +4152,7 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "asset",
               "direction": "output",
               "label": "Asset",
-              "type": {
-                "flow": "resource",
-                "dataKind": "asset.video"
-              }
+              "type": "asset.video"
             }
           ]
         },
@@ -4801,23 +4166,13 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "asset",
               "direction": "input",
               "label": "Asset",
-              "type": {
-                "flow": "resource",
-                "dataKind": "asset.video"
-              },
-              "activation": "latched"
+              "type": "asset.video"
             },
             {
               "id": "frames",
               "direction": "output",
               "label": "Frames",
-              "type": {
-                "flow": "stream",
-                "dataKind": "video.frame",
-                "frameRate": 60,
-                "colorSpace": "srgb",
-                "alphaPolicy": "black"
-              }
+              "type": "video.frame"
             }
           ]
         },
@@ -4831,25 +4186,13 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "frames",
               "direction": "input",
               "label": "Frames",
-              "type": {
-                "flow": "stream",
-                "dataKind": "video.frame",
-                "frameRate": 60,
-                "colorSpace": "srgb",
-                "alphaPolicy": "black"
-              },
-              "activation": "latched"
+              "type": "video.frame"
             },
             {
               "id": "texture",
               "direction": "output",
               "label": "Texture",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              }
+              "type": "gpu.texture2d"
             }
           ]
         },
@@ -4863,46 +4206,43 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "texture",
               "direction": "input",
               "label": "Texture",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              },
-              "activation": "latched"
+              "type": "gpu.texture2d"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "asset_1",
-            "port": "asset"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "asset_1",
+            "portId": "asset"
           },
-          "to": {
-            "node": "decode_1",
-            "port": "asset"
+          "target": {
+            "nodeId": "decode_1",
+            "portId": "asset"
           }
         },
         {
-          "from": {
-            "node": "decode_1",
-            "port": "frames"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "decode_1",
+            "portId": "frames"
           },
-          "to": {
-            "node": "upload_1",
-            "port": "frames"
+          "target": {
+            "nodeId": "upload_1",
+            "portId": "frames"
           }
         },
         {
-          "from": {
-            "node": "upload_1",
-            "port": "texture"
+          "id": "edge-3",
+          "source": {
+            "nodeId": "upload_1",
+            "portId": "texture"
           },
-          "to": {
-            "node": "preview_1",
-            "port": "texture"
+          "target": {
+            "nodeId": "preview_1",
+            "portId": "texture"
           }
         }
       ]
@@ -4934,21 +4274,14 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             }
           ],
           "kind": "core.bang"
@@ -4966,47 +4299,35 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.int",
-                "format": "i32"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "number.int",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.int",
-                "format": "i32"
-              }
+              "type": "number.int"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "bang_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "bang_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "value_1",
-            "port": "in"
+          "target": {
+            "nodeId": "value_1",
+            "portId": "in"
           }
         }
       ]
@@ -5038,21 +4359,14 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             }
           ],
           "kind": "core.bang"
@@ -5069,34 +4383,28 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Message",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              }
+              "type": "message.any"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "bang_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "bang_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "message_1",
-            "port": "in"
+          "target": {
+            "nodeId": "message_1",
+            "portId": "in"
           }
         }
       ]
@@ -5211,12 +4519,8 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             }
           ]
         },
@@ -5232,12 +4536,8 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             }
           ]
         }
@@ -5270,12 +4570,7 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "out",
               "direction": "output",
               "label": "Out",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              }
+              "type": "gpu.texture2d"
             }
           ]
         },
@@ -5289,26 +4584,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "texture",
               "direction": "input",
               "label": "Texture",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              },
-              "activation": "latched"
+              "type": "gpu.texture2d"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "clear_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "clear_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "preview_1",
-            "port": "texture"
+          "target": {
+            "nodeId": "preview_1",
+            "portId": "texture"
           }
         }
       ]
@@ -5340,21 +4630,14 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             }
           ],
           "kind": "core.bang"
@@ -5371,45 +4654,35 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "string"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "string",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "string"
-              }
+              "type": "string"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "bang_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "bang_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "text_1",
-            "port": "in"
+          "target": {
+            "nodeId": "text_1",
+            "portId": "in"
           }
         }
       ]
@@ -5441,21 +4714,14 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Bang",
-              "type": {
-                "flow": "event",
-                "dataKind": "event.bang"
-              }
+              "type": "event.bang"
             }
           ],
           "kind": "core.bang"
@@ -5473,47 +4739,35 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.uint",
-                "format": "u32"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "number.uint",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.uint",
-                "format": "u32"
-              }
+              "type": "number.uint"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "bang_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "bang_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "value_1",
-            "port": "in"
+          "target": {
+            "nodeId": "value_1",
+            "portId": "in"
           }
         }
       ]
@@ -5580,10 +4834,7 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "asset",
               "direction": "output",
               "label": "Asset",
-              "type": {
-                "flow": "resource",
-                "dataKind": "asset.video"
-              }
+              "type": "asset.video"
             }
           ]
         },
@@ -5597,24 +4848,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "asset",
               "direction": "input",
               "label": "Asset",
-              "type": {
-                "flow": "resource",
-                "dataKind": "asset.video"
-              },
-              "activation": "latched"
+              "type": "asset.video"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "asset_1",
-            "port": "asset"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "asset_1",
+            "portId": "asset"
           },
-          "to": {
-            "node": "decode_1",
-            "port": "asset"
+          "target": {
+            "nodeId": "decode_1",
+            "portId": "asset"
           }
         }
       ]
@@ -5640,10 +4888,7 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "asset",
               "direction": "output",
               "label": "Asset",
-              "type": {
-                "flow": "resource",
-                "dataKind": "asset.video"
-              }
+              "type": "asset.video"
             }
           ]
         },
@@ -5657,23 +4902,13 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "asset",
               "direction": "input",
               "label": "Asset",
-              "type": {
-                "flow": "resource",
-                "dataKind": "asset.video"
-              },
-              "activation": "latched"
+              "type": "asset.video"
             },
             {
               "id": "frames",
               "direction": "output",
               "label": "Frames",
-              "type": {
-                "flow": "stream",
-                "dataKind": "video.frame",
-                "frameRate": 60,
-                "colorSpace": "srgb",
-                "alphaPolicy": "black"
-              }
+              "type": "video.frame"
             }
           ]
         },
@@ -5687,37 +4922,32 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "frames",
               "direction": "input",
               "label": "Frames",
-              "type": {
-                "flow": "stream",
-                "dataKind": "video.frame",
-                "frameRate": 60,
-                "colorSpace": "srgb",
-                "alphaPolicy": "black"
-              },
-              "activation": "latched"
+              "type": "video.frame"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "asset_1",
-            "port": "asset"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "asset_1",
+            "portId": "asset"
           },
-          "to": {
-            "node": "decode_1",
-            "port": "asset"
+          "target": {
+            "nodeId": "decode_1",
+            "portId": "asset"
           }
         },
         {
-          "from": {
-            "node": "decode_1",
-            "port": "frames"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "decode_1",
+            "portId": "frames"
           },
-          "to": {
-            "node": "upload_1",
-            "port": "frames"
+          "target": {
+            "nodeId": "upload_1",
+            "portId": "frames"
           }
         }
       ]
@@ -5748,12 +4978,7 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "out",
               "direction": "output",
               "label": "Out",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              }
+              "type": "gpu.texture2d"
             }
           ]
         },
@@ -5767,26 +4992,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              },
-              "activation": "latched"
+              "type": "gpu.texture2d"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "clear_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "clear_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "output_1",
-            "port": "in"
+          "target": {
+            "nodeId": "output_1",
+            "portId": "in"
           }
         }
       ]
@@ -5813,34 +5033,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "number.float",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Value",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              }
+              "type": "number.float"
             }
           ]
         },
@@ -5863,36 +5070,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "event",
-                "dataKind": "message.any"
-              },
-              "required": false,
-              "activation": "trigger"
+              "type": "message.any",
+              "required": false
             },
             {
               "id": "cold",
               "direction": "input",
               "label": "Cold",
-              "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              },
-              "required": false,
-              "activation": "latched"
+              "type": "color",
+              "required": false
             },
             {
               "id": "value",
               "direction": "output",
               "label": "Color",
-              "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              }
+              "type": "color"
             }
           ]
         },
@@ -5909,35 +5101,19 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "speed",
               "direction": "input",
               "label": "Speed",
-              "type": {
-                "flow": "value",
-                "dataKind": "number.float",
-                "format": "f32"
-              },
-              "activation": "latched"
+              "type": "number.float"
             },
             {
               "id": "tint",
               "direction": "input",
               "label": "Tint",
-              "type": {
-                "flow": "value",
-                "dataKind": "color",
-                "format": "rgba32f",
-                "colorSpace": "linear"
-              },
-              "activation": "latched"
+              "type": "color"
             },
             {
               "id": "out",
               "direction": "output",
               "label": "Out",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              }
+              "type": "gpu.texture2d"
             }
           ]
         },
@@ -5951,46 +5127,43 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              },
-              "activation": "latched"
+              "type": "gpu.texture2d"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "speed_1",
-            "port": "value"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "speed_1",
+            "portId": "value"
           },
-          "to": {
-            "node": "shader_1",
-            "port": "speed"
+          "target": {
+            "nodeId": "shader_1",
+            "portId": "speed"
           }
         },
         {
-          "from": {
-            "node": "tint_1",
-            "port": "value"
+          "id": "edge-2",
+          "source": {
+            "nodeId": "tint_1",
+            "portId": "value"
           },
-          "to": {
-            "node": "shader_1",
-            "port": "tint"
+          "target": {
+            "nodeId": "shader_1",
+            "portId": "tint"
           }
         },
         {
-          "from": {
-            "node": "shader_1",
-            "port": "out"
+          "id": "edge-3",
+          "source": {
+            "nodeId": "shader_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "output_1",
-            "port": "in"
+          "target": {
+            "nodeId": "output_1",
+            "portId": "in"
           }
         }
       ]
@@ -6021,12 +5194,7 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "out",
               "direction": "output",
               "label": "Out",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              }
+              "type": "gpu.texture2d"
             }
           ]
         },
@@ -6040,26 +5208,21 @@ export const builtinNodeHelpGraphsV01 = [
               "id": "in",
               "direction": "input",
               "label": "In",
-              "type": {
-                "flow": "resource",
-                "dataKind": "gpu.texture2d",
-                "format": "rgba8unorm",
-                "colorSpace": "srgb"
-              },
-              "activation": "latched"
+              "type": "gpu.texture2d"
             }
           ]
         }
       ],
       "edges": [
         {
-          "from": {
-            "node": "clear_1",
-            "port": "out"
+          "id": "edge-1",
+          "source": {
+            "nodeId": "clear_1",
+            "portId": "out"
           },
-          "to": {
-            "node": "output_1",
-            "port": "in"
+          "target": {
+            "nodeId": "output_1",
+            "portId": "in"
           }
         }
       ]

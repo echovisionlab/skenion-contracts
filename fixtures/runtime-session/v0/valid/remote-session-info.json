@@ -27,7 +27,6 @@
   },
   "capabilities": {
     "sessionAddressing": true,
-    "defaultSessionAlias": false,
     "eventReplay": true,
     "multiWindow": true,
     "profiles": ["remote"],

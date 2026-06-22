@@ -10,12 +10,7 @@
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": {
-        "flow": "resource",
-        "dataKind": "gpu.texture2d",
-        "format": "rgba8unorm",
-        "colorSpace": "srgb"
-      }
+      "type": "gpu.texture2d"
     }
   ],
   "execution": {

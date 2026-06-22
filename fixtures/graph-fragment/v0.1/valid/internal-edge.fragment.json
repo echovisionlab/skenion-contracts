@@ -1,0 +1,63 @@
+{
+  "schema": "skenion.graph.fragment",
+  "schemaVersion": "0.1.0",
+  "id": "fragment-internal-edge",
+  "nodes": [
+    {
+      "id": "source",
+      "kind": "core.float",
+      "kindVersion": "0.1.0",
+      "params": {
+        "value": 0.5
+      },
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "type": "number.float",
+          "rate": "control"
+        }
+      ]
+    },
+    {
+      "id": "sink",
+      "kind": "core.preview",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "type": "number.float",
+          "rate": "control"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-source-sink",
+      "source": {
+        "nodeId": "source",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "sink",
+        "portId": "in"
+      },
+      "resolvedType": "number.float"
+    }
+  ],
+  "view": {
+    "nodes": {
+      "source": {
+        "x": 100,
+        "y": 100
+      },
+      "sink": {
+        "x": 320,
+        "y": 100
+      }
+    }
+  }
+}

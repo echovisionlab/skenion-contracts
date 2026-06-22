@@ -22,21 +22,14 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "out",
           "direction": "output",
           "label": "Bang",
-          "type": {
-            "flow": "event",
-            "dataKind": "event.bang"
-          }
+          "type": "event.bang"
         }
       ],
       "kind": "core.bang"
@@ -53,34 +46,28 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "out",
           "direction": "output",
           "label": "Message",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          }
+          "type": "message.any"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "bang_1",
-        "port": "out"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "bang_1",
+        "portId": "out"
       },
-      "to": {
-        "node": "message_1",
-        "port": "in"
+      "target": {
+        "nodeId": "message_1",
+        "portId": "in"
       }
     }
   ]

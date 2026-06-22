@@ -1,53 +1,46 @@
 {
   "schema": "skenion.graph",
   "schemaVersion": "0.1.0",
-  "id": "invalid-input-to-input-edge",
-  "revision": "rev_0001",
+  "id": "input-to-input-edge",
+  "revision": "1",
   "nodes": [
     {
-      "id": "a_1",
-      "kind": "core.value",
+      "id": "a",
+      "kind": "core.sink",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "in",
           "direction": "input",
-          "type": {
-            "flow": "value",
-            "dataKind": "number.float"
-          },
-          "activation": "latched"
+          "type": "value.number"
         }
       ]
     },
     {
-      "id": "b_1",
-      "kind": "core.value",
+      "id": "b",
+      "kind": "core.sink",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "in",
           "direction": "input",
-          "type": {
-            "flow": "value",
-            "dataKind": "number.float"
-          },
-          "activation": "latched"
+          "type": "value.number"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "a_1",
-        "port": "in"
+      "id": "edge_input_input",
+      "source": {
+        "nodeId": "a",
+        "portId": "in"
       },
-      "to": {
-        "node": "b_1",
-        "port": "in"
+      "target": {
+        "nodeId": "b",
+        "portId": "in"
       }
     }
   ]

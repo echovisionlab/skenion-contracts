@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/extension/v0.1/extension-manifest.schema.json",
-  "title": "Skenion Native Extension Manifest v0.1",
+  "title": "Skenion Extension Manifest v0.1",
   "type": "object",
   "required": [
     "schema",
@@ -37,12 +37,7 @@
       "minLength": 1
     },
     "kind": {
-      "enum": [
-        "core-package",
-        "native-runtime",
-        "codec",
-        "node-pack"
-      ]
+      "enum": ["core-package", "native-runtime", "codec", "node-pack"]
     },
     "native": {
       "$ref": "#/$defs/nativeBinding"
@@ -77,14 +72,10 @@
             "const": "native-runtime"
           }
         },
-        "required": [
-          "kind"
-        ]
+        "required": ["kind"]
       },
       "then": {
-        "required": [
-          "native"
-        ]
+        "required": ["native"]
       }
     }
   ],
@@ -92,10 +83,7 @@
   "$defs": {
     "nativeBinding": {
       "type": "object",
-      "required": [
-        "entrypoint",
-        "artifacts"
-      ],
+      "required": ["entrypoint", "artifacts"],
       "properties": {
         "entrypoint": {
           "type": "string",
@@ -114,12 +102,7 @@
     },
     "nativeArtifact": {
       "type": "object",
-      "required": [
-        "os",
-        "arch",
-        "abi",
-        "path"
-      ],
+      "required": ["os", "arch", "abi", "path"],
       "properties": {
         "os": {
           "type": "string",
@@ -179,12 +162,7 @@
     },
     "codec": {
       "type": "object",
-      "required": [
-        "id",
-        "version",
-        "transportKinds",
-        "direction"
-      ],
+      "required": ["id", "version", "transportKinds", "direction"],
       "properties": {
         "id": {
           "type": "string",
@@ -197,33 +175,20 @@
         "transportKinds": {
           "type": "array",
           "items": {
-            "enum": [
-              "midi",
-              "hid",
-              "serial",
-              "inline"
-            ]
+            "enum": ["midi", "hid", "serial", "inline"]
           },
           "minItems": 1,
           "uniqueItems": true
         },
         "direction": {
-          "enum": [
-            "decode",
-            "encode",
-            "duplex"
-          ]
+          "enum": ["decode", "encode", "duplex"]
         }
       },
       "additionalProperties": false
     },
     "transport": {
       "type": "object",
-      "required": [
-        "id",
-        "version",
-        "kind"
-      ],
+      "required": ["id", "version", "kind"],
       "properties": {
         "id": {
           "type": "string",
@@ -242,9 +207,7 @@
     },
     "helpEntry": {
       "type": "object",
-      "required": [
-        "nodeId"
-      ],
+      "required": ["nodeId"],
       "properties": {
         "nodeId": {
           "type": "string",
@@ -270,22 +233,14 @@
     },
     "test": {
       "type": "object",
-      "required": [
-        "id",
-        "kind",
-        "target"
-      ],
+      "required": ["id", "kind", "target"],
       "properties": {
         "id": {
           "type": "string",
           "minLength": 1
         },
         "kind": {
-          "enum": [
-            "node",
-            "codec",
-            "extension"
-          ]
+          "enum": ["node", "codec", "extension"]
         },
         "target": {
           "type": "string",

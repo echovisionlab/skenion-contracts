@@ -32,36 +32,21 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "event",
-            "dataKind": "message.any"
-          },
-          "required": false,
-          "activation": "trigger"
+          "type": "message.any",
+          "required": false
         },
         {
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": {
-            "flow": "value",
-            "dataKind": "color",
-            "format": "rgba32f",
-            "colorSpace": "linear"
-          },
-          "required": false,
-          "activation": "latched"
+          "type": "color",
+          "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Color",
-          "type": {
-            "flow": "value",
-            "dataKind": "color",
-            "format": "rgba32f",
-            "colorSpace": "linear"
-          }
+          "type": "color"
         }
       ]
     },
@@ -78,24 +63,13 @@
           "id": "tint",
           "direction": "input",
           "label": "Tint",
-          "type": {
-            "flow": "value",
-            "dataKind": "color",
-            "format": "rgba32f",
-            "colorSpace": "linear"
-          },
-          "activation": "latched"
+          "type": "color"
         },
         {
           "id": "out",
           "direction": "output",
           "label": "Out",
-          "type": {
-            "flow": "resource",
-            "dataKind": "gpu.texture2d",
-            "format": "rgba8unorm",
-            "colorSpace": "srgb"
-          }
+          "type": "gpu.texture2d"
         }
       ]
     },
@@ -109,36 +83,32 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": {
-            "flow": "resource",
-            "dataKind": "gpu.texture2d",
-            "format": "rgba8unorm",
-            "colorSpace": "srgb"
-          },
-          "activation": "latched"
+          "type": "gpu.texture2d"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "tint_1",
-        "port": "value"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "tint_1",
+        "portId": "value"
       },
-      "to": {
-        "node": "shader_1",
-        "port": "tint"
+      "target": {
+        "nodeId": "shader_1",
+        "portId": "tint"
       }
     },
     {
-      "from": {
-        "node": "shader_1",
-        "port": "out"
+      "id": "edge-2",
+      "source": {
+        "nodeId": "shader_1",
+        "portId": "out"
       },
-      "to": {
-        "node": "output_1",
-        "port": "in"
+      "target": {
+        "nodeId": "output_1",
+        "portId": "in"
       }
     }
   ]

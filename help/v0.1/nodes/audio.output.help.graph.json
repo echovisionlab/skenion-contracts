@@ -15,20 +15,12 @@
         {
           "id": "frequency",
           "direction": "input",
-          "type": {
-            "flow": "value",
-            "dataKind": "number.float",
-            "format": "f32"
-          },
-          "activation": "latched"
+          "type": "number.float"
         },
         {
           "id": "out",
           "direction": "output",
-          "type": {
-            "flow": "signal",
-            "dataKind": "signal.audio"
-          }
+          "type": "signal.audio"
         }
       ]
     },
@@ -41,43 +33,37 @@
         {
           "id": "left",
           "direction": "input",
-          "type": {
-            "flow": "signal",
-            "dataKind": "signal.audio"
-          },
-          "activation": "latched"
+          "type": "signal.audio"
         },
         {
           "id": "right",
           "direction": "input",
-          "type": {
-            "flow": "signal",
-            "dataKind": "signal.audio"
-          },
-          "activation": "latched"
+          "type": "signal.audio"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "osc",
-        "port": "out"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "osc",
+        "portId": "out"
       },
-      "to": {
-        "node": "output",
-        "port": "left"
+      "target": {
+        "nodeId": "output",
+        "portId": "left"
       }
     },
     {
-      "from": {
-        "node": "osc",
-        "port": "out"
+      "id": "edge-2",
+      "source": {
+        "nodeId": "osc",
+        "portId": "out"
       },
-      "to": {
-        "node": "output",
-        "port": "right"
+      "target": {
+        "nodeId": "output",
+        "portId": "right"
       }
     }
   ]

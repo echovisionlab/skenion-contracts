@@ -1,0 +1,57 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-output-only-patch",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-output-only-patch",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [
+    {
+      "id": "output_only",
+      "revision": "1",
+      "metadata": {
+        "title": "Output Only"
+      },
+      "graph": {
+        "schema": "skenion.graph",
+        "schemaVersion": "0.1.0",
+        "id": "patch-output-only",
+        "revision": "1",
+        "nodes": [
+          {
+            "id": "amplitude_out",
+            "kind": "core.outlet",
+            "kindVersion": "0.1.0",
+            "params": {
+              "portId": "amplitude",
+              "label": "Amplitude"
+            },
+            "ports": [
+              {
+                "id": "in",
+                "direction": "input",
+                "type": "number.float",
+                "rate": "control",
+                "description": "Amplitude value leaving the patch."
+              }
+            ]
+          }
+        ],
+        "edges": []
+      }
+    }
+  ]
+}

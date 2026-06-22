@@ -10,26 +10,14 @@
       "id": "frames",
       "direction": "input",
       "label": "Frames",
-      "type": {
-        "flow": "stream",
-        "dataKind": "video.frame",
-        "frameRate": 60,
-        "colorSpace": "srgb",
-        "alphaPolicy": "black"
-      },
-      "required": true,
-      "activation": "latched"
+      "type": "video.frame",
+      "required": true
     },
     {
       "id": "texture",
       "direction": "output",
       "label": "Texture",
-      "type": {
-        "flow": "resource",
-        "dataKind": "gpu.texture2d",
-        "format": "rgba8unorm",
-        "colorSpace": "srgb"
-      }
+      "type": "gpu.texture2d"
     }
   ],
   "execution": {

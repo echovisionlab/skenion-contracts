@@ -21,12 +21,7 @@
           "id": "out",
           "direction": "output",
           "label": "Out",
-          "type": {
-            "flow": "resource",
-            "dataKind": "gpu.texture2d",
-            "format": "rgba8unorm",
-            "colorSpace": "srgb"
-          }
+          "type": "gpu.texture2d"
         }
       ]
     },
@@ -40,26 +35,21 @@
           "id": "texture",
           "direction": "input",
           "label": "Texture",
-          "type": {
-            "flow": "resource",
-            "dataKind": "gpu.texture2d",
-            "format": "rgba8unorm",
-            "colorSpace": "srgb"
-          },
-          "activation": "latched"
+          "type": "gpu.texture2d"
         }
       ]
     }
   ],
   "edges": [
     {
-      "from": {
-        "node": "clear_1",
-        "port": "out"
+      "id": "edge-1",
+      "source": {
+        "nodeId": "clear_1",
+        "portId": "out"
       },
-      "to": {
-        "node": "preview_1",
-        "port": "texture"
+      "target": {
+        "nodeId": "preview_1",
+        "portId": "texture"
       }
     }
   ]

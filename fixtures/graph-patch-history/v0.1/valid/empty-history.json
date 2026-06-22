@@ -1,9 +1,0 @@
-{
-  "schema": "skenion.graph.patch.history",
-  "schemaVersion": "0.1.0",
-  "events": [],
-  "canUndo": false,
-  "canRedo": false,
-  "undoDepth": 0,
-  "redoDepth": 0
-}

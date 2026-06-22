@@ -18,11 +18,11 @@
         "nodes": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/$defs/canvasNodeView"
+            "$ref": "#/$defs/nodeView"
           }
         },
         "viewport": {
-          "$ref": "#/$defs/canvasViewport"
+          "$ref": "#/$defs/viewport"
         }
       },
       "additionalProperties": false
@@ -30,7 +30,7 @@
   },
   "additionalProperties": false,
   "$defs": {
-    "canvasNodeView": {
+    "nodeView": {
       "type": "object",
       "required": ["x", "y"],
       "properties": {
@@ -54,7 +54,7 @@
       },
       "additionalProperties": false
     },
-    "canvasViewport": {
+    "viewport": {
       "type": "object",
       "required": ["x", "y", "zoom"],
       "properties": {

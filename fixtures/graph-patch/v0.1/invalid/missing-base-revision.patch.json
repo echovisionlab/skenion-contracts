@@ -1,6 +1,0 @@
-{
-  "schema": "skenion.graph.patch",
-  "schemaVersion": "0.1.0",
-  "id": "patch_missing_base_revision",
-  "ops": []
-}

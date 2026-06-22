@@ -10,14 +10,8 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": {
-        "flow": "resource",
-        "dataKind": "gpu.texture2d",
-        "format": "rgba8unorm",
-        "colorSpace": "srgb"
-      },
-      "required": true,
-      "activation": "latched"
+      "type": "gpu.texture2d",
+      "required": true
     }
   ],
   "execution": {

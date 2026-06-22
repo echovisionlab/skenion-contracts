@@ -10,10 +10,7 @@
       "id": "asset",
       "direction": "output",
       "label": "Asset",
-      "type": {
-        "flow": "resource",
-        "dataKind": "asset.video"
-      }
+      "type": "asset.video"
     }
   ],
   "execution": {

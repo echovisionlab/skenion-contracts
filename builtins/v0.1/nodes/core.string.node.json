@@ -10,32 +10,21 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": {
-        "flow": "event",
-        "dataKind": "message.any"
-      },
-      "required": false,
-      "activation": "trigger"
+      "type": "message.any",
+      "required": false
     },
     {
       "id": "cold",
       "direction": "input",
       "label": "Cold",
-      "type": {
-        "flow": "value",
-        "dataKind": "string"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "string",
+      "required": false
     },
     {
       "id": "value",
       "direction": "output",
       "label": "Value",
-      "type": {
-        "flow": "value",
-        "dataKind": "string"
-      }
+      "type": "string"
     }
   ],
   "execution": {

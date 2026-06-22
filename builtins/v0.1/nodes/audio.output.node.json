@@ -10,23 +10,15 @@
       "id": "left",
       "direction": "input",
       "label": "Left",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "signal.audio",
+      "required": false
     },
     {
       "id": "right",
       "direction": "input",
       "label": "Right",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "signal.audio",
+      "required": false
     }
   ],
   "execution": {

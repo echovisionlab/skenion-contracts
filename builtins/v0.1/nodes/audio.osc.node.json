@@ -10,22 +10,14 @@
       "id": "frequency",
       "direction": "input",
       "label": "Frequency",
-      "type": {
-        "flow": "value",
-        "dataKind": "number.float",
-        "format": "f32"
-      },
-      "required": false,
-      "activation": "latched"
+      "type": "number.float",
+      "required": false
     },
     {
       "id": "out",
       "direction": "output",
       "label": "Signal",
-      "type": {
-        "flow": "signal",
-        "dataKind": "signal.audio"
-      }
+      "type": "signal.audio"
     }
   ],
   "execution": {

@@ -1,0 +1,25 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "legacy-sampled-flow",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "osc",
+      "kind": "audio.osc",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "type": {
+            "flow": "sampled",
+            "data": "number.float"
+          }
+        }
+      ]
+    }
+  ],
+  "edges": []
+}

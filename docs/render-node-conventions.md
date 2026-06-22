@@ -311,8 +311,9 @@ Rules:
 - `render.output:in` accepts `resource<gpu.texture2d>` render outputs.
 - v0.13 supports one effective output. If multiple `render.output` nodes exist,
   runtimes should select deterministically and report a diagnostic.
-- If no `render.output` node exists, runtimes may use legacy render node
-  selection for backward compatibility and should surface a diagnostic.
+- If no `render.output` node exists, runtimes must report that no active render
+  output is available. They must not select an older render node shape as a
+  fallback.
 
 ## Preview Document
 
