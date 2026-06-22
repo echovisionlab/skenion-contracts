@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.43.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.39.0...skenion-contracts-v0.43.0) (2026-06-22)
+
+
+### Features
+
+* **contracts:** add release train manifest contract ([73a83ad](https://github.com/echovisionlab/skenion-contracts/commit/73a83ad51e8156366c217ef24f3165c08604c0f8)), closes [#102](https://github.com/echovisionlab/skenion-contracts/issues/102)
+* **contracts:** consolidate graph contract on 0.1 ([e7591d9](https://github.com/echovisionlab/skenion-contracts/commit/e7591d9c5b29b52b7d7be7926d060acc69370bad)), closes [#114](https://github.com/echovisionlab/skenion-contracts/issues/114)
+
+
+### Bug Fixes
+
+* **ci:** dispatch release please by train ([cb5810c](https://github.com/echovisionlab/skenion-contracts/commit/cb5810c37e1aa5a893cdb841e4b7028db71bb00a))
+* **ci:** force train release-as ([a203870](https://github.com/echovisionlab/skenion-contracts/commit/a203870fe9d3493b27c9f4b7567d8334c69df788))
+
 ## [0.39.0](https://github.com/echovisionlab/skenion-contracts/compare/skenion-contracts-v0.38.0...skenion-contracts-v0.39.0) (2026-06-21)
 
 
