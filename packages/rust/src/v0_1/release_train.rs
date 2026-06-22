@@ -457,12 +457,12 @@ fn is_sha256_hex(value: &str) -> bool {
 }
 
 fn validate_checksum(errors: &mut Vec<ValidationErrorV01>, checksum: &ReleaseTrainChecksumV01) {
-    if let Some(value) = &checksum.value {
-        if !is_sha256_hex(value) {
-            errors.push(ValidationErrorV01::new(
-                "checksum value must be a 64 character sha256 hex digest",
-            ));
-        }
+    if let Some(value) = &checksum.value
+        && !is_sha256_hex(value)
+    {
+        errors.push(ValidationErrorV01::new(
+            "checksum value must be a 64 character sha256 hex digest",
+        ));
     }
 }
 
@@ -602,12 +602,12 @@ fn validate_runtime_smoke_gates(
             )));
         }
         validate_artifact_id(errors, artifacts, "runtimeSmoke", &gate.artifact_id);
-        if let Some(runtime_artifact) = manifest.components.runtime.binaries.get(&target) {
-            if gate.artifact_id != runtime_artifact.id {
-                errors.push(ValidationErrorV01::new(format!(
-                    "runtimeSmoke {target_label} artifactId must match runtime binary"
-                )));
-            }
+        if let Some(runtime_artifact) = manifest.components.runtime.binaries.get(&target)
+            && gate.artifact_id != runtime_artifact.id
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "runtimeSmoke {target_label} artifactId must match runtime binary"
+            )));
         }
     }
 }
@@ -643,19 +643,19 @@ fn validate_studio_smoke_gates(
             &gate.runtime_sidecar_artifact_id,
         );
 
-        if let Some(desktop_artifact) = manifest.components.studio.desktop_packages.get(&target) {
-            if gate.desktop_package_artifact_id != desktop_artifact.id {
-                errors.push(ValidationErrorV01::new(format!(
-                    "studioPackageSmoke {target_label} desktopPackageArtifactId must match desktop package"
-                )));
-            }
+        if let Some(desktop_artifact) = manifest.components.studio.desktop_packages.get(&target)
+            && gate.desktop_package_artifact_id != desktop_artifact.id
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "studioPackageSmoke {target_label} desktopPackageArtifactId must match desktop package"
+            )));
         }
-        if let Some(sidecar_artifact) = manifest.components.studio.runtime_sidecars.get(&target) {
-            if gate.runtime_sidecar_artifact_id != sidecar_artifact.id {
-                errors.push(ValidationErrorV01::new(format!(
-                    "studioPackageSmoke {target_label} runtimeSidecarArtifactId must match runtime sidecar"
-                )));
-            }
+        if let Some(sidecar_artifact) = manifest.components.studio.runtime_sidecars.get(&target)
+            && gate.runtime_sidecar_artifact_id != sidecar_artifact.id
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "studioPackageSmoke {target_label} runtimeSidecarArtifactId must match runtime sidecar"
+            )));
         }
     }
 }
