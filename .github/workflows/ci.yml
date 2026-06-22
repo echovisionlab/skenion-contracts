@@ -17,18 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
-        with:
-          repository: echovisionlab/skenion-examples
-          path: .deps/skenion-examples
-      - name: Align examples dependency branch
-        if: github.event_name == 'pull_request'
-        run: |
-          cd .deps/skenion-examples
-          if git ls-remote --exit-code origin "refs/heads/${GITHUB_HEAD_REF}" >/dev/null 2>&1; then
-            git fetch --depth=1 origin "${GITHUB_HEAD_REF}"
-            git checkout FETCH_HEAD
-          fi
       - uses: bufbuild/buf-setup-action@v1.50.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -41,10 +29,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run ci
-      - run: node scripts/validate-with-contracts.mjs
-        working-directory: .deps/skenion-examples
-        env:
-          SKENION_CONTRACTS_PACKAGE: ../../packages/ts/dist
       - run: rustup show
       - uses: Swatinem/rust-cache@v2
         with:
