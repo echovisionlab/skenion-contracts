@@ -1,11 +1,34 @@
+# OS metadata
 .DS_Store
+
+# Dependencies and local workspace links
 node_modules/
+.pnpm-store/
 .deps/
-packages/ts/src/generated/
-crates/rust/src/generated/
-target/
+
+# Build and compiler output
 dist/
 build/
+target/
+*.tsbuildinfo
+
+# Test, coverage, and report output
+coverage/
+test-results/
+reports/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Release-train scratch
+.skenion-train/
+.skenion-ci/
+.caller/
+
+# Local environment
 .env
 .env.*
 !.env.example
