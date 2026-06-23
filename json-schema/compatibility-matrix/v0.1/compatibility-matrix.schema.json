@@ -1,0 +1,519 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/compatibility-matrix/v0.1/compatibility-matrix.schema.json",
+  "title": "skenion Compatibility Matrix v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "schema-version",
+    "matrix-id",
+    "contracts-line",
+    "contracts-range",
+    "protocol-baselines",
+    "capabilities",
+    "components",
+    "verification",
+    "promotion"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.compatibility-matrix"
+    },
+    "schema-version": {
+      "const": "0.1.0"
+    },
+    "matrix-id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contracts-line": {
+      "type": "string",
+      "pattern": "^0\\.[0-9]+$"
+    },
+    "contracts-range": {
+      "type": "string",
+      "pattern": "^>=0\\.[0-9]+\\.0 <0\\.[0-9]+\\.0$"
+    },
+    "protocol-baselines": {
+      "$ref": "#/$defs/protocolBaselines"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/capabilities"
+    },
+    "components": {
+      "$ref": "#/$defs/components"
+    },
+    "verification": {
+      "$ref": "#/$defs/verification"
+    },
+    "promotion": {
+      "$ref": "#/$defs/promotion"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "target": {
+      "enum": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ]
+    },
+    "targetMap": {
+      "type": "object",
+      "required": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ],
+      "properties": {
+        "aarch64-apple-darwin": {
+          "$ref": "#/$defs/artifact"
+        },
+        "x86_64-apple-darwin": {
+          "$ref": "#/$defs/artifact"
+        },
+        "x86_64-pc-windows-msvc": {
+          "$ref": "#/$defs/artifact"
+        },
+        "aarch64-pc-windows-msvc": {
+          "$ref": "#/$defs/artifact"
+        },
+        "x86_64-unknown-linux-gnu": {
+          "$ref": "#/$defs/artifact"
+        },
+        "aarch64-unknown-linux-gnu": {
+          "$ref": "#/$defs/artifact"
+        }
+      },
+      "additionalProperties": false
+    },
+    "checksum": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "githubSource": {
+      "type": "object",
+      "required": [
+        "kind",
+        "repository",
+        "tag",
+        "asset-name"
+      ],
+      "properties": {
+        "kind": {
+          "const": "github-release-asset"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset-name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "id",
+        "target",
+        "kind",
+        "name",
+        "version",
+        "source",
+        "checksum"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "kind": {
+          "enum": [
+            "runtime-binary",
+            "studio-desktop-package",
+            "studio-runtime-sidecar",
+            "studio-web-bundle"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "source": {
+          "$ref": "#/$defs/githubSource"
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "size-bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "registryPackage": {
+      "type": "object",
+      "required": [
+        "ecosystem",
+        "name",
+        "version",
+        "tag",
+        "commit"
+      ],
+      "properties": {
+        "ecosystem": {
+          "enum": [
+            "npm",
+            "crates.io"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 7
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "protocolBaselines": {
+      "type": "object",
+      "required": [
+        "graph",
+        "project",
+        "node",
+        "extension",
+        "runtime-http",
+        "runtime-collaboration"
+      ],
+      "properties": {
+        "graph": {
+          "const": "0.1"
+        },
+        "project": {
+          "const": "0.1"
+        },
+        "node": {
+          "const": "0.1"
+        },
+        "extension": {
+          "const": "0.1"
+        },
+        "runtime-http": {
+          "const": "v0"
+        },
+        "runtime-collaboration": {
+          "const": "v0"
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilitySet": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "runtime",
+        "studio",
+        "marketplace",
+        "docs"
+      ],
+      "properties": {
+        "runtime": {
+          "$ref": "#/$defs/capabilitySet"
+        },
+        "studio": {
+          "$ref": "#/$defs/capabilitySet"
+        },
+        "marketplace": {
+          "$ref": "#/$defs/capabilitySet"
+        },
+        "docs": {
+          "$ref": "#/$defs/capabilitySet"
+        }
+      },
+      "additionalProperties": false
+    },
+    "components": {
+      "type": "object",
+      "required": [
+        "contracts",
+        "runtime",
+        "sdk",
+        "studio",
+        "examples",
+        "docs"
+      ],
+      "properties": {
+        "contracts": {
+          "type": "object",
+          "required": [
+            "npm",
+            "crate"
+          ],
+          "properties": {
+            "npm": {
+              "$ref": "#/$defs/registryPackage"
+            },
+            "crate": {
+              "$ref": "#/$defs/registryPackage"
+            }
+          },
+          "additionalProperties": false
+        },
+        "runtime": {
+          "type": "object",
+          "required": [
+            "version",
+            "assets"
+          ],
+          "properties": {
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+            },
+            "assets": {
+              "$ref": "#/$defs/targetMap"
+            }
+          },
+          "additionalProperties": false
+        },
+        "sdk": {
+          "type": "object",
+          "required": [
+            "npm",
+            "supported-contracts-range"
+          ],
+          "properties": {
+            "npm": {
+              "$ref": "#/$defs/registryPackage"
+            },
+            "supported-contracts-range": {
+              "type": "string",
+              "pattern": "^>=0\\.[0-9]+\\.0 <0\\.[0-9]+\\.0$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "studio": {
+          "type": "object",
+          "required": [
+            "version",
+            "web-assets",
+            "desktop-assets",
+            "runtime-sidecars"
+          ],
+          "properties": {
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+            },
+            "web-assets": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/artifact"
+              },
+              "minItems": 1
+            },
+            "desktop-assets": {
+              "$ref": "#/$defs/targetMap"
+            },
+            "runtime-sidecars": {
+              "$ref": "#/$defs/targetMap"
+            }
+          },
+          "additionalProperties": false
+        },
+        "examples": {
+          "type": "object",
+          "required": [
+            "repository",
+            "ref",
+            "commit",
+            "conformance-status"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commit": {
+              "type": "string",
+              "minLength": 7
+            },
+            "conformance-status": {
+              "enum": [
+                "pending",
+                "passed",
+                "failed"
+              ]
+            },
+            "evidence-url": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "docs": {
+          "type": "object",
+          "required": [
+            "manual"
+          ],
+          "properties": {
+            "manual": {
+              "type": "object",
+              "required": [
+                "version",
+                "path",
+                "pages-url",
+                "pages-deployed",
+                "promoted-latest"
+              ],
+              "properties": {
+                "version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "pages-url": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "pages-deployed": {
+                  "type": "boolean"
+                },
+                "promoted-latest": {
+                  "type": "boolean"
+                },
+                "evidence-url": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "object",
+      "required": [
+        "expected-checksums"
+      ],
+      "properties": {
+        "expected-checksums": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/checksum"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "promotion": {
+      "type": "object",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "draft",
+            "candidate",
+            "promoted",
+            "rejected"
+          ]
+        },
+        "promoted-at": {
+          "type": "string"
+        },
+        "promoted-by": {
+          "type": "string"
+        },
+        "evidence-url": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

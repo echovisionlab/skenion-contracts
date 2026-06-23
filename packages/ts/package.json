@@ -83,6 +83,10 @@
     "./release-train/v0.1/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
+    },
+    "./compatibility-matrix/v0.1/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
     }
   },
   "files": [
