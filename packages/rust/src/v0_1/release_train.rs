@@ -74,7 +74,7 @@ pub enum ReleaseTrainGateStatusV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainRegistryPackageV01 {
     pub ecosystem: ReleaseTrainPackageEcosystemV01,
     pub name: String,
@@ -84,14 +84,14 @@ pub struct ReleaseTrainRegistryPackageV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainChecksumV01 {
     pub algorithm: ReleaseTrainChecksumAlgorithmV01,
     pub value: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(tag = "kind", rename_all_fields = "camelCase")]
+#[serde(tag = "kind", rename_all_fields = "kebab-case")]
 pub enum ReleaseTrainArtifactSourceV01 {
     #[serde(rename = "github-release-asset")]
     GithubReleaseAsset {
@@ -106,7 +106,7 @@ pub enum ReleaseTrainArtifactSourceV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainArtifactV01 {
     pub id: String,
     pub target: ReleaseTrainTargetV01,
@@ -124,7 +124,7 @@ pub type ReleaseTrainTargetArtifactMapV01 =
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainStudioWebBundleArtifactV01 {
     pub id: String,
     pub kind: ReleaseTrainArtifactKindV01,
@@ -137,7 +137,7 @@ pub struct ReleaseTrainStudioWebBundleArtifactV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainProtocolBaselinesV01 {
     pub graph: String,
     pub project: String,
@@ -157,7 +157,7 @@ pub enum ReleaseTrainConnectionProfileV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainRuntimeCapabilitySetV01 {
     pub session_addressing: bool,
     pub event_replay: bool,
@@ -171,7 +171,7 @@ pub struct ReleaseTrainRuntimeCapabilitySetV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainStudioCapabilitySetV01 {
     pub graph_editor: bool,
     pub patch_library: bool,
@@ -184,7 +184,7 @@ pub struct ReleaseTrainStudioCapabilitySetV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainMarketplaceCapabilitySetV01 {
     pub package_discovery: bool,
     pub package_install: bool,
@@ -194,7 +194,7 @@ pub struct ReleaseTrainMarketplaceCapabilitySetV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainManualCapabilitySetV01 {
     pub versioned_paths: bool,
     pub pages_deployment: bool,
@@ -204,7 +204,7 @@ pub struct ReleaseTrainManualCapabilitySetV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainCapabilitySetV01 {
     pub protocol_surfaces: ReleaseTrainProtocolBaselinesV01,
     pub runtime: ReleaseTrainRuntimeCapabilitySetV01,
@@ -215,7 +215,7 @@ pub struct ReleaseTrainCapabilitySetV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainContractsComponentV01 {
     pub npm: ReleaseTrainRegistryPackageV01,
     #[serde(rename = "crate")]
@@ -224,21 +224,21 @@ pub struct ReleaseTrainContractsComponentV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainRuntimeComponentV01 {
     pub binaries: ReleaseTrainTargetArtifactMapV01,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainSdkComponentV01 {
     pub npm: ReleaseTrainRegistryPackageV01,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainStudioComponentV01 {
     #[serde(rename = "web-bundle")]
     pub web_bundle: ReleaseTrainStudioWebBundleArtifactV01,
@@ -248,7 +248,7 @@ pub struct ReleaseTrainStudioComponentV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainExamplesComponentV01 {
     pub repository: String,
     pub version: String,
@@ -259,7 +259,7 @@ pub struct ReleaseTrainExamplesComponentV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainManualComponentV01 {
     pub version: String,
     pub path: String,
@@ -268,14 +268,14 @@ pub struct ReleaseTrainManualComponentV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainDocsComponentV01 {
     pub manual: ReleaseTrainManualComponentV01,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainComponentsV01 {
     pub contracts: ReleaseTrainContractsComponentV01,
     pub runtime: ReleaseTrainRuntimeComponentV01,
@@ -287,7 +287,7 @@ pub struct ReleaseTrainComponentsV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainRegistryPackageGateV01 {
     pub id: String,
     pub status: ReleaseTrainGateStatusV01,
@@ -299,7 +299,7 @@ pub struct ReleaseTrainRegistryPackageGateV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainRegistryPackageGatesV01 {
     pub contracts_npm: ReleaseTrainRegistryPackageGateV01,
     pub contracts_crate: ReleaseTrainRegistryPackageGateV01,
@@ -308,7 +308,7 @@ pub struct ReleaseTrainRegistryPackageGatesV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainArtifactCollectionGateV01 {
     pub id: String,
     pub status: ReleaseTrainGateStatusV01,
@@ -322,7 +322,7 @@ pub struct ReleaseTrainArtifactCollectionGateV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainGithubReleaseAssetGatesV01 {
     pub runtime: ReleaseTrainArtifactCollectionGateV01,
     pub studio: ReleaseTrainArtifactCollectionGateV01,
@@ -330,7 +330,7 @@ pub struct ReleaseTrainGithubReleaseAssetGatesV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainChecksumGateV01 {
     pub id: String,
     pub status: ReleaseTrainGateStatusV01,
@@ -344,7 +344,7 @@ pub struct ReleaseTrainChecksumGateV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainRuntimeSmokeGateV01 {
     pub id: String,
     pub status: ReleaseTrainGateStatusV01,
@@ -360,7 +360,7 @@ pub type ReleaseTrainRuntimeSmokeGateMapV01 =
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainStudioPackageSmokeGateV01 {
     pub id: String,
     pub status: ReleaseTrainGateStatusV01,
@@ -377,7 +377,7 @@ pub type ReleaseTrainStudioPackageSmokeGateMapV01 =
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainExamplesConformanceGateV01 {
     pub id: String,
     pub status: ReleaseTrainGateStatusV01,
@@ -392,7 +392,7 @@ pub struct ReleaseTrainExamplesConformanceGateV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainDocsPagesDeploymentGateV01 {
     pub id: String,
     pub status: ReleaseTrainGateStatusV01,
@@ -406,7 +406,7 @@ pub struct ReleaseTrainDocsPagesDeploymentGateV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainGatesV01 {
     pub registry_packages: ReleaseTrainRegistryPackageGatesV01,
     pub github_release_assets: ReleaseTrainGithubReleaseAssetGatesV01,
@@ -419,7 +419,7 @@ pub struct ReleaseTrainGatesV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ReleaseTrainManifestV01 {
     pub schema: String,
     pub schema_version: String,
@@ -516,7 +516,7 @@ fn validate_artifact_map(
         }
         if artifact.support_tier != support_tier_for_target(target) {
             errors.push(ValidationErrorV01::new(format!(
-                "{label} {target_label} supportTier does not match target release tier"
+                "{label} {target_label} support-tier does not match target release tier"
             )));
         }
         if artifact.kind != expected_kind {
@@ -564,7 +564,7 @@ fn validate_studio_desktop_artifact_names(
             && asset_name != &expected_name
         {
             errors.push(ValidationErrorV01::new(format!(
-                "studio desktop package {target_label} assetName must be {expected_name}"
+                "studio desktop package {target_label} asset-name must be {expected_name}"
             )));
         }
     }
@@ -624,7 +624,7 @@ fn validate_studio_web_bundle_artifact(
             }
             if asset_name != &expected_name {
                 errors.push(ValidationErrorV01::new(format!(
-                    "{label}.assetName must be {expected_name}"
+                    "{label}.asset-name must be {expected_name}"
                 )));
             }
         }
@@ -711,7 +711,7 @@ fn validate_artifact_collection_gate(
 ) {
     if gate.artifact_ids.is_empty() {
         errors.push(ValidationErrorV01::new(format!(
-            "{label} artifactIds must not be empty"
+            "{label} artifact-ids must not be empty"
         )));
     }
     for artifact_id in &gate.artifact_ids {
@@ -728,21 +728,21 @@ fn validate_runtime_smoke_gates(
         let target_label = target.as_str();
         let Some(gate) = manifest.release_gates.runtime_smoke.get(&target) else {
             errors.push(ValidationErrorV01::new(format!(
-                "runtimeSmoke missing gate for {target_label}"
+                "runtime-smoke missing gate for {target_label}"
             )));
             continue;
         };
         if gate.target != target {
             errors.push(ValidationErrorV01::new(format!(
-                "runtimeSmoke {target_label} target must match map key"
+                "runtime-smoke {target_label} target must match map key"
             )));
         }
-        validate_artifact_id(errors, artifacts, "runtimeSmoke", &gate.artifact_id);
+        validate_artifact_id(errors, artifacts, "runtime-smoke", &gate.artifact_id);
         if let Some(runtime_artifact) = manifest.components.runtime.binaries.get(&target)
             && gate.artifact_id != runtime_artifact.id
         {
             errors.push(ValidationErrorV01::new(format!(
-                "runtimeSmoke {target_label} artifactId must match runtime binary"
+                "runtime-smoke {target_label} artifact-id must match runtime binary"
             )));
         }
     }
@@ -757,25 +757,25 @@ fn validate_studio_smoke_gates(
         let target_label = target.as_str();
         let Some(gate) = manifest.release_gates.studio_package_smoke.get(&target) else {
             errors.push(ValidationErrorV01::new(format!(
-                "studioPackageSmoke missing gate for {target_label}"
+                "studio-package-smoke missing gate for {target_label}"
             )));
             continue;
         };
         if gate.target != target {
             errors.push(ValidationErrorV01::new(format!(
-                "studioPackageSmoke {target_label} target must match map key"
+                "studio-package-smoke {target_label} target must match map key"
             )));
         }
         validate_artifact_id(
             errors,
             artifacts,
-            "studioPackageSmoke desktopPackageArtifactId",
+            "studio-package-smoke desktop-package-artifact-id",
             &gate.desktop_package_artifact_id,
         );
         validate_artifact_id(
             errors,
             artifacts,
-            "studioPackageSmoke runtimeSidecarArtifactId",
+            "studio-package-smoke runtime-sidecar-artifact-id",
             &gate.runtime_sidecar_artifact_id,
         );
 
@@ -783,14 +783,14 @@ fn validate_studio_smoke_gates(
             && gate.desktop_package_artifact_id != desktop_artifact.id
         {
             errors.push(ValidationErrorV01::new(format!(
-                "studioPackageSmoke {target_label} desktopPackageArtifactId must match desktop package"
+                "studio-package-smoke {target_label} desktop-package-artifact-id must match desktop package"
             )));
         }
         if let Some(sidecar_artifact) = manifest.components.studio.runtime_sidecars.get(&target)
             && gate.runtime_sidecar_artifact_id != sidecar_artifact.id
         {
             errors.push(ValidationErrorV01::new(format!(
-                "studioPackageSmoke {target_label} runtimeSidecarArtifactId must match runtime sidecar"
+                "studio-package-smoke {target_label} runtime-sidecar-artifact-id must match runtime sidecar"
             )));
         }
     }
@@ -804,11 +804,11 @@ fn validate_checksum_gate(
     let gate = &manifest.release_gates.checksum_verification;
     if gate.artifact_ids.is_empty() {
         errors.push(ValidationErrorV01::new(
-            "checksumVerification artifactIds must not be empty",
+            "checksum-verification artifact-ids must not be empty",
         ));
     }
     for artifact_id in &gate.artifact_ids {
-        validate_artifact_id(errors, artifacts, "checksumVerification", artifact_id);
+        validate_artifact_id(errors, artifacts, "checksum-verification", artifact_id);
     }
     for (artifact_id, expected_checksum) in &gate.expected_checksums {
         let Some(actual_checksum) = artifacts.get(artifact_id.as_str()) else {
@@ -843,9 +843,9 @@ fn validate_protocol_baselines(
         ("project", protocol.project.as_str(), "0.1"),
         ("node", protocol.node.as_str(), "0.1"),
         ("extension", protocol.extension.as_str(), "0.1"),
-        ("runtimeHttp", protocol.runtime_http.as_str(), "v0"),
+        ("runtime-http", protocol.runtime_http.as_str(), "v0"),
         (
-            "runtimeCollaboration",
+            "runtime-collaboration",
             protocol.runtime_collaboration.as_str(),
             "v0",
         ),
@@ -854,7 +854,7 @@ fn validate_protocol_baselines(
     for (label, actual, expected_value) in expected {
         if actual != expected_value {
             errors.push(ValidationErrorV01::new(format!(
-                "protocolBaselines {label} must be {expected_value}"
+                "protocol-baselines {label} must be {expected_value}"
             )));
         }
     }
@@ -873,7 +873,7 @@ fn validate_connection_profiles(
     let actual: HashSet<ReleaseTrainConnectionProfileV01> = profiles.iter().copied().collect();
     if actual != expected || profiles.len() != expected.len() {
         errors.push(ValidationErrorV01::new(format!(
-            "{label} connectionProfiles must include local-managed, local-shared, and remote"
+            "{label} connection-profiles must include local-managed, local-shared, and remote"
         )));
     }
 }
@@ -881,7 +881,7 @@ fn validate_connection_profiles(
 fn require_capability(errors: &mut Vec<ValidationErrorV01>, enabled: bool, label: &str) {
     if !enabled {
         errors.push(ValidationErrorV01::new(format!(
-            "capabilitySet {label} must be enabled"
+            "capability-set {label} must be enabled"
         )));
     }
 }
@@ -892,7 +892,7 @@ fn validate_capability_set(
 ) {
     if manifest.capability_set.protocol_surfaces != manifest.protocol_baselines {
         errors.push(ValidationErrorV01::new(
-            "capabilitySet protocolSurfaces must match protocolBaselines",
+            "capability-set protocol-surfaces must match protocol-baselines",
         ));
     }
 
@@ -900,38 +900,38 @@ fn validate_capability_set(
     require_capability(
         errors,
         runtime.session_addressing,
-        "runtime.sessionAddressing",
+        "runtime.session-addressing",
     );
-    require_capability(errors, runtime.event_replay, "runtime.eventReplay");
-    require_capability(errors, runtime.multi_window, "runtime.multiWindow");
-    require_capability(errors, runtime.operation_log, "runtime.operationLog");
+    require_capability(errors, runtime.event_replay, "runtime.event-replay");
+    require_capability(errors, runtime.multi_window, "runtime.multi-window");
+    require_capability(errors, runtime.operation_log, "runtime.operation-log");
     validate_connection_profiles(errors, &runtime.connection_profiles, "runtime");
     if runtime.collaboration != "server-authoritative-ot" {
         errors.push(ValidationErrorV01::new(
-            "capabilitySet runtime.collaboration must be server-authoritative-ot",
+            "capability-set runtime.collaboration must be server-authoritative-ot",
         ));
     }
     if runtime.io_discovery != "raw-descriptor" {
         errors.push(ValidationErrorV01::new(
-            "capabilitySet runtime.ioDiscovery must be raw-descriptor",
+            "capability-set runtime.io-discovery must be raw-descriptor",
         ));
     }
     if runtime.auth_policy != "deferred" {
         errors.push(ValidationErrorV01::new(
-            "capabilitySet runtime.authPolicy must be deferred",
+            "capability-set runtime.auth-policy must be deferred",
         ));
     }
 
     let studio = &manifest.capability_set.studio;
-    require_capability(errors, studio.graph_editor, "studio.graphEditor");
-    require_capability(errors, studio.patch_library, "studio.patchLibrary");
+    require_capability(errors, studio.graph_editor, "studio.graph-editor");
+    require_capability(errors, studio.patch_library, "studio.patch-library");
     require_capability(errors, studio.subpatches, "studio.subpatches");
-    require_capability(errors, studio.living_help, "studio.livingHelp");
-    require_capability(errors, studio.graph_clipboard, "studio.graphClipboard");
+    require_capability(errors, studio.living_help, "studio.living-help");
+    require_capability(errors, studio.graph_clipboard, "studio.graph-clipboard");
     validate_connection_profiles(errors, &studio.connection_profiles, "studio");
     if studio.desktop_shell != "tauri" {
         errors.push(ValidationErrorV01::new(
-            "capabilitySet studio.desktopShell must be tauri",
+            "capability-set studio.desktop-shell must be tauri",
         ));
     }
 
@@ -939,36 +939,36 @@ fn validate_capability_set(
     require_capability(
         errors,
         marketplace.package_discovery,
-        "marketplace.packageDiscovery",
+        "marketplace.package-discovery",
     );
     require_capability(
         errors,
         marketplace.package_install,
-        "marketplace.packageInstall",
+        "marketplace.package-install",
     );
     require_capability(
         errors,
         marketplace.package_update,
-        "marketplace.packageUpdate",
+        "marketplace.package-update",
     );
     require_capability(
         errors,
         marketplace.extension_packages,
-        "marketplace.extensionPackages",
+        "marketplace.extension-packages",
     );
 
     let manual = &manifest.capability_set.manual;
-    require_capability(errors, manual.versioned_paths, "manual.versionedPaths");
-    require_capability(errors, manual.pages_deployment, "manual.pagesDeployment");
+    require_capability(errors, manual.versioned_paths, "manual.versioned-paths");
+    require_capability(errors, manual.pages_deployment, "manual.pages-deployment");
     require_capability(
         errors,
         manual.latest_promotion_requires_matrix,
-        "manual.latestPromotionRequiresMatrix",
+        "manual.latest-promotion-requires-matrix",
     );
     require_capability(
         errors,
         manual.patch_releases_use_major_minor_path,
-        "manual.patchReleasesUseMajorMinorPath",
+        "manual.patch-releases-use-major-minor-path",
     );
 }
 
@@ -983,7 +983,7 @@ fn validate_registry_package_gate(
         || gate.package.version != package.version
     {
         errors.push(ValidationErrorV01::new(format!(
-            "registryPackages {label} package must match component package"
+            "release-gates.registry-packages.{label}.package must match component package"
         )));
     }
 }
@@ -1001,18 +1001,18 @@ pub fn validate_release_train_manifest_v01(
     }
     if manifest.schema_version != "0.1.0" {
         errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
+            "expected schema-version 0.1.0, found {}",
             manifest.schema_version
         )));
     }
     if !is_numeric_version(&manifest.train_id, 2) {
         errors.push(ValidationErrorV01::new(
-            "trainId must be a major.minor numeric version",
+            "train-id must be a major.minor numeric version",
         ));
     }
     if !is_numeric_version(&manifest.train_version, 3) {
         errors.push(ValidationErrorV01::new(
-            "trainVersion must be a major.minor.patch numeric version",
+            "train-version must be a major.minor.patch numeric version",
         ));
     }
     if !manifest
@@ -1020,7 +1020,7 @@ pub fn validate_release_train_manifest_v01(
         .starts_with(&format!("{}.", manifest.train_id))
     {
         errors.push(ValidationErrorV01::new(
-            "trainVersion must match trainId major.minor",
+            "train-version must match train-id major.minor",
         ));
     }
 
@@ -1064,7 +1064,7 @@ pub fn validate_release_train_manifest_v01(
     );
     validate_artifact_map(
         &mut errors,
-        "studio runtimeSidecars",
+        "studio runtime-sidecars",
         &manifest.components.studio.runtime_sidecars,
         ReleaseTrainArtifactKindV01::StudioRuntimeSidecar,
         RELEASE_TRAIN_STUDIO_REPOSITORY_V01,
@@ -1107,7 +1107,7 @@ pub fn validate_release_train_manifest_v01(
         format!("{RELEASE_TRAIN_DOCS_PAGES_ORIGIN_V01}{expected_manual_path}");
     if manifest.components.docs.manual.pages_url != expected_manual_pages_url {
         errors.push(ValidationErrorV01::new(format!(
-            "docs manual pagesUrl must be {expected_manual_pages_url}"
+            "docs manual pages-url must be {expected_manual_pages_url}"
         )));
     }
 
@@ -1120,7 +1120,7 @@ pub fn validate_release_train_manifest_v01(
         != RELEASE_TRAIN_RUNTIME_REPOSITORY_V01
     {
         errors.push(ValidationErrorV01::new(format!(
-            "githubReleaseAssets runtime repository must be {RELEASE_TRAIN_RUNTIME_REPOSITORY_V01}"
+            "github-release-assets runtime repository must be {RELEASE_TRAIN_RUNTIME_REPOSITORY_V01}"
         )));
     }
     if manifest
@@ -1131,20 +1131,20 @@ pub fn validate_release_train_manifest_v01(
         != RELEASE_TRAIN_STUDIO_REPOSITORY_V01
     {
         errors.push(ValidationErrorV01::new(format!(
-            "githubReleaseAssets studio repository must be {RELEASE_TRAIN_STUDIO_REPOSITORY_V01}"
+            "github-release-assets studio repository must be {RELEASE_TRAIN_STUDIO_REPOSITORY_V01}"
         )));
     }
     validate_artifact_collection_gate(
         &mut errors,
         &artifacts,
         &manifest.release_gates.github_release_assets.runtime,
-        "githubReleaseAssets runtime",
+        "github-release-assets runtime",
     );
     validate_artifact_collection_gate(
         &mut errors,
         &artifacts,
         &manifest.release_gates.github_release_assets.studio,
-        "githubReleaseAssets studio",
+        "github-release-assets studio",
     );
     if !manifest
         .release_gates
@@ -1154,7 +1154,7 @@ pub fn validate_release_train_manifest_v01(
         .contains(&manifest.components.studio.web_bundle.id)
     {
         errors.push(ValidationErrorV01::new(
-            "githubReleaseAssets studio artifactIds must include components.studio[\"web-bundle\"].id",
+            "github-release-assets studio artifact-ids must include components.studio[\"web-bundle\"].id",
         ));
     }
     if !manifest
@@ -1164,7 +1164,7 @@ pub fn validate_release_train_manifest_v01(
         .contains(&manifest.components.studio.web_bundle.id)
     {
         errors.push(ValidationErrorV01::new(
-            "checksumVerification artifactIds must include components.studio[\"web-bundle\"].id",
+            "checksum-verification artifact-ids must include components.studio[\"web-bundle\"].id",
         ));
     }
     validate_runtime_smoke_gates(&mut errors, manifest, &artifacts);
@@ -1173,19 +1173,19 @@ pub fn validate_release_train_manifest_v01(
 
     validate_registry_package_gate(
         &mut errors,
-        "contractsNpm",
+        "contracts-npm",
         &manifest.release_gates.registry_packages.contracts_npm,
         &manifest.components.contracts.npm,
     );
     validate_registry_package_gate(
         &mut errors,
-        "contractsCrate",
+        "contracts-crate",
         &manifest.release_gates.registry_packages.contracts_crate,
         &manifest.components.contracts.crate_package,
     );
     validate_registry_package_gate(
         &mut errors,
-        "sdkNpm",
+        "sdk-npm",
         &manifest.release_gates.registry_packages.sdk_npm,
         &manifest.components.sdk.npm,
     );
@@ -1210,17 +1210,17 @@ pub fn validate_release_train_manifest_v01(
     let docs_gate = &manifest.release_gates.docs_pages_deployment;
     if docs_gate.manual_version != manifest.components.docs.manual.version {
         errors.push(ValidationErrorV01::new(
-            "docs Pages gate manualVersion must match docs manual version",
+            "docs Pages gate manual-version must match docs manual version",
         ));
     }
     if docs_gate.manual_path != manifest.components.docs.manual.path {
         errors.push(ValidationErrorV01::new(
-            "docs Pages gate manualPath must match docs manual path",
+            "docs Pages gate manual-path must match docs manual path",
         ));
     }
     if docs_gate.pages_url != manifest.components.docs.manual.pages_url {
         errors.push(ValidationErrorV01::new(
-            "docs Pages gate pagesUrl must match docs manual pagesUrl",
+            "docs Pages gate pages-url must match docs manual pages-url",
         ));
     }
 

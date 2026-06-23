@@ -130,19 +130,19 @@ fn validates_release_train_manifest_error_branches() {
     );
     assert_release_train_error(
         |manifest| manifest.schema_version = "0.2.0".to_owned(),
-        "expected schemaVersion 0.1.0",
+        "expected schema-version 0.1.0",
     );
     assert_release_train_error(
         |manifest| manifest.train_id = "0.43.0".to_owned(),
-        "trainId must be a major.minor numeric version",
+        "train-id must be a major.minor numeric version",
     );
     assert_release_train_error(
         |manifest| manifest.train_version = "0.43".to_owned(),
-        "trainVersion must be a major.minor.patch numeric version",
+        "train-version must be a major.minor.patch numeric version",
     );
     assert_release_train_error(
         |manifest| manifest.train_version = "0.44.0".to_owned(),
-        "trainVersion must match trainId major.minor",
+        "train-version must match train-id major.minor",
     );
     assert_release_train_parse_error(|manifest| {
         manifest["components"]["runtime"]["crate"] = serde_json::json!({
@@ -167,7 +167,7 @@ fn validates_release_train_manifest_error_branches() {
         });
     });
     assert_release_train_parse_error(|manifest| {
-        manifest["releaseGates"]["registryPackages"]["runtimeCrate"] = serde_json::json!({
+        manifest["release-gates"]["registry-packages"]["runtime-crate"] = serde_json::json!({
             "id": "runtime-crate-exists",
             "status": "pending",
             "required": true,
@@ -181,7 +181,7 @@ fn validates_release_train_manifest_error_branches() {
     });
     assert_release_train_error(
         |manifest| manifest.protocol_baselines.graph = "0.2".to_owned(),
-        "protocolBaselines graph must be 0.1",
+        "protocol-baselines graph must be 0.1",
     );
 
     assert_release_train_error(
@@ -206,7 +206,7 @@ fn validates_release_train_manifest_error_branches() {
                 .expect("runtime artifact should exist")
                 .support_tier = ReleaseTrainSupportTierV01::Preview;
         },
-        "runtime binary aarch64-apple-darwin supportTier does not match target release tier",
+        "runtime binary aarch64-apple-darwin support-tier does not match target release tier",
     );
     assert_release_train_error(
         |manifest| {
@@ -263,7 +263,7 @@ fn validates_release_train_manifest_error_branches() {
                 .artifact_ids
                 .clear();
         },
-        "githubReleaseAssets runtime artifactIds must not be empty",
+        "github-release-assets runtime artifact-ids must not be empty",
     );
     assert_release_train_error(
         |manifest| {
@@ -272,7 +272,7 @@ fn validates_release_train_manifest_error_branches() {
                 .runtime_smoke
                 .remove(&ReleaseTrainTargetV01::Aarch64AppleDarwin);
         },
-        "runtimeSmoke missing gate for aarch64-apple-darwin",
+        "runtime-smoke missing gate for aarch64-apple-darwin",
     );
     assert_release_train_error(
         |manifest| {
@@ -283,7 +283,7 @@ fn validates_release_train_manifest_error_branches() {
                 .expect("runtime smoke gate should exist")
                 .target = ReleaseTrainTargetV01::X8664AppleDarwin;
         },
-        "runtimeSmoke aarch64-apple-darwin target must match map key",
+        "runtime-smoke aarch64-apple-darwin target must match map key",
     );
     assert_release_train_error(
         |manifest| {
@@ -294,7 +294,7 @@ fn validates_release_train_manifest_error_branches() {
                 .expect("runtime smoke gate should exist")
                 .artifact_id = "runtime-x86_64-apple-darwin".to_owned();
         },
-        "runtimeSmoke aarch64-apple-darwin artifactId must match runtime binary",
+        "runtime-smoke aarch64-apple-darwin artifact-id must match runtime binary",
     );
     assert_release_train_error(
         |manifest| {
@@ -303,7 +303,7 @@ fn validates_release_train_manifest_error_branches() {
                 .studio_package_smoke
                 .remove(&ReleaseTrainTargetV01::Aarch64AppleDarwin);
         },
-        "studioPackageSmoke missing gate for aarch64-apple-darwin",
+        "studio-package-smoke missing gate for aarch64-apple-darwin",
     );
     assert_release_train_error(
         |manifest| {
@@ -314,7 +314,7 @@ fn validates_release_train_manifest_error_branches() {
                 .expect("studio package smoke gate should exist")
                 .target = ReleaseTrainTargetV01::X8664AppleDarwin;
         },
-        "studioPackageSmoke aarch64-apple-darwin target must match map key",
+        "studio-package-smoke aarch64-apple-darwin target must match map key",
     );
     assert_release_train_error(
         |manifest| {
@@ -325,7 +325,7 @@ fn validates_release_train_manifest_error_branches() {
                 .expect("studio package smoke gate should exist")
                 .desktop_package_artifact_id = "studio-desktop-x86_64-apple-darwin".to_owned();
         },
-        "studioPackageSmoke aarch64-apple-darwin desktopPackageArtifactId must match desktop package",
+        "studio-package-smoke aarch64-apple-darwin desktop-package-artifact-id must match desktop package",
     );
     assert_release_train_error(
         |manifest| {
@@ -337,7 +337,7 @@ fn validates_release_train_manifest_error_branches() {
                 .runtime_sidecar_artifact_id =
                 "studio-runtime-sidecar-x86_64-apple-darwin".to_owned();
         },
-        "studioPackageSmoke aarch64-apple-darwin runtimeSidecarArtifactId must match runtime sidecar",
+        "studio-package-smoke aarch64-apple-darwin runtime-sidecar-artifact-id must match runtime sidecar",
     );
     assert_release_train_error(
         |manifest| manifest.components.studio.web_bundle.name = "studio-web.tar.gz".to_owned(),
@@ -352,7 +352,7 @@ fn validates_release_train_manifest_error_branches() {
                 .artifact_ids
                 .retain(|artifact_id| artifact_id != "studio-web-bundle");
         },
-        "githubReleaseAssets studio artifactIds must include components.studio[\"web-bundle\"].id",
+        "github-release-assets studio artifact-ids must include components.studio[\"web-bundle\"].id",
     );
     assert_release_train_error(
         |manifest| {
@@ -362,7 +362,7 @@ fn validates_release_train_manifest_error_branches() {
                 .artifact_ids
                 .retain(|artifact_id| artifact_id != "studio-web-bundle");
         },
-        "checksumVerification artifactIds must include components.studio[\"web-bundle\"].id",
+        "checksum-verification artifact-ids must include components.studio[\"web-bundle\"].id",
     );
     assert_release_train_error(
         |manifest| {
@@ -372,7 +372,7 @@ fn validates_release_train_manifest_error_branches() {
                 .artifact_ids
                 .clear();
         },
-        "checksumVerification artifactIds must not be empty",
+        "checksum-verification artifact-ids must not be empty",
     );
     assert_release_train_error(
         |manifest| {
@@ -397,34 +397,34 @@ fn validates_release_train_manifest_error_branches() {
         |manifest| {
             manifest.capability_set.protocol_surfaces.graph = "0.2".to_owned();
         },
-        "capabilitySet protocolSurfaces must match protocolBaselines",
+        "capability-set protocol-surfaces must match protocol-baselines",
     );
     assert_release_train_error(
         |manifest| {
             manifest.capability_set.runtime.connection_profiles =
                 vec![ReleaseTrainConnectionProfileV01::LocalManaged];
         },
-        "runtime connectionProfiles must include local-managed, local-shared, and remote",
+        "runtime connection-profiles must include local-managed, local-shared, and remote",
     );
     assert_release_train_error(
         |manifest| manifest.capability_set.runtime.session_addressing = false,
-        "capabilitySet runtime.sessionAddressing must be enabled",
+        "capability-set runtime.session-addressing must be enabled",
     );
     assert_release_train_error(
         |manifest| manifest.capability_set.runtime.collaboration = "client-merge".to_owned(),
-        "capabilitySet runtime.collaboration must be server-authoritative-ot",
+        "capability-set runtime.collaboration must be server-authoritative-ot",
     );
     assert_release_train_error(
         |manifest| manifest.capability_set.runtime.io_discovery = "semantic-device".to_owned(),
-        "capabilitySet runtime.ioDiscovery must be raw-descriptor",
+        "capability-set runtime.io-discovery must be raw-descriptor",
     );
     assert_release_train_error(
         |manifest| manifest.capability_set.runtime.auth_policy = "required".to_owned(),
-        "capabilitySet runtime.authPolicy must be deferred",
+        "capability-set runtime.auth-policy must be deferred",
     );
     assert_release_train_error(
         |manifest| manifest.capability_set.studio.desktop_shell = "electron".to_owned(),
-        "capabilitySet studio.desktopShell must be tauri",
+        "capability-set studio.desktop-shell must be tauri",
     );
 
     assert_release_train_error(
@@ -506,7 +506,7 @@ fn validates_release_train_manifest_error_branches() {
                 url: None,
             };
         },
-        "studio desktop package aarch64-apple-darwin assetName must be skenion-studio-aarch64-apple-darwin.tar.gz",
+        "studio desktop package aarch64-apple-darwin asset-name must be skenion-studio-aarch64-apple-darwin.tar.gz",
     );
     assert_release_train_error(
         |manifest| {
@@ -544,7 +544,7 @@ fn validates_release_train_manifest_error_branches() {
                 .runtime
                 .repository = "skenion/other-runtime".to_owned();
         },
-        "githubReleaseAssets runtime repository must be skenion/skenion-runtime",
+        "github-release-assets runtime repository must be skenion/skenion-runtime",
     );
     assert_release_train_error(
         |manifest| {
@@ -554,7 +554,7 @@ fn validates_release_train_manifest_error_branches() {
                 .studio
                 .repository = "skenion/other-studio".to_owned();
         },
-        "githubReleaseAssets studio repository must be skenion/skenion-studio",
+        "github-release-assets studio repository must be skenion/skenion-studio",
     );
     assert_release_train_error(
         |manifest| manifest.release_gates.examples_conformance.version = "0.42.0".to_owned(),
@@ -571,13 +571,13 @@ fn validates_release_train_manifest_error_branches() {
         |manifest| {
             manifest.release_gates.docs_pages_deployment.manual_version = "0.42.0".to_owned()
         },
-        "docs Pages gate manualVersion must match docs manual version",
+        "docs Pages gate manual-version must match docs manual version",
     );
     assert_release_train_error(
         |manifest| {
             manifest.release_gates.docs_pages_deployment.manual_path = "/manual/0.42/".to_owned();
         },
-        "docs Pages gate manualPath must match docs manual path",
+        "docs Pages gate manual-path must match docs manual path",
     );
 }
 

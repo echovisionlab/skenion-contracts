@@ -3,40 +3,56 @@
   "$id": "https://skenion.dev/schemas/release-train/v0.1/release-train.schema.json",
   "title": "skenion Release Train Manifest v0.1",
   "type": "object",
-  "required": ["schema", "schemaVersion", "trainId", "trainVersion", "protocolBaselines", "capabilitySet", "components", "releaseGates"],
+  "required": [
+    "schema",
+    "schema-version",
+    "train-id",
+    "train-version",
+    "protocol-baselines",
+    "capability-set",
+    "components",
+    "release-gates"
+  ],
   "properties": {
     "schema": {
       "const": "skenion.release-train"
     },
-    "schemaVersion": {
+    "schema-version": {
       "const": "0.1.0"
     },
-    "trainId": {
+    "train-id": {
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+$"
     },
-    "trainVersion": {
+    "train-version": {
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
     },
-    "protocolBaselines": {
-      "$ref": "#/$defs/protocolBaselines"
+    "protocol-baselines": {
+      "$ref": "#/$defs/protocol-baselines"
     },
-    "capabilitySet": {
-      "$ref": "#/$defs/capabilitySet"
+    "capability-set": {
+      "$ref": "#/$defs/capability-set"
     },
     "components": {
       "$ref": "#/$defs/components"
     },
-    "releaseGates": {
-      "$ref": "#/$defs/releaseGates"
+    "release-gates": {
+      "$ref": "#/$defs/release-gates"
     }
   },
   "additionalProperties": false,
   "$defs": {
-    "protocolBaselines": {
+    "protocol-baselines": {
       "type": "object",
-      "required": ["graph", "project", "node", "extension", "runtimeHttp", "runtimeCollaboration"],
+      "required": [
+        "graph",
+        "project",
+        "node",
+        "extension",
+        "runtime-http",
+        "runtime-collaboration"
+      ],
       "properties": {
         "graph": {
           "const": "0.1"
@@ -50,21 +66,27 @@
         "extension": {
           "const": "0.1"
         },
-        "runtimeHttp": {
+        "runtime-http": {
           "const": "v0"
         },
-        "runtimeCollaboration": {
+        "runtime-collaboration": {
           "const": "v0"
         }
       },
       "additionalProperties": false
     },
-    "capabilitySet": {
+    "capability-set": {
       "type": "object",
-      "required": ["protocolSurfaces", "runtime", "studio", "marketplace", "manual"],
+      "required": [
+        "protocol-surfaces",
+        "runtime",
+        "studio",
+        "marketplace",
+        "manual"
+      ],
       "properties": {
-        "protocolSurfaces": {
-          "$ref": "#/$defs/protocolBaselines"
+        "protocol-surfaces": {
+          "$ref": "#/$defs/protocol-baselines"
         },
         "runtime": {
           "$ref": "#/$defs/runtimeCapabilitySet"
@@ -83,21 +105,34 @@
     },
     "runtimeCapabilitySet": {
       "type": "object",
-      "required": ["sessionAddressing", "eventReplay", "multiWindow", "connectionProfiles", "collaboration", "operationLog", "ioDiscovery", "authPolicy"],
+      "required": [
+        "session-addressing",
+        "event-replay",
+        "multi-window",
+        "connection-profiles",
+        "collaboration",
+        "operation-log",
+        "io-discovery",
+        "auth-policy"
+      ],
       "properties": {
-        "sessionAddressing": {
+        "session-addressing": {
           "const": true
         },
-        "eventReplay": {
+        "event-replay": {
           "const": true
         },
-        "multiWindow": {
+        "multi-window": {
           "const": true
         },
-        "connectionProfiles": {
+        "connection-profiles": {
           "type": "array",
           "items": {
-            "enum": ["local-managed", "local-shared", "remote"]
+            "enum": [
+              "local-managed",
+              "local-shared",
+              "remote"
+            ]
           },
           "minItems": 3,
           "uniqueItems": true
@@ -105,13 +140,13 @@
         "collaboration": {
           "const": "server-authoritative-ot"
         },
-        "operationLog": {
+        "operation-log": {
           "const": true
         },
-        "ioDiscovery": {
+        "io-discovery": {
           "const": "raw-descriptor"
         },
-        "authPolicy": {
+        "auth-policy": {
           "const": "deferred"
         }
       },
@@ -119,30 +154,42 @@
     },
     "studioCapabilitySet": {
       "type": "object",
-      "required": ["graphEditor", "patchLibrary", "subpatches", "livingHelp", "graphClipboard", "desktopShell", "connectionProfiles"],
+      "required": [
+        "graph-editor",
+        "patch-library",
+        "subpatches",
+        "living-help",
+        "graph-clipboard",
+        "desktop-shell",
+        "connection-profiles"
+      ],
       "properties": {
-        "graphEditor": {
+        "graph-editor": {
           "const": true
         },
-        "patchLibrary": {
+        "patch-library": {
           "const": true
         },
         "subpatches": {
           "const": true
         },
-        "livingHelp": {
+        "living-help": {
           "const": true
         },
-        "graphClipboard": {
+        "graph-clipboard": {
           "const": true
         },
-        "desktopShell": {
+        "desktop-shell": {
           "const": "tauri"
         },
-        "connectionProfiles": {
+        "connection-profiles": {
           "type": "array",
           "items": {
-            "enum": ["local-managed", "local-shared", "remote"]
+            "enum": [
+              "local-managed",
+              "local-shared",
+              "remote"
+            ]
           },
           "minItems": 3,
           "uniqueItems": true
@@ -152,18 +199,23 @@
     },
     "marketplaceCapabilitySet": {
       "type": "object",
-      "required": ["packageDiscovery", "packageInstall", "packageUpdate", "extensionPackages"],
+      "required": [
+        "package-discovery",
+        "package-install",
+        "package-update",
+        "extension-packages"
+      ],
       "properties": {
-        "packageDiscovery": {
+        "package-discovery": {
           "const": true
         },
-        "packageInstall": {
+        "package-install": {
           "const": true
         },
-        "packageUpdate": {
+        "package-update": {
           "const": true
         },
-        "extensionPackages": {
+        "extension-packages": {
           "const": true
         }
       },
@@ -171,18 +223,23 @@
     },
     "manualCapabilitySet": {
       "type": "object",
-      "required": ["versionedPaths", "pagesDeployment", "latestPromotionRequiresMatrix", "patchReleasesUseMajorMinorPath"],
+      "required": [
+        "versioned-paths",
+        "pages-deployment",
+        "latest-promotion-requires-matrix",
+        "patch-releases-use-major-minor-path"
+      ],
       "properties": {
-        "versionedPaths": {
+        "versioned-paths": {
           "const": true
         },
-        "pagesDeployment": {
+        "pages-deployment": {
           "const": true
         },
-        "latestPromotionRequiresMatrix": {
+        "latest-promotion-requires-matrix": {
           "const": true
         },
-        "patchReleasesUseMajorMinorPath": {
+        "patch-releases-use-major-minor-path": {
           "const": true
         }
       },
@@ -190,7 +247,14 @@
     },
     "components": {
       "type": "object",
-      "required": ["contracts", "runtime", "sdk", "studio", "examples", "docs"],
+      "required": [
+        "contracts",
+        "runtime",
+        "sdk",
+        "studio",
+        "examples",
+        "docs"
+      ],
       "properties": {
         "contracts": {
           "$ref": "#/$defs/contractsComponent"
@@ -215,7 +279,10 @@
     },
     "contractsComponent": {
       "type": "object",
-      "required": ["npm", "crate"],
+      "required": [
+        "npm",
+        "crate"
+      ],
       "properties": {
         "npm": {
           "$ref": "#/$defs/registryPackage"
@@ -228,7 +295,9 @@
     },
     "runtimeComponent": {
       "type": "object",
-      "required": ["binaries"],
+      "required": [
+        "binaries"
+      ],
       "properties": {
         "binaries": {
           "$ref": "#/$defs/runtimeBinaryArtifactMap"
@@ -238,7 +307,9 @@
     },
     "sdkComponent": {
       "type": "object",
-      "required": ["npm"],
+      "required": [
+        "npm"
+      ],
       "properties": {
         "npm": {
           "$ref": "#/$defs/registryPackage"
@@ -248,15 +319,19 @@
     },
     "studioComponent": {
       "type": "object",
-      "required": ["web-bundle", "desktopPackages", "runtimeSidecars"],
+      "required": [
+        "web-bundle",
+        "desktop-packages",
+        "runtime-sidecars"
+      ],
       "properties": {
         "web-bundle": {
           "$ref": "#/$defs/studioWebBundleArtifact"
         },
-        "desktopPackages": {
+        "desktop-packages": {
           "$ref": "#/$defs/studioDesktopArtifactMap"
         },
-        "runtimeSidecars": {
+        "runtime-sidecars": {
           "$ref": "#/$defs/studioRuntimeSidecarArtifactMap"
         }
       },
@@ -264,7 +339,11 @@
     },
     "examplesComponent": {
       "type": "object",
-      "required": ["repository", "version", "tag"],
+      "required": [
+        "repository",
+        "version",
+        "tag"
+      ],
       "properties": {
         "repository": {
           "$ref": "#/$defs/repository"
@@ -285,7 +364,9 @@
     },
     "docsComponent": {
       "type": "object",
-      "required": ["manual"],
+      "required": [
+        "manual"
+      ],
       "properties": {
         "manual": {
           "$ref": "#/$defs/manualComponent"
@@ -295,7 +376,11 @@
     },
     "manualComponent": {
       "type": "object",
-      "required": ["version", "path", "pagesUrl"],
+      "required": [
+        "version",
+        "path",
+        "pages-url"
+      ],
       "properties": {
         "version": {
           "$ref": "#/$defs/version"
@@ -304,7 +389,7 @@
           "type": "string",
           "pattern": "^/manual/[0-9]+\\.[0-9]+/$"
         },
-        "pagesUrl": {
+        "pages-url": {
           "type": "string",
           "pattern": "^https://skenion\\.github\\.io/skenion-docs/manual/[0-9]+\\.[0-9]+/$"
         }
@@ -313,10 +398,17 @@
     },
     "registryPackage": {
       "type": "object",
-      "required": ["ecosystem", "name", "version"],
+      "required": [
+        "ecosystem",
+        "name",
+        "version"
+      ],
       "properties": {
         "ecosystem": {
-          "enum": ["npm", "crates.io"]
+          "enum": [
+            "npm",
+            "crates.io"
+          ]
         },
         "name": {
           "type": "string",
@@ -341,7 +433,14 @@
     },
     "runtimeBinaryArtifactMap": {
       "type": "object",
-      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "required": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ],
       "properties": {
         "aarch64-apple-darwin": {
           "$ref": "#/$defs/runtimeBinaryAarch64AppleDarwin"
@@ -366,7 +465,14 @@
     },
     "studioDesktopArtifactMap": {
       "type": "object",
-      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "required": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ],
       "properties": {
         "aarch64-apple-darwin": {
           "$ref": "#/$defs/studioDesktopAarch64AppleDarwin"
@@ -391,7 +497,14 @@
     },
     "studioRuntimeSidecarArtifactMap": {
       "type": "object",
-      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "required": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ],
       "properties": {
         "aarch64-apple-darwin": {
           "$ref": "#/$defs/studioRuntimeSidecarAarch64AppleDarwin"
@@ -664,7 +777,7 @@
         "target": {
           "const": "aarch64-apple-darwin"
         },
-        "supportTier": {
+        "support-tier": {
           "const": "release-blocking"
         }
       }
@@ -675,7 +788,7 @@
         "target": {
           "const": "x86_64-apple-darwin"
         },
-        "supportTier": {
+        "support-tier": {
           "const": "release-blocking"
         }
       }
@@ -686,7 +799,7 @@
         "target": {
           "const": "x86_64-pc-windows-msvc"
         },
-        "supportTier": {
+        "support-tier": {
           "const": "release-blocking"
         }
       }
@@ -697,7 +810,7 @@
         "target": {
           "const": "aarch64-pc-windows-msvc"
         },
-        "supportTier": {
+        "support-tier": {
           "const": "preview"
         }
       }
@@ -708,7 +821,7 @@
         "target": {
           "const": "x86_64-unknown-linux-gnu"
         },
-        "supportTier": {
+        "support-tier": {
           "const": "release-blocking"
         }
       }
@@ -719,7 +832,7 @@
         "target": {
           "const": "aarch64-unknown-linux-gnu"
         },
-        "supportTier": {
+        "support-tier": {
           "const": "preview"
         }
       }
@@ -758,7 +871,17 @@
     },
     "artifact": {
       "type": "object",
-      "required": ["id", "target", "supportTier", "kind", "name", "version", "source", "checksum", "sizeBytes"],
+      "required": [
+        "id",
+        "target",
+        "support-tier",
+        "kind",
+        "name",
+        "version",
+        "source",
+        "checksum",
+        "size-bytes"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -767,11 +890,18 @@
         "target": {
           "$ref": "#/$defs/target"
         },
-        "supportTier": {
-          "enum": ["release-blocking", "preview"]
+        "support-tier": {
+          "enum": [
+            "release-blocking",
+            "preview"
+          ]
         },
         "kind": {
-          "enum": ["runtime-binary", "studio-desktop-package", "studio-runtime-sidecar"]
+          "enum": [
+            "runtime-binary",
+            "studio-desktop-package",
+            "studio-runtime-sidecar"
+          ]
         },
         "name": {
           "type": "string",
@@ -786,7 +916,7 @@
         "checksum": {
           "$ref": "#/$defs/checksum"
         },
-        "sizeBytes": {
+        "size-bytes": {
           "oneOf": [
             {
               "type": "integer",
@@ -802,14 +932,24 @@
     },
     "nonTargetArtifact": {
       "type": "object",
-      "required": ["id", "kind", "name", "version", "source", "checksum", "sizeBytes"],
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "version",
+        "source",
+        "checksum",
+        "size-bytes"
+      ],
       "properties": {
         "id": {
           "type": "string",
           "minLength": 1
         },
         "kind": {
-          "enum": ["studio-web-bundle"]
+          "enum": [
+            "studio-web-bundle"
+          ]
         },
         "name": {
           "type": "string",
@@ -824,7 +964,7 @@
         "checksum": {
           "$ref": "#/$defs/checksum"
         },
-        "sizeBytes": {
+        "size-bytes": {
           "oneOf": [
             {
               "type": "integer",
@@ -842,7 +982,13 @@
       "oneOf": [
         {
           "type": "object",
-          "required": ["kind", "repository", "tag", "assetName", "url"],
+          "required": [
+            "kind",
+            "repository",
+            "tag",
+            "asset-name",
+            "url"
+          ],
           "properties": {
             "kind": {
               "const": "github-release-asset"
@@ -854,7 +1000,7 @@
               "type": "string",
               "minLength": 1
             },
-            "assetName": {
+            "asset-name": {
               "type": "string",
               "minLength": 1
             },
@@ -874,7 +1020,10 @@
         },
         {
           "type": "object",
-          "required": ["kind", "url"],
+          "required": [
+            "kind",
+            "url"
+          ],
           "properties": {
             "kind": {
               "const": "url"
@@ -890,7 +1039,10 @@
     },
     "checksum": {
       "type": "object",
-      "required": ["algorithm", "value"],
+      "required": [
+        "algorithm",
+        "value"
+      ],
       "properties": {
         "algorithm": {
           "const": "sha256"
@@ -909,45 +1061,57 @@
       },
       "additionalProperties": false
     },
-    "releaseGates": {
+    "release-gates": {
       "type": "object",
-      "required": ["registryPackages", "githubReleaseAssets", "checksumVerification", "runtimeSmoke", "studioPackageSmoke", "examplesConformance", "docsPagesDeployment"],
+      "required": [
+        "registry-packages",
+        "github-release-assets",
+        "checksum-verification",
+        "runtime-smoke",
+        "studio-package-smoke",
+        "examples-conformance",
+        "docs-pages-deployment"
+      ],
       "properties": {
-        "registryPackages": {
+        "registry-packages": {
           "$ref": "#/$defs/registryPackageGates"
         },
-        "githubReleaseAssets": {
+        "github-release-assets": {
           "$ref": "#/$defs/githubReleaseAssetGates"
         },
-        "checksumVerification": {
+        "checksum-verification": {
           "$ref": "#/$defs/checksumGate"
         },
-        "runtimeSmoke": {
-          "$ref": "#/$defs/runtimeSmokeGateMap"
+        "runtime-smoke": {
+          "$ref": "#/$defs/runtime-smokeGateMap"
         },
-        "studioPackageSmoke": {
-          "$ref": "#/$defs/studioPackageSmokeGateMap"
+        "studio-package-smoke": {
+          "$ref": "#/$defs/studio-package-smokeGateMap"
         },
-        "examplesConformance": {
-          "$ref": "#/$defs/examplesConformanceGate"
+        "examples-conformance": {
+          "$ref": "#/$defs/examples-conformanceGate"
         },
-        "docsPagesDeployment": {
-          "$ref": "#/$defs/docsPagesDeploymentGate"
+        "docs-pages-deployment": {
+          "$ref": "#/$defs/docs-pages-deploymentGate"
         }
       },
       "additionalProperties": false
     },
     "registryPackageGates": {
       "type": "object",
-      "required": ["contractsNpm", "contractsCrate", "sdkNpm"],
+      "required": [
+        "contracts-npm",
+        "contracts-crate",
+        "sdk-npm"
+      ],
       "properties": {
-        "contractsNpm": {
+        "contracts-npm": {
           "$ref": "#/$defs/registryPackageGate"
         },
-        "contractsCrate": {
+        "contracts-crate": {
           "$ref": "#/$defs/registryPackageGate"
         },
-        "sdkNpm": {
+        "sdk-npm": {
           "$ref": "#/$defs/registryPackageGate"
         }
       },
@@ -955,7 +1119,12 @@
     },
     "registryPackageGate": {
       "type": "object",
-      "required": ["id", "status", "required", "package"],
+      "required": [
+        "id",
+        "status",
+        "required",
+        "package"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -970,7 +1139,7 @@
         "package": {
           "$ref": "#/$defs/registryPackage"
         },
-        "evidenceUrl": {
+        "evidence-url": {
           "type": "string",
           "minLength": 1
         }
@@ -979,7 +1148,10 @@
     },
     "githubReleaseAssetGates": {
       "type": "object",
-      "required": ["runtime", "studio"],
+      "required": [
+        "runtime",
+        "studio"
+      ],
       "properties": {
         "runtime": {
           "$ref": "#/$defs/artifactCollectionGate"
@@ -992,7 +1164,14 @@
     },
     "artifactCollectionGate": {
       "type": "object",
-      "required": ["id", "status", "required", "repository", "tag", "artifactIds"],
+      "required": [
+        "id",
+        "status",
+        "required",
+        "repository",
+        "tag",
+        "artifact-ids"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -1011,7 +1190,7 @@
           "type": "string",
           "minLength": 1
         },
-        "artifactIds": {
+        "artifact-ids": {
           "type": "array",
           "items": {
             "type": "string",
@@ -1020,7 +1199,7 @@
           "minItems": 1,
           "uniqueItems": true
         },
-        "evidenceUrl": {
+        "evidence-url": {
           "type": "string",
           "minLength": 1
         }
@@ -1029,7 +1208,12 @@
     },
     "checksumGate": {
       "type": "object",
-      "required": ["id", "status", "required", "artifactIds"],
+      "required": [
+        "id",
+        "status",
+        "required",
+        "artifact-ids"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -1041,7 +1225,7 @@
         "required": {
           "type": "boolean"
         },
-        "artifactIds": {
+        "artifact-ids": {
           "type": "array",
           "items": {
             "type": "string",
@@ -1050,7 +1234,7 @@
           "minItems": 1,
           "uniqueItems": true
         },
-        "expectedChecksums": {
+        "expected-checksums": {
           "type": "object",
           "propertyNames": {
             "type": "string",
@@ -1060,41 +1244,54 @@
             "$ref": "#/$defs/checksum"
           }
         },
-        "evidenceUrl": {
+        "evidence-url": {
           "type": "string",
           "minLength": 1
         }
       },
       "additionalProperties": false
     },
-    "runtimeSmokeGateMap": {
+    "runtime-smokeGateMap": {
       "type": "object",
-      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "required": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ],
       "properties": {
         "aarch64-apple-darwin": {
-          "$ref": "#/$defs/runtimeSmokeGate"
+          "$ref": "#/$defs/runtime-smokeGate"
         },
         "x86_64-apple-darwin": {
-          "$ref": "#/$defs/runtimeSmokeGate"
+          "$ref": "#/$defs/runtime-smokeGate"
         },
         "x86_64-pc-windows-msvc": {
-          "$ref": "#/$defs/runtimeSmokeGate"
+          "$ref": "#/$defs/runtime-smokeGate"
         },
         "aarch64-pc-windows-msvc": {
-          "$ref": "#/$defs/runtimeSmokeGate"
+          "$ref": "#/$defs/runtime-smokeGate"
         },
         "x86_64-unknown-linux-gnu": {
-          "$ref": "#/$defs/runtimeSmokeGate"
+          "$ref": "#/$defs/runtime-smokeGate"
         },
         "aarch64-unknown-linux-gnu": {
-          "$ref": "#/$defs/runtimeSmokeGate"
+          "$ref": "#/$defs/runtime-smokeGate"
         }
       },
       "additionalProperties": false
     },
-    "runtimeSmokeGate": {
+    "runtime-smokeGate": {
       "type": "object",
-      "required": ["id", "status", "required", "target", "artifactId"],
+      "required": [
+        "id",
+        "status",
+        "required",
+        "target",
+        "artifact-id"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -1109,45 +1306,59 @@
         "target": {
           "$ref": "#/$defs/target"
         },
-        "artifactId": {
+        "artifact-id": {
           "type": "string",
           "minLength": 1
         },
-        "evidenceUrl": {
+        "evidence-url": {
           "type": "string",
           "minLength": 1
         }
       },
       "additionalProperties": false
     },
-    "studioPackageSmokeGateMap": {
+    "studio-package-smokeGateMap": {
       "type": "object",
-      "required": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"],
+      "required": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ],
       "properties": {
         "aarch64-apple-darwin": {
-          "$ref": "#/$defs/studioPackageSmokeGate"
+          "$ref": "#/$defs/studio-package-smokeGate"
         },
         "x86_64-apple-darwin": {
-          "$ref": "#/$defs/studioPackageSmokeGate"
+          "$ref": "#/$defs/studio-package-smokeGate"
         },
         "x86_64-pc-windows-msvc": {
-          "$ref": "#/$defs/studioPackageSmokeGate"
+          "$ref": "#/$defs/studio-package-smokeGate"
         },
         "aarch64-pc-windows-msvc": {
-          "$ref": "#/$defs/studioPackageSmokeGate"
+          "$ref": "#/$defs/studio-package-smokeGate"
         },
         "x86_64-unknown-linux-gnu": {
-          "$ref": "#/$defs/studioPackageSmokeGate"
+          "$ref": "#/$defs/studio-package-smokeGate"
         },
         "aarch64-unknown-linux-gnu": {
-          "$ref": "#/$defs/studioPackageSmokeGate"
+          "$ref": "#/$defs/studio-package-smokeGate"
         }
       },
       "additionalProperties": false
     },
-    "studioPackageSmokeGate": {
+    "studio-package-smokeGate": {
       "type": "object",
-      "required": ["id", "status", "required", "target", "desktopPackageArtifactId", "runtimeSidecarArtifactId"],
+      "required": [
+        "id",
+        "status",
+        "required",
+        "target",
+        "desktop-package-artifact-id",
+        "runtime-sidecar-artifact-id"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -1162,24 +1373,31 @@
         "target": {
           "$ref": "#/$defs/target"
         },
-        "desktopPackageArtifactId": {
+        "desktop-package-artifact-id": {
           "type": "string",
           "minLength": 1
         },
-        "runtimeSidecarArtifactId": {
+        "runtime-sidecar-artifact-id": {
           "type": "string",
           "minLength": 1
         },
-        "evidenceUrl": {
+        "evidence-url": {
           "type": "string",
           "minLength": 1
         }
       },
       "additionalProperties": false
     },
-    "examplesConformanceGate": {
+    "examples-conformanceGate": {
       "type": "object",
-      "required": ["id", "status", "required", "repository", "ref", "version"],
+      "required": [
+        "id",
+        "status",
+        "required",
+        "repository",
+        "ref",
+        "version"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -1201,16 +1419,23 @@
         "version": {
           "$ref": "#/$defs/version"
         },
-        "evidenceUrl": {
+        "evidence-url": {
           "type": "string",
           "minLength": 1
         }
       },
       "additionalProperties": false
     },
-    "docsPagesDeploymentGate": {
+    "docs-pages-deploymentGate": {
       "type": "object",
-      "required": ["id", "status", "required", "manualVersion", "manualPath", "pagesUrl"],
+      "required": [
+        "id",
+        "status",
+        "required",
+        "manual-version",
+        "manual-path",
+        "pages-url"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -1222,18 +1447,18 @@
         "required": {
           "type": "boolean"
         },
-        "manualVersion": {
+        "manual-version": {
           "$ref": "#/$defs/version"
         },
-        "manualPath": {
+        "manual-path": {
           "type": "string",
           "pattern": "^/manual/[0-9]+\\.[0-9]+/$"
         },
-        "pagesUrl": {
+        "pages-url": {
           "type": "string",
           "pattern": "^https://skenion\\.github\\.io/skenion-docs/manual/[0-9]+\\.[0-9]+/$"
         },
-        "evidenceUrl": {
+        "evidence-url": {
           "type": "string",
           "minLength": 1
         }
@@ -1241,10 +1466,22 @@
       "additionalProperties": false
     },
     "gateStatus": {
-      "enum": ["pending", "passed", "failed", "waived"]
+      "enum": [
+        "pending",
+        "passed",
+        "failed",
+        "waived"
+      ]
     },
     "target": {
-      "enum": ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
+      "enum": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ]
     },
     "repository": {
       "type": "string",
