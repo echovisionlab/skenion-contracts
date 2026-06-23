@@ -23,7 +23,8 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          # Requires an explicit org/app/PAT token; default workflow tokens cannot push follow-on commits.
+          token: ${{ secrets.GH_TOKEN }}
       - run: rustup show
       - run: cargo metadata --manifest-path packages/rust/Cargo.toml --format-version 1 >/dev/null
       - name: Commit Rust lockfile sync

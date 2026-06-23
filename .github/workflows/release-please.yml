@@ -22,6 +22,9 @@ env:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    env:
+      # Requires an explicit org/app/PAT token; default workflow tokens cannot create follow-on PRs.
+      RELEASE_AUTOMATION_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
       - name: Run Release Please
         if: ${{ github.event_name != 'workflow_dispatch' || inputs['release-as'] == '' }}
@@ -30,7 +33,7 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: main
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          token: ${{ env.RELEASE_AUTOMATION_TOKEN }}
 
       - name: Run Release Please with release-as
         if: ${{ github.event_name == 'workflow_dispatch' && inputs['release-as'] != '' }}
@@ -40,4 +43,4 @@ jobs:
           manifest-file: .release-please-manifest.json
           target-branch: main
           release-as: ${{ inputs['release-as'] }}
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          token: ${{ env.RELEASE_AUTOMATION_TOKEN }}
