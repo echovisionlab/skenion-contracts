@@ -2,7 +2,7 @@
   "name": "@skenion/contracts-workspace",
   "version": "0.0.0",
   "private": true,
-  "description": "Skenion contracts workspace",
+  "description": "skenion contracts workspace",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.12.4",
   "scripts": {

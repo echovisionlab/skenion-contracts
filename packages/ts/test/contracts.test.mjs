@@ -136,14 +136,31 @@ test("validates release train manifest fixtures", async () => {
   assert.equal(manifest.components.runtime.binaries["aarch64-apple-darwin"].supportTier, "release-blocking");
   assert.equal(manifest.components.runtime.binaries["aarch64-pc-windows-msvc"].supportTier, "preview");
   assert.equal(manifest.components.studio.runtimeSidecars["x86_64-unknown-linux-gnu"].version, "0.43.0");
+  assert.equal(manifest.components.runtime.binaries["aarch64-apple-darwin"].source.repository, "skenion/skenion-runtime");
+  assert.equal(manifest.components.studio.desktopPackages["aarch64-apple-darwin"].source.repository, "skenion/skenion-studio");
+  assert.equal(
+    manifest.components.studio.desktopPackages["aarch64-apple-darwin"].name,
+    "skenion-studio-aarch64-apple-darwin.tar.gz"
+  );
+  assert.equal(manifest.components.studio["web-bundle"].id, "studio-web-bundle");
+  assert.equal(manifest.components.studio["web-bundle"].name, "skenion-studio-web-bundle-v0.43.0.tar.gz");
+  assert.equal(manifest.components.studio["web-bundle"].source.repository, "skenion/skenion-studio");
+  assert.equal(manifest.components.studio["web-bundle"].checksum.algorithm, "sha256");
+  assert.equal(
+    manifest.releaseGates.githubReleaseAssets.studio.artifactIds.includes("studio-web-bundle"),
+    true
+  );
+  assert.equal(manifest.releaseGates.checksumVerification.artifactIds.includes("studio-web-bundle"), true);
+  assert.equal(manifest.components.examples.repository, "skenion/skenion-examples");
   assert.equal(manifest.components.docs.manual.path, "/manual/0.43/");
+  assert.equal(manifest.components.docs.manual.pagesUrl, "https://skenion.github.io/skenion-docs/manual/0.43/");
 
   const invalidCases = [
     ["fixtures/release-train/v0.1/invalid/missing-runtime-artifact.release-train.json", /aarch64-apple-darwin/],
     ["fixtures/release-train/v0.1/invalid/checksum-mismatch.release-train.json", /checksum gate value/],
     ["fixtures/release-train/v0.1/invalid/invalid-checksum.release-train.json", /pattern|sha256/],
     ["fixtures/release-train/v0.1/invalid/pinned-checksum-null-artifact.release-train.json", /must be populated/],
-    ["fixtures/release-train/v0.1/invalid/contracts-runtime-mismatch.release-train.json", /runtime crate version/],
+    ["fixtures/release-train/v0.1/invalid/contracts-runtime-mismatch.release-train.json", /runtime binary/],
     ["fixtures/release-train/v0.1/invalid/studio-sidecar-mismatch.release-train.json", /studio runtimeSidecars/],
     ["fixtures/release-train/v0.1/invalid/examples-mismatch.release-train.json", /examples version/],
     ["fixtures/release-train/v0.1/invalid/manual-pages-mismatch.release-train.json", /pagesUrl/],
@@ -172,6 +189,56 @@ test("validates release train manifest fixtures", async () => {
   assert.equal(registryGatePackageMismatchResult.ok, false);
   assert.match(registryGatePackageMismatchResult.errors.join("\n"), /registryPackages contractsNpm/);
 
+  const sdkPackageVersionMismatch = structuredClone(manifest);
+  sdkPackageVersionMismatch.components.sdk.npm.version = "0.42.0";
+  const sdkPackageVersionMismatchResult = validateReleaseTrainManifestV01(sdkPackageVersionMismatch);
+  assert.equal(sdkPackageVersionMismatchResult.ok, false);
+  assert.match(sdkPackageVersionMismatchResult.errors.join("\n"), /sdk npm version/);
+
+  const runtimeCrateComponent = structuredClone(manifest);
+  runtimeCrateComponent.components.runtime.crate = {
+    ecosystem: "crates.io",
+    name: "skenion-runtime",
+    version: "0.43.0",
+    url: null
+  };
+  const runtimeCrateComponentResult = validateReleaseTrainManifestV01(runtimeCrateComponent);
+  assert.equal(runtimeCrateComponentResult.ok, false);
+  assert.match(runtimeCrateComponentResult.errors.join("\n"), /additional properties/);
+
+  const studioRegistryComponents = structuredClone(manifest);
+  studioRegistryComponents.components.studio.web = {
+    ecosystem: "npm",
+    name: "@skenion/studio-web",
+    version: "0.43.0",
+    url: null
+  };
+  studioRegistryComponents.components.studio.desktop = {
+    ecosystem: "npm",
+    name: "@skenion/studio-desktop",
+    version: "0.43.0",
+    url: null
+  };
+  const studioRegistryComponentsResult = validateReleaseTrainManifestV01(studioRegistryComponents);
+  assert.equal(studioRegistryComponentsResult.ok, false);
+  assert.match(studioRegistryComponentsResult.errors.join("\n"), /additional properties/);
+
+  const productRegistryGate = structuredClone(manifest);
+  productRegistryGate.releaseGates.registryPackages.runtimeCrate = {
+    id: "runtime-crate-exists",
+    status: "pending",
+    required: true,
+    package: {
+      ecosystem: "crates.io",
+      name: "skenion-runtime",
+      version: "0.43.0",
+      url: null
+    }
+  };
+  const productRegistryGateResult = validateReleaseTrainManifestV01(productRegistryGate);
+  assert.equal(productRegistryGateResult.ok, false);
+  assert.match(productRegistryGateResult.errors.join("\n"), /additional properties/);
+
   const capabilitySurfaceMismatch = structuredClone(manifest);
   capabilitySurfaceMismatch.capabilitySet.protocolSurfaces.graph = "0.2";
   const capabilitySurfaceMismatchResult = validateReleaseTrainManifestV01(capabilitySurfaceMismatch);
@@ -191,11 +258,55 @@ test("validates release train manifest fixtures", async () => {
   assert.match(examplesGateMismatchResult.errors.join("\n"), /examples conformance gate/);
 
   const examplesGateRefMismatch = structuredClone(manifest);
-  examplesGateRefMismatch.releaseGates.examplesConformance.repository = "echovisionlab/Other-examples";
+  examplesGateRefMismatch.releaseGates.examplesConformance.repository = "skenion/Other-examples";
   examplesGateRefMismatch.releaseGates.examplesConformance.ref = "skenion-examples-v0.42.0";
   const examplesGateRefMismatchResult = validateReleaseTrainManifestV01(examplesGateRefMismatch);
   assert.equal(examplesGateRefMismatchResult.ok, false);
   assert.match(examplesGateRefMismatchResult.errors.join("\n"), /repository|ref/);
+
+  const runtimeRepositoryMismatch = structuredClone(manifest);
+  runtimeRepositoryMismatch.components.runtime.binaries["aarch64-apple-darwin"].source.repository =
+    "skenion/other-runtime";
+  const runtimeRepositoryMismatchResult = validateReleaseTrainManifestV01(runtimeRepositoryMismatch);
+  assert.equal(runtimeRepositoryMismatchResult.ok, false);
+  assert.match(runtimeRepositoryMismatchResult.errors.join("\n"), /runtime binary.*repository/);
+
+  const runtimeUrlSourceMismatch = structuredClone(manifest);
+  runtimeUrlSourceMismatch.components.runtime.binaries["aarch64-apple-darwin"].source = {
+    kind: "url",
+    url: "https://example.invalid/skenion-runtime-v0.43.0-aarch64-apple-darwin.tar.gz"
+  };
+  const runtimeUrlSourceMismatchResult = validateReleaseTrainManifestV01(runtimeUrlSourceMismatch);
+  assert.equal(runtimeUrlSourceMismatchResult.ok, false);
+  assert.match(runtimeUrlSourceMismatchResult.errors.join("\n"), /source must be a GitHub release asset/);
+
+  const githubAssetRepositoryMismatch = structuredClone(manifest);
+  githubAssetRepositoryMismatch.releaseGates.githubReleaseAssets.runtime.repository =
+    "skenion/other-runtime";
+  const githubAssetRepositoryMismatchResult = validateReleaseTrainManifestV01(githubAssetRepositoryMismatch);
+  assert.equal(githubAssetRepositoryMismatchResult.ok, false);
+  assert.match(githubAssetRepositoryMismatchResult.errors.join("\n"), /githubReleaseAssets runtime repository/);
+
+  const studioGithubAssetRepositoryMismatch = structuredClone(manifest);
+  studioGithubAssetRepositoryMismatch.releaseGates.githubReleaseAssets.studio.repository =
+    "skenion/other-studio";
+  const studioGithubAssetRepositoryMismatchResult = validateReleaseTrainManifestV01(
+    studioGithubAssetRepositoryMismatch
+  );
+  assert.equal(studioGithubAssetRepositoryMismatchResult.ok, false);
+  assert.match(studioGithubAssetRepositoryMismatchResult.errors.join("\n"), /githubReleaseAssets studio repository/);
+
+  const examplesRepositoryMismatch = structuredClone(manifest);
+  examplesRepositoryMismatch.components.examples.repository = "skenion/Other-examples";
+  const examplesRepositoryMismatchResult = validateReleaseTrainManifestV01(examplesRepositoryMismatch);
+  assert.equal(examplesRepositoryMismatchResult.ok, false);
+  assert.match(examplesRepositoryMismatchResult.errors.join("\n"), /examples repository/);
+
+  const legacyRepositoryOwnerMismatch = structuredClone(manifest);
+  legacyRepositoryOwnerMismatch.components.examples.repository = "echovisionlab/skenion-examples";
+  const legacyRepositoryOwnerMismatchResult = validateReleaseTrainManifestV01(legacyRepositoryOwnerMismatch);
+  assert.equal(legacyRepositoryOwnerMismatchResult.ok, false);
+  assert.match(legacyRepositoryOwnerMismatchResult.errors.join("\n"), /pattern/);
 
   const docsGateVersionMismatch = structuredClone(manifest);
   docsGateVersionMismatch.releaseGates.docsPagesDeployment.manualVersion = "0.42.0";
@@ -241,6 +352,70 @@ test("validates release train manifest fixtures", async () => {
   const githubAssetIdMismatchResult = validateReleaseTrainManifestV01(githubAssetIdMismatch);
   assert.equal(githubAssetIdMismatchResult.ok, false);
   assert.match(githubAssetIdMismatchResult.errors.join("\n"), /githubReleaseAssets runtime/);
+
+  const studioDesktopNameMismatch = structuredClone(manifest);
+  studioDesktopNameMismatch.components.studio.desktopPackages["aarch64-apple-darwin"].name =
+    "bad-studio-name.tar.gz";
+  studioDesktopNameMismatch.components.studio.desktopPackages["aarch64-apple-darwin"].source.assetName =
+    "bad-studio-name.tar.gz";
+  const studioDesktopNameMismatchResult = validateReleaseTrainManifestV01(studioDesktopNameMismatch);
+  assert.equal(studioDesktopNameMismatchResult.ok, false);
+  assert.match(studioDesktopNameMismatchResult.errors.join("\n"), /studio desktop package.*name/);
+
+  const studioWebBundleNameMismatch = structuredClone(manifest);
+  studioWebBundleNameMismatch.components.studio["web-bundle"].name = "studio-web.tar.gz";
+  const studioWebBundleNameMismatchResult = validateReleaseTrainManifestV01(studioWebBundleNameMismatch);
+  assert.equal(studioWebBundleNameMismatchResult.ok, false);
+  assert.match(studioWebBundleNameMismatchResult.errors.join("\n"), /components\.studio\["web-bundle"\]\.name/);
+
+  const studioWebBundleVersionAndSourceMismatch = structuredClone(manifest);
+  studioWebBundleVersionAndSourceMismatch.components.studio["web-bundle"].version = "0.42.0";
+  studioWebBundleVersionAndSourceMismatch.components.studio["web-bundle"].source = {
+    kind: "url",
+    url: "https://example.invalid/skenion-studio-web-bundle-v0.43.0.tar.gz"
+  };
+  const studioWebBundleVersionAndSourceMismatchResult = validateReleaseTrainManifestV01(
+    studioWebBundleVersionAndSourceMismatch
+  );
+  assert.equal(studioWebBundleVersionAndSourceMismatchResult.ok, false);
+  assert.match(
+    studioWebBundleVersionAndSourceMismatchResult.errors.join("\n"),
+    /components\.studio\["web-bundle"\]\.version|source/
+  );
+
+  const studioWebBundleReleaseAssetMismatch = structuredClone(manifest);
+  studioWebBundleReleaseAssetMismatch.components.studio["web-bundle"].source.repository =
+    "skenion/other-studio";
+  studioWebBundleReleaseAssetMismatch.components.studio["web-bundle"].source.tag = "skenion-studio-v0.42.0";
+  studioWebBundleReleaseAssetMismatch.components.studio["web-bundle"].source.assetName = "studio-web.tar.gz";
+  const studioWebBundleReleaseAssetMismatchResult = validateReleaseTrainManifestV01(
+    studioWebBundleReleaseAssetMismatch
+  );
+  assert.equal(studioWebBundleReleaseAssetMismatchResult.ok, false);
+  assert.match(
+    studioWebBundleReleaseAssetMismatchResult.errors.join("\n"),
+    /components\.studio\["web-bundle"\]\.repository|tag|assetName/
+  );
+
+  const studioWebBundleGateMissing = structuredClone(manifest);
+  studioWebBundleGateMissing.releaseGates.githubReleaseAssets.studio.artifactIds =
+    studioWebBundleGateMissing.releaseGates.githubReleaseAssets.studio.artifactIds.filter(
+      (artifactId) => artifactId !== "studio-web-bundle"
+    );
+  const studioWebBundleGateMissingResult = validateReleaseTrainManifestV01(studioWebBundleGateMissing);
+  assert.equal(studioWebBundleGateMissingResult.ok, false);
+  assert.match(studioWebBundleGateMissingResult.errors.join("\n"), /components\.studio\["web-bundle"\]\.id/);
+
+  const studioWebBundleChecksumGateMissing = structuredClone(manifest);
+  studioWebBundleChecksumGateMissing.releaseGates.checksumVerification.artifactIds =
+    studioWebBundleChecksumGateMissing.releaseGates.checksumVerification.artifactIds.filter(
+      (artifactId) => artifactId !== "studio-web-bundle"
+    );
+  const studioWebBundleChecksumGateMissingResult = validateReleaseTrainManifestV01(
+    studioWebBundleChecksumGateMissing
+  );
+  assert.equal(studioWebBundleChecksumGateMissingResult.ok, false);
+  assert.match(studioWebBundleChecksumGateMissingResult.errors.join("\n"), /checksumVerification.*web-bundle/);
 
   const runtimeSmokeTargetMismatch = structuredClone(manifest);
   runtimeSmokeTargetMismatch.releaseGates.runtimeSmoke["aarch64-apple-darwin"].target = "x86_64-apple-darwin";

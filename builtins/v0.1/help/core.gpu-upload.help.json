@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "id": "core.gpu-upload",
   "summary": "Uploads decoded video frames to a GPU texture resource.",
-  "description": "GPU Upload is an explicit converter from stream<video.frame> to resource<gpu.texture2d>. Skenion does not perform this conversion implicitly.",
+  "description": "GPU Upload is an explicit converter from stream<video.frame> to resource<gpu.texture2d>. skenion does not perform this conversion implicitly.",
   "helpGraph": "help/v0.1/nodes/core.gpu-upload.help.graph.json",
   "tags": [
     "converter",

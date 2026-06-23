@@ -5,9 +5,9 @@ use std::{fs, path::Path};
 use skenion_contracts::{
     GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
     NodeDefinitionManifestV01, ObjectTextParseResultV01, PasteGraphFragmentResponse,
-    ProjectDocumentV01, ReleaseTrainArtifactKindV01, ReleaseTrainConnectionProfileV01,
-    ReleaseTrainManifestV01, ReleaseTrainSupportTierV01, ReleaseTrainTargetV01,
-    RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
+    ProjectDocumentV01, ReleaseTrainArtifactKindV01, ReleaseTrainArtifactSourceV01,
+    ReleaseTrainConnectionProfileV01, ReleaseTrainManifestV01, ReleaseTrainSupportTierV01,
+    ReleaseTrainTargetV01, RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
     RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
     RuntimeCollaborationOperationResult, RuntimeCollaborationPresenceEnvelope,
     RuntimeCollaborationSelectionEnvelope, RuntimeOperationEnvelope, RuntimeSessionEvent,
@@ -69,6 +69,14 @@ fn assert_release_train_error(
     );
 }
 
+fn assert_release_train_parse_error(mutate: impl FnOnce(&mut serde_json::Value)) {
+    let mut manifest = serde_json::to_value(release_train_fixture())
+        .expect("release train fixture should serialize");
+    mutate(&mut manifest);
+    serde_json::from_value::<ReleaseTrainManifestV01>(manifest)
+        .expect_err("mutated release train manifest should fail to parse");
+}
+
 #[test]
 fn validates_release_train_manifest_fixtures() {
     for file in fixture_files("../../fixtures/release-train/v0.1/valid") {
@@ -81,6 +89,25 @@ fn validates_release_train_manifest_fixtures() {
         assert_eq!(manifest.schema_version, "0.1.0");
         assert_eq!(manifest.train_id, "0.43");
         assert_eq!(manifest.train_version, "0.43.0");
+        assert_eq!(
+            manifest.components.studio.web_bundle.name,
+            "skenion-studio-web-bundle-v0.43.0.tar.gz"
+        );
+        assert!(
+            manifest
+                .release_gates
+                .github_release_assets
+                .studio
+                .artifact_ids
+                .contains(&manifest.components.studio.web_bundle.id)
+        );
+        assert!(
+            manifest
+                .release_gates
+                .checksum_verification
+                .artifact_ids
+                .contains(&manifest.components.studio.web_bundle.id)
+        );
     }
 
     for file in fixture_files("../../fixtures/release-train/v0.1/invalid") {
@@ -117,6 +144,41 @@ fn validates_release_train_manifest_error_branches() {
         |manifest| manifest.train_version = "0.44.0".to_owned(),
         "trainVersion must match trainId major.minor",
     );
+    assert_release_train_parse_error(|manifest| {
+        manifest["components"]["runtime"]["crate"] = serde_json::json!({
+            "ecosystem": "crates.io",
+            "name": "skenion-runtime",
+            "version": "0.43.0",
+            "url": null
+        });
+    });
+    assert_release_train_parse_error(|manifest| {
+        manifest["components"]["studio"]["web"] = serde_json::json!({
+            "ecosystem": "npm",
+            "name": "@skenion/studio-web",
+            "version": "0.43.0",
+            "url": null
+        });
+        manifest["components"]["studio"]["desktop"] = serde_json::json!({
+            "ecosystem": "npm",
+            "name": "@skenion/studio-desktop",
+            "version": "0.43.0",
+            "url": null
+        });
+    });
+    assert_release_train_parse_error(|manifest| {
+        manifest["releaseGates"]["registryPackages"]["runtimeCrate"] = serde_json::json!({
+            "id": "runtime-crate-exists",
+            "status": "pending",
+            "required": true,
+            "package": {
+                "ecosystem": "crates.io",
+                "name": "skenion-runtime",
+                "version": "0.43.0",
+                "url": null
+            }
+        });
+    });
     assert_release_train_error(
         |manifest| manifest.protocol_baselines.graph = "0.2".to_owned(),
         "protocolBaselines graph must be 0.1",
@@ -278,6 +340,31 @@ fn validates_release_train_manifest_error_branches() {
         "studioPackageSmoke aarch64-apple-darwin runtimeSidecarArtifactId must match runtime sidecar",
     );
     assert_release_train_error(
+        |manifest| manifest.components.studio.web_bundle.name = "studio-web.tar.gz".to_owned(),
+        "components.studio[\"web-bundle\"].name must be skenion-studio-web-bundle-v0.43.0.tar.gz",
+    );
+    assert_release_train_error(
+        |manifest| {
+            manifest
+                .release_gates
+                .github_release_assets
+                .studio
+                .artifact_ids
+                .retain(|artifact_id| artifact_id != "studio-web-bundle");
+        },
+        "githubReleaseAssets studio artifactIds must include components.studio[\"web-bundle\"].id",
+    );
+    assert_release_train_error(
+        |manifest| {
+            manifest
+                .release_gates
+                .checksum_verification
+                .artifact_ids
+                .retain(|artifact_id| artifact_id != "studio-web-bundle");
+        },
+        "checksumVerification artifactIds must include components.studio[\"web-bundle\"].id",
+    );
+    assert_release_train_error(
         |manifest| {
             manifest
                 .release_gates
@@ -351,9 +438,42 @@ fn validates_release_train_manifest_error_branches() {
     assert_release_train_error(
         |manifest| {
             manifest.release_gates.examples_conformance.repository =
-                "echovisionlab/Other-examples".to_owned();
+                "skenion/Other-examples".to_owned();
         },
         "examples conformance gate repository must match examples repository",
+    );
+    assert_release_train_error(
+        |manifest| {
+            manifest.components.examples.repository = "skenion/Other-examples".to_owned();
+        },
+        "examples repository must be skenion/skenion-examples",
+    );
+    assert_release_train_error(
+        |manifest| {
+            manifest
+                .components
+                .runtime
+                .binaries
+                .get_mut(&ReleaseTrainTargetV01::Aarch64AppleDarwin)
+                .expect("runtime artifact should exist")
+                .source = ReleaseTrainArtifactSourceV01::GithubReleaseAsset {
+                repository: "skenion/other-runtime".to_owned(),
+                tag: "skenion-runtime-v0.43.0".to_owned(),
+                asset_name: "skenion-runtime-v0.43.0-aarch64-apple-darwin.tar.gz".to_owned(),
+                url: None,
+            };
+        },
+        "runtime binary aarch64-apple-darwin repository must be skenion/skenion-runtime",
+    );
+    assert_release_train_error(
+        |manifest| {
+            manifest
+                .release_gates
+                .github_release_assets
+                .runtime
+                .repository = "skenion/other-runtime".to_owned();
+        },
+        "githubReleaseAssets runtime repository must be skenion/skenion-runtime",
     );
     assert_release_train_error(
         |manifest| manifest.release_gates.examples_conformance.version = "0.42.0".to_owned(),

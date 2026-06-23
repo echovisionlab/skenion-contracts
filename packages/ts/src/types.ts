@@ -1722,7 +1722,9 @@ export type ReleaseTrainSupportTierV01 = "release-blocking" | "preview";
 export type ReleaseTrainArtifactKindV01 =
   | "runtime-binary"
   | "studio-desktop-package"
-  | "studio-runtime-sidecar";
+  | "studio-runtime-sidecar"
+  | "studio-web-bundle";
+export type ReleaseTrainTargetArtifactKindV01 = Exclude<ReleaseTrainArtifactKindV01, "studio-web-bundle">;
 export type ReleaseTrainPackageEcosystemV01 = "npm" | "crates.io";
 export type ReleaseTrainChecksumAlgorithmV01 = "sha256";
 export type ReleaseTrainGateStatusV01 = "pending" | "passed" | "failed" | "waived";
@@ -1760,7 +1762,7 @@ export interface ReleaseTrainArtifactV01 {
   id: string;
   target: ReleaseTrainTargetV01;
   supportTier: ReleaseTrainSupportTierV01;
-  kind: ReleaseTrainArtifactKindV01;
+  kind: ReleaseTrainTargetArtifactKindV01;
   name: string;
   version: string;
   source: ReleaseTrainArtifactSourceV01;
@@ -1769,6 +1771,20 @@ export interface ReleaseTrainArtifactV01 {
 }
 
 export type ReleaseTrainTargetArtifactMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainArtifactV01>;
+
+export interface ReleaseTrainStudioWebBundleArtifactV01 {
+  id: string;
+  kind: "studio-web-bundle";
+  name: string;
+  version: string;
+  source: ReleaseTrainArtifactSourceV01;
+  checksum: ReleaseTrainChecksumV01;
+  sizeBytes: number | null;
+}
+
+export type ReleaseTrainReleaseArtifactV01 =
+  | ReleaseTrainArtifactV01
+  | ReleaseTrainStudioWebBundleArtifactV01;
 
 export interface ReleaseTrainProtocolBaselinesV01 {
   graph: "0.1";
@@ -1830,7 +1846,6 @@ export interface ReleaseTrainContractsComponentV01 {
 }
 
 export interface ReleaseTrainRuntimeComponentV01 {
-  crate: ReleaseTrainRegistryPackageV01;
   binaries: ReleaseTrainTargetArtifactMapV01;
 }
 
@@ -1839,8 +1854,7 @@ export interface ReleaseTrainSdkComponentV01 {
 }
 
 export interface ReleaseTrainStudioComponentV01 {
-  web: ReleaseTrainRegistryPackageV01;
-  desktop: ReleaseTrainRegistryPackageV01;
+  "web-bundle": ReleaseTrainStudioWebBundleArtifactV01;
   desktopPackages: ReleaseTrainTargetArtifactMapV01;
   runtimeSidecars: ReleaseTrainTargetArtifactMapV01;
 }
@@ -1882,10 +1896,7 @@ export interface ReleaseTrainRegistryPackageGateV01 {
 export interface ReleaseTrainRegistryPackageGatesV01 {
   contractsNpm: ReleaseTrainRegistryPackageGateV01;
   contractsCrate: ReleaseTrainRegistryPackageGateV01;
-  runtimeCrate: ReleaseTrainRegistryPackageGateV01;
   sdkNpm: ReleaseTrainRegistryPackageGateV01;
-  studioWeb: ReleaseTrainRegistryPackageGateV01;
-  studioDesktop: ReleaseTrainRegistryPackageGateV01;
 }
 
 export interface ReleaseTrainArtifactCollectionGateV01 {

@@ -23,8 +23,8 @@ const AUDIO_OPERATORS = new Map([
   ["/~", "audio.operator.div"]
 ]);
 const DEFERRED_OBJECTS = new Map([
-  ["sin~", "sin~ is deferred; use osc~, expr~ sin($v1), or a future Skenion extension"],
-  ["square~", "square~ is deferred; use phasor~ plus comparison/expression logic, or a future Skenion extension"],
+  ["sin~", "sin~ is deferred; use osc~, expr~ sin($v1), or a future skenion extension"],
+  ["square~", "square~ is deferred; use phasor~ plus comparison/expression logic, or a future skenion extension"],
   ["expr", "expr is deferred until the expression layer contract is implemented"],
   ["expr~", "expr~ is deferred until the expression layer contract is implemented"],
   ["fexpr~", "fexpr~ is deferred until the expression layer contract is implemented"]

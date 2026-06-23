@@ -1,6 +1,6 @@
 # Script Nodes v0.1
 
-Script nodes are ordinary Skenion node definitions authored through a TypeScript
+Script nodes are ordinary skenion node definitions authored through a TypeScript
 SDK helper.
 
 The stable contract is a serializable `skenion.node.definition` manifest. Type

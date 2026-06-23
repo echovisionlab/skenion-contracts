@@ -425,9 +425,9 @@ fn audio_kind(class_symbol: &str) -> Option<&'static str> {
 
 fn deferred_message(class_symbol: &str) -> Option<&'static str> {
     match class_symbol {
-        "sin~" => Some("sin~ is deferred; use osc~, expr~ sin($v1), or a future Skenion extension"),
+        "sin~" => Some("sin~ is deferred; use osc~, expr~ sin($v1), or a future skenion extension"),
         "square~" => Some(
-            "square~ is deferred; use phasor~ plus comparison/expression logic, or a future Skenion extension",
+            "square~ is deferred; use phasor~ plus comparison/expression logic, or a future skenion extension",
         ),
         "expr" => Some("expr is deferred until the expression layer contract is implemented"),
         "expr~" => Some("expr~ is deferred until the expression layer contract is implemented"),

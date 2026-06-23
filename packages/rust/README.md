@@ -1,6 +1,6 @@
 # skenion-contracts
 
-Rust contract types and validators for Skenion.
+Rust contract types and validators for skenion.
 
 The canonical source repository is
-https://github.com/echovisionlab/skenion-contracts.
+https://github.com/skenion/skenion-contracts.

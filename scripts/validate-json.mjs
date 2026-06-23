@@ -561,10 +561,7 @@ function releaseTrainPackageVersions(manifest) {
   return [
     ["contracts npm", manifest.components.contracts.npm],
     ["contracts crate", manifest.components.contracts.crate],
-    ["runtime crate", manifest.components.runtime.crate],
-    ["sdk npm", manifest.components.sdk.npm],
-    ["studio web", manifest.components.studio.web],
-    ["studio desktop", manifest.components.studio.desktop]
+    ["sdk npm", manifest.components.sdk.npm]
   ];
 }
 
@@ -581,24 +578,9 @@ function releaseTrainRegistryPackageGatePackages(manifest) {
       manifest.components.contracts.crate
     ],
     [
-      "runtimeCrate",
-      manifest.releaseGates.registryPackages.runtimeCrate.package,
-      manifest.components.runtime.crate
-    ],
-    [
       "sdkNpm",
       manifest.releaseGates.registryPackages.sdkNpm.package,
       manifest.components.sdk.npm
-    ],
-    [
-      "studioWeb",
-      manifest.releaseGates.registryPackages.studioWeb.package,
-      manifest.components.studio.web
-    ],
-    [
-      "studioDesktop",
-      manifest.releaseGates.registryPackages.studioDesktop.package,
-      manifest.components.studio.desktop
     ]
   ];
 }
@@ -619,7 +601,8 @@ function releaseTrainArtifacts(manifest) {
   return [
     ...Object.values(manifest.components.runtime.binaries),
     ...Object.values(manifest.components.studio.desktopPackages),
-    ...Object.values(manifest.components.studio.runtimeSidecars)
+    ...Object.values(manifest.components.studio.runtimeSidecars),
+    manifest.components.studio["web-bundle"]
   ];
 }
 
@@ -627,6 +610,60 @@ function validateReleaseTrainArtifactVersions(file, artifacts, label, trainVersi
   for (const artifact of Object.values(artifacts)) {
     if (artifact.version !== trainVersion) {
       fail(file, `${label} ${artifact.target} version must be ${trainVersion}`);
+    }
+  }
+}
+
+function validateReleaseTrainArtifactSourceRepositories(file, artifacts, label, expectedRepository) {
+  for (const artifact of Object.values(artifacts)) {
+    if (artifact.source.kind !== "github-release-asset") {
+      fail(file, `${label} ${artifact.target} source must be a GitHub release asset`);
+      continue;
+    }
+    if (artifact.source.repository !== expectedRepository) {
+      fail(file, `${label} ${artifact.target} repository must be ${expectedRepository}`);
+    }
+  }
+}
+
+function validateReleaseTrainDesktopArtifactNames(file, artifacts, label) {
+  for (const [target, artifact] of Object.entries(artifacts)) {
+    const expectedName = releaseTrainStudioDesktopArchiveName(target);
+    if (artifact.name !== expectedName) {
+      fail(file, `${label} ${target} name must be ${expectedName}`);
+    }
+    if (artifact.source.kind === "github-release-asset" && artifact.source.assetName !== expectedName) {
+      fail(file, `${label} ${target} assetName must be ${expectedName}`);
+    }
+  }
+}
+
+function validateReleaseTrainStudioWebBundleArtifact(file, manifest) {
+  const artifact = manifest.components.studio["web-bundle"];
+  const label = `components.studio["web-bundle"]`;
+  const expectedName = `skenion-studio-web-bundle-v${manifest.trainVersion}.tar.gz`;
+  const expectedTag = `skenion-studio-v${manifest.trainVersion}`;
+
+  if (artifact.version !== manifest.trainVersion) {
+    fail(file, `${label}.version must be ${manifest.trainVersion}`);
+  }
+  if (artifact.kind !== "studio-web-bundle") {
+    fail(file, `${label}.kind must be studio-web-bundle`);
+  }
+  if (artifact.name !== expectedName) {
+    fail(file, `${label}.name must be ${expectedName}`);
+  }
+  if (artifact.source.kind !== "github-release-asset") {
+    fail(file, `${label}.source must be a GitHub release asset`);
+  } else {
+    if (artifact.source.repository !== releaseTrainStudioRepositoryV01) {
+      fail(file, `${label}.repository must be ${releaseTrainStudioRepositoryV01}`);
+    }
+    if (artifact.source.tag !== expectedTag) {
+      fail(file, `${label}.tag must be ${expectedTag}`);
+    }
+    if (artifact.source.assetName !== expectedName) {
+      fail(file, `${label}.assetName must be ${expectedName}`);
     }
   }
 }
@@ -639,6 +676,15 @@ const releaseTrainTargetsV01 = [
   "x86_64-unknown-linux-gnu",
   "aarch64-unknown-linux-gnu"
 ];
+const releaseTrainRuntimeRepositoryV01 = "skenion/skenion-runtime";
+const releaseTrainStudioRepositoryV01 = "skenion/skenion-studio";
+const releaseTrainExamplesRepositoryV01 = "skenion/skenion-examples";
+const releaseTrainDocsPagesOriginV01 = "https://skenion.github.io/skenion-docs";
+
+function releaseTrainStudioDesktopArchiveName(target) {
+  const extension = target.includes("windows-msvc") ? "zip" : "tar.gz";
+  return `skenion-studio-${target}.${extension}`;
+}
 
 function releaseTrainArtifactsById(manifest) {
   return new Map(releaseTrainArtifacts(manifest).map((artifact) => [artifact.id, artifact]));
@@ -714,9 +760,17 @@ function validateReleaseTrainManifestSemantics(file, manifest) {
   validateReleaseTrainArtifactVersions(file, manifest.components.runtime.binaries, "runtime binary", manifest.trainVersion);
   validateReleaseTrainArtifactVersions(file, manifest.components.studio.desktopPackages, "studio desktop package", manifest.trainVersion);
   validateReleaseTrainArtifactVersions(file, manifest.components.studio.runtimeSidecars, "studio runtimeSidecars", manifest.trainVersion);
+  validateReleaseTrainStudioWebBundleArtifact(file, manifest);
+  validateReleaseTrainArtifactSourceRepositories(file, manifest.components.runtime.binaries, "runtime binary", releaseTrainRuntimeRepositoryV01);
+  validateReleaseTrainArtifactSourceRepositories(file, manifest.components.studio.desktopPackages, "studio desktop package", releaseTrainStudioRepositoryV01);
+  validateReleaseTrainArtifactSourceRepositories(file, manifest.components.studio.runtimeSidecars, "studio runtimeSidecars", releaseTrainStudioRepositoryV01);
+  validateReleaseTrainDesktopArtifactNames(file, manifest.components.studio.desktopPackages, "studio desktop package");
 
   if (manifest.components.examples.version !== manifest.trainVersion) {
     fail(file, `examples version must be ${manifest.trainVersion}`);
+  }
+  if (manifest.components.examples.repository !== releaseTrainExamplesRepositoryV01) {
+    fail(file, `examples repository must be ${releaseTrainExamplesRepositoryV01}`);
   }
   if (manifest.releaseGates.examplesConformance.version !== manifest.components.examples.version) {
     fail(file, "examples conformance gate version must match examples version");
@@ -735,6 +789,10 @@ function validateReleaseTrainManifestSemantics(file, manifest) {
   if (manifest.components.docs.manual.path !== expectedManualPath) {
     fail(file, `docs manual path must be ${expectedManualPath}`);
   }
+  const expectedManualPagesUrl = `${releaseTrainDocsPagesOriginV01}${expectedManualPath}`;
+  if (manifest.components.docs.manual.pagesUrl !== expectedManualPagesUrl) {
+    fail(file, `docs manual pagesUrl must be ${expectedManualPagesUrl}`);
+  }
   if (manifest.releaseGates.docsPagesDeployment.manualVersion !== manifest.components.docs.manual.version) {
     fail(file, "docs Pages gate manualVersion must match docs manual version");
   }
@@ -746,6 +804,12 @@ function validateReleaseTrainManifestSemantics(file, manifest) {
   }
 
   const artifactsById = releaseTrainArtifactsById(manifest);
+  if (manifest.releaseGates.githubReleaseAssets.runtime.repository !== releaseTrainRuntimeRepositoryV01) {
+    fail(file, `githubReleaseAssets runtime repository must be ${releaseTrainRuntimeRepositoryV01}`);
+  }
+  if (manifest.releaseGates.githubReleaseAssets.studio.repository !== releaseTrainStudioRepositoryV01) {
+    fail(file, `githubReleaseAssets studio repository must be ${releaseTrainStudioRepositoryV01}`);
+  }
   validateReleaseTrainArtifactCollectionGate(
     file,
     artifactsById,
@@ -764,6 +828,12 @@ function validateReleaseTrainManifestSemantics(file, manifest) {
     "checksumVerification",
     manifest.releaseGates.checksumVerification.artifactIds
   );
+  if (!manifest.releaseGates.githubReleaseAssets.studio.artifactIds.includes(manifest.components.studio["web-bundle"].id)) {
+    fail(file, `githubReleaseAssets studio artifactIds must include components.studio["web-bundle"].id`);
+  }
+  if (!manifest.releaseGates.checksumVerification.artifactIds.includes(manifest.components.studio["web-bundle"].id)) {
+    fail(file, `checksumVerification artifactIds must include components.studio["web-bundle"].id`);
+  }
   validateReleaseTrainRuntimeSmokeGates(file, manifest, artifactsById);
   validateReleaseTrainStudioSmokeGates(file, manifest, artifactsById);
 

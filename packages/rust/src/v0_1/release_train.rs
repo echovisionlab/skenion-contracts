@@ -46,6 +46,7 @@ pub enum ReleaseTrainArtifactKindV01 {
     RuntimeBinary,
     StudioDesktopPackage,
     StudioRuntimeSidecar,
+    StudioWebBundle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -120,6 +121,19 @@ pub struct ReleaseTrainArtifactV01 {
 
 pub type ReleaseTrainTargetArtifactMapV01 =
     BTreeMap<ReleaseTrainTargetV01, ReleaseTrainArtifactV01>;
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ReleaseTrainStudioWebBundleArtifactV01 {
+    pub id: String,
+    pub kind: ReleaseTrainArtifactKindV01,
+    pub name: String,
+    pub version: String,
+    pub source: ReleaseTrainArtifactSourceV01,
+    pub checksum: ReleaseTrainChecksumV01,
+    pub size_bytes: Option<u64>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -212,8 +226,6 @@ pub struct ReleaseTrainContractsComponentV01 {
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct ReleaseTrainRuntimeComponentV01 {
-    #[serde(rename = "crate")]
-    pub crate_package: ReleaseTrainRegistryPackageV01,
     pub binaries: ReleaseTrainTargetArtifactMapV01,
 }
 
@@ -228,8 +240,8 @@ pub struct ReleaseTrainSdkComponentV01 {
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct ReleaseTrainStudioComponentV01 {
-    pub web: ReleaseTrainRegistryPackageV01,
-    pub desktop: ReleaseTrainRegistryPackageV01,
+    #[serde(rename = "web-bundle")]
+    pub web_bundle: ReleaseTrainStudioWebBundleArtifactV01,
     pub desktop_packages: ReleaseTrainTargetArtifactMapV01,
     pub runtime_sidecars: ReleaseTrainTargetArtifactMapV01,
 }
@@ -291,10 +303,7 @@ pub struct ReleaseTrainRegistryPackageGateV01 {
 pub struct ReleaseTrainRegistryPackageGatesV01 {
     pub contracts_npm: ReleaseTrainRegistryPackageGateV01,
     pub contracts_crate: ReleaseTrainRegistryPackageGateV01,
-    pub runtime_crate: ReleaseTrainRegistryPackageGateV01,
     pub sdk_npm: ReleaseTrainRegistryPackageGateV01,
-    pub studio_web: ReleaseTrainRegistryPackageGateV01,
-    pub studio_desktop: ReleaseTrainRegistryPackageGateV01,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -430,6 +439,10 @@ const RELEASE_TRAIN_TARGETS_V01: [ReleaseTrainTargetV01; 6] = [
     ReleaseTrainTargetV01::X8664UnknownLinuxGnu,
     ReleaseTrainTargetV01::Aarch64UnknownLinuxGnu,
 ];
+const RELEASE_TRAIN_RUNTIME_REPOSITORY_V01: &str = "skenion/skenion-runtime";
+const RELEASE_TRAIN_STUDIO_REPOSITORY_V01: &str = "skenion/skenion-studio";
+const RELEASE_TRAIN_EXAMPLES_REPOSITORY_V01: &str = "skenion/skenion-examples";
+const RELEASE_TRAIN_DOCS_PAGES_ORIGIN_V01: &str = "https://skenion.github.io/skenion-docs";
 
 fn support_tier_for_target(target: ReleaseTrainTargetV01) -> ReleaseTrainSupportTierV01 {
     match target {
@@ -484,6 +497,7 @@ fn validate_artifact_map(
     label: &str,
     artifacts: &ReleaseTrainTargetArtifactMapV01,
     expected_kind: ReleaseTrainArtifactKindV01,
+    expected_repository: &str,
     train_version: &str,
 ) {
     for target in RELEASE_TRAIN_TARGETS_V01 {
@@ -515,48 +529,170 @@ fn validate_artifact_map(
                 "{label} {target_label} version must be {train_version}"
             )));
         }
+        match &artifact.source {
+            ReleaseTrainArtifactSourceV01::GithubReleaseAsset { repository, .. } => {
+                if repository != expected_repository {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "{label} {target_label} repository must be {expected_repository}"
+                    )));
+                }
+            }
+            ReleaseTrainArtifactSourceV01::Url { .. } => {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label} {target_label} source must be a GitHub release asset"
+                )));
+            }
+        }
         validate_checksum(errors, &artifact.checksum);
     }
 }
 
-fn release_train_artifacts(manifest: &ReleaseTrainManifestV01) -> Vec<&ReleaseTrainArtifactV01> {
-    manifest
+fn validate_studio_desktop_artifact_names(
+    errors: &mut Vec<ValidationErrorV01>,
+    artifacts: &ReleaseTrainTargetArtifactMapV01,
+) {
+    for (target, artifact) in artifacts {
+        let target_label = target.as_str();
+        let expected_name = studio_desktop_archive_name(*target);
+        if artifact.name != expected_name {
+            errors.push(ValidationErrorV01::new(format!(
+                "studio desktop package {target_label} name must be {expected_name}"
+            )));
+        }
+        if let ReleaseTrainArtifactSourceV01::GithubReleaseAsset { asset_name, .. } =
+            &artifact.source
+            && asset_name != &expected_name
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "studio desktop package {target_label} assetName must be {expected_name}"
+            )));
+        }
+    }
+}
+
+fn studio_desktop_archive_name(target: ReleaseTrainTargetV01) -> String {
+    let target_label = target.as_str();
+    let extension = match target {
+        ReleaseTrainTargetV01::X8664PcWindowsMsvc | ReleaseTrainTargetV01::Aarch64PcWindowsMsvc => {
+            "zip"
+        }
+        _ => "tar.gz",
+    };
+    format!("skenion-studio-{target_label}.{extension}")
+}
+
+fn validate_studio_web_bundle_artifact(
+    errors: &mut Vec<ValidationErrorV01>,
+    artifact: &ReleaseTrainStudioWebBundleArtifactV01,
+    train_version: &str,
+) {
+    let expected_name = format!("skenion-studio-web-bundle-v{train_version}.tar.gz");
+    let expected_tag = format!("skenion-studio-v{train_version}");
+    let label = "components.studio[\"web-bundle\"]";
+
+    if artifact.version != train_version {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.version must be {train_version}"
+        )));
+    }
+    if artifact.kind != ReleaseTrainArtifactKindV01::StudioWebBundle {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.kind must be studio-web-bundle"
+        )));
+    }
+    if artifact.name != expected_name {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.name must be {expected_name}"
+        )));
+    }
+    match &artifact.source {
+        ReleaseTrainArtifactSourceV01::GithubReleaseAsset {
+            repository,
+            tag,
+            asset_name,
+            ..
+        } => {
+            if repository != RELEASE_TRAIN_STUDIO_REPOSITORY_V01 {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label}.repository must be {RELEASE_TRAIN_STUDIO_REPOSITORY_V01}"
+                )));
+            }
+            if tag != &expected_tag {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label}.tag must be {expected_tag}"
+                )));
+            }
+            if asset_name != &expected_name {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label}.assetName must be {expected_name}"
+                )));
+            }
+        }
+        ReleaseTrainArtifactSourceV01::Url { .. } => {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.source must be a GitHub release asset"
+            )));
+        }
+    }
+    validate_checksum(errors, &artifact.checksum);
+}
+
+fn insert_artifact_ref<'a>(
+    errors: &mut Vec<ValidationErrorV01>,
+    artifacts: &mut HashMap<&'a str, &'a ReleaseTrainChecksumV01>,
+    seen: &mut HashSet<&'a str>,
+    id: &'a str,
+    checksum: &'a ReleaseTrainChecksumV01,
+) {
+    if id.is_empty() {
+        errors.push(ValidationErrorV01::new("artifact id must not be empty"));
+        return;
+    }
+    if !seen.insert(id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "duplicate artifact id: {id}"
+        )));
+    }
+    artifacts.insert(id, checksum);
+}
+
+fn artifact_index<'a>(
+    errors: &mut Vec<ValidationErrorV01>,
+    manifest: &'a ReleaseTrainManifestV01,
+) -> HashMap<&'a str, &'a ReleaseTrainChecksumV01> {
+    let mut seen = HashSet::new();
+    let mut artifacts = HashMap::new();
+
+    for artifact in manifest
         .components
         .runtime
         .binaries
         .values()
         .chain(manifest.components.studio.desktop_packages.values())
         .chain(manifest.components.studio.runtime_sidecars.values())
-        .collect()
-}
-
-fn artifact_index<'a>(
-    errors: &mut Vec<ValidationErrorV01>,
-    manifest: &'a ReleaseTrainManifestV01,
-) -> HashMap<&'a str, &'a ReleaseTrainArtifactV01> {
-    let mut seen = HashSet::new();
-    let mut artifacts = HashMap::new();
-
-    for artifact in release_train_artifacts(manifest) {
-        if artifact.id.is_empty() {
-            errors.push(ValidationErrorV01::new("artifact id must not be empty"));
-            continue;
-        }
-        if !seen.insert(artifact.id.as_str()) {
-            errors.push(ValidationErrorV01::new(format!(
-                "duplicate artifact id: {}",
-                artifact.id
-            )));
-        }
-        artifacts.insert(artifact.id.as_str(), artifact);
+    {
+        insert_artifact_ref(
+            errors,
+            &mut artifacts,
+            &mut seen,
+            artifact.id.as_str(),
+            &artifact.checksum,
+        );
     }
+    insert_artifact_ref(
+        errors,
+        &mut artifacts,
+        &mut seen,
+        manifest.components.studio.web_bundle.id.as_str(),
+        &manifest.components.studio.web_bundle.checksum,
+    );
 
     artifacts
 }
 
 fn validate_artifact_id(
     errors: &mut Vec<ValidationErrorV01>,
-    artifacts: &HashMap<&str, &ReleaseTrainArtifactV01>,
+    artifacts: &HashMap<&str, &ReleaseTrainChecksumV01>,
     label: &str,
     artifact_id: &str,
 ) {
@@ -569,7 +705,7 @@ fn validate_artifact_id(
 
 fn validate_artifact_collection_gate(
     errors: &mut Vec<ValidationErrorV01>,
-    artifacts: &HashMap<&str, &ReleaseTrainArtifactV01>,
+    artifacts: &HashMap<&str, &ReleaseTrainChecksumV01>,
     gate: &ReleaseTrainArtifactCollectionGateV01,
     label: &str,
 ) {
@@ -586,7 +722,7 @@ fn validate_artifact_collection_gate(
 fn validate_runtime_smoke_gates(
     errors: &mut Vec<ValidationErrorV01>,
     manifest: &ReleaseTrainManifestV01,
-    artifacts: &HashMap<&str, &ReleaseTrainArtifactV01>,
+    artifacts: &HashMap<&str, &ReleaseTrainChecksumV01>,
 ) {
     for target in RELEASE_TRAIN_TARGETS_V01 {
         let target_label = target.as_str();
@@ -615,7 +751,7 @@ fn validate_runtime_smoke_gates(
 fn validate_studio_smoke_gates(
     errors: &mut Vec<ValidationErrorV01>,
     manifest: &ReleaseTrainManifestV01,
-    artifacts: &HashMap<&str, &ReleaseTrainArtifactV01>,
+    artifacts: &HashMap<&str, &ReleaseTrainChecksumV01>,
 ) {
     for target in RELEASE_TRAIN_TARGETS_V01 {
         let target_label = target.as_str();
@@ -663,7 +799,7 @@ fn validate_studio_smoke_gates(
 fn validate_checksum_gate(
     errors: &mut Vec<ValidationErrorV01>,
     manifest: &ReleaseTrainManifestV01,
-    artifacts: &HashMap<&str, &ReleaseTrainArtifactV01>,
+    artifacts: &HashMap<&str, &ReleaseTrainChecksumV01>,
 ) {
     let gate = &manifest.release_gates.checksum_verification;
     if gate.artifact_ids.is_empty() {
@@ -675,14 +811,14 @@ fn validate_checksum_gate(
         validate_artifact_id(errors, artifacts, "checksumVerification", artifact_id);
     }
     for (artifact_id, expected_checksum) in &gate.expected_checksums {
-        let Some(artifact) = artifacts.get(artifact_id.as_str()) else {
+        let Some(actual_checksum) = artifacts.get(artifact_id.as_str()) else {
             errors.push(ValidationErrorV01::new(format!(
                 "checksum gate references unknown artifact {artifact_id}"
             )));
             continue;
         };
         validate_checksum(errors, expected_checksum);
-        match (&artifact.checksum.value, &expected_checksum.value) {
+        match (&actual_checksum.value, &expected_checksum.value) {
             (Some(actual), Some(expected)) if actual != expected => {
                 errors.push(ValidationErrorV01::new(format!(
                     "checksum gate value must match artifact {artifact_id}"
@@ -905,26 +1041,8 @@ pub fn validate_release_train_manifest_v01(
     );
     validate_package_version(
         &mut errors,
-        "runtime crate",
-        &manifest.components.runtime.crate_package,
-        &manifest.train_version,
-    );
-    validate_package_version(
-        &mut errors,
         "sdk npm",
         &manifest.components.sdk.npm,
-        &manifest.train_version,
-    );
-    validate_package_version(
-        &mut errors,
-        "studio web",
-        &manifest.components.studio.web,
-        &manifest.train_version,
-    );
-    validate_package_version(
-        &mut errors,
-        "studio desktop",
-        &manifest.components.studio.desktop,
         &manifest.train_version,
     );
 
@@ -933,6 +1051,7 @@ pub fn validate_release_train_manifest_v01(
         "runtime binary",
         &manifest.components.runtime.binaries,
         ReleaseTrainArtifactKindV01::RuntimeBinary,
+        RELEASE_TRAIN_RUNTIME_REPOSITORY_V01,
         &manifest.train_version,
     );
     validate_artifact_map(
@@ -940,6 +1059,7 @@ pub fn validate_release_train_manifest_v01(
         "studio desktop package",
         &manifest.components.studio.desktop_packages,
         ReleaseTrainArtifactKindV01::StudioDesktopPackage,
+        RELEASE_TRAIN_STUDIO_REPOSITORY_V01,
         &manifest.train_version,
     );
     validate_artifact_map(
@@ -947,6 +1067,16 @@ pub fn validate_release_train_manifest_v01(
         "studio runtimeSidecars",
         &manifest.components.studio.runtime_sidecars,
         ReleaseTrainArtifactKindV01::StudioRuntimeSidecar,
+        RELEASE_TRAIN_STUDIO_REPOSITORY_V01,
+        &manifest.train_version,
+    );
+    validate_studio_desktop_artifact_names(
+        &mut errors,
+        &manifest.components.studio.desktop_packages,
+    );
+    validate_studio_web_bundle_artifact(
+        &mut errors,
+        &manifest.components.studio.web_bundle,
         &manifest.train_version,
     );
 
@@ -954,6 +1084,11 @@ pub fn validate_release_train_manifest_v01(
         errors.push(ValidationErrorV01::new(format!(
             "examples version must be {}",
             manifest.train_version
+        )));
+    }
+    if manifest.components.examples.repository != RELEASE_TRAIN_EXAMPLES_REPOSITORY_V01 {
+        errors.push(ValidationErrorV01::new(format!(
+            "examples repository must be {RELEASE_TRAIN_EXAMPLES_REPOSITORY_V01}"
         )));
     }
     if manifest.components.docs.manual.version != manifest.train_version {
@@ -968,8 +1103,37 @@ pub fn validate_release_train_manifest_v01(
             "docs manual path must be {expected_manual_path}"
         )));
     }
+    let expected_manual_pages_url =
+        format!("{RELEASE_TRAIN_DOCS_PAGES_ORIGIN_V01}{expected_manual_path}");
+    if manifest.components.docs.manual.pages_url != expected_manual_pages_url {
+        errors.push(ValidationErrorV01::new(format!(
+            "docs manual pagesUrl must be {expected_manual_pages_url}"
+        )));
+    }
 
     let artifacts = artifact_index(&mut errors, manifest);
+    if manifest
+        .release_gates
+        .github_release_assets
+        .runtime
+        .repository
+        != RELEASE_TRAIN_RUNTIME_REPOSITORY_V01
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "githubReleaseAssets runtime repository must be {RELEASE_TRAIN_RUNTIME_REPOSITORY_V01}"
+        )));
+    }
+    if manifest
+        .release_gates
+        .github_release_assets
+        .studio
+        .repository
+        != RELEASE_TRAIN_STUDIO_REPOSITORY_V01
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "githubReleaseAssets studio repository must be {RELEASE_TRAIN_STUDIO_REPOSITORY_V01}"
+        )));
+    }
     validate_artifact_collection_gate(
         &mut errors,
         &artifacts,
@@ -982,6 +1146,27 @@ pub fn validate_release_train_manifest_v01(
         &manifest.release_gates.github_release_assets.studio,
         "githubReleaseAssets studio",
     );
+    if !manifest
+        .release_gates
+        .github_release_assets
+        .studio
+        .artifact_ids
+        .contains(&manifest.components.studio.web_bundle.id)
+    {
+        errors.push(ValidationErrorV01::new(
+            "githubReleaseAssets studio artifactIds must include components.studio[\"web-bundle\"].id",
+        ));
+    }
+    if !manifest
+        .release_gates
+        .checksum_verification
+        .artifact_ids
+        .contains(&manifest.components.studio.web_bundle.id)
+    {
+        errors.push(ValidationErrorV01::new(
+            "checksumVerification artifactIds must include components.studio[\"web-bundle\"].id",
+        ));
+    }
     validate_runtime_smoke_gates(&mut errors, manifest, &artifacts);
     validate_studio_smoke_gates(&mut errors, manifest, &artifacts);
     validate_checksum_gate(&mut errors, manifest, &artifacts);
@@ -1000,27 +1185,9 @@ pub fn validate_release_train_manifest_v01(
     );
     validate_registry_package_gate(
         &mut errors,
-        "runtimeCrate",
-        &manifest.release_gates.registry_packages.runtime_crate,
-        &manifest.components.runtime.crate_package,
-    );
-    validate_registry_package_gate(
-        &mut errors,
         "sdkNpm",
         &manifest.release_gates.registry_packages.sdk_npm,
         &manifest.components.sdk.npm,
-    );
-    validate_registry_package_gate(
-        &mut errors,
-        "studioWeb",
-        &manifest.release_gates.registry_packages.studio_web,
-        &manifest.components.studio.web,
-    );
-    validate_registry_package_gate(
-        &mut errors,
-        "studioDesktop",
-        &manifest.release_gates.registry_packages.studio_desktop,
-        &manifest.components.studio.desktop,
     );
 
     let examples_gate = &manifest.release_gates.examples_conformance;

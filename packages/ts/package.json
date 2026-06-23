@@ -1,18 +1,18 @@
 {
   "name": "@skenion/contracts",
   "version": "0.43.0",
-  "description": "Skenion contract schemas and validators",
+  "description": "skenion contract schemas and validators",
   "type": "module",
   "license": "Apache-2.0",
   "sideEffects": false,
-  "homepage": "https://github.com/echovisionlab/skenion-contracts#readme",
+  "homepage": "https://github.com/skenion/skenion-contracts#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/echovisionlab/skenion-contracts.git",
+    "url": "git+https://github.com/skenion/skenion-contracts.git",
     "directory": "packages/ts"
   },
   "bugs": {
-    "url": "https://github.com/echovisionlab/skenion-contracts/issues"
+    "url": "https://github.com/skenion/skenion-contracts/issues"
   },
   "publishConfig": {
     "access": "public"

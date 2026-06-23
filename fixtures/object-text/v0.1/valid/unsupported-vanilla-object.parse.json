@@ -14,7 +14,7 @@
     {
       "severity": "error",
       "code": "deferred-object",
-      "message": "sin~ is deferred; use osc~, expr~ sin($v1), or a future Skenion extension"
+      "message": "sin~ is deferred; use osc~, expr~ sin($v1), or a future skenion extension"
     }
   ]
 }

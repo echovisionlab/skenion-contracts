@@ -1,6 +1,6 @@
 # Shader Interface Sync
 
-Skenion must keep shader uniform names separate from value types.
+skenion must keep shader uniform names separate from value types.
 
 ```text
 port id   = shader-facing semantic name, such as speed, enabled, iterations, tint
@@ -74,4 +74,4 @@ skenion.<uniformId>
 ```
 
 Boolean uniforms are stored as `u32`; user shaders should call `sk_bool`.
-User source must not define Skenion-reserved `vs_main`.
+User source must not define skenion-reserved `vs_main`.

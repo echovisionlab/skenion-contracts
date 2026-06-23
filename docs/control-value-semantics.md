@@ -1,6 +1,6 @@
 # Control Value Semantics
 
-Skenion value nodes are stateful control nodes. This document defines the pre-v1
+skenion value nodes are stateful control nodes. This document defines the pre-v1
 typed value behavior used by built-in value nodes and runtime control events.
 
 ## Typed Value Nodes
@@ -82,7 +82,7 @@ in `docs/control-routing.md`.
 ## Pre-v1 Compatibility
 
 This is a pre-v1 contract. Breaking built-in node shape changes are allowed
-while Skenion is still converging on the runtime/editor control model.
+while skenion is still converging on the runtime/editor control model.
 
 The previous value-object surface with separate visual `bang` and `set` input
 ports is removed. Canonical value objects expose only `in`, `cold`, and

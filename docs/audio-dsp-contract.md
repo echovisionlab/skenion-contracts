@@ -3,8 +3,8 @@
 This document fixes the initial contract boundary for future Rust DSP runtime
 work. It does not introduce live audio device IO.
 
-For the human-readable model, see the Skenion Docs
-[audio DSP model](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/audio-dsp-model.md).
+For the human-readable model, see the skenion Docs
+[audio DSP model](https://github.com/skenion/skenion-docs/blob/main/docs/model/audio-dsp-model.md).
 
 ## Runtime Direction
 

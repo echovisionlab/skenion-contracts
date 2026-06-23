@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Skenion Runtime HTTP API
+  title: skenion Runtime HTTP API
   version: 0.1.0
 paths:
   /health:

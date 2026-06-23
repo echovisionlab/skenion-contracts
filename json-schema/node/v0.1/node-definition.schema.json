@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json",
-  "title": "Skenion Node Definition Manifest v0.1",
+  "title": "skenion Node Definition Manifest v0.1",
   "type": "object",
   "required": [
     "schema",

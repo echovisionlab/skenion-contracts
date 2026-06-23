@@ -1,6 +1,6 @@
 # Node Help Patch Graphs v0
 
-Skenion builtin help is a validated artifact, not only prose. Each builtin node owns:
+skenion builtin help is a validated artifact, not only prose. Each builtin node owns:
 
 - `builtins/v0.1/help/<node-id>.help.json`
 - `help/v0.1/nodes/<node-id>.help.graph.json`

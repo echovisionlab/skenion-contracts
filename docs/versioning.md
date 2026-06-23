@@ -1,6 +1,6 @@
 # Versioning
 
-Skenion contracts use Semantic Versioning, but compatibility is negotiated by
+skenion contracts use Semantic Versioning, but compatibility is negotiated by
 contract family and capability, not by editor/runtime application versions.
 
 Initial contract families:

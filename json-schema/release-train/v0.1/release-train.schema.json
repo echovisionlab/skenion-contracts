@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/release-train/v0.1/release-train.schema.json",
-  "title": "Skenion Release Train Manifest v0.1",
+  "title": "skenion Release Train Manifest v0.1",
   "type": "object",
   "required": ["schema", "schemaVersion", "trainId", "trainVersion", "protocolBaselines", "capabilitySet", "components", "releaseGates"],
   "properties": {
@@ -228,11 +228,8 @@
     },
     "runtimeComponent": {
       "type": "object",
-      "required": ["crate", "binaries"],
+      "required": ["binaries"],
       "properties": {
-        "crate": {
-          "$ref": "#/$defs/registryPackage"
-        },
         "binaries": {
           "$ref": "#/$defs/runtimeBinaryArtifactMap"
         }
@@ -251,13 +248,10 @@
     },
     "studioComponent": {
       "type": "object",
-      "required": ["web", "desktop", "desktopPackages", "runtimeSidecars"],
+      "required": ["web-bundle", "desktopPackages", "runtimeSidecars"],
       "properties": {
-        "web": {
-          "$ref": "#/$defs/registryPackage"
-        },
-        "desktop": {
-          "$ref": "#/$defs/registryPackage"
+        "web-bundle": {
+          "$ref": "#/$defs/studioWebBundleArtifact"
         },
         "desktopPackages": {
           "$ref": "#/$defs/studioDesktopArtifactMap"
@@ -312,7 +306,7 @@
         },
         "pagesUrl": {
           "type": "string",
-          "minLength": 1
+          "pattern": "^https://skenion\\.github\\.io/skenion-docs/manual/[0-9]+\\.[0-9]+/$"
         }
       },
       "additionalProperties": false
@@ -654,6 +648,16 @@
         }
       ]
     },
+    "studioWebBundleArtifact": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/nonTargetArtifact"
+        },
+        {
+          "$ref": "#/$defs/studioWebBundleKind"
+        }
+      ]
+    },
     "aarch64AppleDarwinReleaseBlocking": {
       "type": "object",
       "properties": {
@@ -744,6 +748,14 @@
         }
       }
     },
+    "studioWebBundleKind": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "studio-web-bundle"
+        }
+      }
+    },
     "artifact": {
       "type": "object",
       "required": ["id", "target", "supportTier", "kind", "name", "version", "source", "checksum", "sizeBytes"],
@@ -760,6 +772,44 @@
         },
         "kind": {
           "enum": ["runtime-binary", "studio-desktop-package", "studio-runtime-sidecar"]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "source": {
+          "$ref": "#/$defs/artifactSource"
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "sizeBytes": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "nonTargetArtifact": {
+      "type": "object",
+      "required": ["id", "kind", "name", "version", "source", "checksum", "sizeBytes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": ["studio-web-bundle"]
         },
         "name": {
           "type": "string",
@@ -889,7 +939,7 @@
     },
     "registryPackageGates": {
       "type": "object",
-      "required": ["contractsNpm", "contractsCrate", "runtimeCrate", "sdkNpm", "studioWeb", "studioDesktop"],
+      "required": ["contractsNpm", "contractsCrate", "sdkNpm"],
       "properties": {
         "contractsNpm": {
           "$ref": "#/$defs/registryPackageGate"
@@ -897,16 +947,7 @@
         "contractsCrate": {
           "$ref": "#/$defs/registryPackageGate"
         },
-        "runtimeCrate": {
-          "$ref": "#/$defs/registryPackageGate"
-        },
         "sdkNpm": {
-          "$ref": "#/$defs/registryPackageGate"
-        },
-        "studioWeb": {
-          "$ref": "#/$defs/registryPackageGate"
-        },
-        "studioDesktop": {
           "$ref": "#/$defs/registryPackageGate"
         }
       },
@@ -1190,7 +1231,7 @@
         },
         "pagesUrl": {
           "type": "string",
-          "minLength": 1
+          "pattern": "^https://skenion\\.github\\.io/skenion-docs/manual/[0-9]+\\.[0-9]+/$"
         },
         "evidenceUrl": {
           "type": "string",
@@ -1207,7 +1248,7 @@
     },
     "repository": {
       "type": "string",
-      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+      "pattern": "^skenion/[A-Za-z0-9_.-]+$"
     },
     "version": {
       "type": "string",

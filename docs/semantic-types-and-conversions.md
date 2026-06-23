@@ -1,6 +1,6 @@
 # Semantic Types And Conversions v0
 
-Skenion separates user-facing semantic value types from storage or transport
+skenion separates user-facing semantic value types from storage or transport
 representations.
 
 ## Semantic Types

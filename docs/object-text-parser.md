@@ -6,8 +6,8 @@ boxes, but it is not the long-term persisted identity of the user-facing box.
 The machine-readable parse output schema is
 `json-schema/object-text/v0.1/parse-result.schema.json`.
 
-For design intent, see the Skenion Docs
-[object text parser model](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/object-text-parser.md).
+For design intent, see the skenion Docs
+[object text parser model](https://github.com/skenion/skenion-docs/blob/main/docs/model/object-text-parser.md).
 
 ## Parse Result
 

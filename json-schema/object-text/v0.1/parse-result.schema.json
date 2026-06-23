@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/object-text/v0.1/parse-result.schema.json",
-  "title": "Skenion Object Text Parse Result v0.1",
+  "title": "skenion Object Text Parse Result v0.1",
   "type": "object",
   "required": [
     "schema",

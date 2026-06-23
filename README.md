@@ -1,10 +1,10 @@
-# Skenion Contracts
+# skenion Contracts
 
-Versioned contracts, schemas, generated protocol packages, and conformance tests for Skenion.
+Versioned contracts, schemas, generated protocol packages, and conformance tests for skenion.
 
 This repository is the source of truth for TypeScript/Rust communication contracts.
 Human-readable delivery and processing model docs live in
-[EchoVisionLab/skenion-docs](https://github.com/echovisionlab/skenion-docs).
+[skenion/skenion-docs](https://github.com/skenion/skenion-docs).
 
 ## Contract Surfaces
 
@@ -47,7 +47,7 @@ model, and [Script Nodes](docs/script-nodes.md) for the script node manifest
 boundary.
 For design review of how values, messages, audio, video, render frames, and GPU
 resources move through the system, start with the
-[Skenion Docs data delivery model](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/data-delivery-model.md).
+[skenion Docs data delivery model](https://github.com/skenion/skenion-docs/blob/main/docs/model/data-delivery-model.md).
 Object text parse outputs are defined in
 [Object Text Parser Contract](docs/object-text-parser.md). The first audio DSP
 contract baseline is documented in
@@ -62,10 +62,16 @@ pnpm run ci
 
 ## Status
 
-Bootstrap repository for the Skenion project. Implementation follows the public architecture and release rules defined in [EchoVisionLab/skenion](https://github.com/echovisionlab/skenion).
+Bootstrap repository for the skenion project. Implementation follows the public architecture and release rules defined in [skenion/skenion](https://github.com/skenion/skenion).
+
+The `@skenion/contracts` npm package and `skenion-contracts` Rust crate remain
+publishable release artifacts because they are importable contract and validator
+libraries. Publishing still runs only through GitHub Actions release workflows.
+Release train registry gates are limited to `contractsNpm`, `contractsCrate`,
+and `sdkNpm`; Runtime and Studio are tracked through release artifacts.
 
 ## License And Credit
 
 This repository is licensed under the Apache License, Version 2.0.
 
-Redistributions must preserve copyright, license, and NOTICE information as required by Apache-2.0. If Skenion helps your artwork, research, publication, installation, or tool, please credit Skenion and EchoVisionLab.
+Redistributions must preserve copyright, license, and NOTICE information as required by Apache-2.0. If skenion helps your artwork, research, publication, installation, or tool, please credit skenion.

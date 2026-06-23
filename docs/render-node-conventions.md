@@ -168,7 +168,7 @@ Rules:
 - `language` must be `"wgsl"`.
 - `source` must be a non-empty WGSL fragment module.
 - `source` must provide `fs_main`.
-- `source` must not provide Skenion-reserved `vs_main`; Runtime generates the
+- `source` must not provide skenion-reserved `vs_main`; Runtime generates the
   fullscreen triangle vertex entry point.
 - Uniform input ports are declared by line comments:
   `// @skenion.uniform <id> <dataKind> [attributes...]`.
@@ -227,7 +227,7 @@ out        resource<gpu.texture2d>
 
 ### WGSL ABI
 
-Runtime generates a WGSL header before the user source. Skenion exposes a single
+Runtime generates a WGSL header before the user source. skenion exposes a single
 frame uniform at group 0 binding 0. The conceptual generated ABI is:
 
 ```wgsl

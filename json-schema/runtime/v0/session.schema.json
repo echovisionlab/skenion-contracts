@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/runtime/v0/session.schema.json",
-  "title": "Skenion Runtime Session Profile v0",
+  "title": "skenion Runtime Session Profile v0",
   "type": "object",
   "required": ["schema", "schemaVersion", "ok", "sessionId", "lifecycle", "snapshot", "profile", "capabilities", "eventReplay", "diagnostics"],
   "properties": {

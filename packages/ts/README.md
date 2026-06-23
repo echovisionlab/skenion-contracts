@@ -1,7 +1,7 @@
 # @skenion/contracts
 
 TypeScript contract schemas, validators, type definitions, and Runtime HTTP
-guards for Skenion.
+guards for skenion.
 
 The canonical source repository is
-https://github.com/echovisionlab/skenion-contracts.
+https://github.com/skenion/skenion-contracts.

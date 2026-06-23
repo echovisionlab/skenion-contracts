@@ -1,6 +1,6 @@
 # Node Addressing
 
-Skenion uses stable addresses for editor panels, runtime control surfaces, and
+skenion uses stable addresses for editor panels, runtime control surfaces, and
 diagnostics that need to refer to a specific part of a loaded graph.
 
 Addresses are not hidden graph dependencies. They are safe for inspection,

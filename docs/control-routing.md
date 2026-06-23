@@ -1,6 +1,6 @@
 # Control Routing
 
-Skenion v0.1 uses object-owned typed routing for non-local control values.
+skenion v0.1 uses object-owned typed routing for non-local control values.
 Value, message, panel, and annotation objects can publish to or receive from
 named channels through `sendName` and `receiveName` params. Standalone routing
 objects are not part of the builtin object model.

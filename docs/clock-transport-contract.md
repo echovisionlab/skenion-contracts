@@ -1,12 +1,12 @@
 # Clock / Transport Contract Baseline v0
 
 This document fixes the first machine-facing clock boundary. It complements the
-Skenion Docs [Clock And Transport model](https://github.com/echovisionlab/skenion-docs/blob/main/docs/model/clock-and-transport.md).
+skenion Docs [Clock And Transport model](https://github.com/skenion/skenion-docs/blob/main/docs/model/clock-and-transport.md).
 
 ## Contract Decisions
 
 - `clock.state` is a semantic data kind carried as `flow: "value"`.
-- Skenion does not define a user-facing global master transport.
+- skenion does not define a user-facing global master transport.
 - Runtime internals still have substrate clocks for host time, audio sample
   time, and render frame time.
 - `clock.*` objects carry musical timing, transport, phase, and sync data
