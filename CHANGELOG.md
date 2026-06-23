@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.44.0](https://github.com/skenion/skenion-contracts/compare/skenion-contracts-v0.43.0...skenion-contracts-v0.44.0) (2026-06-23)
+
+
+### Features
+
+* **contracts:** align release train contract with skenion org ([5faddf4](https://github.com/skenion/skenion-contracts/commit/5faddf4ce6cd43e77cb5e03f52cab7ac360d39d6))
+* **contracts:** use kebab-case release train manifest keys ([#129](https://github.com/skenion/skenion-contracts/issues/129)) ([d2c19eb](https://github.com/skenion/skenion-contracts/commit/d2c19eb2266ecde62605994cbbf0af4a5a93b292))
+
 ## [0.43.0](https://github.com/skenion/skenion-contracts/compare/skenion-contracts-v0.39.0...skenion-contracts-v0.43.0) (2026-06-22)
 
 
