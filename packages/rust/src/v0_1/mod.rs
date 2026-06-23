@@ -1,5 +1,6 @@
 mod audio_clock;
 mod clock;
+mod compatibility_matrix;
 mod control_message;
 mod object_text;
 mod release_train;
@@ -7,6 +8,7 @@ mod runtime_clock;
 mod shader_interface;
 mod types;
 mod validation;
+mod version;
 
 pub use audio_clock::{
     AudioClockBridgeDiagnosticSeverityV01, AudioClockBridgeDiagnosticV01,
@@ -23,6 +25,7 @@ pub use clock::{
     apply_midi_clock_message_v01, midi_clock_snapshot_to_clock_state_v01,
     parse_midi_clock_message_v01,
 };
+pub use compatibility_matrix::*;
 pub use control_message::{ControlAtomV01, ControlMessageV01};
 pub use object_text::{
     ObjectTextAtomV01, ObjectTextDiagnosticSeverityV01, ObjectTextDiagnosticV01,
@@ -59,4 +62,9 @@ pub use validation::{
     validate_runtime_collaboration_presence_envelope,
     validate_runtime_collaboration_selection_envelope, validate_runtime_operation_envelope,
     validate_runtime_session_event, validate_runtime_session_info_response,
+};
+pub use version::{
+    CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
+    derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
+    satisfies_v0_compatibility_range,
 };

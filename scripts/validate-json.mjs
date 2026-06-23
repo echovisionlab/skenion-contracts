@@ -855,6 +855,142 @@ function validateReleaseTrainManifestSemantics(file, manifest) {
   }
 }
 
+function parseV0Semver(version) {
+  const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(version);
+  if (!match || Number(match[1]) !== 0) {
+    return undefined;
+  }
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3])
+  };
+}
+
+function deriveV0CompatibilityLine(version) {
+  const parsed = parseV0Semver(version);
+  return parsed ? `0.${parsed.minor}` : undefined;
+}
+
+function deriveV0CompatibilityRange(version) {
+  const parsed = parseV0Semver(version);
+  return parsed ? `>=0.${parsed.minor}.0 <0.${parsed.minor + 1}.0` : undefined;
+}
+
+function satisfiesV0CompatibilityRange(version, range) {
+  const parsed = parseV0Semver(version);
+  const rangeMatch = /^>=0\.([0-9]+)\.0 <0\.([0-9]+)\.0$/.exec(range);
+  if (!parsed || !rangeMatch) {
+    return false;
+  }
+  const lowerMinor = Number(rangeMatch[1]);
+  const upperMinor = Number(rangeMatch[2]);
+  return upperMinor === lowerMinor + 1 && parsed.minor === lowerMinor;
+}
+
+function compatibilityMatrixArtifacts(matrix) {
+  return [
+    ...Object.values(matrix.components.runtime.assets),
+    ...matrix.components.studio["web-assets"],
+    ...Object.values(matrix.components.studio["desktop-assets"]),
+    ...Object.values(matrix.components.studio["runtime-sidecars"])
+  ];
+}
+
+function validateCompatibilityMatrixTargetMap(file, artifacts, label, expectedKind) {
+  for (const target of releaseTrainTargetsV01) {
+    const artifact = artifacts[target];
+    if (artifact.target !== target) {
+      fail(file, `${label} ${target} target must match map key`);
+    }
+    if (artifact.kind !== expectedKind) {
+      fail(file, `${label} ${target} kind must be ${expectedKind}`);
+    }
+  }
+}
+
+function validateCompatibilityMatrixSemantics(file, matrix) {
+  const contractsNpm = matrix.components.contracts.npm;
+  const contractsCrate = matrix.components.contracts.crate;
+  const expectedLine = deriveV0CompatibilityLine(contractsNpm.version);
+  const expectedRange = deriveV0CompatibilityRange(contractsNpm.version);
+
+  if (contractsNpm.ecosystem !== "npm" || contractsNpm.name !== "@skenion/contracts") {
+    fail(file, "components.contracts.npm must identify @skenion/contracts on npm");
+  }
+  if (contractsCrate.ecosystem !== "crates.io" || contractsCrate.name !== "skenion-contracts") {
+    fail(file, "components.contracts.crate must identify skenion-contracts on crates.io");
+  }
+  if (matrix.components.sdk.npm.ecosystem !== "npm" || matrix.components.sdk.npm.name !== "@skenion/sdk") {
+    fail(file, "components.sdk.npm must identify @skenion/sdk on npm");
+  }
+  if (matrix["contracts-line"] !== expectedLine) {
+    fail(file, `contracts-line must be ${expectedLine}`);
+  }
+  if (matrix["contracts-range"] !== expectedRange) {
+    fail(file, `contracts-range must be ${expectedRange}`);
+  }
+  if (deriveV0CompatibilityLine(contractsCrate.version) !== expectedLine) {
+    fail(file, "contracts npm and crate versions must be on the same v0 compatibility line");
+  }
+  if (!satisfiesV0CompatibilityRange(contractsNpm.version, matrix.components.sdk["supported-contracts-range"])) {
+    fail(file, "sdk supported-contracts-range must include the Contracts package version");
+  }
+  if (!satisfiesV0CompatibilityRange(contractsNpm.version, matrix["contracts-range"])) {
+    fail(file, "contracts-range must include the Contracts package version");
+  }
+
+  validateCompatibilityMatrixTargetMap(file, matrix.components.runtime.assets, "runtime asset", "runtime-binary");
+  validateCompatibilityMatrixTargetMap(file, matrix.components.studio["desktop-assets"], "studio desktop asset", "studio-desktop-package");
+  validateCompatibilityMatrixTargetMap(file, matrix.components.studio["runtime-sidecars"], "studio runtime sidecar", "studio-runtime-sidecar");
+  for (const artifact of matrix.components.studio["web-assets"]) {
+    if (artifact.kind !== "studio-web-bundle") {
+      fail(file, `studio web asset ${artifact.id} kind must be studio-web-bundle`);
+    }
+  }
+
+  const artifactsById = new Map();
+  for (const artifact of compatibilityMatrixArtifacts(matrix)) {
+    if (artifactsById.has(artifact.id)) {
+      fail(file, `duplicate compatibility matrix artifact id: ${artifact.id}`);
+    }
+    artifactsById.set(artifact.id, artifact);
+  }
+  for (const [artifactId, expectedChecksum] of Object.entries(matrix.verification["expected-checksums"])) {
+    const artifact = artifactsById.get(artifactId);
+    if (artifact === undefined) {
+      fail(file, `verification expected-checksums references unknown artifact ${artifactId}`);
+    }
+    if (artifact.checksum.value === null && expectedChecksum.value !== null) {
+      fail(file, `artifact ${artifactId} checksum value must be populated before verification can pin it`);
+    }
+    if (
+      artifact.checksum.value !== null &&
+      expectedChecksum.value !== null &&
+      artifact.checksum.value !== expectedChecksum.value
+    ) {
+      fail(file, `verification checksum value must match artifact ${artifactId}`);
+    }
+  }
+
+  if (matrix.promotion.state === "promoted") {
+    if (matrix.components.examples["conformance-status"] !== "passed") {
+      fail(file, "promoted compatibility matrix requires passed examples conformance");
+    }
+    if (!matrix.components.docs.manual["pages-deployed"]) {
+      fail(file, "promoted compatibility matrix requires deployed docs Pages manual");
+    }
+    if (!matrix.components.docs.manual["promoted-latest"]) {
+      fail(file, "promoted compatibility matrix requires docs manual promoted latest");
+    }
+    for (const artifact of compatibilityMatrixArtifacts(matrix)) {
+      if (artifact.checksum.value === null) {
+        fail(file, `promoted compatibility matrix requires checksum for artifact ${artifact.id}`);
+      }
+    }
+  }
+}
+
 function selectValidator(file, document, validators) {
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.1.0") {
     return validators.graphV01;
@@ -916,8 +1052,11 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.release-train" && document["schema-version"] === "0.1.0") {
     return validators.releaseTrainV01;
   }
+  if (document.schema === "skenion.compatibility-matrix" && document["schema-version"] === "0.1.0") {
+    return validators.compatibilityMatrixV01;
+  }
 
-  const schemaVersion = document.schema === "skenion.release-train"
+  const schemaVersion = document.schema === "skenion.release-train" || document.schema === "skenion.compatibility-matrix"
     ? document["schema-version"]
     : document.schemaVersion;
   fail(file, `no validator for schema ${document.schema ?? "<missing>"} ${schemaVersion ?? "<missing>"}`);
@@ -980,6 +1119,9 @@ function validateDocument(file, document, validators) {
   }
   if (document.schema === "skenion.release-train" && document["schema-version"] === "0.1.0") {
     validateReleaseTrainManifestSemantics(file, document);
+  }
+  if (document.schema === "skenion.compatibility-matrix" && document["schema-version"] === "0.1.0") {
+    validateCompatibilityMatrixSemantics(file, document);
   }
 }
 
@@ -1180,6 +1322,7 @@ function isExplicitlyLoadedSchemaFile(file) {
   const normalized = normalizedPath(file);
   return [
     "json-schema/extension/v0.1/",
+    "json-schema/compatibility-matrix/v0.1/",
     "json-schema/graph/v0.1/",
     "json-schema/node/v0.1/",
     "json-schema/project/v0.1/",
@@ -1207,6 +1350,7 @@ const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
 const extensionManifestV01Schema = await readJson("json-schema/extension/v0.1/extension-manifest.schema.json");
 const releaseTrainV01Schema = await readJson("json-schema/release-train/v0.1/release-train.schema.json");
+const compatibilityMatrixV01Schema = await readJson("json-schema/compatibility-matrix/v0.1/compatibility-matrix.schema.json");
 ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
 ajv.addSchema(runtimeOperationV0Schema);
@@ -1216,6 +1360,7 @@ ajv.addSchema(projectV01Schema);
 ajv.addSchema(runtimeSessionV0Schema);
 ajv.addSchema(runtimeCollaborationV0Schema);
 ajv.addSchema(releaseTrainV01Schema);
+ajv.addSchema(compatibilityMatrixV01Schema);
 const validators = {
   graphV01: ajv.compile(graphV01Schema),
   graphFragmentV01: ajv.compile(graphFragmentV01Schema),
@@ -1276,7 +1421,8 @@ const validators = {
     await readJson("json-schema/object-text/v0.1/parse-result.schema.json")
   ),
   extensionManifestV01: ajv.compile(extensionManifestV01Schema),
-  releaseTrainV01: ajv.compile(releaseTrainV01Schema)
+  releaseTrainV01: ajv.compile(releaseTrainV01Schema),
+  compatibilityMatrixV01: ajv.compile(compatibilityMatrixV01Schema)
 };
 
 const fixtureFiles = (await walk("fixtures"))

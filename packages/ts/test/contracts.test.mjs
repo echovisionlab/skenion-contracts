@@ -4,12 +4,18 @@ import path from "node:path";
 import test from "node:test";
 import {
   builtinNodeDefinitionsV01,
+  CONTRACTS_COMPATIBILITY_LINE,
+  CONTRACTS_COMPATIBILITY_RANGE,
+  CONTRACTS_PACKAGE_VERSION,
   getBuiltinNodeDefinition,
   getBuiltinNodeHelp,
   getBuiltinNodeHelpGraph,
+  compatibilityMatrixV01Schema,
   createDefaultViewStateForGraph,
   derivePatchContractV01,
   derivePatchContractsV01,
+  deriveV0CompatibilityLine,
+  deriveV0CompatibilityRange,
   controlMessageV01Schema,
   extensionManifestV01Schema,
   graphFragmentV01Schema,
@@ -51,6 +57,7 @@ import {
   validateProjectDocument,
   validateProjectDocumentV01,
   validateReleaseTrainManifestV01,
+  validateCompatibilityMatrixV01,
   validateRuntimeCollaborationEventEnvelope,
   validateRuntimeCollaborationOperationBatch,
   validateRuntimeCollaborationOperationBatchResult,
@@ -64,12 +71,15 @@ import {
   validateViewState,
   validateViewStateV01,
   validateShaderInterface,
+  isCompatibilityMatrixV01,
+  isSameV0CompatibilityLine,
   isPasteGraphFragmentRequest,
   isPasteGraphFragmentResponse,
   isReleaseTrainManifestV01,
   isRuntimeOperationEnvelope,
   isRuntimeSessionEvent,
-  isRuntimeSessionInfoResponse
+  isRuntimeSessionInfoResponse,
+  satisfiesV0CompatibilityRange
 } from "../dist/index.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
@@ -86,6 +96,8 @@ async function fixtureFiles(relativePath) {
     .map((fileName) => path.join(relativePath, fileName));
 }
 
+const tsPackageJson = await readJson("packages/ts/package.json");
+
 test("exports active schema contracts", () => {
   assert.ok(builtinNodeDefinitionsV01.length > 0);
   assert.equal(getBuiltinNodeDefinition("render.output")?.id, "render.output");
@@ -99,6 +111,11 @@ test("exports active schema contracts", () => {
   assert.equal(extensionManifestV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(releaseTrainV01Schema.properties.schema.const, "skenion.release-train");
   assert.equal(releaseTrainV01Schema.properties["schema-version"].const, "0.1.0");
+  assert.equal(compatibilityMatrixV01Schema.properties.schema.const, "skenion.compatibility-matrix");
+  assert.equal(compatibilityMatrixV01Schema.properties["schema-version"].const, "0.1.0");
+  assert.equal(CONTRACTS_PACKAGE_VERSION, tsPackageJson.version);
+  assert.equal(CONTRACTS_COMPATIBILITY_LINE, deriveV0CompatibilityLine(CONTRACTS_PACKAGE_VERSION));
+  assert.equal(CONTRACTS_COMPATIBILITY_RANGE, deriveV0CompatibilityRange(CONTRACTS_PACKAGE_VERSION));
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(runtimeSessionV0Schema.properties.schema.const, "skenion.runtime.session.info");
   assert.equal(
@@ -114,6 +131,119 @@ test("exports active schema contracts", () => {
     "render-pipeline",
     "render-frame"
   ]);
+});
+
+test("derives v0 compatibility lines and ranges", () => {
+  assert.equal(deriveV0CompatibilityLine("0.44.0"), "0.44");
+  assert.equal(deriveV0CompatibilityLine("0.44.33"), "0.44");
+  assert.equal(deriveV0CompatibilityRange("0.44.33"), ">=0.44.0 <0.45.0");
+  assert.equal(isSameV0CompatibilityLine("0.44.0", "0.44.33"), true);
+  assert.equal(isSameV0CompatibilityLine("0.44.33", "0.45.0"), false);
+  assert.equal(satisfiesV0CompatibilityRange("0.44.33", ">=0.44.0 <0.45.0"), true);
+  assert.equal(satisfiesV0CompatibilityRange("0.45.0", ">=0.44.0 <0.45.0"), false);
+  assert.equal(satisfiesV0CompatibilityRange("not-semver", ">=0.44.0 <0.45.0"), false);
+  assert.equal(satisfiesV0CompatibilityRange("0.44.0", "not-range"), false);
+  assert.equal(satisfiesV0CompatibilityRange("0.44.0", ">=0.44.0 <0.46.0"), false);
+  assert.equal(satisfiesV0CompatibilityRange("0.44.0", ">=1.44.0 <1.45.0"), false);
+  assert.equal(isSameV0CompatibilityLine("not-semver", "0.44.0"), false);
+  assert.throws(() => deriveV0CompatibilityLine("not-semver"), /SemVer/);
+  assert.throws(() => deriveV0CompatibilityLine("1.0.0"), /v0 SemVer/);
+  assert.throws(() => deriveV0CompatibilityRange("1.0.0"), /v0 SemVer/);
+});
+
+test("validates compatibility matrix fixtures and semantic failures", async () => {
+  const matrix = await readJson(
+    "fixtures/compatibility-matrix/v0.1/valid/unequal-component-versions.compatibility-matrix.json"
+  );
+  const result = validateCompatibilityMatrixV01(matrix);
+
+  assert.equal(result.ok, true);
+  assert.equal(isCompatibilityMatrixV01(matrix), true);
+  assert.equal(matrix.schema, "skenion.compatibility-matrix");
+  assert.equal(matrix["contracts-line"], "0.45");
+  assert.equal(matrix.components.contracts.npm.version, "0.45.0");
+  assert.equal(matrix.components.runtime.version, "0.44.2");
+  assert.equal(matrix.components.sdk.npm.version, "0.17.0");
+  assert.equal(matrix.components.studio.version, "0.44.5");
+  assert.equal(matrix.components.docs.manual.version, "0.44.1");
+
+  const incompatibleSdkRange = structuredClone(matrix);
+  incompatibleSdkRange.components.sdk["supported-contracts-range"] = ">=0.44.0 <0.45.0";
+  const incompatibleSdkRangeResult = validateCompatibilityMatrixV01(incompatibleSdkRange);
+  assert.equal(incompatibleSdkRangeResult.ok, false);
+  assert.match(incompatibleSdkRangeResult.errors.join("\n"), /supported-contracts-range/);
+
+  const missingRuntimeArtifact = structuredClone(matrix);
+  delete missingRuntimeArtifact.components.runtime.assets["aarch64-apple-darwin"];
+  const missingRuntimeArtifactResult = validateCompatibilityMatrixV01(missingRuntimeArtifact);
+  assert.equal(missingRuntimeArtifactResult.ok, false);
+  assert.match(missingRuntimeArtifactResult.errors.join("\n"), /aarch64-apple-darwin/);
+
+  const checksumMismatch = structuredClone(matrix);
+  checksumMismatch.verification["expected-checksums"]["runtime-aarch64-apple-darwin"].value =
+    "0000000000000000000000000000000000000000000000000000000000000000";
+  const checksumMismatchResult = validateCompatibilityMatrixV01(checksumMismatch);
+  assert.equal(checksumMismatchResult.ok, false);
+  assert.match(checksumMismatchResult.errors.join("\n"), /checksum value must match/);
+
+  const unpromotedDocs = structuredClone(matrix);
+  unpromotedDocs.components.docs.manual["pages-deployed"] = false;
+  unpromotedDocs.components.docs.manual["promoted-latest"] = false;
+  const unpromotedDocsResult = validateCompatibilityMatrixV01(unpromotedDocs);
+  assert.equal(unpromotedDocsResult.ok, false);
+  assert.match(unpromotedDocsResult.errors.join("\n"), /docs Pages manual|docs manual promoted latest/);
+
+  const identityAndLineFailures = structuredClone(matrix);
+  identityAndLineFailures.components.contracts.npm.name = "@skenion/not-contracts";
+  identityAndLineFailures.components.contracts.crate.name = "not-skenion-contracts";
+  identityAndLineFailures.components.sdk.npm.name = "@skenion/not-sdk";
+  identityAndLineFailures["contracts-line"] = "0.44";
+  identityAndLineFailures["contracts-range"] = ">=0.44.0 <0.45.0";
+  identityAndLineFailures.components.contracts.crate.version = "0.44.33";
+  const identityAndLineFailuresResult = validateCompatibilityMatrixV01(identityAndLineFailures);
+  assert.equal(identityAndLineFailuresResult.ok, false);
+  assert.match(
+    identityAndLineFailuresResult.errors.join("\n"),
+    /@skenion\/contracts|skenion-contracts|@skenion\/sdk|contracts-line|contracts-range|same v0 compatibility line/
+  );
+
+  const invalidContractsVersion = structuredClone(matrix);
+  invalidContractsVersion.components.contracts.npm.version = "1.0.0";
+  const invalidContractsVersionResult = validateCompatibilityMatrixV01(invalidContractsVersion);
+  assert.equal(invalidContractsVersionResult.ok, false);
+  assert.match(invalidContractsVersionResult.errors.join("\n"), /v0 SemVer/);
+
+  const artifactShapeFailures = structuredClone(matrix);
+  artifactShapeFailures.components.runtime.assets["aarch64-apple-darwin"].target = "x86_64-apple-darwin";
+  artifactShapeFailures.components.runtime.assets["x86_64-apple-darwin"].kind = "studio-web-bundle";
+  artifactShapeFailures.components.studio["web-assets"][0].kind = "runtime-binary";
+  artifactShapeFailures.components.studio["desktop-assets"]["x86_64-apple-darwin"].id =
+    "runtime-aarch64-apple-darwin";
+  const artifactShapeFailuresResult = validateCompatibilityMatrixV01(artifactShapeFailures);
+  assert.equal(artifactShapeFailuresResult.ok, false);
+  assert.match(
+    artifactShapeFailuresResult.errors.join("\n"),
+    /target must match map key|kind must be|studio-web-bundle|duplicate compatibility matrix artifact id/
+  );
+
+  const checksumReferenceFailures = structuredClone(matrix);
+  checksumReferenceFailures.verification["expected-checksums"]["unknown-artifact"] = {
+    algorithm: "sha256",
+    value: "abababababababababababababababababababababababababababababababab"
+  };
+  checksumReferenceFailures.components.runtime.assets["aarch64-apple-darwin"].checksum.value = null;
+  const checksumReferenceFailuresResult = validateCompatibilityMatrixV01(checksumReferenceFailures);
+  assert.equal(checksumReferenceFailuresResult.ok, false);
+  assert.match(
+    checksumReferenceFailuresResult.errors.join("\n"),
+    /unknown artifact|must be populated|requires checksum/
+  );
+
+  const unpassedExamples = structuredClone(matrix);
+  unpassedExamples.components.examples["conformance-status"] = "pending";
+  const unpassedExamplesResult = validateCompatibilityMatrixV01(unpassedExamples);
+  assert.equal(unpassedExamplesResult.ok, false);
+  assert.match(unpassedExamplesResult.errors.join("\n"), /examples conformance/);
 });
 
 test("validates release train manifest fixtures", async () => {

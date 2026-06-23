@@ -1987,6 +1987,136 @@ export interface ReleaseTrainManifestV01 {
   "release-gates": ReleaseTrainGatesV01;
 }
 
+export type CompatibilityMatrixTargetV01 = ReleaseTrainTargetV01;
+export type CompatibilityMatrixArtifactKindV01 = ReleaseTrainArtifactKindV01;
+export type CompatibilityMatrixPackageEcosystemV01 = ReleaseTrainPackageEcosystemV01;
+export type CompatibilityMatrixChecksumAlgorithmV01 = ReleaseTrainChecksumAlgorithmV01;
+export type CompatibilityMatrixPromotionStateV01 = "draft" | "candidate" | "promoted" | "rejected";
+export type CompatibilityMatrixConformanceStatusV01 = "pending" | "passed" | "failed";
+
+export interface CompatibilityMatrixChecksumV01 {
+  algorithm: CompatibilityMatrixChecksumAlgorithmV01;
+  value: string | null;
+}
+
+export interface CompatibilityMatrixGithubReleaseAssetSourceV01 {
+  kind: "github-release-asset";
+  repository: string;
+  tag: string;
+  "asset-name": string;
+  url?: string | null;
+}
+
+export interface CompatibilityMatrixArtifactV01 {
+  id: string;
+  target: CompatibilityMatrixTargetV01;
+  kind: CompatibilityMatrixArtifactKindV01;
+  name: string;
+  version: string;
+  source: CompatibilityMatrixGithubReleaseAssetSourceV01;
+  checksum: CompatibilityMatrixChecksumV01;
+  "size-bytes"?: number | null;
+}
+
+export type CompatibilityMatrixTargetArtifactMapV01 = Record<
+  CompatibilityMatrixTargetV01,
+  CompatibilityMatrixArtifactV01
+>;
+
+export interface CompatibilityMatrixRegistryPackageV01 {
+  ecosystem: CompatibilityMatrixPackageEcosystemV01;
+  name: string;
+  version: string;
+  tag: string;
+  commit: string;
+  url?: string | null;
+}
+
+export type CompatibilityMatrixProtocolBaselinesV01 = ReleaseTrainProtocolBaselinesV01;
+
+export interface CompatibilityMatrixCapabilitySetV01 {
+  runtime: string[];
+  studio: string[];
+  marketplace: string[];
+  docs: string[];
+}
+
+export interface CompatibilityMatrixContractsComponentV01 {
+  npm: CompatibilityMatrixRegistryPackageV01;
+  crate: CompatibilityMatrixRegistryPackageV01;
+}
+
+export interface CompatibilityMatrixRuntimeComponentV01 {
+  version: string;
+  assets: CompatibilityMatrixTargetArtifactMapV01;
+}
+
+export interface CompatibilityMatrixSdkComponentV01 {
+  npm: CompatibilityMatrixRegistryPackageV01;
+  "supported-contracts-range": string;
+}
+
+export interface CompatibilityMatrixStudioComponentV01 {
+  version: string;
+  "web-assets": CompatibilityMatrixArtifactV01[];
+  "desktop-assets": CompatibilityMatrixTargetArtifactMapV01;
+  "runtime-sidecars": CompatibilityMatrixTargetArtifactMapV01;
+}
+
+export interface CompatibilityMatrixExamplesComponentV01 {
+  repository: string;
+  ref: string;
+  commit: string;
+  "conformance-status": CompatibilityMatrixConformanceStatusV01;
+  "evidence-url"?: string;
+}
+
+export interface CompatibilityMatrixManualComponentV01 {
+  version: string;
+  path: string;
+  "pages-url": string;
+  "pages-deployed": boolean;
+  "promoted-latest": boolean;
+  "evidence-url"?: string;
+}
+
+export interface CompatibilityMatrixDocsComponentV01 {
+  manual: CompatibilityMatrixManualComponentV01;
+}
+
+export interface CompatibilityMatrixComponentsV01 {
+  contracts: CompatibilityMatrixContractsComponentV01;
+  runtime: CompatibilityMatrixRuntimeComponentV01;
+  sdk: CompatibilityMatrixSdkComponentV01;
+  studio: CompatibilityMatrixStudioComponentV01;
+  examples: CompatibilityMatrixExamplesComponentV01;
+  docs: CompatibilityMatrixDocsComponentV01;
+}
+
+export interface CompatibilityMatrixVerificationV01 {
+  "expected-checksums": Record<string, CompatibilityMatrixChecksumV01>;
+}
+
+export interface CompatibilityMatrixPromotionV01 {
+  state: CompatibilityMatrixPromotionStateV01;
+  "promoted-at"?: string;
+  "promoted-by"?: string;
+  "evidence-url"?: string;
+}
+
+export interface CompatibilityMatrixV01 {
+  schema: "skenion.compatibility-matrix";
+  "schema-version": "0.1.0";
+  "matrix-id": string;
+  "contracts-line": string;
+  "contracts-range": string;
+  "protocol-baselines": CompatibilityMatrixProtocolBaselinesV01;
+  capabilities: CompatibilityMatrixCapabilitySetV01;
+  components: CompatibilityMatrixComponentsV01;
+  verification: CompatibilityMatrixVerificationV01;
+  promotion: CompatibilityMatrixPromotionV01;
+}
+
 export interface ValidationSuccess<T> {
   ok: true;
   value: T;

@@ -1,7 +1,8 @@
 use skenion_contracts::{
     AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01, AudioClockDomainV01,
-    ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, DataFlowV01, DataTypeV01,
-    ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
+    CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
+    ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, CompatibilityMatrixV01,
+    DataFlowV01, DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
     GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
     MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
     ObjectTextParseResultV01, ProjectDocumentV01, ReleaseTrainManifestV01, ReleaseTrainTargetV01,
@@ -11,10 +12,12 @@ use skenion_contracts::{
     RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
     RuntimeSessionInfoResponse, StringOrStringsV01, analyze_graph_document_v01,
     analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
-    derive_patch_contract_v01, derive_patch_contracts_v01, midi_clock_snapshot_to_clock_state_v01,
-    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
-    type_label_v01, validate_extension_manifest_v01, validate_graph_document_v01,
-    validate_graph_fragment_v01, validate_node_definition_v01,
+    derive_patch_contract_v01, derive_patch_contracts_v01, derive_v0_compatibility_line,
+    derive_v0_compatibility_range, is_same_v0_compatibility_line,
+    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
+    plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
+    validate_compatibility_matrix_v01, validate_extension_manifest_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
     validate_object_text_parse_result_v01, validate_project_document_v01,
     validate_release_train_manifest_v01, validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch_result,
@@ -111,6 +114,112 @@ fn parses_public_release_train_manifest_contract() {
             .expect("runtime artifact should exist")
             .version,
         "0.43.0"
+    );
+}
+
+#[test]
+fn derives_public_contracts_compatibility_line_helpers() {
+    let expected_line = derive_v0_compatibility_line(CONTRACTS_PACKAGE_VERSION)
+        .expect("package version should define a v0 compatibility line");
+    let expected_range = derive_v0_compatibility_range(CONTRACTS_PACKAGE_VERSION)
+        .expect("package version should define a v0 compatibility range");
+
+    assert_eq!(CONTRACTS_PACKAGE_VERSION, env!("CARGO_PKG_VERSION"));
+    assert_eq!(CONTRACTS_COMPATIBILITY_LINE, expected_line);
+    assert_eq!(CONTRACTS_COMPATIBILITY_RANGE, expected_range);
+    assert_eq!(
+        derive_v0_compatibility_line("0.44.0").as_deref(),
+        Some("0.44")
+    );
+    assert_eq!(
+        derive_v0_compatibility_range("0.44.33").as_deref(),
+        Some(">=0.44.0 <0.45.0")
+    );
+    assert!(is_same_v0_compatibility_line("0.44.0", "0.44.33"));
+    assert!(!is_same_v0_compatibility_line("0.44.33", "0.45.0"));
+    assert!(satisfies_v0_compatibility_range(
+        "0.44.33",
+        ">=0.44.0 <0.45.0"
+    ));
+    assert!(!satisfies_v0_compatibility_range(
+        "0.45.0",
+        ">=0.44.0 <0.45.0"
+    ));
+}
+
+#[test]
+fn parses_public_compatibility_matrix_contract() {
+    let matrix: CompatibilityMatrixV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/compatibility-matrix/v0.1/valid/unequal-component-versions.compatibility-matrix.json"
+    ))
+    .expect("compatibility matrix should parse");
+
+    validate_compatibility_matrix_v01(&matrix).expect("compatibility matrix should validate");
+    assert_eq!(matrix.schema, "skenion.compatibility-matrix");
+    assert_eq!(matrix.contracts_line, "0.45");
+    assert_eq!(matrix.components.contracts.npm.version, "0.45.0");
+    assert_eq!(matrix.components.runtime.version, "0.44.2");
+    assert_eq!(matrix.components.sdk.npm.version, "0.17.0");
+    assert_eq!(matrix.components.studio.version, "0.44.5");
+    assert_eq!(matrix.components.docs.manual.version, "0.44.1");
+
+    let mut incompatible_sdk_range = serde_json::to_value(&matrix).expect("matrix to value");
+    incompatible_sdk_range["components"]["sdk"]["supported-contracts-range"] =
+        serde_json::json!(">=0.44.0 <0.45.0");
+    let incompatible_sdk_range: CompatibilityMatrixV01 =
+        serde_json::from_value(incompatible_sdk_range).expect("matrix should parse");
+    let incompatible_sdk_range_report = validate_compatibility_matrix_v01(&incompatible_sdk_range)
+        .expect_err("incompatible SDK range should fail");
+    assert!(
+        incompatible_sdk_range_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("supported-contracts-range"))
+    );
+
+    let mut missing_runtime_artifact = serde_json::to_value(&matrix).expect("matrix to value");
+    missing_runtime_artifact["components"]["runtime"]["assets"]
+        .as_object_mut()
+        .expect("runtime assets should be an object")
+        .remove("aarch64-apple-darwin");
+    let missing_runtime_artifact: CompatibilityMatrixV01 =
+        serde_json::from_value(missing_runtime_artifact).expect("matrix should parse");
+    let missing_runtime_artifact_report =
+        validate_compatibility_matrix_v01(&missing_runtime_artifact)
+            .expect_err("missing runtime artifact should fail");
+    assert!(
+        missing_runtime_artifact_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("aarch64-apple-darwin"))
+    );
+
+    let mut checksum_mismatch = serde_json::to_value(&matrix).expect("matrix to value");
+    checksum_mismatch["verification"]["expected-checksums"]["runtime-aarch64-apple-darwin"]["value"] =
+        serde_json::json!("0000000000000000000000000000000000000000000000000000000000000000");
+    let checksum_mismatch: CompatibilityMatrixV01 =
+        serde_json::from_value(checksum_mismatch).expect("matrix should parse");
+    let checksum_mismatch_report = validate_compatibility_matrix_v01(&checksum_mismatch)
+        .expect_err("checksum mismatch should fail");
+    assert!(
+        checksum_mismatch_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("checksum value must match"))
+    );
+
+    let mut unpromoted_docs = serde_json::to_value(&matrix).expect("matrix to value");
+    unpromoted_docs["components"]["docs"]["manual"]["pages-deployed"] = serde_json::json!(false);
+    unpromoted_docs["components"]["docs"]["manual"]["promoted-latest"] = serde_json::json!(false);
+    let unpromoted_docs: CompatibilityMatrixV01 =
+        serde_json::from_value(unpromoted_docs).expect("matrix should parse");
+    let unpromoted_docs_report = validate_compatibility_matrix_v01(&unpromoted_docs)
+        .expect_err("unpromoted docs should fail");
+    assert!(
+        unpromoted_docs_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("docs Pages manual"))
     );
 }
 

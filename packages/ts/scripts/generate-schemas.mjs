@@ -9,6 +9,18 @@ async function readSchema(relativePath) {
   return JSON.parse(await readFile(path.join(repoRoot, relativePath), "utf8"));
 }
 
+async function readPackageJson() {
+  return JSON.parse(await readFile(path.join(packageRoot, "package.json"), "utf8"));
+}
+
+function readPackageVersion(packageJson) {
+  if (typeof packageJson.version !== "string" || packageJson.version.length === 0) {
+    throw new TypeError("packages/ts/package.json must define a non-empty version");
+  }
+  return packageJson.version;
+}
+
+const contractsPackageVersion = readPackageVersion(await readPackageJson());
 const graphV01Schema = await readSchema("json-schema/graph/v0.1/graph.schema.json");
 const graphFragmentV01Schema = await readSchema("json-schema/graph/v0.1/fragment.schema.json");
 const viewStateV01Schema = await readSchema("json-schema/view/v0.1/view-state.schema.json");
@@ -38,6 +50,9 @@ const extensionManifestV01Schema = await readSchema(
 );
 const releaseTrainV01Schema = await readSchema(
   "json-schema/release-train/v0.1/release-train.schema.json"
+);
+const compatibilityMatrixV01Schema = await readSchema(
+  "json-schema/compatibility-matrix/v0.1/compatibility-matrix.schema.json"
 );
 
 await mkdir(generatedDir, { recursive: true });
@@ -73,6 +88,17 @@ await writeFile(
     `export const extensionManifestV01Schema = ${JSON.stringify(extensionManifestV01Schema, null, 2)} as const;`,
     "",
     `export const releaseTrainV01Schema = ${JSON.stringify(releaseTrainV01Schema, null, 2)} as const;`,
+    "",
+    `export const compatibilityMatrixV01Schema = ${JSON.stringify(compatibilityMatrixV01Schema, null, 2)} as const;`,
+    ""
+  ].join("\n")
+);
+await writeFile(
+  path.join(generatedDir, "package-version.ts"),
+  [
+    "/* This file is generated from packages/ts/package.json. */",
+    "",
+    `export const contractsPackageVersion = ${JSON.stringify(contractsPackageVersion)};`,
     ""
   ].join("\n")
 );

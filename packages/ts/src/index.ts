@@ -15,6 +15,7 @@ export type {
   BuiltinNodeHelpV01
 } from "./builtins.generated.js";
 export {
+  compatibilityMatrixV01Schema,
   controlMessageV01Schema,
   extensionManifestV01Schema,
   graphFragmentV01Schema,
@@ -58,6 +59,30 @@ export type {
   ClockStateV01,
   ClockTimeSignatureV01,
   ColorRepresentationV01,
+  CompatibilityMatrixArtifactKindV01,
+  CompatibilityMatrixArtifactV01,
+  CompatibilityMatrixCapabilitySetV01,
+  CompatibilityMatrixChecksumAlgorithmV01,
+  CompatibilityMatrixChecksumV01,
+  CompatibilityMatrixComponentsV01,
+  CompatibilityMatrixConformanceStatusV01,
+  CompatibilityMatrixContractsComponentV01,
+  CompatibilityMatrixDocsComponentV01,
+  CompatibilityMatrixExamplesComponentV01,
+  CompatibilityMatrixGithubReleaseAssetSourceV01,
+  CompatibilityMatrixManualComponentV01,
+  CompatibilityMatrixPackageEcosystemV01,
+  CompatibilityMatrixPromotionStateV01,
+  CompatibilityMatrixPromotionV01,
+  CompatibilityMatrixProtocolBaselinesV01,
+  CompatibilityMatrixRegistryPackageV01,
+  CompatibilityMatrixRuntimeComponentV01,
+  CompatibilityMatrixSdkComponentV01,
+  CompatibilityMatrixStudioComponentV01,
+  CompatibilityMatrixTargetArtifactMapV01,
+  CompatibilityMatrixTargetV01,
+  CompatibilityMatrixV01,
+  CompatibilityMatrixVerificationV01,
   ControlAtomV01,
   ControlMessageV01,
   ConversionDiagnosticV01,
@@ -350,9 +375,19 @@ export {
 } from "./project.js";
 export { analyzeShaderInterfaceV01, shaderInterfaceToPortsV01 } from "./shaderInterface.js";
 export {
+  CONTRACTS_COMPATIBILITY_LINE,
+  CONTRACTS_COMPATIBILITY_RANGE,
+  CONTRACTS_PACKAGE_VERSION,
+  deriveV0CompatibilityLine,
+  deriveV0CompatibilityRange,
+  isSameV0CompatibilityLine,
+  satisfiesV0CompatibilityRange
+} from "./version.js";
+export {
   analyzeGraphFragmentV01,
   analyzeGraphDocumentV01,
   validateExtensionManifestV01,
+  validateCompatibilityMatrixV01,
   validateGraphFragmentV01,
   validateGraphDocument,
   validateGraphDocumentV01,
@@ -379,6 +414,7 @@ export {
   validateViewState,
   validateViewStateV01,
   validateShaderInterface,
+  isCompatibilityMatrixV01,
   isReleaseTrainManifestV01
 } from "./validate.js";
 export {

@@ -1,0 +1,446 @@
+{
+  "schema": "skenion.compatibility-matrix",
+  "schema-version": "0.1.0",
+  "matrix-id": "M06.9-0.45.0",
+  "contracts-line": "0.45",
+  "contracts-range": ">=0.45.0 <0.46.0",
+  "protocol-baselines": {
+    "graph": "0.1",
+    "project": "0.1",
+    "node": "0.1",
+    "extension": "0.1",
+    "runtime-http": "v0",
+    "runtime-collaboration": "v0"
+  },
+  "capabilities": {
+    "runtime": [
+      "session-addressing",
+      "event-replay",
+      "server-authoritative-ot"
+    ],
+    "studio": [
+      "graph-editor",
+      "desktop-shell-tauri",
+      "runtime-sidecars"
+    ],
+    "marketplace": [
+      "package-discovery",
+      "package-install",
+      "package-update"
+    ],
+    "docs": [
+      "versioned-manual",
+      "pages-deployment"
+    ]
+  },
+  "components": {
+    "contracts": {
+      "npm": {
+        "ecosystem": "npm",
+        "name": "@skenion/contracts",
+        "version": "0.45.0",
+        "tag": "skenion-contracts-v0.45.0",
+        "commit": "1111111"
+      },
+      "crate": {
+        "ecosystem": "crates.io",
+        "name": "skenion-contracts",
+        "version": "0.45.0",
+        "tag": "skenion-contracts-v0.45.0",
+        "commit": "1111111"
+      }
+    },
+    "runtime": {
+      "version": "0.44.2",
+      "assets": {
+        "aarch64-apple-darwin": {
+          "id": "runtime-aarch64-apple-darwin",
+          "target": "aarch64-apple-darwin",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-aarch64-apple-darwin.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-runtime",
+            "tag": "skenion-runtime-v0.44.2",
+            "asset-name": "skenion-runtime-aarch64-apple-darwin.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "size-bytes": 101
+        },
+        "x86_64-apple-darwin": {
+          "id": "runtime-x86_64-apple-darwin",
+          "target": "x86_64-apple-darwin",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-x86_64-apple-darwin.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-runtime",
+            "tag": "skenion-runtime-v0.44.2",
+            "asset-name": "skenion-runtime-x86_64-apple-darwin.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "size-bytes": 102
+        },
+        "x86_64-pc-windows-msvc": {
+          "id": "runtime-x86_64-pc-windows-msvc",
+          "target": "x86_64-pc-windows-msvc",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-x86_64-pc-windows-msvc.zip",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-runtime",
+            "tag": "skenion-runtime-v0.44.2",
+            "asset-name": "skenion-runtime-x86_64-pc-windows-msvc.zip"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          },
+          "size-bytes": 103
+        },
+        "aarch64-pc-windows-msvc": {
+          "id": "runtime-aarch64-pc-windows-msvc",
+          "target": "aarch64-pc-windows-msvc",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-aarch64-pc-windows-msvc.zip",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-runtime",
+            "tag": "skenion-runtime-v0.44.2",
+            "asset-name": "skenion-runtime-aarch64-pc-windows-msvc.zip"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "size-bytes": 104
+        },
+        "x86_64-unknown-linux-gnu": {
+          "id": "runtime-x86_64-unknown-linux-gnu",
+          "target": "x86_64-unknown-linux-gnu",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-x86_64-unknown-linux-gnu.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-runtime",
+            "tag": "skenion-runtime-v0.44.2",
+            "asset-name": "skenion-runtime-x86_64-unknown-linux-gnu.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          },
+          "size-bytes": 105
+        },
+        "aarch64-unknown-linux-gnu": {
+          "id": "runtime-aarch64-unknown-linux-gnu",
+          "target": "aarch64-unknown-linux-gnu",
+          "kind": "runtime-binary",
+          "name": "skenion-runtime-aarch64-unknown-linux-gnu.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-runtime",
+            "tag": "skenion-runtime-v0.44.2",
+            "asset-name": "skenion-runtime-aarch64-unknown-linux-gnu.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          },
+          "size-bytes": 106
+        }
+      }
+    },
+    "sdk": {
+      "npm": {
+        "ecosystem": "npm",
+        "name": "@skenion/sdk",
+        "version": "0.17.0",
+        "tag": "skenion-sdk-v0.17.0",
+        "commit": "2222222"
+      },
+      "supported-contracts-range": ">=0.45.0 <0.46.0"
+    },
+    "studio": {
+      "version": "0.44.5",
+      "web-assets": [
+        {
+          "id": "studio-web-bundle",
+          "target": "aarch64-apple-darwin",
+          "kind": "studio-web-bundle",
+          "name": "skenion-studio-web-bundle-v0.44.5.tar.gz",
+          "version": "0.44.5",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-studio-web-bundle-v0.44.5.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "9999999999999999999999999999999999999999999999999999999999999999"
+          },
+          "size-bytes": 201
+        }
+      ],
+      "desktop-assets": {
+        "aarch64-apple-darwin": {
+          "id": "studio-desktop-aarch64-apple-darwin",
+          "target": "aarch64-apple-darwin",
+          "kind": "studio-desktop-package",
+          "name": "skenion-studio-aarch64-apple-darwin.tar.gz",
+          "version": "0.44.5",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-studio-aarch64-apple-darwin.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        },
+        "x86_64-apple-darwin": {
+          "id": "studio-desktop-x86_64-apple-darwin",
+          "target": "x86_64-apple-darwin",
+          "kind": "studio-desktop-package",
+          "name": "skenion-studio-x86_64-apple-darwin.tar.gz",
+          "version": "0.44.5",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-studio-x86_64-apple-darwin.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "7777777777777777777777777777777777777777777777777777777777777777"
+          }
+        },
+        "x86_64-pc-windows-msvc": {
+          "id": "studio-desktop-x86_64-pc-windows-msvc",
+          "target": "x86_64-pc-windows-msvc",
+          "kind": "studio-desktop-package",
+          "name": "skenion-studio-x86_64-pc-windows-msvc.zip",
+          "version": "0.44.5",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-studio-x86_64-pc-windows-msvc.zip"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "6666666666666666666666666666666666666666666666666666666666666666"
+          }
+        },
+        "aarch64-pc-windows-msvc": {
+          "id": "studio-desktop-aarch64-pc-windows-msvc",
+          "target": "aarch64-pc-windows-msvc",
+          "kind": "studio-desktop-package",
+          "name": "skenion-studio-aarch64-pc-windows-msvc.zip",
+          "version": "0.44.5",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-studio-aarch64-pc-windows-msvc.zip"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "5555555555555555555555555555555555555555555555555555555555555555"
+          }
+        },
+        "x86_64-unknown-linux-gnu": {
+          "id": "studio-desktop-x86_64-unknown-linux-gnu",
+          "target": "x86_64-unknown-linux-gnu",
+          "kind": "studio-desktop-package",
+          "name": "skenion-studio-x86_64-unknown-linux-gnu.tar.gz",
+          "version": "0.44.5",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-studio-x86_64-unknown-linux-gnu.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "4444444444444444444444444444444444444444444444444444444444444444"
+          }
+        },
+        "aarch64-unknown-linux-gnu": {
+          "id": "studio-desktop-aarch64-unknown-linux-gnu",
+          "target": "aarch64-unknown-linux-gnu",
+          "kind": "studio-desktop-package",
+          "name": "skenion-studio-aarch64-unknown-linux-gnu.tar.gz",
+          "version": "0.44.5",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-studio-aarch64-unknown-linux-gnu.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        }
+      },
+      "runtime-sidecars": {
+        "aarch64-apple-darwin": {
+          "id": "studio-sidecar-aarch64-apple-darwin",
+          "target": "aarch64-apple-darwin",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-aarch64-apple-darwin.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-runtime-sidecar-aarch64-apple-darwin.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "1212121212121212121212121212121212121212121212121212121212121212"
+          }
+        },
+        "x86_64-apple-darwin": {
+          "id": "studio-sidecar-x86_64-apple-darwin",
+          "target": "x86_64-apple-darwin",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-x86_64-apple-darwin.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-runtime-sidecar-x86_64-apple-darwin.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "2323232323232323232323232323232323232323232323232323232323232323"
+          }
+        },
+        "x86_64-pc-windows-msvc": {
+          "id": "studio-sidecar-x86_64-pc-windows-msvc",
+          "target": "x86_64-pc-windows-msvc",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-x86_64-pc-windows-msvc.zip",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-runtime-sidecar-x86_64-pc-windows-msvc.zip"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "3434343434343434343434343434343434343434343434343434343434343434"
+          }
+        },
+        "aarch64-pc-windows-msvc": {
+          "id": "studio-sidecar-aarch64-pc-windows-msvc",
+          "target": "aarch64-pc-windows-msvc",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-aarch64-pc-windows-msvc.zip",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-runtime-sidecar-aarch64-pc-windows-msvc.zip"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "4545454545454545454545454545454545454545454545454545454545454545"
+          }
+        },
+        "x86_64-unknown-linux-gnu": {
+          "id": "studio-sidecar-x86_64-unknown-linux-gnu",
+          "target": "x86_64-unknown-linux-gnu",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-x86_64-unknown-linux-gnu.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-runtime-sidecar-x86_64-unknown-linux-gnu.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "5656565656565656565656565656565656565656565656565656565656565656"
+          }
+        },
+        "aarch64-unknown-linux-gnu": {
+          "id": "studio-sidecar-aarch64-unknown-linux-gnu",
+          "target": "aarch64-unknown-linux-gnu",
+          "kind": "studio-runtime-sidecar",
+          "name": "skenion-runtime-sidecar-aarch64-unknown-linux-gnu.tar.gz",
+          "version": "0.44.2",
+          "source": {
+            "kind": "github-release-asset",
+            "repository": "skenion/skenion-studio",
+            "tag": "skenion-studio-v0.44.5",
+            "asset-name": "skenion-runtime-sidecar-aarch64-unknown-linux-gnu.tar.gz"
+          },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "6767676767676767676767676767676767676767676767676767676767676767"
+          }
+        }
+      }
+    },
+    "examples": {
+      "repository": "skenion/skenion-examples",
+      "ref": "skenion-examples-v0.44.1",
+      "commit": "3333333",
+      "conformance-status": "passed",
+      "evidence-url": "https://github.com/skenion/skenion-examples/actions/runs/1"
+    },
+    "docs": {
+      "manual": {
+        "version": "0.44.1",
+        "path": "/manual/0.44/",
+        "pages-url": "https://skenion.github.io/skenion-docs/manual/0.44/",
+        "pages-deployed": true,
+        "promoted-latest": true,
+        "evidence-url": "https://github.com/skenion/skenion-docs/actions/runs/1"
+      }
+    }
+  },
+  "verification": {
+    "expected-checksums": {
+      "runtime-aarch64-apple-darwin": {
+        "algorithm": "sha256",
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "studio-web-bundle": {
+        "algorithm": "sha256",
+        "value": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "studio-sidecar-aarch64-apple-darwin": {
+        "algorithm": "sha256",
+        "value": "1212121212121212121212121212121212121212121212121212121212121212"
+      }
+    }
+  },
+  "promotion": {
+    "state": "promoted",
+    "promoted-at": "2026-06-23T00:00:00.000Z",
+    "promoted-by": "release-train"
+  }
+}

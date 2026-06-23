@@ -70,6 +70,12 @@ libraries. Publishing still runs only through GitHub Actions release workflows.
 Release train registry gates are limited to `contractsNpm`, `contractsCrate`,
 and `sdkNpm`; Runtime and Studio are tracked through release artifacts.
 
+Contracts packages also export canonical v0 compatibility-line helpers and the
+`skenion.compatibility-matrix` schema/types/validators. The compatibility
+matrix records unequal component versions, Runtime/Studio artifacts and
+checksums, SDK-supported Contracts ranges, examples conformance, Docs Manual
+Pages evidence, protocol baselines, capabilities, and promotion state.
+
 ## License And Credit
 
 This repository is licensed under the Apache License, Version 2.0.

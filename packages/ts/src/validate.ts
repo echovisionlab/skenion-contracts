@@ -5,6 +5,7 @@ import type {
   ValidateFunction
 } from "ajv/dist/2020.js";
 import {
+  compatibilityMatrixV01Schema,
   controlMessageV01Schema,
   extensionManifestV01Schema,
   graphFragmentV01Schema,
@@ -21,6 +22,10 @@ import {
 } from "./generated/schemas.js";
 import { derivePatchContractV01 } from "./project.js";
 import type {
+  CompatibilityMatrixArtifactV01,
+  CompatibilityMatrixChecksumV01,
+  CompatibilityMatrixTargetArtifactMapV01,
+  CompatibilityMatrixV01,
   ControlMessageV01,
   EdgeSpecV01,
   ExtensionManifestV01,
@@ -63,6 +68,11 @@ import type {
   ValidationResult,
   ViewStateV01
 } from "./types.js";
+import {
+  deriveV0CompatibilityLine,
+  deriveV0CompatibilityRange,
+  satisfiesV0CompatibilityRange
+} from "./version.js";
 
 const allowedNodePermissions = new Set<string>();
 
@@ -145,6 +155,7 @@ const patchDefinitionV01Validator = ajv.compile({
 });
 const extensionManifestV01Validator = ajv.compile(extensionManifestV01Schema);
 const releaseTrainV01Validator = ajv.compile(releaseTrainV01Schema);
+const compatibilityMatrixV01Validator = ajv.compile(compatibilityMatrixV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
   return errors.map((error) => {
@@ -1215,6 +1226,178 @@ export function validateReleaseTrainManifestV01(
 
 export function isReleaseTrainManifestV01(document: unknown): document is ReleaseTrainManifestV01 {
   return validateReleaseTrainManifestV01(document).ok;
+}
+
+function compatibilityMatrixArtifacts(matrix: CompatibilityMatrixV01): CompatibilityMatrixArtifactV01[] {
+  return [
+    ...Object.values(matrix.components.runtime.assets),
+    ...matrix.components.studio["web-assets"],
+    ...Object.values(matrix.components.studio["desktop-assets"]),
+    ...Object.values(matrix.components.studio["runtime-sidecars"])
+  ];
+}
+
+function compatibilityMatrixArtifactMap(matrix: CompatibilityMatrixV01): Map<string, CompatibilityMatrixArtifactV01> {
+  return new Map(compatibilityMatrixArtifacts(matrix).map((artifact) => [artifact.id, artifact]));
+}
+
+function compatibilityMatrixTargetMapErrors(
+  artifacts: CompatibilityMatrixTargetArtifactMapV01,
+  label: string,
+  expectedKind: CompatibilityMatrixArtifactV01["kind"]
+): string[] {
+  const errors: string[] = [];
+
+  for (const target of releaseTrainTargetsV01) {
+    const artifact = artifacts[target];
+    if (artifact.target !== target) {
+      errors.push(`${label} ${target} target must match map key`);
+    }
+    if (artifact.kind !== expectedKind) {
+      errors.push(`${label} ${target} kind must be ${expectedKind}`);
+    }
+  }
+
+  return errors;
+}
+
+function compatibilityMatrixChecksumErrors(
+  artifactById: Map<string, CompatibilityMatrixArtifactV01>,
+  expectedChecksums: Record<string, CompatibilityMatrixChecksumV01>
+): string[] {
+  const errors: string[] = [];
+
+  for (const [artifactId, expectedChecksum] of Object.entries(expectedChecksums)) {
+    const artifact = artifactById.get(artifactId);
+    if (artifact === undefined) {
+      errors.push(`verification expected-checksums references unknown artifact ${artifactId}`);
+      continue;
+    }
+    if (artifact.checksum.value === null && expectedChecksum.value !== null) {
+      errors.push(`artifact ${artifactId} checksum value must be populated before verification can pin it`);
+    }
+    if (
+      artifact.checksum.value !== null &&
+      expectedChecksum.value !== null &&
+      artifact.checksum.value !== expectedChecksum.value
+    ) {
+      errors.push(`verification checksum value must match artifact ${artifactId}`);
+    }
+  }
+
+  return errors;
+}
+
+function validateCompatibilityMatrixV01Semantics(matrix: CompatibilityMatrixV01): string[] {
+  const errors: string[] = [];
+  const contractsNpm = matrix.components.contracts.npm;
+  const contractsCrate = matrix.components.contracts.crate;
+
+  if (contractsNpm.ecosystem !== "npm" || contractsNpm.name !== "@skenion/contracts") {
+    errors.push("components.contracts.npm must identify @skenion/contracts on npm");
+  }
+  if (contractsCrate.ecosystem !== "crates.io" || contractsCrate.name !== "skenion-contracts") {
+    errors.push("components.contracts.crate must identify skenion-contracts on crates.io");
+  }
+  if (matrix.components.sdk.npm.ecosystem !== "npm" || matrix.components.sdk.npm.name !== "@skenion/sdk") {
+    errors.push("components.sdk.npm must identify @skenion/sdk on npm");
+  }
+
+  try {
+    const expectedLine = deriveV0CompatibilityLine(contractsNpm.version);
+    const expectedRange = deriveV0CompatibilityRange(contractsNpm.version);
+    if (matrix["contracts-line"] !== expectedLine) {
+      errors.push(`contracts-line must be ${expectedLine}`);
+    }
+    if (matrix["contracts-range"] !== expectedRange) {
+      errors.push(`contracts-range must be ${expectedRange}`);
+    }
+    if (deriveV0CompatibilityLine(contractsCrate.version) !== expectedLine) {
+      errors.push("contracts npm and crate versions must be on the same v0 compatibility line");
+    }
+  } catch (error) {
+    errors.push((error as Error).message);
+  }
+
+  if (!satisfiesV0CompatibilityRange(contractsNpm.version, matrix.components.sdk["supported-contracts-range"])) {
+    errors.push("sdk supported-contracts-range must include the Contracts package version");
+  }
+  if (!satisfiesV0CompatibilityRange(contractsNpm.version, matrix["contracts-range"])) {
+    errors.push("contracts-range must include the Contracts package version");
+  }
+
+  errors.push(
+    ...compatibilityMatrixTargetMapErrors(
+      matrix.components.runtime.assets,
+      "runtime asset",
+      "runtime-binary"
+    ),
+    ...compatibilityMatrixTargetMapErrors(
+      matrix.components.studio["desktop-assets"],
+      "studio desktop asset",
+      "studio-desktop-package"
+    ),
+    ...compatibilityMatrixTargetMapErrors(
+      matrix.components.studio["runtime-sidecars"],
+      "studio runtime sidecar",
+      "studio-runtime-sidecar"
+    )
+  );
+
+  for (const artifact of matrix.components.studio["web-assets"]) {
+    if (artifact.kind !== "studio-web-bundle") {
+      errors.push(`studio web asset ${artifact.id} kind must be studio-web-bundle`);
+    }
+  }
+
+  const artifactIds = compatibilityMatrixArtifacts(matrix).map((artifact) => artifact.id);
+  errors.push(...duplicateErrors(artifactIds, "compatibility matrix artifact id"));
+  const artifactById = compatibilityMatrixArtifactMap(matrix);
+  errors.push(
+    ...compatibilityMatrixChecksumErrors(
+      artifactById,
+      matrix.verification["expected-checksums"]
+    )
+  );
+
+  if (matrix.promotion.state === "promoted") {
+    if (matrix.components.examples["conformance-status"] !== "passed") {
+      errors.push("promoted compatibility matrix requires passed examples conformance");
+    }
+    if (!matrix.components.docs.manual["pages-deployed"]) {
+      errors.push("promoted compatibility matrix requires deployed docs Pages manual");
+    }
+    if (!matrix.components.docs.manual["promoted-latest"]) {
+      errors.push("promoted compatibility matrix requires docs manual promoted latest");
+    }
+    for (const artifact of compatibilityMatrixArtifacts(matrix)) {
+      if (artifact.checksum.value === null) {
+        errors.push(`promoted compatibility matrix requires checksum for artifact ${artifact.id}`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+export function validateCompatibilityMatrixV01(
+  document: unknown
+): ValidationResult<CompatibilityMatrixV01> {
+  if (!compatibilityMatrixV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(compatibilityMatrixV01Validator.errors as ErrorObject[]) };
+  }
+
+  const matrix = document as CompatibilityMatrixV01;
+  const errors = validateCompatibilityMatrixV01Semantics(matrix);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: matrix };
+}
+
+export function isCompatibilityMatrixV01(document: unknown): document is CompatibilityMatrixV01 {
+  return validateCompatibilityMatrixV01(document).ok;
 }
 
 export function validateShaderInterface(document: unknown): ValidationResult<ShaderInterfaceV01> {
