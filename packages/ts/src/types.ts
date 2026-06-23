@@ -1745,7 +1745,7 @@ export interface ReleaseTrainGithubReleaseAssetSourceV01 {
   kind: "github-release-asset";
   repository: string;
   tag: string;
-  assetName: string;
+  "asset-name": string;
   url: string | null;
 }
 
@@ -1761,13 +1761,13 @@ export type ReleaseTrainArtifactSourceV01 =
 export interface ReleaseTrainArtifactV01 {
   id: string;
   target: ReleaseTrainTargetV01;
-  supportTier: ReleaseTrainSupportTierV01;
+  "support-tier": ReleaseTrainSupportTierV01;
   kind: ReleaseTrainTargetArtifactKindV01;
   name: string;
   version: string;
   source: ReleaseTrainArtifactSourceV01;
   checksum: ReleaseTrainChecksumV01;
-  sizeBytes: number | null;
+  "size-bytes": number | null;
 }
 
 export type ReleaseTrainTargetArtifactMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainArtifactV01>;
@@ -1779,7 +1779,7 @@ export interface ReleaseTrainStudioWebBundleArtifactV01 {
   version: string;
   source: ReleaseTrainArtifactSourceV01;
   checksum: ReleaseTrainChecksumV01;
-  sizeBytes: number | null;
+  "size-bytes": number | null;
 }
 
 export type ReleaseTrainReleaseArtifactV01 =
@@ -1791,49 +1791,49 @@ export interface ReleaseTrainProtocolBaselinesV01 {
   project: "0.1";
   node: "0.1";
   extension: "0.1";
-  runtimeHttp: "v0";
-  runtimeCollaboration: "v0";
+  "runtime-http": "v0";
+  "runtime-collaboration": "v0";
 }
 
 export type ReleaseTrainConnectionProfileV01 = "local-managed" | "local-shared" | "remote";
 
 export interface ReleaseTrainRuntimeCapabilitySetV01 {
-  sessionAddressing: true;
-  eventReplay: true;
-  multiWindow: true;
-  connectionProfiles: ReleaseTrainConnectionProfileV01[];
+  "session-addressing": true;
+  "event-replay": true;
+  "multi-window": true;
+  "connection-profiles": ReleaseTrainConnectionProfileV01[];
   collaboration: "server-authoritative-ot";
-  operationLog: true;
-  ioDiscovery: "raw-descriptor";
-  authPolicy: "deferred";
+  "operation-log": true;
+  "io-discovery": "raw-descriptor";
+  "auth-policy": "deferred";
 }
 
 export interface ReleaseTrainStudioCapabilitySetV01 {
-  graphEditor: true;
-  patchLibrary: true;
+  "graph-editor": true;
+  "patch-library": true;
   subpatches: true;
-  livingHelp: true;
-  graphClipboard: true;
-  desktopShell: "tauri";
-  connectionProfiles: ReleaseTrainConnectionProfileV01[];
+  "living-help": true;
+  "graph-clipboard": true;
+  "desktop-shell": "tauri";
+  "connection-profiles": ReleaseTrainConnectionProfileV01[];
 }
 
 export interface ReleaseTrainMarketplaceCapabilitySetV01 {
-  packageDiscovery: true;
-  packageInstall: true;
-  packageUpdate: true;
-  extensionPackages: true;
+  "package-discovery": true;
+  "package-install": true;
+  "package-update": true;
+  "extension-packages": true;
 }
 
 export interface ReleaseTrainManualCapabilitySetV01 {
-  versionedPaths: true;
-  pagesDeployment: true;
-  latestPromotionRequiresMatrix: true;
-  patchReleasesUseMajorMinorPath: true;
+  "versioned-paths": true;
+  "pages-deployment": true;
+  "latest-promotion-requires-matrix": true;
+  "patch-releases-use-major-minor-path": true;
 }
 
 export interface ReleaseTrainCapabilitySetV01 {
-  protocolSurfaces: ReleaseTrainProtocolBaselinesV01;
+  "protocol-surfaces": ReleaseTrainProtocolBaselinesV01;
   runtime: ReleaseTrainRuntimeCapabilitySetV01;
   studio: ReleaseTrainStudioCapabilitySetV01;
   marketplace: ReleaseTrainMarketplaceCapabilitySetV01;
@@ -1855,8 +1855,8 @@ export interface ReleaseTrainSdkComponentV01 {
 
 export interface ReleaseTrainStudioComponentV01 {
   "web-bundle": ReleaseTrainStudioWebBundleArtifactV01;
-  desktopPackages: ReleaseTrainTargetArtifactMapV01;
-  runtimeSidecars: ReleaseTrainTargetArtifactMapV01;
+  "desktop-packages": ReleaseTrainTargetArtifactMapV01;
+  "runtime-sidecars": ReleaseTrainTargetArtifactMapV01;
 }
 
 export interface ReleaseTrainExamplesComponentV01 {
@@ -1869,7 +1869,7 @@ export interface ReleaseTrainExamplesComponentV01 {
 export interface ReleaseTrainManualComponentV01 {
   version: string;
   path: string;
-  pagesUrl: string;
+  "pages-url": string;
 }
 
 export interface ReleaseTrainDocsComponentV01 {
@@ -1890,13 +1890,13 @@ export interface ReleaseTrainRegistryPackageGateV01 {
   status: ReleaseTrainGateStatusV01;
   required: boolean;
   package: ReleaseTrainRegistryPackageV01;
-  evidenceUrl?: string;
+  "evidence-url"?: string;
 }
 
 export interface ReleaseTrainRegistryPackageGatesV01 {
-  contractsNpm: ReleaseTrainRegistryPackageGateV01;
-  contractsCrate: ReleaseTrainRegistryPackageGateV01;
-  sdkNpm: ReleaseTrainRegistryPackageGateV01;
+  "contracts-npm": ReleaseTrainRegistryPackageGateV01;
+  "contracts-crate": ReleaseTrainRegistryPackageGateV01;
+  "sdk-npm": ReleaseTrainRegistryPackageGateV01;
 }
 
 export interface ReleaseTrainArtifactCollectionGateV01 {
@@ -1905,8 +1905,8 @@ export interface ReleaseTrainArtifactCollectionGateV01 {
   required: boolean;
   repository: string;
   tag: string;
-  artifactIds: string[];
-  evidenceUrl?: string;
+  "artifact-ids": string[];
+  "evidence-url"?: string;
 }
 
 export interface ReleaseTrainGithubReleaseAssetGatesV01 {
@@ -1918,9 +1918,9 @@ export interface ReleaseTrainChecksumGateV01 {
   id: string;
   status: ReleaseTrainGateStatusV01;
   required: boolean;
-  artifactIds: string[];
-  expectedChecksums?: Record<string, ReleaseTrainChecksumV01>;
-  evidenceUrl?: string;
+  "artifact-ids": string[];
+  "expected-checksums"?: Record<string, ReleaseTrainChecksumV01>;
+  "evidence-url"?: string;
 }
 
 export interface ReleaseTrainRuntimeSmokeGateV01 {
@@ -1928,8 +1928,8 @@ export interface ReleaseTrainRuntimeSmokeGateV01 {
   status: ReleaseTrainGateStatusV01;
   required: boolean;
   target: ReleaseTrainTargetV01;
-  artifactId: string;
-  evidenceUrl?: string;
+  "artifact-id": string;
+  "evidence-url"?: string;
 }
 
 export type ReleaseTrainRuntimeSmokeGateMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainRuntimeSmokeGateV01>;
@@ -1939,9 +1939,9 @@ export interface ReleaseTrainStudioPackageSmokeGateV01 {
   status: ReleaseTrainGateStatusV01;
   required: boolean;
   target: ReleaseTrainTargetV01;
-  desktopPackageArtifactId: string;
-  runtimeSidecarArtifactId: string;
-  evidenceUrl?: string;
+  "desktop-package-artifact-id": string;
+  "runtime-sidecar-artifact-id": string;
+  "evidence-url"?: string;
 }
 
 export type ReleaseTrainStudioPackageSmokeGateMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainStudioPackageSmokeGateV01>;
@@ -1953,38 +1953,38 @@ export interface ReleaseTrainExamplesConformanceGateV01 {
   repository: string;
   ref: string;
   version: string;
-  evidenceUrl?: string;
+  "evidence-url"?: string;
 }
 
 export interface ReleaseTrainDocsPagesDeploymentGateV01 {
   id: string;
   status: ReleaseTrainGateStatusV01;
   required: boolean;
-  manualVersion: string;
-  manualPath: string;
-  pagesUrl: string;
-  evidenceUrl?: string;
+  "manual-version": string;
+  "manual-path": string;
+  "pages-url": string;
+  "evidence-url"?: string;
 }
 
 export interface ReleaseTrainGatesV01 {
-  registryPackages: ReleaseTrainRegistryPackageGatesV01;
-  githubReleaseAssets: ReleaseTrainGithubReleaseAssetGatesV01;
-  checksumVerification: ReleaseTrainChecksumGateV01;
-  runtimeSmoke: ReleaseTrainRuntimeSmokeGateMapV01;
-  studioPackageSmoke: ReleaseTrainStudioPackageSmokeGateMapV01;
-  examplesConformance: ReleaseTrainExamplesConformanceGateV01;
-  docsPagesDeployment: ReleaseTrainDocsPagesDeploymentGateV01;
+  "registry-packages": ReleaseTrainRegistryPackageGatesV01;
+  "github-release-assets": ReleaseTrainGithubReleaseAssetGatesV01;
+  "checksum-verification": ReleaseTrainChecksumGateV01;
+  "runtime-smoke": ReleaseTrainRuntimeSmokeGateMapV01;
+  "studio-package-smoke": ReleaseTrainStudioPackageSmokeGateMapV01;
+  "examples-conformance": ReleaseTrainExamplesConformanceGateV01;
+  "docs-pages-deployment": ReleaseTrainDocsPagesDeploymentGateV01;
 }
 
 export interface ReleaseTrainManifestV01 {
   schema: "skenion.release-train";
-  schemaVersion: "0.1.0";
-  trainId: string;
-  trainVersion: string;
-  protocolBaselines: ReleaseTrainProtocolBaselinesV01;
-  capabilitySet: ReleaseTrainCapabilitySetV01;
+  "schema-version": "0.1.0";
+  "train-id": string;
+  "train-version": string;
+  "protocol-baselines": ReleaseTrainProtocolBaselinesV01;
+  "capability-set": ReleaseTrainCapabilitySetV01;
   components: ReleaseTrainComponentsV01;
-  releaseGates: ReleaseTrainGatesV01;
+  "release-gates": ReleaseTrainGatesV01;
 }
 
 export interface ValidationSuccess<T> {
