@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.0](https://github.com/skenion/skenion-contracts/compare/skenion-contracts-v0.45.0...skenion-contracts-v0.46.0) (2026-06-24)
+
+
+### Features
+
+* **contracts:** add package foundation contracts ([#143](https://github.com/skenion/skenion-contracts/issues/143)) ([5ecf2e4](https://github.com/skenion/skenion-contracts/commit/5ecf2e42228ae075ed6f2d35275b88c3aa99df96))
+
 ## [0.45.0](https://github.com/skenion/skenion-contracts/compare/skenion-contracts-v0.44.0...skenion-contracts-v0.45.0) (2026-06-23)
 
 
