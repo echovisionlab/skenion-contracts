@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.1](https://github.com/skenion/skenion-contracts/compare/v0.46.0...v0.46.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **contracts:** clarify package registry dto boundary ([702441d](https://github.com/skenion/skenion-contracts/commit/702441dd89b7007fdbdbae30b3c48432fb531391))
+
 ## [0.46.0](https://github.com/skenion/skenion-contracts/compare/skenion-contracts-v0.45.0...skenion-contracts-v0.46.0) (2026-06-24)
 
 
