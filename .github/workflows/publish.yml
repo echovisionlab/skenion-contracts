@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag to publish, for example skenion-contracts-v0.35.0
+        description: Release tag to publish, for example v0.46.0
         required: true
         type: string
 
@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: publish-${{ github.event.release.tag_name }}
+  group: publish-${{ github.event.release.tag_name || inputs.tag }}
   cancel-in-progress: false
 
 env:
@@ -24,14 +24,34 @@ env:
   RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
 
 jobs:
+  validate-tag:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - id: tag
+        shell: bash
+        run: |
+          tag="${RELEASE_TAG}"
+          if [[ ! "${tag}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "release tag ${tag} must be canonical vX.Y.Z" >&2
+            exit 1
+          fi
+
+          version="${tag#v}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
   npm:
     name: npm
     runs-on: ubuntu-latest
-    if: startsWith(github.event.release.tag_name || inputs.tag, 'skenion-contracts-v')
+    needs: validate-tag
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ needs.validate-tag.outputs.tag }}
       - uses: pnpm/action-setup@v6
         with:
           version: 10.12.4
@@ -47,10 +67,10 @@ jobs:
           version="$(node -p "require('./packages/ts/package.json').version")"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - run: |
-          expected="skenion-contracts-v${{ steps.package.outputs.version }}"
-          actual="${RELEASE_TAG}"
+          expected="${{ needs.validate-tag.outputs.version }}"
+          actual="${{ steps.package.outputs.version }}"
           if [[ "${actual}" != "${expected}" ]]; then
-            echo "release tag ${actual} does not match package version ${expected}" >&2
+            echo "npm package version ${actual} does not match release tag v${expected}" >&2
             exit 1
           fi
       - id: registry
@@ -69,11 +89,11 @@ jobs:
   crates:
     name: crates.io
     runs-on: ubuntu-latest
-    if: startsWith(github.event.release.tag_name || inputs.tag, 'skenion-contracts-v')
+    needs: validate-tag
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ needs.validate-tag.outputs.tag }}
       - run: rustup show
       - uses: Swatinem/rust-cache@v2
         with:
@@ -85,10 +105,10 @@ jobs:
           version="$(cargo metadata --manifest-path packages/rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - run: |
-          expected="skenion-contracts-v${{ steps.package.outputs.version }}"
-          actual="${RELEASE_TAG}"
+          expected="${{ needs.validate-tag.outputs.version }}"
+          actual="${{ steps.package.outputs.version }}"
           if [[ "${actual}" != "${expected}" ]]; then
-            echo "release tag ${actual} does not match crate version ${expected}" >&2
+            echo "Rust crate version ${actual} does not match release tag v${expected}" >&2
             exit 1
           fi
       - id: registry
