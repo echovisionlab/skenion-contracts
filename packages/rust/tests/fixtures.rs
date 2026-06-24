@@ -15,10 +15,10 @@ use skenion_contracts::{
     RuntimeSessionInfoResponse, analyze_graph_document_v01, analyze_graph_fragment_v01,
     parse_object_text_v01, validate_graph_document_v01, validate_graph_fragment_v01,
     validate_node_definition_v01, validate_object_text_parse_result_v01,
-    validate_package_manifest_v01, validate_paste_graph_fragment_response,
-    validate_patch_definition_v01, validate_project_document_v01,
-    validate_release_train_manifest_v01, validate_runtime_collaboration_event_envelope,
-    validate_runtime_collaboration_operation_batch,
+    validate_package_manifest_v01, validate_package_root_v01,
+    validate_paste_graph_fragment_response, validate_patch_definition_v01,
+    validate_project_document_v01, validate_release_train_manifest_v01,
+    validate_runtime_collaboration_event_envelope, validate_runtime_collaboration_operation_batch,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
     validate_runtime_collaboration_operation_result,
@@ -1815,6 +1815,125 @@ fn validates_package_manifest_fixtures() {
     }
 }
 
+fn package_manifest_fixture(relative: &str) -> PackageManifestV01 {
+    let file = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative);
+    serde_json::from_slice(&fs::read(&file).expect("package fixture should be readable"))
+        .expect("package fixture should parse")
+}
+
+fn assert_package_manifest_error(
+    mutate: impl FnOnce(&mut PackageManifestV01),
+    expected_message: &str,
+) {
+    let mut manifest = package_manifest_fixture(
+        "../../fixtures/package/v0.1/valid/patch-only.skenion.package.json",
+    );
+    mutate(&mut manifest);
+    let report = validate_package_manifest_v01(&manifest)
+        .expect_err("mutated package manifest should fail validation");
+    assert!(
+        report.to_string().contains(expected_message),
+        "expected error containing {expected_message:?}, got {report}"
+    );
+}
+
+#[test]
+fn validates_package_manifest_semantic_branches() {
+    assert_package_manifest_error(
+        |manifest| manifest.schema = "skenion.extension.manifest".to_owned(),
+        "expected schema skenion.package.manifest",
+    );
+    assert_package_manifest_error(
+        |manifest| manifest.schema_version = "0.2.0".to_owned(),
+        "expected schemaVersion 0.1.0",
+    );
+    assert_package_manifest_error(
+        |manifest| manifest.id.clear(),
+        "package id must not be empty",
+    );
+    assert_package_manifest_error(
+        |manifest| manifest.version.clear(),
+        "package version must not be empty",
+    );
+    assert_package_manifest_error(
+        |manifest| manifest.checksums.clear(),
+        "requires checksum references",
+    );
+    assert_package_manifest_error(
+        |manifest| manifest.evidence.clear(),
+        "requires evidence references",
+    );
+
+    assert_package_manifest_error(
+        |manifest| manifest.runtime_abi_range = Some(">=0.45.0 <0.46.0".to_owned()),
+        "patch package must not declare runtimeAbiRange",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            manifest.targets = vec![skenion_contracts::PackageTargetTripleV01::Aarch64AppleDarwin];
+        },
+        "patch package must not declare targets",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            let native_manifest = package_manifest_fixture(
+                "../../fixtures/package/v0.1/valid/mixed-native.skenion.package.json",
+            );
+            manifest.native_artifacts = native_manifest.native_artifacts;
+        },
+        "patch package must not declare nativeArtifacts",
+    );
+
+    let mut native_missing_targets = package_manifest_fixture(
+        "../../fixtures/package/v0.1/valid/mixed-native.skenion.package.json",
+    );
+    native_missing_targets.targets.clear();
+    let report = validate_package_manifest_v01(&native_missing_targets)
+        .expect_err("native package without targets should fail validation");
+    assert!(report.to_string().contains("requires targets"));
+}
+
+#[test]
+fn validates_package_root_semantic_branches() {
+    let patch_package = package_manifest_fixture(
+        "../../fixtures/package/v0.1/valid/patch-only.skenion.package.json",
+    );
+    let mut root = PackageRootDocumentV01 {
+        schema: "skenion.package.root".to_owned(),
+        schema_version: "0.1.0".to_owned(),
+        manifest_file_name: "skenion.package.json".to_owned(),
+        manifest: patch_package,
+    };
+
+    root.schema = "skenion.package.directory".to_owned();
+    let report = validate_package_root_v01(&root).expect_err("wrong root schema should fail");
+    assert!(
+        report
+            .to_string()
+            .contains("expected schema skenion.package.root")
+    );
+
+    root.schema = "skenion.package.root".to_owned();
+    root.schema_version = "0.2.0".to_owned();
+    let report = validate_package_root_v01(&root).expect_err("wrong root version should fail");
+    assert!(report.to_string().contains("expected schemaVersion 0.1.0"));
+
+    root.schema_version = "0.1.0".to_owned();
+    root.manifest_file_name = "skenion.extension.json".to_owned();
+    let report =
+        validate_package_root_v01(&root).expect_err("wrong manifest file name should fail");
+    assert!(report.to_string().contains("manifestFileName must be"));
+
+    root.manifest_file_name = "skenion.package.json".to_owned();
+    root.manifest.schema = "skenion.extension.manifest".to_owned();
+    let report = validate_package_root_v01(&root).expect_err("invalid root manifest should fail");
+    assert!(
+        report
+            .to_string()
+            .contains("manifest expected schema skenion.package.manifest")
+    );
+}
+
 #[test]
 fn validates_node_definition_fixtures() {
     for file in fixture_files("../../fixtures/node/v0.1/valid") {
@@ -1909,6 +2028,46 @@ fn validates_project_package_lock_reference_failures() {
             file.display()
         );
     }
+}
+
+#[test]
+fn validates_project_package_missing_lock_references() {
+    let file = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/project/v0.1/valid/package-lock.project.json");
+    let base_project: ProjectDocumentV01 =
+        serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+            .expect("project package lock fixture should parse");
+
+    let mut missing_dependency_lock = base_project.clone();
+    missing_dependency_lock.package_dependencies[0].lock_entry_id =
+        "missing-dependency-lock".to_owned();
+    let report = validate_project_document_v01(&missing_dependency_lock)
+        .expect_err("missing dependency lock should fail validation");
+    assert!(
+        report
+            .to_string()
+            .contains("references missing lockEntryId: missing-dependency-lock")
+    );
+
+    let mut missing_resource_lock = base_project.clone();
+    missing_resource_lock.resource_lock[0].lock_entry_id = "missing-resource-lock".to_owned();
+    let report = validate_project_document_v01(&missing_resource_lock)
+        .expect_err("missing resource lock should fail validation");
+    assert!(
+        report
+            .to_string()
+            .contains("references missing lockEntryId: missing-resource-lock")
+    );
+
+    let mut missing_provider_lock = base_project;
+    missing_provider_lock.provider_refs[0].lock_entry_id = "missing-provider-lock".to_owned();
+    let report = validate_project_document_v01(&missing_provider_lock)
+        .expect_err("missing provider lock should fail validation");
+    assert!(
+        report
+            .to_string()
+            .contains("references missing lockEntryId: missing-provider-lock")
+    );
 }
 
 #[test]
