@@ -629,304 +629,6 @@ function validateRuntimeCollaborationEventSemantics(file, event) {
   }
 }
 
-function releaseTrainPackageVersions(manifest) {
-  return [
-    ["contracts npm", manifest.components.contracts.npm],
-    ["contracts crate", manifest.components.contracts.crate],
-    ["sdk npm", manifest.components.sdk.npm]
-  ];
-}
-
-function releaseTrainRegistryPackageGatePackages(manifest) {
-  return [
-    [
-      "contracts-npm",
-      manifest["release-gates"]["registry-packages"]["contracts-npm"].package,
-      manifest.components.contracts.npm
-    ],
-    [
-      "contracts-crate",
-      manifest["release-gates"]["registry-packages"]["contracts-crate"].package,
-      manifest.components.contracts.crate
-    ],
-    [
-      "sdk-npm",
-      manifest["release-gates"]["registry-packages"]["sdk-npm"].package,
-      manifest.components.sdk.npm
-    ]
-  ];
-}
-
-function releaseTrainRegistryPackageIdentity(packageRef) {
-  return [packageRef.ecosystem, packageRef.name, packageRef.version].join("\u0000");
-}
-
-function validateReleaseTrainRegistryPackageGates(file, manifest) {
-  for (const [label, gatePackage, componentPackage] of releaseTrainRegistryPackageGatePackages(manifest)) {
-    if (releaseTrainRegistryPackageIdentity(gatePackage) !== releaseTrainRegistryPackageIdentity(componentPackage)) {
-      fail(file, `release-gates.registry-packages.${label}.package must match component package`);
-    }
-  }
-}
-
-function releaseTrainArtifacts(manifest) {
-  return [
-    ...Object.values(manifest.components.runtime.binaries),
-    ...Object.values(manifest.components.studio["desktop-packages"]),
-    ...Object.values(manifest.components.studio["runtime-sidecars"]),
-    manifest.components.studio["web-bundle"]
-  ];
-}
-
-function validateReleaseTrainArtifactVersions(file, artifacts, label, trainVersion) {
-  for (const artifact of Object.values(artifacts)) {
-    if (artifact.version !== trainVersion) {
-      fail(file, `${label} ${artifact.target} version must be ${trainVersion}`);
-    }
-  }
-}
-
-function validateReleaseTrainArtifactSourceRepositories(file, artifacts, label, expectedRepository) {
-  for (const artifact of Object.values(artifacts)) {
-    if (artifact.source.kind !== "github-release-asset") {
-      fail(file, `${label} ${artifact.target} source must be a GitHub release asset`);
-      continue;
-    }
-    if (artifact.source.repository !== expectedRepository) {
-      fail(file, `${label} ${artifact.target} repository must be ${expectedRepository}`);
-    }
-  }
-}
-
-function validateReleaseTrainDesktopArtifactNames(file, artifacts, label) {
-  for (const [target, artifact] of Object.entries(artifacts)) {
-    const expectedName = releaseTrainStudioDesktopArchiveName(target);
-    if (artifact.name !== expectedName) {
-      fail(file, `${label} ${target} name must be ${expectedName}`);
-    }
-    if (artifact.source.kind === "github-release-asset" && artifact.source["asset-name"] !== expectedName) {
-      fail(file, `${label} ${target} asset-name must be ${expectedName}`);
-    }
-  }
-}
-
-function validateReleaseTrainStudioWebBundleArtifact(file, manifest) {
-  const artifact = manifest.components.studio["web-bundle"];
-  const label = `components.studio["web-bundle"]`;
-  const expectedName = `skenion-studio-web-bundle-v${manifest["train-version"]}.tar.gz`;
-  const expectedTag = `skenion-studio-v${manifest["train-version"]}`;
-
-  if (artifact.version !== manifest["train-version"]) {
-    fail(file, `${label}.version must be ${manifest["train-version"]}`);
-  }
-  if (artifact.kind !== "studio-web-bundle") {
-    fail(file, `${label}.kind must be studio-web-bundle`);
-  }
-  if (artifact.name !== expectedName) {
-    fail(file, `${label}.name must be ${expectedName}`);
-  }
-  if (artifact.source.kind !== "github-release-asset") {
-    fail(file, `${label}.source must be a GitHub release asset`);
-  } else {
-    if (artifact.source.repository !== releaseTrainStudioRepositoryV01) {
-      fail(file, `${label}.repository must be ${releaseTrainStudioRepositoryV01}`);
-    }
-    if (artifact.source.tag !== expectedTag) {
-      fail(file, `${label}.tag must be ${expectedTag}`);
-    }
-    if (artifact.source["asset-name"] !== expectedName) {
-      fail(file, `${label}["asset-name"] must be ${expectedName}`);
-    }
-  }
-}
-
-const releaseTrainTargetsV01 = [
-  "aarch64-apple-darwin",
-  "x86_64-apple-darwin",
-  "x86_64-pc-windows-msvc",
-  "aarch64-pc-windows-msvc",
-  "x86_64-unknown-linux-gnu",
-  "aarch64-unknown-linux-gnu"
-];
-const releaseTrainRuntimeRepositoryV01 = "skenion/skenion-runtime";
-const releaseTrainStudioRepositoryV01 = "skenion/skenion-studio";
-const releaseTrainExamplesRepositoryV01 = "skenion/skenion-examples";
-const releaseTrainDocsPagesOriginV01 = "https://skenion.github.io/skenion-docs";
-
-function releaseTrainStudioDesktopArchiveName(target) {
-  const extension = target.includes("windows-msvc") ? "zip" : "tar.gz";
-  return `skenion-studio-${target}.${extension}`;
-}
-
-function releaseTrainArtifactsById(manifest) {
-  return new Map(releaseTrainArtifacts(manifest).map((artifact) => [artifact.id, artifact]));
-}
-
-function validateReleaseTrainArtifactId(file, artifactsById, label, artifactId) {
-  if (!artifactsById.has(artifactId)) {
-    fail(file, `${label} references unknown artifact ${artifactId}`);
-  }
-}
-
-function validateReleaseTrainArtifactCollectionGate(file, artifactsById, label, artifactIds) {
-  for (const artifactId of artifactIds) {
-    validateReleaseTrainArtifactId(file, artifactsById, label, artifactId);
-  }
-}
-
-function validateReleaseTrainRuntimeSmokeGates(file, manifest, artifactsById) {
-  for (const target of releaseTrainTargetsV01) {
-    const gate = manifest["release-gates"]["runtime-smoke"][target];
-    const artifact = manifest.components.runtime.binaries[target];
-    validateReleaseTrainArtifactId(file, artifactsById, "runtime-smoke", gate["artifact-id"]);
-    if (gate.target !== target) {
-      fail(file, `runtime-smoke ${target} target must match map key`);
-    }
-    if (gate["artifact-id"] !== artifact.id) {
-      fail(file, `runtime-smoke ${target} artifact-id must match runtime binary`);
-    }
-  }
-}
-
-function validateReleaseTrainStudioSmokeGates(file, manifest, artifactsById) {
-  for (const target of releaseTrainTargetsV01) {
-    const gate = manifest["release-gates"]["studio-package-smoke"][target];
-    const desktopPackage = manifest.components.studio["desktop-packages"][target];
-    const runtimeSidecar = manifest.components.studio["runtime-sidecars"][target];
-    validateReleaseTrainArtifactId(
-      file,
-      artifactsById,
-      "studio-package-smoke desktop-package-artifact-id",
-      gate["desktop-package-artifact-id"]
-    );
-    validateReleaseTrainArtifactId(
-      file,
-      artifactsById,
-      "studio-package-smoke runtime-sidecar-artifact-id",
-      gate["runtime-sidecar-artifact-id"]
-    );
-    if (gate.target !== target) {
-      fail(file, `studio-package-smoke ${target} target must match map key`);
-    }
-    if (gate["desktop-package-artifact-id"] !== desktopPackage.id) {
-      fail(file, `studio-package-smoke ${target} desktop-package-artifact-id must match desktop package`);
-    }
-    if (gate["runtime-sidecar-artifact-id"] !== runtimeSidecar.id) {
-      fail(file, `studio-package-smoke ${target} runtime-sidecar-artifact-id must match runtime sidecar`);
-    }
-  }
-}
-
-function validateReleaseTrainManifestSemantics(file, manifest) {
-  if (!manifest["train-version"].startsWith(`${manifest["train-id"]}.`)) {
-    fail(file, "train-version must match train-id major.minor");
-  }
-
-  for (const [label, packageRef] of releaseTrainPackageVersions(manifest)) {
-    if (packageRef.version !== manifest["train-version"]) {
-      fail(file, `${label} version must be ${manifest["train-version"]}`);
-    }
-  }
-  validateReleaseTrainRegistryPackageGates(file, manifest);
-
-  validateReleaseTrainArtifactVersions(file, manifest.components.runtime.binaries, "runtime binary", manifest["train-version"]);
-  validateReleaseTrainArtifactVersions(file, manifest.components.studio["desktop-packages"], "studio desktop package", manifest["train-version"]);
-  validateReleaseTrainArtifactVersions(file, manifest.components.studio["runtime-sidecars"], "studio runtime-sidecars", manifest["train-version"]);
-  validateReleaseTrainStudioWebBundleArtifact(file, manifest);
-  validateReleaseTrainArtifactSourceRepositories(file, manifest.components.runtime.binaries, "runtime binary", releaseTrainRuntimeRepositoryV01);
-  validateReleaseTrainArtifactSourceRepositories(file, manifest.components.studio["desktop-packages"], "studio desktop package", releaseTrainStudioRepositoryV01);
-  validateReleaseTrainArtifactSourceRepositories(file, manifest.components.studio["runtime-sidecars"], "studio runtime-sidecars", releaseTrainStudioRepositoryV01);
-  validateReleaseTrainDesktopArtifactNames(file, manifest.components.studio["desktop-packages"], "studio desktop package");
-
-  if (manifest.components.examples.version !== manifest["train-version"]) {
-    fail(file, `examples version must be ${manifest["train-version"]}`);
-  }
-  if (manifest.components.examples.repository !== releaseTrainExamplesRepositoryV01) {
-    fail(file, `examples repository must be ${releaseTrainExamplesRepositoryV01}`);
-  }
-  if (manifest["release-gates"]["examples-conformance"].version !== manifest.components.examples.version) {
-    fail(file, "examples conformance gate version must match examples version");
-  }
-  if (manifest["release-gates"]["examples-conformance"].repository !== manifest.components.examples.repository) {
-    fail(file, "examples conformance gate repository must match examples repository");
-  }
-  if (manifest["release-gates"]["examples-conformance"].ref !== manifest.components.examples.tag) {
-    fail(file, "examples conformance gate ref must match examples tag");
-  }
-
-  if (manifest.components.docs.manual.version !== manifest["train-version"]) {
-    fail(file, `docs manual version must be ${manifest["train-version"]}`);
-  }
-  const expectedManualPath = `/manual/${manifest["train-id"]}/`;
-  if (manifest.components.docs.manual.path !== expectedManualPath) {
-    fail(file, `docs manual path must be ${expectedManualPath}`);
-  }
-  const expectedManualPagesUrl = `${releaseTrainDocsPagesOriginV01}${expectedManualPath}`;
-  if (manifest.components.docs.manual["pages-url"] !== expectedManualPagesUrl) {
-    fail(file, `docs manual pages-url must be ${expectedManualPagesUrl}`);
-  }
-  if (manifest["release-gates"]["docs-pages-deployment"]["manual-version"] !== manifest.components.docs.manual.version) {
-    fail(file, "docs Pages gate manual-version must match docs manual version");
-  }
-  if (manifest["release-gates"]["docs-pages-deployment"]["manual-path"] !== manifest.components.docs.manual.path) {
-    fail(file, "docs Pages gate manual-path must match docs manual path");
-  }
-  if (manifest["release-gates"]["docs-pages-deployment"]["pages-url"] !== manifest.components.docs.manual["pages-url"]) {
-    fail(file, "docs Pages gate pages-url must match docs manual pages-url");
-  }
-
-  const artifactsById = releaseTrainArtifactsById(manifest);
-  if (manifest["release-gates"]["github-release-assets"].runtime.repository !== releaseTrainRuntimeRepositoryV01) {
-    fail(file, `github-release-assets runtime repository must be ${releaseTrainRuntimeRepositoryV01}`);
-  }
-  if (manifest["release-gates"]["github-release-assets"].studio.repository !== releaseTrainStudioRepositoryV01) {
-    fail(file, `github-release-assets studio repository must be ${releaseTrainStudioRepositoryV01}`);
-  }
-  validateReleaseTrainArtifactCollectionGate(
-    file,
-    artifactsById,
-    "github-release-assets runtime",
-    manifest["release-gates"]["github-release-assets"].runtime["artifact-ids"]
-  );
-  validateReleaseTrainArtifactCollectionGate(
-    file,
-    artifactsById,
-    "github-release-assets studio",
-    manifest["release-gates"]["github-release-assets"].studio["artifact-ids"]
-  );
-  validateReleaseTrainArtifactCollectionGate(
-    file,
-    artifactsById,
-    "checksum-verification",
-    manifest["release-gates"]["checksum-verification"]["artifact-ids"]
-  );
-  if (!manifest["release-gates"]["github-release-assets"].studio["artifact-ids"].includes(manifest.components.studio["web-bundle"].id)) {
-    fail(file, `github-release-assets studio artifact-ids must include components.studio["web-bundle"].id`);
-  }
-  if (!manifest["release-gates"]["checksum-verification"]["artifact-ids"].includes(manifest.components.studio["web-bundle"].id)) {
-    fail(file, `checksum-verification artifact-ids must include components.studio["web-bundle"].id`);
-  }
-  validateReleaseTrainRuntimeSmokeGates(file, manifest, artifactsById);
-  validateReleaseTrainStudioSmokeGates(file, manifest, artifactsById);
-
-  for (const [artifactId, expectedChecksum] of Object.entries(manifest["release-gates"]["checksum-verification"]["expected-checksums"] ?? {})) {
-    const artifact = artifactsById.get(artifactId);
-    if (artifact === undefined) {
-      fail(file, `checksum gate references unknown artifact ${artifactId}`);
-    }
-    if (
-      artifact.checksum.value !== null &&
-      expectedChecksum.value !== null &&
-      artifact.checksum.value !== expectedChecksum.value
-    ) {
-      fail(file, `checksum gate value must match artifact ${artifactId}`);
-    }
-    if (artifact.checksum.value === null && expectedChecksum.value !== null) {
-      fail(file, `artifact ${artifactId} checksum value must be populated before checksum gate can pin it`);
-    }
-  }
-}
-
 function parseV0Semver(version) {
   const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(version);
   if (!match || Number(match[1]) !== 0) {
@@ -960,27 +662,6 @@ function satisfiesV0CompatibilityRange(version, range) {
   return upperMinor === lowerMinor + 1 && parsed.minor === lowerMinor;
 }
 
-function compatibilityMatrixArtifacts(matrix) {
-  return [
-    ...Object.values(matrix.components.runtime.assets),
-    ...matrix.components.studio["web-assets"],
-    ...Object.values(matrix.components.studio["desktop-assets"]),
-    ...Object.values(matrix.components.studio["runtime-sidecars"])
-  ];
-}
-
-function validateCompatibilityMatrixTargetMap(file, artifacts, label, expectedKind) {
-  for (const target of releaseTrainTargetsV01) {
-    const artifact = artifacts[target];
-    if (artifact.target !== target) {
-      fail(file, `${label} ${target} target must match map key`);
-    }
-    if (artifact.kind !== expectedKind) {
-      fail(file, `${label} ${target} kind must be ${expectedKind}`);
-    }
-  }
-}
-
 function validateCompatibilityMatrixSemantics(file, matrix) {
   const contractsNpm = matrix.components.contracts.npm;
   const contractsCrate = matrix.components.contracts.crate;
@@ -1010,56 +691,6 @@ function validateCompatibilityMatrixSemantics(file, matrix) {
   }
   if (!satisfiesV0CompatibilityRange(contractsNpm.version, matrix["contracts-range"])) {
     fail(file, "contracts-range must include the Contracts package version");
-  }
-
-  validateCompatibilityMatrixTargetMap(file, matrix.components.runtime.assets, "runtime asset", "runtime-binary");
-  validateCompatibilityMatrixTargetMap(file, matrix.components.studio["desktop-assets"], "studio desktop asset", "studio-desktop-package");
-  validateCompatibilityMatrixTargetMap(file, matrix.components.studio["runtime-sidecars"], "studio runtime sidecar", "studio-runtime-sidecar");
-  for (const artifact of matrix.components.studio["web-assets"]) {
-    if (artifact.kind !== "studio-web-bundle") {
-      fail(file, `studio web asset ${artifact.id} kind must be studio-web-bundle`);
-    }
-  }
-
-  const artifactsById = new Map();
-  for (const artifact of compatibilityMatrixArtifacts(matrix)) {
-    if (artifactsById.has(artifact.id)) {
-      fail(file, `duplicate compatibility matrix artifact id: ${artifact.id}`);
-    }
-    artifactsById.set(artifact.id, artifact);
-  }
-  for (const [artifactId, expectedChecksum] of Object.entries(matrix.verification["expected-checksums"])) {
-    const artifact = artifactsById.get(artifactId);
-    if (artifact === undefined) {
-      fail(file, `verification expected-checksums references unknown artifact ${artifactId}`);
-    }
-    if (artifact.checksum.value === null && expectedChecksum.value !== null) {
-      fail(file, `artifact ${artifactId} checksum value must be populated before verification can pin it`);
-    }
-    if (
-      artifact.checksum.value !== null &&
-      expectedChecksum.value !== null &&
-      artifact.checksum.value !== expectedChecksum.value
-    ) {
-      fail(file, `verification checksum value must match artifact ${artifactId}`);
-    }
-  }
-
-  if (matrix.promotion.state === "promoted") {
-    if (matrix.components.examples["conformance-status"] !== "passed") {
-      fail(file, "promoted compatibility matrix requires passed examples conformance");
-    }
-    if (!matrix.components.docs.manual["pages-deployed"]) {
-      fail(file, "promoted compatibility matrix requires deployed docs Pages manual");
-    }
-    if (!matrix.components.docs.manual["promoted-latest"]) {
-      fail(file, "promoted compatibility matrix requires docs manual promoted latest");
-    }
-    for (const artifact of compatibilityMatrixArtifacts(matrix)) {
-      if (artifact.checksum.value === null) {
-        fail(file, `promoted compatibility matrix requires checksum for artifact ${artifact.id}`);
-      }
-    }
   }
 }
 
@@ -1124,14 +755,11 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.package.manifest" && document.schemaVersion === "0.1.0") {
     return validators.packageManifestV01;
   }
-  if (document.schema === "skenion.release-train" && document["schema-version"] === "0.1.0") {
-    return validators.releaseTrainV01;
-  }
   if (document.schema === "skenion.compatibility-matrix" && document["schema-version"] === "0.1.0") {
     return validators.compatibilityMatrixV01;
   }
 
-  const schemaVersion = document.schema === "skenion.release-train" || document.schema === "skenion.compatibility-matrix"
+  const schemaVersion = document.schema === "skenion.compatibility-matrix"
     ? document["schema-version"]
     : document.schemaVersion;
   fail(file, `no validator for schema ${document.schema ?? "<missing>"} ${schemaVersion ?? "<missing>"}`);
@@ -1194,9 +822,6 @@ function validateDocument(file, document, validators) {
     for (const node of document.provides.nodes ?? []) {
       validateNodeDefinitionV01Semantics(file, node);
     }
-  }
-  if (document.schema === "skenion.release-train" && document["schema-version"] === "0.1.0") {
-    validateReleaseTrainManifestSemantics(file, document);
   }
   if (document.schema === "skenion.compatibility-matrix" && document["schema-version"] === "0.1.0") {
     validateCompatibilityMatrixSemantics(file, document);
@@ -1428,7 +1053,6 @@ const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
 const extensionManifestV01Schema = await readJson("json-schema/extension/v0.1/extension-manifest.schema.json");
 const packageManifestV01Schema = await readJson("json-schema/package/v0.1/package-manifest.schema.json");
-const releaseTrainV01Schema = await readJson("json-schema/release-train/v0.1/release-train.schema.json");
 const compatibilityMatrixV01Schema = await readJson("json-schema/compatibility-matrix/v0.1/compatibility-matrix.schema.json");
 ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
@@ -1438,7 +1062,6 @@ ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(projectV01Schema);
 ajv.addSchema(runtimeSessionV0Schema);
 ajv.addSchema(runtimeCollaborationV0Schema);
-ajv.addSchema(releaseTrainV01Schema);
 ajv.addSchema(compatibilityMatrixV01Schema);
 const validators = {
   graphV01: ajv.compile(graphV01Schema),
@@ -1501,7 +1124,6 @@ const validators = {
   ),
   extensionManifestV01: ajv.compile(extensionManifestV01Schema),
   packageManifestV01: ajv.compile(packageManifestV01Schema),
-  releaseTrainV01: ajv.compile(releaseTrainV01Schema),
   compatibilityMatrixV01: ajv.compile(compatibilityMatrixV01Schema)
 };
 

@@ -7,21 +7,20 @@ use skenion_contracts::{
     MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
     ObjectTextParseResultV01, PackageCategoryV01, PackageManifestV01,
     PackageRegistryListResponseV01, PackageRootDocumentV01, PackageRootKindV01, ProjectDocumentV01,
-    ReleaseTrainManifestV01, ReleaseTrainTargetV01, RuntimeCollaborationEventEnvelope,
-    RuntimeCollaborationEventKind, RuntimeCollaborationOperationBatchResult,
-    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
-    RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic, RuntimeDiagnosticSeverity,
-    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
-    RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01,
-    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
-    compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
-    derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
-    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
-    plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
-    validate_compatibility_matrix_v01, validate_extension_manifest_v01,
-    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
-    validate_object_text_parse_result_v01, validate_package_manifest_v01,
-    validate_package_root_v01, validate_project_document_v01, validate_release_train_manifest_v01,
+    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
+    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
+    RuntimeCollaborationOperationResult, RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic,
+    RuntimeDiagnosticSeverity, RuntimeOperationEnvelope, RuntimeSessionEvent,
+    RuntimeSessionEventKind, RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    StringOrStringsV01, analyze_graph_document_v01, analyze_graph_fragment_v01,
+    apply_midi_clock_message_v01, compatible_data_types_v01, derive_patch_contract_v01,
+    derive_patch_contracts_v01, derive_v0_compatibility_line, derive_v0_compatibility_range,
+    is_same_v0_compatibility_line, midi_clock_snapshot_to_clock_state_v01,
+    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
+    satisfies_v0_compatibility_range, type_label_v01, validate_compatibility_matrix_v01,
+    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
+    validate_node_definition_v01, validate_object_text_parse_result_v01,
+    validate_package_manifest_v01, validate_package_root_v01, validate_project_document_v01,
     validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
@@ -91,33 +90,6 @@ fn serializes_optional_contract_fields_as_absent() {
     assert!(!serialized_graph.contains("null"));
     assert!(serialized_graph.contains(r#""type":"number.float""#));
     assert!(validate_graph_document_v01(&graph).is_ok());
-}
-
-#[test]
-fn parses_public_release_train_manifest_contract() {
-    let manifest: ReleaseTrainManifestV01 = serde_json::from_str(include_str!(
-        "../../../fixtures/release-train/v0.1/valid/0.43.0.release-train.json"
-    ))
-    .expect("release train manifest should parse");
-
-    validate_release_train_manifest_v01(&manifest).expect("release train manifest should validate");
-    assert_eq!(manifest.schema, "skenion.release-train");
-    assert_eq!(manifest.train_id, "0.43");
-    assert_eq!(
-        manifest.capability_set.runtime.collaboration,
-        "server-authoritative-ot"
-    );
-    assert!(manifest.capability_set.marketplace.package_install);
-    assert_eq!(
-        manifest
-            .components
-            .runtime
-            .binaries
-            .get(&ReleaseTrainTargetV01::Aarch64AppleDarwin)
-            .expect("runtime artifact should exist")
-            .version,
-        "0.43.0"
-    );
 }
 
 #[test]
@@ -275,11 +247,11 @@ fn parses_public_compatibility_matrix_contract() {
     validate_compatibility_matrix_v01(&matrix).expect("compatibility matrix should validate");
     assert_eq!(matrix.schema, "skenion.compatibility-matrix");
     assert_eq!(matrix.contracts_line, "0.45");
+    assert_eq!(matrix.protocol_baselines.runtime_http, "v0");
     assert_eq!(matrix.components.contracts.npm.version, "0.45.0");
     assert_eq!(matrix.components.runtime.version, "0.44.2");
     assert_eq!(matrix.components.sdk.npm.version, "0.17.0");
     assert_eq!(matrix.components.studio.version, "0.44.5");
-    assert_eq!(matrix.components.docs.manual.version, "0.44.1");
 
     let mut incompatible_sdk_range = serde_json::to_value(&matrix).expect("matrix to value");
     incompatible_sdk_range["components"]["sdk"]["supported-contracts-range"] =
@@ -295,50 +267,11 @@ fn parses_public_compatibility_matrix_contract() {
             .any(|error| error.message.contains("supported-contracts-range"))
     );
 
-    let mut missing_runtime_artifact = serde_json::to_value(&matrix).expect("matrix to value");
-    missing_runtime_artifact["components"]["runtime"]["assets"]
-        .as_object_mut()
-        .expect("runtime assets should be an object")
-        .remove("aarch64-apple-darwin");
-    let missing_runtime_artifact: CompatibilityMatrixV01 =
-        serde_json::from_value(missing_runtime_artifact).expect("matrix should parse");
-    let missing_runtime_artifact_report =
-        validate_compatibility_matrix_v01(&missing_runtime_artifact)
-            .expect_err("missing runtime artifact should fail");
-    assert!(
-        missing_runtime_artifact_report
-            .errors()
-            .iter()
-            .any(|error| error.message.contains("aarch64-apple-darwin"))
-    );
-
-    let mut checksum_mismatch = serde_json::to_value(&matrix).expect("matrix to value");
-    checksum_mismatch["verification"]["expected-checksums"]["runtime-aarch64-apple-darwin"]["value"] =
-        serde_json::json!("0000000000000000000000000000000000000000000000000000000000000000");
-    let checksum_mismatch: CompatibilityMatrixV01 =
-        serde_json::from_value(checksum_mismatch).expect("matrix should parse");
-    let checksum_mismatch_report = validate_compatibility_matrix_v01(&checksum_mismatch)
-        .expect_err("checksum mismatch should fail");
-    assert!(
-        checksum_mismatch_report
-            .errors()
-            .iter()
-            .any(|error| error.message.contains("checksum value must match"))
-    );
-
-    let mut unpromoted_docs = serde_json::to_value(&matrix).expect("matrix to value");
-    unpromoted_docs["components"]["docs"]["manual"]["pages-deployed"] = serde_json::json!(false);
-    unpromoted_docs["components"]["docs"]["manual"]["promoted-latest"] = serde_json::json!(false);
-    let unpromoted_docs: CompatibilityMatrixV01 =
-        serde_json::from_value(unpromoted_docs).expect("matrix should parse");
-    let unpromoted_docs_report = validate_compatibility_matrix_v01(&unpromoted_docs)
-        .expect_err("unpromoted docs should fail");
-    assert!(
-        unpromoted_docs_report
-            .errors()
-            .iter()
-            .any(|error| error.message.contains("docs Pages manual"))
-    );
+    let mut artifact_surface = serde_json::to_value(&matrix).expect("matrix to value");
+    artifact_surface["components"]["runtime"]["assets"] = serde_json::json!({});
+    artifact_surface["verification"] = serde_json::json!({ "expected-checksums": {} });
+    serde_json::from_value::<CompatibilityMatrixV01>(artifact_surface)
+        .expect_err("release artifact verifier fields should not parse");
 }
 
 #[test]

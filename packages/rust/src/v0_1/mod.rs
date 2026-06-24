@@ -3,7 +3,6 @@ mod clock;
 mod compatibility_matrix;
 mod control_message;
 mod object_text;
-mod release_train;
 mod runtime_clock;
 mod shader_interface;
 mod types;
@@ -33,7 +32,6 @@ pub use object_text::{
     ObjectTextPortRateV01, ObjectTextPortV01, ObjectTextValidationErrorV01, parse_object_text_v01,
     validate_object_text_parse_result_v01,
 };
-pub use release_train::*;
 pub use runtime_clock::{
     RuntimeClockDiagnosticSeverityV01, RuntimeClockDiagnosticV01, RuntimeIoBindingConfigV01,
     RuntimeIoDeviceDescriptorV01, RuntimeIoDeviceListResponseV01, RuntimeIoDiagnosticSeverityV01,
