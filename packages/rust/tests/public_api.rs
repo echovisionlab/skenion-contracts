@@ -5,21 +5,24 @@ use skenion_contracts::{
     DataFlowV01, DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
     GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
     MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
-    ObjectTextParseResultV01, ProjectDocumentV01, ReleaseTrainManifestV01, ReleaseTrainTargetV01,
-    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
-    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
-    RuntimeCollaborationOperationResult, RuntimeCollaborationRebaseStrategy,
+    ObjectTextParseResultV01, PackageCategoryV01, PackageManifestV01,
+    PackageRegistryListResponseV01, PackageRootDocumentV01, PackageRootKindV01, ProjectDocumentV01,
+    ReleaseTrainManifestV01, ReleaseTrainTargetV01, RuntimeCollaborationEventEnvelope,
+    RuntimeCollaborationEventKind, RuntimeCollaborationOperationBatchResult,
+    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic, RuntimeDiagnosticSeverity,
     RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
-    RuntimeSessionInfoResponse, StringOrStringsV01, analyze_graph_document_v01,
-    analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
-    derive_patch_contract_v01, derive_patch_contracts_v01, derive_v0_compatibility_line,
-    derive_v0_compatibility_range, is_same_v0_compatibility_line,
+    RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01,
+    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
+    compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
+    derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
     midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
     plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
     validate_compatibility_matrix_v01, validate_extension_manifest_v01,
     validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
-    validate_object_text_parse_result_v01, validate_project_document_v01,
-    validate_release_train_manifest_v01, validate_runtime_collaboration_event_envelope,
+    validate_object_text_parse_result_v01, validate_package_manifest_v01,
+    validate_package_root_v01, validate_project_document_v01, validate_release_train_manifest_v01,
+    validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
     validate_runtime_collaboration_operation_result, validate_runtime_operation_envelope,
@@ -145,6 +148,121 @@ fn derives_public_contracts_compatibility_line_helpers() {
         "0.45.0",
         ">=0.44.0 <0.45.0"
     ));
+}
+
+#[test]
+fn parses_public_runtime_diagnostic_code_and_details() {
+    let diagnostic: RuntimeDiagnostic = serde_json::from_value(serde_json::json!({
+        "severity": "warning",
+        "message": "Package load reported non-fatal diagnostics.",
+        "code": "package-load-diagnostics",
+        "details": {
+            "packageId": "skenion/core",
+            "quietSuccess": true,
+            "ignoredDiagnostics": ["info", null, { "count": 2 }]
+        }
+    }))
+    .expect("runtime diagnostic should parse");
+
+    assert_eq!(diagnostic.severity, RuntimeDiagnosticSeverity::Warning);
+    assert_eq!(diagnostic.code.as_deref(), Some("package-load-diagnostics"));
+    assert_eq!(
+        diagnostic
+            .details
+            .as_ref()
+            .expect("details should be retained")["quietSuccess"],
+        true
+    );
+
+    let minimal = RuntimeDiagnostic {
+        severity: RuntimeDiagnosticSeverity::Info,
+        message: "Package loaded.".to_owned(),
+        code: None,
+        details: None,
+    };
+    let serialized = serde_json::to_value(&minimal).expect("diagnostic should serialize");
+
+    assert_eq!(
+        serialized,
+        serde_json::json!({
+            "severity": "info",
+            "message": "Package loaded."
+        })
+    );
+}
+
+#[test]
+fn rejects_unknown_public_runtime_diagnostic_fields() {
+    let extra_top_level = serde_json::from_value::<RuntimeDiagnostic>(serde_json::json!({
+        "severity": "warning",
+        "message": "Package load reported non-fatal diagnostics.",
+        "code": "package-load-diagnostics",
+        "details": {
+            "packageId": "skenion/core",
+            "ignoredDiagnostics": ["info", null, { "count": 2 }]
+        },
+        "traceId": "trace-runtime-diagnostic"
+    }));
+
+    assert!(
+        extra_top_level.is_err(),
+        "runtime diagnostic should reject unknown top-level fields"
+    );
+}
+
+#[test]
+fn rejects_unknown_runtime_session_diagnostic_fields() {
+    let session_info = serde_json::from_value::<RuntimeSessionInfoResponse>(serde_json::json!({
+        "schema": "skenion.runtime.session.info",
+        "schemaVersion": "0.1.0",
+        "ok": true,
+        "sessionId": "session-a",
+        "lifecycle": "ready",
+        "snapshot": {
+            "sessionRevision": 1,
+            "viewRevision": 1,
+            "controlRevision": 1,
+            "project": null,
+            "diagnostics": [],
+            "plan": null
+        },
+        "profile": {
+            "mode": "remote",
+            "ownership": "remote",
+            "endpoint": { "url": "https://runtime.example.test", "protocol": "https" },
+            "process": null
+        },
+        "capabilities": {
+            "sessionAddressing": true,
+            "eventReplay": true,
+            "multiWindow": true,
+            "profiles": ["local-managed", "local-shared", "remote"],
+            "authPolicy": "deferred"
+        },
+        "eventReplay": {
+            "cursorKind": "sequence",
+            "currentCursor": "1",
+            "earliestSequence": 1,
+            "latestSequence": 1,
+            "replayLimit": 512
+        },
+        "diagnostics": [
+            {
+                "severity": "warning",
+                "message": "Package load reported non-fatal diagnostics.",
+                "details": {
+                    "packageId": "skenion/core",
+                    "ignoredDiagnostics": ["info", null, { "count": 2 }]
+                },
+                "traceId": "trace-runtime-diagnostic"
+            }
+        ]
+    }));
+
+    assert!(
+        session_info.is_err(),
+        "runtime session parsing should reject unknown diagnostic fields"
+    );
 }
 
 #[test]
@@ -1021,6 +1139,111 @@ fn validates_current_extension_manifest_contract_surface() {
         .expect_err("legacy provided node should fail current validation");
 
     assert!(report.to_string().contains("expected schemaVersion 0.1.0"));
+}
+
+#[test]
+fn validates_public_package_manifest_contract_surface() {
+    let patch_package: PackageManifestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/valid/patch-only.skenion.package.json"
+    ))
+    .expect("patch package manifest should parse");
+
+    validate_package_manifest_v01(&patch_package).expect("patch package should validate");
+    assert_eq!(patch_package.schema, "skenion.package.manifest");
+    assert_eq!(patch_package.category, PackageCategoryV01::Patch);
+    assert!(patch_package.runtime_abi_range.is_none());
+    assert!(patch_package.native_artifacts.is_empty());
+    assert_eq!(patch_package.provides.patches[0].id, "example.oscillator");
+    assert_eq!(
+        patch_package.diagnostics[0]
+            .details
+            .as_ref()
+            .expect("details")["fileName"],
+        SKENION_PACKAGE_MANIFEST_FILE_NAME
+    );
+
+    let mixed_package: PackageManifestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/valid/mixed-native.skenion.package.json"
+    ))
+    .expect("mixed package manifest should parse");
+    validate_package_manifest_v01(&mixed_package).expect("mixed package should validate");
+    assert_eq!(mixed_package.category, PackageCategoryV01::Mixed);
+    assert_eq!(
+        mixed_package.runtime_abi_range.as_deref(),
+        Some(">=0.45.0 <0.46.0")
+    );
+    assert_eq!(mixed_package.native_artifacts.len(), 1);
+
+    let root = PackageRootDocumentV01 {
+        schema: "skenion.package.root".to_owned(),
+        schema_version: "0.1.0".to_owned(),
+        manifest_file_name: SKENION_PACKAGE_MANIFEST_FILE_NAME.to_owned(),
+        manifest: patch_package,
+    };
+    validate_package_root_v01(&root).expect("package root should validate");
+
+    let native_missing_evidence: PackageManifestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/invalid/native-missing-evidence.skenion.package.json"
+    ))
+    .expect("native package should parse before semantic validation");
+    let missing_evidence_report = validate_package_manifest_v01(&native_missing_evidence)
+        .expect_err("native package with missing evidence should fail");
+    assert!(
+        missing_evidence_report
+            .to_string()
+            .contains("missing evidence")
+    );
+
+    let extension_as_package: Result<PackageManifestV01, _> = serde_json::from_str(include_str!(
+        "../../../fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json"
+    ));
+    assert!(extension_as_package.is_err());
+
+    let both_manifest_root: Result<PackageRootDocumentV01, _> = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/invalid/both-manifests.package-root.json"
+    ));
+    assert!(both_manifest_root.is_err());
+
+    let project: ProjectDocumentV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/project/v0.1/valid/package-lock.project.json"
+    ))
+    .expect("project with package lock should parse");
+    validate_project_document_v01(&project).expect("project package refs should validate");
+    assert_eq!(
+        project.package_dependencies[0].lock_entry_id,
+        "pkg-skenion-examples-0.45.0"
+    );
+    assert_eq!(
+        project.provider_refs[0].lock_entry_id,
+        "pkg-skenion-examples-0.45.0"
+    );
+
+    let registry: PackageRegistryListResponseV01 = serde_json::from_value(serde_json::json!({
+        "ok": true,
+        "packages": [
+            {
+                "packageId": "skenion/examples",
+                "version": "0.45.0",
+                "category": "patch",
+                "source": "first-party",
+                "root": "package",
+                "trust": "trusted",
+                "contracts": { "line": "0.45", "range": ">=0.45.0 <0.46.0" },
+                "manifestPath": "skenion.package.json",
+                "manifestChecksum": {
+                    "algorithm": "sha256",
+                    "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "provides": { "patches": [{ "id": "example.oscillator", "path": "patches/oscillator.skenion.json" }] },
+                "diagnostics": []
+            }
+        ],
+        "diagnostics": []
+    }))
+    .expect("registry list DTO should parse");
+
+    assert!(registry.ok);
+    assert_eq!(registry.packages[0].root, PackageRootKindV01::Package);
 }
 
 #[test]

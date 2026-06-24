@@ -1,0 +1,83 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-package-lock",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-package-lock",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [
+    {
+      "id": "local_wrapper",
+      "revision": "1",
+      "graph": {
+        "schema": "skenion.graph",
+        "schemaVersion": "0.1.0",
+        "id": "patch-local-wrapper",
+        "revision": "1",
+        "nodes": [],
+        "edges": []
+      }
+    }
+  ],
+  "packageDependencies": [
+    {
+      "packageId": "skenion/examples",
+      "versionRange": ">=0.45.0 <0.46.0",
+      "lockEntryId": "pkg-skenion-examples-0.45.0",
+      "required": true
+    }
+  ],
+  "packageLock": [
+    {
+      "id": "pkg-skenion-examples-0.45.0",
+      "packageId": "skenion/examples",
+      "version": "0.45.0",
+      "source": "first-party",
+      "root": "package",
+      "trust": "trusted",
+      "contractsLine": "0.45",
+      "contractsRange": ">=0.45.0 <0.46.0",
+      "manifestPath": "packages/skenion-examples/skenion.package.json",
+      "manifestChecksum": {
+        "algorithm": "sha256",
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "evidenceRefs": ["manifest-checksum"]
+    }
+  ],
+  "resourceLock": [
+    {
+      "id": "resource-oscillator-doc",
+      "lockEntryId": "pkg-skenion-examples-0.45.0",
+      "resourceId": "example.oscillator",
+      "path": "packages/skenion-examples/help/oscillator.md",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "evidenceRefs": ["manifest-checksum"]
+    }
+  ],
+  "providerRefs": [
+    {
+      "id": "provider-example-oscillator",
+      "kind": "patch",
+      "packageId": "skenion/examples",
+      "providedId": "example.oscillator",
+      "lockEntryId": "pkg-skenion-examples-0.45.0"
+    }
+  ]
+}

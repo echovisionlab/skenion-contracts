@@ -1,0 +1,48 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-package-provider-package-mismatch",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-package-provider-package-mismatch",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [],
+  "packageLock": [
+    {
+      "id": "pkg-skenion-examples-0.45.0",
+      "packageId": "skenion/examples",
+      "version": "0.45.0",
+      "source": "first-party",
+      "root": "package",
+      "trust": "trusted",
+      "contractsLine": "0.45",
+      "contractsRange": ">=0.45.0 <0.46.0",
+      "manifestPath": "packages/skenion-examples/skenion.package.json",
+      "manifestChecksum": {
+        "algorithm": "sha256",
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "providerRefs": [
+    {
+      "id": "provider-example-oscillator",
+      "kind": "patch",
+      "packageId": "example/not-examples",
+      "providedId": "example.oscillator",
+      "lockEntryId": "pkg-skenion-examples-0.45.0"
+    }
+  ]
+}

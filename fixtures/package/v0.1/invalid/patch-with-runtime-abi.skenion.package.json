@@ -1,0 +1,38 @@
+{
+  "schema": "skenion.package.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/patch-with-abi",
+  "version": "0.45.0",
+  "category": "patch",
+  "source": "workspace",
+  "root": "dev-link",
+  "trust": "untrusted",
+  "contracts": {
+    "line": "0.45",
+    "range": ">=0.45.0 <0.46.0"
+  },
+  "runtimeAbiRange": ">=0.45.0 <0.46.0",
+  "provides": {},
+  "paths": {},
+  "checksums": [
+    {
+      "id": "manifest",
+      "path": "skenion.package.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "abababababababababababababababababababababababababababababababab"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "manifest-checksum",
+      "kind": "checksum",
+      "path": "evidence/manifest.sha256",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc"
+      }
+    }
+  ]
+}

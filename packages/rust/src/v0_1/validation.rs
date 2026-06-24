@@ -4,23 +4,26 @@ use std::{
     fmt,
 };
 
+use super::version::satisfies_v0_compatibility_range;
 use super::{
     CycleValidationV01, DataFlowV01, DataTypeV01, EdgeSpecV01, ExtensionKindV01,
     ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01, GraphDocumentV01,
     GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
     GraphFragmentValidationResultV01, GraphValidationDiagnosticV01, GraphValidationResultV01,
-    MergePolicyV01, NodeDefinitionManifestV01, PasteGraphFragmentRequest,
-    PasteGraphFragmentResponse, PatchDefinitionV01, PortDirectionV01, PortSpecV01,
-    ProjectDocumentV01, RuntimeCollaborationAuthSubject, RuntimeCollaborationCausalMetadata,
+    MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01, PackageManifestV01,
+    PackageRootDocumentV01, PasteGraphFragmentRequest, PasteGraphFragmentResponse,
+    PatchDefinitionV01, PortDirectionV01, PortSpecV01, ProjectDocumentV01,
+    RuntimeCollaborationAuthSubject, RuntimeCollaborationCausalMetadata,
     RuntimeCollaborationChange, RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
     RuntimeCollaborationEventPayload, RuntimeCollaborationNackReason,
     RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationBatchResult,
     RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationPayload,
     RuntimeCollaborationOperationResult, RuntimeCollaborationOperationStatus,
     RuntimeCollaborationPresenceEnvelope, RuntimeCollaborationSelectionEnvelope,
-    RuntimeConnectionProfile, RuntimeConnectionProfileMode, RuntimeHistory, RuntimeHistoryEntry,
-    RuntimeMutationRequest, RuntimeOperationEnvelope, RuntimeOwnershipMode, RuntimeSessionEvent,
-    RuntimeSessionInfoResponse, RuntimeSessionSnapshot, RuntimeViewPatchOperation, ViewStateV01,
+    RuntimeConnectionProfile, RuntimeConnectionProfileMode, RuntimeDiagnostic, RuntimeHistory,
+    RuntimeHistoryEntry, RuntimeMutationRequest, RuntimeOperationEnvelope, RuntimeOwnershipMode,
+    RuntimeSessionEvent, RuntimeSessionInfoResponse, RuntimeSessionSnapshot,
+    RuntimeViewPatchOperation, SKENION_PACKAGE_MANIFEST_FILE_NAME, ViewStateV01,
     derive_patch_contract_v01,
 };
 
@@ -1424,6 +1427,10 @@ pub fn validate_runtime_session_info_response(
         errors.push(ValidationErrorV01::new("sessionId must not be empty"));
     }
     errors.extend(runtime_session_snapshot_errors(&response.snapshot));
+    errors.extend(runtime_diagnostic_errors(
+        "session info",
+        &response.diagnostics,
+    ));
     errors.extend(runtime_profile_errors(&response.profile));
     if response.capabilities.auth_policy != "deferred" {
         errors.push(ValidationErrorV01::new(
@@ -1561,6 +1568,7 @@ pub fn validate_runtime_session_event(
         errors.push(ValidationErrorV01::new("createdAt must not be empty"));
     }
     errors.extend(runtime_session_snapshot_errors(&event.snapshot));
+    errors.extend(runtime_diagnostic_errors("event", &event.diagnostics));
     errors.extend(runtime_history_errors(&event.history));
     if let Some(mutation) = &event.mutation {
         errors.extend(runtime_history_entry_errors(mutation, "mutation"));
@@ -1605,16 +1613,7 @@ pub fn validate_runtime_session_event(
 
 fn runtime_session_snapshot_errors(snapshot: &RuntimeSessionSnapshot) -> Vec<ValidationErrorV01> {
     let mut errors = Vec::new();
-    if snapshot.diagnostics.iter().any(|diagnostic| {
-        diagnostic
-            .get("message")
-            .and_then(serde_json::Value::as_str)
-            .is_none_or(str::is_empty)
-    }) {
-        errors.push(ValidationErrorV01::new(
-            "snapshot diagnostics must include non-empty message",
-        ));
-    }
+    errors.extend(runtime_diagnostic_errors("snapshot", &snapshot.diagnostics));
     if snapshot.plan.as_ref().is_some_and(|plan| !plan.is_object()) {
         errors.push(ValidationErrorV01::new(
             "snapshot plan must be an object or null",
@@ -1628,6 +1627,22 @@ fn runtime_session_snapshot_errors(snapshot: &RuntimeSessionSnapshot) -> Vec<Val
                 ValidationErrorV01::new(format!("snapshot project {}", error.message))
             }),
         );
+    }
+    errors
+}
+
+fn runtime_diagnostic_errors(
+    label: &str,
+    diagnostics: &[RuntimeDiagnostic],
+) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+    if diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.message.is_empty())
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label} diagnostics must include non-empty message"
+        )));
     }
     errors
 }
@@ -1995,6 +2010,7 @@ pub fn validate_project_document_v01(
             errors.extend(report.errors);
         }
     }
+    errors.extend(project_package_reference_errors(project));
 
     if errors.is_empty() {
         Ok(())
@@ -2003,8 +2019,262 @@ pub fn validate_project_document_v01(
     }
 }
 
+pub fn validate_package_manifest_v01(
+    manifest: &PackageManifestV01,
+) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if manifest.schema != "skenion.package.manifest" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schema skenion.package.manifest, found {}",
+            manifest.schema
+        )));
+    }
+    if manifest.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            manifest.schema_version
+        )));
+    }
+    if manifest.id.is_empty() {
+        errors.push(ValidationErrorV01::new("package id must not be empty"));
+    }
+    if manifest.version.is_empty() {
+        errors.push(ValidationErrorV01::new("package version must not be empty"));
+    }
+    if manifest.checksums.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "package manifest requires checksum references",
+        ));
+    }
+    if manifest.evidence.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "package manifest requires evidence references",
+        ));
+    }
+
+    errors.extend(duplicate_errors(
+        manifest
+            .provides
+            .patches
+            .iter()
+            .map(|provided| provided.id.as_str())
+            .collect(),
+        "provided patch id",
+    ));
+    errors.extend(duplicate_errors(
+        manifest
+            .provides
+            .nodes
+            .iter()
+            .map(|provided| provided.id.as_str())
+            .collect(),
+        "provided node id",
+    ));
+    errors.extend(duplicate_errors(
+        manifest
+            .provides
+            .resources
+            .iter()
+            .map(|provided| provided.id.as_str())
+            .collect(),
+        "provided resource id",
+    ));
+    errors.extend(duplicate_errors(
+        manifest
+            .provides
+            .help
+            .iter()
+            .map(|provided| provided.id.as_str())
+            .collect(),
+        "provided help id",
+    ));
+
+    match manifest.category {
+        PackageCategoryV01::Patch => {
+            if manifest.runtime_abi_range.is_some() {
+                errors.push(ValidationErrorV01::new(
+                    "patch package must not declare runtimeAbiRange",
+                ));
+            }
+            if !manifest.targets.is_empty() {
+                errors.push(ValidationErrorV01::new(
+                    "patch package must not declare targets",
+                ));
+            }
+            if !manifest.native_artifacts.is_empty() {
+                errors.push(ValidationErrorV01::new(
+                    "patch package must not declare nativeArtifacts",
+                ));
+            }
+        }
+        PackageCategoryV01::Native | PackageCategoryV01::Mixed => {
+            if manifest.runtime_abi_range.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{:?} package requires runtimeAbiRange",
+                    manifest.category
+                )));
+            }
+            if manifest.targets.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{:?} package requires targets",
+                    manifest.category
+                )));
+            }
+            if manifest.native_artifacts.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{:?} package requires nativeArtifacts",
+                    manifest.category
+                )));
+            }
+        }
+    }
+
+    let evidence_ids: HashSet<&str> = manifest
+        .evidence
+        .iter()
+        .map(|evidence| evidence.id.as_str())
+        .collect();
+    for artifact in &manifest.native_artifacts {
+        for evidence_ref in &artifact.evidence_refs {
+            if !evidence_ids.contains(evidence_ref.as_str()) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "native artifact {} references missing evidence: {}",
+                    artifact.path, evidence_ref
+                )));
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_package_root_v01(root: &PackageRootDocumentV01) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if root.schema != "skenion.package.root" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schema skenion.package.root, found {}",
+            root.schema
+        )));
+    }
+    if root.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            root.schema_version
+        )));
+    }
+    if root.manifest_file_name != SKENION_PACKAGE_MANIFEST_FILE_NAME {
+        errors.push(ValidationErrorV01::new(format!(
+            "package root manifestFileName must be {SKENION_PACKAGE_MANIFEST_FILE_NAME}"
+        )));
+    }
+    if let Err(report) = validate_package_manifest_v01(&root.manifest) {
+        for error in report.errors {
+            errors.push(ValidationErrorV01::new(format!(
+                "manifest {}",
+                error.message
+            )));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+    let package_lock_by_id: HashMap<&str, _> = project
+        .package_lock
+        .iter()
+        .map(|entry| (entry.id.as_str(), entry))
+        .collect();
+
+    errors.extend(duplicate_errors(
+        project
+            .package_lock
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect(),
+        "package lock entry id",
+    ));
+    errors.extend(duplicate_errors(
+        project
+            .resource_lock
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect(),
+        "resource lock entry id",
+    ));
+    errors.extend(duplicate_errors(
+        project
+            .provider_refs
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect(),
+        "provider ref id",
+    ));
+
+    for dependency in &project.package_dependencies {
+        let Some(lock_entry) = package_lock_by_id.get(dependency.lock_entry_id.as_str()) else {
+            errors.push(ValidationErrorV01::new(format!(
+                "package dependency {} references missing lockEntryId: {}",
+                dependency.package_id, dependency.lock_entry_id
+            )));
+            continue;
+        };
+        if dependency.package_id != lock_entry.package_id {
+            errors.push(ValidationErrorV01::new(format!(
+                "package dependency {} lockEntryId {} points to package {}",
+                dependency.package_id, dependency.lock_entry_id, lock_entry.package_id
+            )));
+        }
+        if !satisfies_v0_compatibility_range(&lock_entry.version, &dependency.version_range) {
+            errors.push(ValidationErrorV01::new(format!(
+                "package dependency {} locked version {} does not satisfy {}",
+                dependency.package_id, lock_entry.version, dependency.version_range
+            )));
+        }
+    }
+
+    for resource in &project.resource_lock {
+        if !package_lock_by_id.contains_key(resource.lock_entry_id.as_str()) {
+            errors.push(ValidationErrorV01::new(format!(
+                "resource lock {} references missing lockEntryId: {}",
+                resource.id, resource.lock_entry_id
+            )));
+        }
+    }
+
+    for provider_ref in &project.provider_refs {
+        let Some(lock_entry) = package_lock_by_id.get(provider_ref.lock_entry_id.as_str()) else {
+            errors.push(ValidationErrorV01::new(format!(
+                "provider ref {} references missing lockEntryId: {}",
+                provider_ref.id, provider_ref.lock_entry_id
+            )));
+            continue;
+        };
+        if provider_ref.package_id != lock_entry.package_id {
+            errors.push(ValidationErrorV01::new(format!(
+                "provider ref {} packageId {} does not match lock entry package {}",
+                provider_ref.id, provider_ref.package_id, lock_entry.package_id
+            )));
+        }
+    }
+
+    errors
+}
+
 #[cfg(test)]
 mod tests {
+    use super::super::RuntimeDiagnosticSeverity;
     use super::*;
     use crate::v0_1::{
         EdgeEndpointV01, FeedbackPolicyV01, GraphFragmentV01, GraphNodeV01, GraphTargetRef,
@@ -4138,9 +4408,12 @@ mod tests {
         invalid_event.sequence = 0;
         invalid_event.created_at.clear();
         invalid_event.session_revision = 2;
-        invalid_event.snapshot.diagnostics.push(json!({
-            "severity": "warning"
-        }));
+        invalid_event.snapshot.diagnostics.push(RuntimeDiagnostic {
+            severity: RuntimeDiagnosticSeverity::Warning,
+            message: String::new(),
+            code: None,
+            details: None,
+        });
         invalid_event.snapshot.plan = Some(json!("opaque-plan"));
         let graph = serde_json::to_value(base_graph()).expect("base graph should serialize");
         let mut invalid_snapshot_project: ProjectDocumentV01 = serde_json::from_value(json!({

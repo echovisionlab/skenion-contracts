@@ -1,0 +1,66 @@
+{
+  "schema": "skenion.package.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "skenion/examples",
+  "version": "0.45.0",
+  "displayName": "Skenion Examples",
+  "category": "patch",
+  "source": "first-party",
+  "root": "package",
+  "trust": "trusted",
+  "contracts": {
+    "line": "0.45",
+    "range": ">=0.45.0 <0.46.0"
+  },
+  "provides": {
+    "patches": [
+      {
+        "id": "example.oscillator",
+        "path": "patches/oscillator.skenion.json",
+        "description": "Basic oscillator patch."
+      }
+    ],
+    "help": [
+      {
+        "id": "example.oscillator",
+        "path": "help/oscillator.md"
+      }
+    ]
+  },
+  "paths": {
+    "patches": ["patches/oscillator.skenion.json"],
+    "docs": ["help/oscillator.md"],
+    "tests": ["tests/oscillator.snapshot.json"]
+  },
+  "checksums": [
+    {
+      "id": "manifest",
+      "path": "skenion.package.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "manifest-checksum",
+      "kind": "checksum",
+      "path": "evidence/manifest.sha256",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "severity": "info",
+      "code": "package-manifest-read",
+      "message": "Package manifest read successfully.",
+      "details": {
+        "fileName": "skenion.package.json"
+      }
+    }
+  ]
+}

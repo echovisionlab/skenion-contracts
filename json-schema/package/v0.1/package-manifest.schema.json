@@ -1,0 +1,402 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/package/v0.1/package-manifest.schema.json",
+  "title": "skenion Package Manifest v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "id",
+    "version",
+    "category",
+    "source",
+    "root",
+    "trust",
+    "contracts",
+    "provides",
+    "paths",
+    "checksums",
+    "evidence"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.package.manifest"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "id": {
+      "$ref": "#/$defs/packageId"
+    },
+    "version": {
+      "$ref": "#/$defs/semver"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "$ref": "#/$defs/packageCategory"
+    },
+    "source": {
+      "$ref": "#/$defs/packageSource"
+    },
+    "root": {
+      "$ref": "#/$defs/packageRoot"
+    },
+    "trust": {
+      "$ref": "#/$defs/packageTrust"
+    },
+    "contracts": {
+      "$ref": "#/$defs/contractsSupport"
+    },
+    "runtimeAbiRange": {
+      "$ref": "#/$defs/semverRange"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/targetTriple"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "provides": {
+      "$ref": "#/$defs/provides"
+    },
+    "patchLibrary": {
+      "type": "array",
+      "items": {
+        "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/patchDefinition"
+      },
+      "default": []
+    },
+    "paths": {
+      "$ref": "#/$defs/packagePaths"
+    },
+    "checksums": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/checksumRef"
+      },
+      "minItems": 1
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidenceRef"
+      },
+      "minItems": 1
+    },
+    "nativeArtifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nativeArtifact"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageDiagnostic"
+      },
+      "default": []
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "patch"
+          }
+        },
+        "required": ["category"]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": ["runtimeAbiRange"]
+            },
+            {
+              "required": ["nativeArtifacts"]
+            },
+            {
+              "required": ["targets"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "enum": ["native", "mixed"]
+          }
+        },
+        "required": ["category"]
+      },
+      "then": {
+        "required": ["runtimeAbiRange", "targets", "nativeArtifacts"],
+        "properties": {
+          "nativeArtifacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/nativeArtifact"
+            },
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "packageId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$"
+    },
+    "providedId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*(\\.[a-z0-9][a-z0-9_-]*)*$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "semverRange": {
+      "type": "string",
+      "pattern": "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
+    },
+    "contractsLine": {
+      "type": "string",
+      "pattern": "^0\\.[0-9]+$"
+    },
+    "packageCategory": {
+      "enum": ["patch", "native", "mixed"]
+    },
+    "packageSource": {
+      "enum": ["first-party", "marketplace", "workspace", "project-local"]
+    },
+    "packageRoot": {
+      "enum": ["package", "project", "dev-link", "marketplace-install"]
+    },
+    "packageTrust": {
+      "enum": ["trusted", "untrusted", "quarantined"]
+    },
+    "targetTriple": {
+      "enum": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ]
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._~!$&'()+,;=:@%/-]+$"
+    },
+    "contractsSupport": {
+      "type": "object",
+      "required": ["line", "range"],
+      "properties": {
+        "line": {
+          "$ref": "#/$defs/contractsLine"
+        },
+        "range": {
+          "$ref": "#/$defs/semverRange"
+        }
+      },
+      "additionalProperties": false
+    },
+    "providedRef": {
+      "type": "object",
+      "required": ["id", "path"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/providedId"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provides": {
+      "type": "object",
+      "properties": {
+        "patches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/providedRef"
+          },
+          "default": []
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/providedRef"
+          },
+          "default": []
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/providedRef"
+          },
+          "default": []
+        },
+        "help": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/providedRef"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "packagePaths": {
+      "type": "object",
+      "properties": {
+        "patches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relativePath"
+          },
+          "default": []
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relativePath"
+          },
+          "default": []
+        },
+        "docs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relativePath"
+          },
+          "default": []
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relativePath"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "checksum": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "enum": ["sha256"]
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "checksumRef": {
+      "type": "object",
+      "required": ["id", "path", "checksum"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceRef": {
+      "type": "object",
+      "required": ["id", "kind", "path", "checksum"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": ["checksum", "signature", "sbom", "attestation"]
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nativeArtifact": {
+      "type": "object",
+      "required": ["target", "path", "entrypoint", "checksum", "evidenceRefs"],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/targetTriple"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "entrypoint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageDiagnostic": {
+      "type": "object",
+      "required": ["severity", "code", "message"],
+      "properties": {
+        "severity": {
+          "enum": ["error", "warning", "info"]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "description": "Arbitrary JSON diagnostic metadata."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

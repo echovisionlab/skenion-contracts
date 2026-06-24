@@ -124,6 +124,78 @@ function validateProjectV01Semantics(file, project) {
   for (const patch of project.patchLibrary) {
     validatePatchDefinitionV01Semantics(file, patch);
   }
+
+  const packageLockById = new Map((project.packageLock ?? []).map((entry) => [entry.id, entry]));
+  duplicateCheck(file, (project.packageLock ?? []).map((entry) => entry.id), "package lock entry id");
+  duplicateCheck(file, (project.resourceLock ?? []).map((entry) => entry.id), "resource lock entry id");
+  duplicateCheck(file, (project.providerRefs ?? []).map((entry) => entry.id), "provider ref id");
+
+  for (const dependency of project.packageDependencies ?? []) {
+    const lockEntry = packageLockById.get(dependency.lockEntryId);
+    if (!lockEntry) {
+      fail(file, `package dependency ${dependency.packageId} references missing lockEntryId: ${dependency.lockEntryId}`);
+    }
+    if (dependency.packageId !== lockEntry.packageId) {
+      fail(file, `package dependency ${dependency.packageId} lockEntryId ${dependency.lockEntryId} points to package ${lockEntry.packageId}`);
+    }
+    if (!satisfiesV0CompatibilityRange(lockEntry.version, dependency.versionRange)) {
+      fail(file, `package dependency ${dependency.packageId} locked version ${lockEntry.version} does not satisfy ${dependency.versionRange}`);
+    }
+  }
+  for (const resource of project.resourceLock ?? []) {
+    if (!packageLockById.has(resource.lockEntryId)) {
+      fail(file, `resource lock ${resource.id} references missing lockEntryId: ${resource.lockEntryId}`);
+    }
+  }
+  for (const providerRef of project.providerRefs ?? []) {
+    const lockEntry = packageLockById.get(providerRef.lockEntryId);
+    if (!lockEntry) {
+      fail(file, `provider ref ${providerRef.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
+    }
+    if (providerRef.packageId !== lockEntry.packageId) {
+      fail(file, `provider ref ${providerRef.id} packageId ${providerRef.packageId} does not match lock entry package ${lockEntry.packageId}`);
+    }
+  }
+}
+
+function validatePackageManifestV01Semantics(file, manifest) {
+  duplicateCheck(file, (manifest.provides.patches ?? []).map((provided) => provided.id), "provided patch id");
+  duplicateCheck(file, (manifest.provides.nodes ?? []).map((provided) => provided.id), "provided node id");
+  duplicateCheck(file, (manifest.provides.resources ?? []).map((provided) => provided.id), "provided resource id");
+  duplicateCheck(file, (manifest.provides.help ?? []).map((provided) => provided.id), "provided help id");
+
+  if (manifest.category === "patch") {
+    if (manifest.runtimeAbiRange !== undefined) {
+      fail(file, "patch package must not declare runtimeAbiRange");
+    }
+    if (manifest.targets !== undefined) {
+      fail(file, "patch package must not declare targets");
+    }
+    if (manifest.nativeArtifacts !== undefined) {
+      fail(file, "patch package must not declare nativeArtifacts");
+    }
+  }
+
+  if (manifest.category === "native" || manifest.category === "mixed") {
+    if (!manifest.runtimeAbiRange) {
+      fail(file, `${manifest.category} package requires runtimeAbiRange`);
+    }
+    if (!manifest.targets || manifest.targets.length === 0) {
+      fail(file, `${manifest.category} package requires targets`);
+    }
+    if (!manifest.nativeArtifacts || manifest.nativeArtifacts.length === 0) {
+      fail(file, `${manifest.category} package requires nativeArtifacts`);
+    }
+  }
+
+  const evidenceIds = new Set(manifest.evidence.map((evidence) => evidence.id));
+  for (const artifact of manifest.nativeArtifacts ?? []) {
+    for (const evidenceRef of artifact.evidenceRefs) {
+      if (!evidenceIds.has(evidenceRef)) {
+        fail(file, `native artifact ${artifact.path} references missing evidence: ${evidenceRef}`);
+      }
+    }
+  }
 }
 
 function portSpecKey(nodeId, portId) {
@@ -1049,6 +1121,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.extension.manifest" && document.schemaVersion === "0.1.0") {
     return validators.extensionManifestV01;
   }
+  if (document.schema === "skenion.package.manifest" && document.schemaVersion === "0.1.0") {
+    return validators.packageManifestV01;
+  }
   if (document.schema === "skenion.release-train" && document["schema-version"] === "0.1.0") {
     return validators.releaseTrainV01;
   }
@@ -1103,6 +1178,9 @@ function validateDocument(file, document, validators) {
   }
   if (document.schema === "skenion.project" && document.schemaVersion === "0.1.0") {
     validateProjectV01Semantics(file, document);
+  }
+  if (document.schema === "skenion.package.manifest" && document.schemaVersion === "0.1.0") {
+    validatePackageManifestV01Semantics(file, document);
   }
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.1.0") {
     validateNodeDefinitionV01Semantics(file, document);
@@ -1349,6 +1427,7 @@ const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.sche
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
 const extensionManifestV01Schema = await readJson("json-schema/extension/v0.1/extension-manifest.schema.json");
+const packageManifestV01Schema = await readJson("json-schema/package/v0.1/package-manifest.schema.json");
 const releaseTrainV01Schema = await readJson("json-schema/release-train/v0.1/release-train.schema.json");
 const compatibilityMatrixV01Schema = await readJson("json-schema/compatibility-matrix/v0.1/compatibility-matrix.schema.json");
 ajv.addSchema(graphV01Schema);
@@ -1421,6 +1500,7 @@ const validators = {
     await readJson("json-schema/object-text/v0.1/parse-result.schema.json")
   ),
   extensionManifestV01: ajv.compile(extensionManifestV01Schema),
+  packageManifestV01: ajv.compile(packageManifestV01Schema),
   releaseTrainV01: ajv.compile(releaseTrainV01Schema),
   compatibilityMatrixV01: ajv.compile(compatibilityMatrixV01Schema)
 };

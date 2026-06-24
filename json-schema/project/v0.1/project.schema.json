@@ -34,6 +34,34 @@
         "$ref": "#/$defs/patchDefinition"
       }
     },
+    "packageDependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageDependency"
+      },
+      "default": []
+    },
+    "packageLock": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageLockEntry"
+      },
+      "default": []
+    },
+    "resourceLock": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/resourceLockEntry"
+      },
+      "default": []
+    },
+    "providerRefs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/providerRef"
+      },
+      "default": []
+    },
     "tutorial": {
       "type": "object",
       "additionalProperties": true
@@ -83,6 +111,187 @@
         },
         "viewState": {
           "$ref": "https://skenion.dev/schemas/view/v0.1/view-state.schema.json"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$"
+    },
+    "providedId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*(\\.[a-z0-9][a-z0-9_-]*)*$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "semverRange": {
+      "type": "string",
+      "pattern": "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
+    },
+    "contractsLine": {
+      "type": "string",
+      "pattern": "^0\\.[0-9]+$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._~!$&'()+,;=:@%/-]+$"
+    },
+    "packageSource": {
+      "enum": ["first-party", "marketplace", "workspace", "project-local"]
+    },
+    "packageRoot": {
+      "enum": ["package", "project", "dev-link", "marketplace-install"]
+    },
+    "packageTrust": {
+      "enum": ["trusted", "untrusted", "quarantined"]
+    },
+    "checksum": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "enum": ["sha256"]
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageDependency": {
+      "type": "object",
+      "required": ["packageId", "versionRange", "lockEntryId"],
+      "properties": {
+        "packageId": {
+          "$ref": "#/$defs/packageId"
+        },
+        "versionRange": {
+          "$ref": "#/$defs/semverRange"
+        },
+        "lockEntryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageLockEntry": {
+      "type": "object",
+      "required": [
+        "id",
+        "packageId",
+        "version",
+        "source",
+        "root",
+        "trust",
+        "contractsLine",
+        "contractsRange",
+        "manifestPath",
+        "manifestChecksum"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "packageId": {
+          "$ref": "#/$defs/packageId"
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "source": {
+          "$ref": "#/$defs/packageSource"
+        },
+        "root": {
+          "$ref": "#/$defs/packageRoot"
+        },
+        "trust": {
+          "$ref": "#/$defs/packageTrust"
+        },
+        "contractsLine": {
+          "$ref": "#/$defs/contractsLine"
+        },
+        "contractsRange": {
+          "$ref": "#/$defs/semverRange"
+        },
+        "manifestPath": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "manifestChecksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "resourceLockEntry": {
+      "type": "object",
+      "required": ["id", "lockEntryId", "resourceId", "path", "checksum"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lockEntryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resourceId": {
+          "$ref": "#/$defs/providedId"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "providerRef": {
+      "type": "object",
+      "required": ["id", "kind", "packageId", "providedId", "lockEntryId"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": ["patch", "node", "resource", "native-object", "codec", "help"]
+        },
+        "packageId": {
+          "$ref": "#/$defs/packageId"
+        },
+        "providedId": {
+          "$ref": "#/$defs/providedId"
+        },
+        "lockEntryId": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false

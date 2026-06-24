@@ -617,6 +617,189 @@ components:
           items:
             $ref: "#/components/schemas/RuntimeDiagnostic"
       additionalProperties: false
+    PackageCategoryV01:
+      type: string
+      enum:
+        - patch
+        - native
+        - mixed
+    PackageSourceV01:
+      type: string
+      enum:
+        - first-party
+        - marketplace
+        - workspace
+        - project-local
+    PackageRootV01:
+      type: string
+      enum:
+        - package
+        - project
+        - dev-link
+        - marketplace-install
+    PackageTrustV01:
+      type: string
+      enum:
+        - trusted
+        - untrusted
+        - quarantined
+    PackageContractsSupportV01:
+      type: object
+      required:
+        - line
+        - range
+      properties:
+        line:
+          type: string
+          pattern: "^0\\.[0-9]+$"
+        range:
+          type: string
+          pattern: "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
+      additionalProperties: false
+    PackageTargetTripleV01:
+      type: string
+      enum:
+        - aarch64-apple-darwin
+        - x86_64-apple-darwin
+        - x86_64-pc-windows-msvc
+        - aarch64-pc-windows-msvc
+        - x86_64-unknown-linux-gnu
+        - aarch64-unknown-linux-gnu
+    PackageChecksumV01:
+      type: object
+      required:
+        - algorithm
+        - value
+      properties:
+        algorithm:
+          type: string
+          enum:
+            - sha256
+        value:
+          type: string
+          pattern: "^[a-fA-F0-9]{64}$"
+      additionalProperties: false
+    PackageProvidedRefV01:
+      type: object
+      required:
+        - id
+        - path
+      properties:
+        id:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9_-]*(\\.[a-z0-9][a-z0-9_-]*)*$"
+        path:
+          type: string
+          pattern: "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._~!$&'()+,;=:@%/-]+$"
+        description:
+          type: string
+      additionalProperties: false
+    PackageProvidesV01:
+      type: object
+      properties:
+        patches:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageProvidedRefV01"
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageProvidedRefV01"
+        resources:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageProvidedRefV01"
+        help:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageProvidedRefV01"
+      additionalProperties: false
+    PackageDiagnosticV01:
+      type: object
+      required:
+        - severity
+        - code
+        - message
+      properties:
+        severity:
+          $ref: "#/components/schemas/RuntimeDiagnosticSeverity"
+        code:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+        details:
+          description: Arbitrary JSON diagnostic metadata.
+      additionalProperties: false
+    PackageRegistryEntryV01:
+      type: object
+      required:
+        - packageId
+        - version
+        - category
+        - source
+        - root
+        - trust
+        - contracts
+        - manifestPath
+        - manifestChecksum
+        - provides
+        - diagnostics
+      properties:
+        packageId:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$"
+        version:
+          type: string
+          pattern: "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+        category:
+          $ref: "#/components/schemas/PackageCategoryV01"
+        source:
+          $ref: "#/components/schemas/PackageSourceV01"
+        root:
+          $ref: "#/components/schemas/PackageRootV01"
+        trust:
+          $ref: "#/components/schemas/PackageTrustV01"
+        contracts:
+          $ref: "#/components/schemas/PackageContractsSupportV01"
+        runtimeAbiRange:
+          type: string
+          pattern: "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageTargetTripleV01"
+        manifestPath:
+          type: string
+          pattern: "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._~!$&'()+,;=:@%/-]+$"
+        manifestChecksum:
+          $ref: "#/components/schemas/PackageChecksumV01"
+        provides:
+          $ref: "#/components/schemas/PackageProvidesV01"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageDiagnosticV01"
+      additionalProperties: false
+    PackageRegistryListResponseV01:
+      type: object
+      required:
+        - ok
+        - packages
+        - diagnostics
+      properties:
+        ok:
+          type: boolean
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageRegistryEntryV01"
+        diagnostics:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageDiagnosticV01"
+      additionalProperties: false
     RuntimeClockDiagnosticSeverity:
       type: string
       enum:
@@ -1990,6 +2173,10 @@ components:
             - info
         message:
           type: string
+        code:
+          type: string
+        details:
+          description: Arbitrary JSON diagnostic metadata.
     ExecutionPlan:
       type: object
       required:

@@ -4,19 +4,21 @@ use std::{fs, path::Path};
 
 use skenion_contracts::{
     GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
-    NodeDefinitionManifestV01, ObjectTextParseResultV01, PasteGraphFragmentResponse,
-    ProjectDocumentV01, ReleaseTrainArtifactKindV01, ReleaseTrainArtifactSourceV01,
-    ReleaseTrainConnectionProfileV01, ReleaseTrainManifestV01, ReleaseTrainSupportTierV01,
-    ReleaseTrainTargetV01, RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
+    NodeDefinitionManifestV01, ObjectTextParseResultV01, PackageManifestV01,
+    PackageRootDocumentV01, PasteGraphFragmentResponse, ProjectDocumentV01,
+    ReleaseTrainArtifactKindV01, ReleaseTrainArtifactSourceV01, ReleaseTrainConnectionProfileV01,
+    ReleaseTrainManifestV01, ReleaseTrainSupportTierV01, ReleaseTrainTargetV01,
+    RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
     RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
     RuntimeCollaborationOperationResult, RuntimeCollaborationPresenceEnvelope,
     RuntimeCollaborationSelectionEnvelope, RuntimeOperationEnvelope, RuntimeSessionEvent,
     RuntimeSessionInfoResponse, analyze_graph_document_v01, analyze_graph_fragment_v01,
     parse_object_text_v01, validate_graph_document_v01, validate_graph_fragment_v01,
     validate_node_definition_v01, validate_object_text_parse_result_v01,
-    validate_paste_graph_fragment_response, validate_patch_definition_v01,
-    validate_project_document_v01, validate_release_train_manifest_v01,
-    validate_runtime_collaboration_event_envelope, validate_runtime_collaboration_operation_batch,
+    validate_package_manifest_v01, validate_paste_graph_fragment_response,
+    validate_patch_definition_v01, validate_project_document_v01,
+    validate_release_train_manifest_v01, validate_runtime_collaboration_event_envelope,
+    validate_runtime_collaboration_operation_batch,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
     validate_runtime_collaboration_operation_result,
@@ -1220,7 +1222,7 @@ fn validates_runtime_session_and_graph_edge_case_coverage_paths() {
             "controlRevision": 1,
             "project": null,
             "diagnostics": [
-                { "severity": "warning" }
+                { "severity": "warning", "message": "" }
             ],
             "plan": []
         },
@@ -1779,6 +1781,41 @@ fn validates_remaining_collaboration_integration_coverage_paths() {
 }
 
 #[test]
+fn validates_package_manifest_fixtures() {
+    for file in fixture_files("../../fixtures/package/v0.1/valid") {
+        let manifest: PackageManifestV01 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
+        validate_package_manifest_v01(&manifest)
+            .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+        assert_eq!(manifest.schema, "skenion.package.manifest");
+        assert_eq!(manifest.schema_version, "0.1.0");
+    }
+
+    for file in fixture_files("../../fixtures/package/v0.1/invalid") {
+        let document = fs::read(&file).expect("fixture should be readable");
+        if file
+            .file_name()
+            .is_some_and(|name| name.to_string_lossy().ends_with(".package-root.json"))
+        {
+            serde_json::from_slice::<PackageRootDocumentV01>(&document)
+                .expect_err("invalid package root fixture should fail to parse");
+            continue;
+        }
+
+        let manifest: PackageManifestV01 =
+            serde_json::from_slice(&document).unwrap_or_else(|error| {
+                panic!("{} should parse before validation: {error}", file.display())
+            });
+        assert!(
+            validate_package_manifest_v01(&manifest).is_err(),
+            "{} should be invalid",
+            file.display()
+        );
+    }
+}
+
+#[test]
 fn validates_node_definition_fixtures() {
     for file in fixture_files("../../fixtures/node/v0.1/valid") {
         let definition: NodeDefinitionManifestV01 =
@@ -1843,6 +1880,37 @@ fn validates_v01_project_patch_library_fixtures() {
         );
     }
 }
+
+#[test]
+fn validates_project_package_lock_reference_failures() {
+    for (fixture, expected) in [
+        (
+            "../../fixtures/project/v0.1/invalid/package-dependency-package-mismatch.project.json",
+            "lockEntryId pkg-skenion-examples-0.45.0 points to package skenion/examples",
+        ),
+        (
+            "../../fixtures/project/v0.1/invalid/package-provider-package-mismatch.project.json",
+            "does not match lock entry package skenion/examples",
+        ),
+        (
+            "../../fixtures/project/v0.1/invalid/package-dependency-version-out-of-range.project.json",
+            "locked version 0.45.0 does not satisfy >=0.46.0 <0.47.0",
+        ),
+    ] {
+        let file = Path::new(env!("CARGO_MANIFEST_DIR")).join(fixture);
+        let project: ProjectDocumentV01 =
+            serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
+                .expect("invalid project package fixture should parse");
+        let report = validate_project_document_v01(&project)
+            .expect_err("invalid project package fixture should fail validation");
+        assert!(
+            report.to_string().contains(expected),
+            "{} should include {expected:?}, got {report}",
+            file.display()
+        );
+    }
+}
+
 #[test]
 fn parses_object_text_parse_result_fixtures() {
     for file in fixture_files("../../fixtures/object-text/v0.1/valid") {

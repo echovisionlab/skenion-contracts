@@ -1214,6 +1214,26 @@ pub struct RuntimeConnectionProfile {
 
 pub type RuntimeProjectSnapshot = ProjectDocumentV01;
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeDiagnosticSeverity {
+    Error,
+    Warning,
+    Info,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeDiagnostic {
+    pub severity: RuntimeDiagnosticSeverity,
+    pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
@@ -1222,7 +1242,7 @@ pub struct RuntimeSessionSnapshot {
     pub view_revision: u64,
     pub control_revision: u64,
     pub project: Option<RuntimeProjectSnapshot>,
-    pub diagnostics: Vec<Value>,
+    pub diagnostics: Vec<RuntimeDiagnostic>,
     pub plan: Option<Value>,
 }
 
@@ -1342,7 +1362,7 @@ pub struct RuntimeSessionInfoResponse {
     pub profile: RuntimeConnectionProfile,
     pub capabilities: RuntimeSessionCapabilitySet,
     pub event_replay: RuntimeEventReplayWindow,
-    pub diagnostics: Vec<Value>,
+    pub diagnostics: Vec<RuntimeDiagnostic>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -1389,8 +1409,313 @@ pub struct RuntimeSessionEvent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mutation: Option<RuntimeHistoryEntry>,
     pub replay: RuntimeEventReplayMetadata,
-    pub diagnostics: Vec<Value>,
+    pub diagnostics: Vec<RuntimeDiagnostic>,
     pub created_at: String,
+}
+
+pub const SKENION_PACKAGE_MANIFEST_FILE_NAME: &str = "skenion.package.json";
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageCategoryV01 {
+    Patch,
+    Native,
+    Mixed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageSourceV01 {
+    FirstParty,
+    Marketplace,
+    Workspace,
+    ProjectLocal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageRootKindV01 {
+    Package,
+    Project,
+    DevLink,
+    MarketplaceInstall,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageTrustV01 {
+    Trusted,
+    Untrusted,
+    Quarantined,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub enum PackageTargetTripleV01 {
+    #[serde(rename = "aarch64-apple-darwin")]
+    Aarch64AppleDarwin,
+    #[serde(rename = "x86_64-apple-darwin")]
+    X8664AppleDarwin,
+    #[serde(rename = "x86_64-pc-windows-msvc")]
+    X8664WindowsMsvc,
+    #[serde(rename = "aarch64-pc-windows-msvc")]
+    Aarch64WindowsMsvc,
+    #[serde(rename = "x86_64-unknown-linux-gnu")]
+    X8664LinuxGnu,
+    #[serde(rename = "aarch64-unknown-linux-gnu")]
+    Aarch64LinuxGnu,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageChecksumAlgorithmV01 {
+    Sha256,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageEvidenceKindV01 {
+    Checksum,
+    Signature,
+    Sbom,
+    Attestation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageDiagnosticSeverityV01 {
+    Error,
+    Warning,
+    Info,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageContractsSupportV01 {
+    pub line: String,
+    pub range: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageProvidedRefV01 {
+    pub id: String,
+    pub path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageProvidesV01 {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub patches: Vec<PackageProvidedRefV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub nodes: Vec<PackageProvidedRefV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub resources: Vec<PackageProvidedRefV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub help: Vec<PackageProvidedRefV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackagePathsV01 {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub patches: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub resources: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub docs: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tests: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageChecksumV01 {
+    pub algorithm: PackageChecksumAlgorithmV01,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageChecksumRefV01 {
+    pub id: String,
+    pub path: String,
+    pub checksum: PackageChecksumV01,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageEvidenceRefV01 {
+    pub id: String,
+    pub kind: PackageEvidenceKindV01,
+    pub path: String,
+    pub checksum: PackageChecksumV01,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageNativeArtifactV01 {
+    pub target: PackageTargetTripleV01,
+    pub path: String,
+    pub entrypoint: String,
+    pub checksum: PackageChecksumV01,
+    pub evidence_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageDiagnosticV01 {
+    pub severity: PackageDiagnosticSeverityV01,
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageManifestV01 {
+    pub schema: String,
+    pub schema_version: String,
+    pub id: String,
+    pub version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    pub category: PackageCategoryV01,
+    pub source: PackageSourceV01,
+    pub root: PackageRootKindV01,
+    pub trust: PackageTrustV01,
+    pub contracts: PackageContractsSupportV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_abi_range: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub targets: Vec<PackageTargetTripleV01>,
+    pub provides: PackageProvidesV01,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub patch_library: Vec<PatchDefinitionV01>,
+    pub paths: PackagePathsV01,
+    pub checksums: Vec<PackageChecksumRefV01>,
+    pub evidence: Vec<PackageEvidenceRefV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub native_artifacts: Vec<PackageNativeArtifactV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diagnostics: Vec<PackageDiagnosticV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageRootDocumentV01 {
+    pub schema: String,
+    pub schema_version: String,
+    pub manifest_file_name: String,
+    pub manifest: PackageManifestV01,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageRegistryEntryV01 {
+    pub package_id: String,
+    pub version: String,
+    pub category: PackageCategoryV01,
+    pub source: PackageSourceV01,
+    pub root: PackageRootKindV01,
+    pub trust: PackageTrustV01,
+    pub contracts: PackageContractsSupportV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_abi_range: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub targets: Vec<PackageTargetTripleV01>,
+    pub manifest_path: String,
+    pub manifest_checksum: PackageChecksumV01,
+    pub provides: PackageProvidesV01,
+    pub diagnostics: Vec<PackageDiagnosticV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageRegistryListResponseV01 {
+    pub ok: bool,
+    pub packages: Vec<PackageRegistryEntryV01>,
+    pub diagnostics: Vec<PackageDiagnosticV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ProviderRefKindV01 {
+    Patch,
+    Node,
+    Resource,
+    NativeObject,
+    Codec,
+    Help,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectPackageDependencyV01 {
+    pub package_id: String,
+    pub version_range: String,
+    pub lock_entry_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectPackageLockEntryV01 {
+    pub id: String,
+    pub package_id: String,
+    pub version: String,
+    pub source: PackageSourceV01,
+    pub root: PackageRootKindV01,
+    pub trust: PackageTrustV01,
+    pub contracts_line: String,
+    pub contracts_range: String,
+    pub manifest_path: String,
+    pub manifest_checksum: PackageChecksumV01,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evidence_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectResourceLockEntryV01 {
+    pub id: String,
+    pub lock_entry_id: String,
+    pub resource_id: String,
+    pub path: String,
+    pub checksum: PackageChecksumV01,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evidence_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderRefV01 {
+    pub id: String,
+    pub kind: ProviderRefKindV01,
+    pub package_id: String,
+    pub provided_id: String,
+    pub lock_entry_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -1454,6 +1779,14 @@ pub struct ProjectDocumentV01 {
     pub graph: GraphDocumentV01,
     pub view_state: ViewStateV01,
     pub patch_library: Vec<PatchDefinitionV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub package_dependencies: Vec<ProjectPackageDependencyV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub package_lock: Vec<ProjectPackageLockEntryV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub resource_lock: Vec<ProjectResourceLockEntryV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub provider_refs: Vec<ProviderRefV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tutorial: Option<serde_json::Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
