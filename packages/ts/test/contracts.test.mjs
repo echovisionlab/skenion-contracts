@@ -852,10 +852,45 @@ test("validates package manifests and package roots", async () => {
   });
   assert.equal(packageRootResult.ok, true);
 
+  assert.equal(validatePackageRootV01(null).ok, false);
+
+  const wrongRootSchema = validatePackageRootV01({
+    schema: "skenion.package.directory",
+    schemaVersion: "0.1.0",
+    manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    manifest: patchPackage
+  });
+  assert.equal(wrongRootSchema.ok, false);
+  assert.match(wrongRootSchema.errors.join("\n"), /schema must be skenion\.package\.root/);
+
+  const wrongRootVersion = validatePackageRootV01({
+    schema: "skenion.package.root",
+    schemaVersion: "0.2.0",
+    manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    manifest: patchPackage
+  });
+  assert.equal(wrongRootVersion.ok, false);
+  assert.match(wrongRootVersion.errors.join("\n"), /schemaVersion must be 0\.1\.0/);
+
+  const invalidRootManifest = validatePackageRootV01({
+    schema: "skenion.package.root",
+    schemaVersion: "0.1.0",
+    manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    manifest: { ...patchPackage, schema: "skenion.extension.manifest" }
+  });
+  assert.equal(invalidRootManifest.ok, false);
+  assert.match(invalidRootManifest.errors.join("\n"), /manifest .*schema/);
+
   const extensionManifest = await readJson("fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json");
   const extensionSurfaceResult = validatePackageManifestV01(extensionManifest);
   assert.equal(extensionSurfaceResult.ok, false);
   assert.match(extensionSurfaceResult.errors.join("\n"), /schema must be equal to constant/);
+
+  const secondMissingEvidence = structuredClone(mixedPackage);
+  secondMissingEvidence.nativeArtifacts[0].evidenceRefs = ["native-attestation", "missing-native-attestation"];
+  const secondMissingEvidenceResult = validatePackageManifestV01(secondMissingEvidence);
+  assert.equal(secondMissingEvidenceResult.ok, false);
+  assert.match(secondMissingEvidenceResult.errors.join("\n"), /missing-native-attestation/);
 
   const invalidCases = [
     ["fixtures/package/v0.1/invalid/native-missing-abi.skenion.package.json", /runtimeAbiRange/],
@@ -2216,6 +2251,25 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   );
   assert.equal(dependencyVersionMismatch.ok, false);
   assert.match(dependencyVersionMismatch.errors.join("\n"), /locked version .*does not satisfy/);
+
+  const validPackageProject = await readJson("fixtures/project/v0.1/valid/package-lock.project.json");
+  const missingDependencyLock = structuredClone(validPackageProject);
+  missingDependencyLock.packageDependencies[0].lockEntryId = "missing-lock-entry";
+  const missingDependencyLockResult = validateProjectDocumentV01(missingDependencyLock);
+  assert.equal(missingDependencyLockResult.ok, false);
+  assert.match(missingDependencyLockResult.errors.join("\n"), /dependency .*missing-lock-entry/);
+
+  const missingResourceLock = structuredClone(validPackageProject);
+  missingResourceLock.resourceLock[0].lockEntryId = "missing-resource-lock-entry";
+  const missingResourceLockResult = validateProjectDocumentV01(missingResourceLock);
+  assert.equal(missingResourceLockResult.ok, false);
+  assert.match(missingResourceLockResult.errors.join("\n"), /resource lock .*missing-resource-lock-entry/);
+
+  const missingProviderLock = structuredClone(validPackageProject);
+  missingProviderLock.providerRefs[0].lockEntryId = "missing-provider-lock-entry";
+  const missingProviderLockResult = validateProjectDocumentV01(missingProviderLock);
+  assert.equal(missingProviderLockResult.ok, false);
+  assert.match(missingProviderLockResult.errors.join("\n"), /provider ref .*missing-provider-lock-entry/);
 
   const graphInvalidPatch = structuredClone(validProject.patchLibrary[0]);
   graphInvalidPatch.graph.nodes.push(structuredClone(graphInvalidPatch.graph.nodes[0]));

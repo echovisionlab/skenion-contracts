@@ -259,30 +259,6 @@ function validatePackageManifestV01Semantics(manifest: PackageManifestV01): stri
   errors.push(...duplicateErrors((manifest.provides.resources ?? []).map((provided) => provided.id), "provided resource id"));
   errors.push(...duplicateErrors((manifest.provides.help ?? []).map((provided) => provided.id), "provided help id"));
 
-  if (manifest.category === "patch") {
-    if (manifest.runtimeAbiRange !== undefined) {
-      errors.push("patch package must not declare runtimeAbiRange");
-    }
-    if (manifest.targets !== undefined) {
-      errors.push("patch package must not declare targets");
-    }
-    if (manifest.nativeArtifacts !== undefined) {
-      errors.push("patch package must not declare nativeArtifacts");
-    }
-  }
-
-  if (manifest.category === "native" || manifest.category === "mixed") {
-    if (!manifest.runtimeAbiRange) {
-      errors.push(`${manifest.category} package requires runtimeAbiRange`);
-    }
-    if (!manifest.nativeArtifacts || manifest.nativeArtifacts.length === 0) {
-      errors.push(`${manifest.category} package requires nativeArtifacts`);
-    }
-    if (!manifest.targets || manifest.targets.length === 0) {
-      errors.push(`${manifest.category} package requires targets`);
-    }
-  }
-
   for (const artifact of manifest.nativeArtifacts ?? []) {
     if (!evidenceIds.has(artifact.evidenceRefs[0])) {
       errors.push(`native artifact ${artifact.path} references missing evidence: ${artifact.evidenceRefs[0]}`);
