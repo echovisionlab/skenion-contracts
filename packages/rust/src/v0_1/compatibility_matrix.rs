@@ -291,6 +291,57 @@ mod tests {
     }
 
     #[test]
+    fn rejects_schema_contract_mismatches() {
+        let mut matrix = matrix();
+        matrix.schema = "skenion.release-verifier".to_owned();
+        matrix.schema_version = "0.2.0".to_owned();
+
+        let report = validate_compatibility_matrix_v01(&matrix)
+            .expect_err("matrix should reject schema mismatches");
+        let message = report.to_string();
+        assert!(message.contains("expected schema skenion.compatibility-matrix"));
+        assert!(message.contains("expected schema-version 0.1.0"));
+    }
+
+    #[test]
+    fn rejects_package_identity_mismatches() {
+        let mut matrix = matrix();
+        matrix.components.contracts.crate_package.ecosystem =
+            CompatibilityMatrixPackageEcosystemV01::Npm;
+        matrix.components.sdk.npm.name = "@skenion/not-sdk".to_owned();
+
+        let report = validate_compatibility_matrix_v01(&matrix)
+            .expect_err("matrix should reject package identity mismatches");
+        let message = report.to_string();
+        assert!(message.contains("skenion-contracts on crates.io"));
+        assert!(message.contains("@skenion/sdk on npm"));
+    }
+
+    #[test]
+    fn rejects_invalid_contracts_npm_version() {
+        let mut matrix = matrix();
+        matrix.components.contracts.npm.version = "0.x.0".to_owned();
+
+        let report = validate_compatibility_matrix_v01(&matrix)
+            .expect_err("matrix should reject invalid Contracts package version");
+        assert!(report.to_string().contains("invalid contracts npm version"));
+    }
+
+    #[test]
+    fn rejects_derived_contract_line_and_range_mismatches() {
+        let mut matrix = matrix();
+        matrix.contracts_line = "0.44".to_owned();
+        matrix.contracts_range = ">=0.44.0 <0.45.0".to_owned();
+
+        let report = validate_compatibility_matrix_v01(&matrix)
+            .expect_err("matrix should reject derived compatibility mismatches");
+        let message = report.to_string();
+        assert!(message.contains("contracts-line must be"));
+        assert!(message.contains("contracts-range must be"));
+        assert!(message.contains("contracts-range must include"));
+    }
+
+    #[test]
     fn rejects_protocol_baseline_mismatch() {
         let mut matrix = matrix();
         matrix.protocol_baselines.runtime_http = "v1".to_owned();
