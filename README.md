@@ -67,14 +67,14 @@ Bootstrap repository for the skenion project. Implementation follows the public 
 The `@skenion/contracts` npm package and `skenion-contracts` Rust crate remain
 publishable release artifacts because they are importable contract and validator
 libraries. Publishing still runs only through GitHub Actions release workflows.
-Release train registry gates are limited to `contractsNpm`, `contractsCrate`,
-and `sdkNpm`; Runtime and Studio are tracked through release artifacts.
 
 Contracts packages also export canonical v0 compatibility-line helpers and the
 `skenion.compatibility-matrix` schema/types/validators. The compatibility
-matrix records unequal component versions, Runtime/Studio artifacts and
-checksums, SDK-supported Contracts ranges, examples conformance, Docs Manual
-Pages evidence, protocol baselines, capabilities, and promotion state.
+matrix records Contracts package identity, SDK-supported Contracts ranges,
+component versions, and protocol baselines. Runtime/Studio release artifacts,
+checksums, S3 locations, promotion gates, and product release-set completeness
+belong to the repositories and workflows that produce those artifacts, not to
+the Contracts package.
 
 ## License And Credit
 

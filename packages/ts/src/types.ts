@@ -1889,335 +1889,22 @@ export interface ObjectTextParseResultV01 {
   diagnostics: ObjectTextDiagnosticV01[];
 }
 
-export type ReleaseTrainTargetV01 =
-  | "aarch64-apple-darwin"
-  | "x86_64-apple-darwin"
-  | "x86_64-pc-windows-msvc"
-  | "aarch64-pc-windows-msvc"
-  | "x86_64-unknown-linux-gnu"
-  | "aarch64-unknown-linux-gnu";
+export type CompatibilityMatrixPackageEcosystemV01 = "npm" | "crates.io";
 
-export type ReleaseTrainSupportTierV01 = "release-blocking" | "preview";
-export type ReleaseTrainArtifactKindV01 =
-  | "runtime-binary"
-  | "studio-desktop-package"
-  | "studio-runtime-sidecar"
-  | "studio-web-bundle";
-export type ReleaseTrainTargetArtifactKindV01 = Exclude<ReleaseTrainArtifactKindV01, "studio-web-bundle">;
-export type ReleaseTrainPackageEcosystemV01 = "npm" | "crates.io";
-export type ReleaseTrainChecksumAlgorithmV01 = "sha256";
-export type ReleaseTrainGateStatusV01 = "pending" | "passed" | "failed" | "waived";
-
-export interface ReleaseTrainRegistryPackageV01 {
-  ecosystem: ReleaseTrainPackageEcosystemV01;
+export interface CompatibilityMatrixRegistryPackageV01 {
+  ecosystem: CompatibilityMatrixPackageEcosystemV01;
   name: string;
   version: string;
   url?: string | null;
 }
 
-export interface ReleaseTrainChecksumV01 {
-  algorithm: ReleaseTrainChecksumAlgorithmV01;
-  value: string | null;
-}
-
-export interface ReleaseTrainGithubReleaseAssetSourceV01 {
-  kind: "github-release-asset";
-  repository: string;
-  tag: string;
-  "asset-name": string;
-  url: string | null;
-}
-
-export interface ReleaseTrainUrlSourceV01 {
-  kind: "url";
-  url: string;
-}
-
-export type ReleaseTrainArtifactSourceV01 =
-  | ReleaseTrainGithubReleaseAssetSourceV01
-  | ReleaseTrainUrlSourceV01;
-
-export interface ReleaseTrainArtifactV01 {
-  id: string;
-  target: ReleaseTrainTargetV01;
-  "support-tier": ReleaseTrainSupportTierV01;
-  kind: ReleaseTrainTargetArtifactKindV01;
-  name: string;
-  version: string;
-  source: ReleaseTrainArtifactSourceV01;
-  checksum: ReleaseTrainChecksumV01;
-  "size-bytes": number | null;
-}
-
-export type ReleaseTrainTargetArtifactMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainArtifactV01>;
-
-export interface ReleaseTrainStudioWebBundleArtifactV01 {
-  id: string;
-  kind: "studio-web-bundle";
-  name: string;
-  version: string;
-  source: ReleaseTrainArtifactSourceV01;
-  checksum: ReleaseTrainChecksumV01;
-  "size-bytes": number | null;
-}
-
-export type ReleaseTrainReleaseArtifactV01 =
-  | ReleaseTrainArtifactV01
-  | ReleaseTrainStudioWebBundleArtifactV01;
-
-export interface ReleaseTrainProtocolBaselinesV01 {
+export interface CompatibilityMatrixProtocolBaselinesV01 {
   graph: "0.1";
   project: "0.1";
   node: "0.1";
   extension: "0.1";
   "runtime-http": "v0";
   "runtime-collaboration": "v0";
-}
-
-export type ReleaseTrainConnectionProfileV01 = "local-managed" | "local-shared" | "remote";
-
-export interface ReleaseTrainRuntimeCapabilitySetV01 {
-  "session-addressing": true;
-  "event-replay": true;
-  "multi-window": true;
-  "connection-profiles": ReleaseTrainConnectionProfileV01[];
-  collaboration: "server-authoritative-ot";
-  "operation-log": true;
-  "io-discovery": "raw-descriptor";
-  "auth-policy": "deferred";
-}
-
-export interface ReleaseTrainStudioCapabilitySetV01 {
-  "graph-editor": true;
-  "patch-library": true;
-  subpatches: true;
-  "living-help": true;
-  "graph-clipboard": true;
-  "desktop-shell": "tauri";
-  "connection-profiles": ReleaseTrainConnectionProfileV01[];
-}
-
-export interface ReleaseTrainMarketplaceCapabilitySetV01 {
-  "package-discovery": true;
-  "package-install": true;
-  "package-update": true;
-  "extension-packages": true;
-}
-
-export interface ReleaseTrainManualCapabilitySetV01 {
-  "versioned-paths": true;
-  "pages-deployment": true;
-  "latest-promotion-requires-matrix": true;
-  "patch-releases-use-major-minor-path": true;
-}
-
-export interface ReleaseTrainCapabilitySetV01 {
-  "protocol-surfaces": ReleaseTrainProtocolBaselinesV01;
-  runtime: ReleaseTrainRuntimeCapabilitySetV01;
-  studio: ReleaseTrainStudioCapabilitySetV01;
-  marketplace: ReleaseTrainMarketplaceCapabilitySetV01;
-  manual: ReleaseTrainManualCapabilitySetV01;
-}
-
-export interface ReleaseTrainContractsComponentV01 {
-  npm: ReleaseTrainRegistryPackageV01;
-  crate: ReleaseTrainRegistryPackageV01;
-}
-
-export interface ReleaseTrainRuntimeComponentV01 {
-  binaries: ReleaseTrainTargetArtifactMapV01;
-}
-
-export interface ReleaseTrainSdkComponentV01 {
-  npm: ReleaseTrainRegistryPackageV01;
-}
-
-export interface ReleaseTrainStudioComponentV01 {
-  "web-bundle": ReleaseTrainStudioWebBundleArtifactV01;
-  "desktop-packages": ReleaseTrainTargetArtifactMapV01;
-  "runtime-sidecars": ReleaseTrainTargetArtifactMapV01;
-}
-
-export interface ReleaseTrainExamplesComponentV01 {
-  repository: string;
-  version: string;
-  tag: string;
-  commit?: string;
-}
-
-export interface ReleaseTrainManualComponentV01 {
-  version: string;
-  path: string;
-  "pages-url": string;
-}
-
-export interface ReleaseTrainDocsComponentV01 {
-  manual: ReleaseTrainManualComponentV01;
-}
-
-export interface ReleaseTrainComponentsV01 {
-  contracts: ReleaseTrainContractsComponentV01;
-  runtime: ReleaseTrainRuntimeComponentV01;
-  sdk: ReleaseTrainSdkComponentV01;
-  studio: ReleaseTrainStudioComponentV01;
-  examples: ReleaseTrainExamplesComponentV01;
-  docs: ReleaseTrainDocsComponentV01;
-}
-
-export interface ReleaseTrainRegistryPackageGateV01 {
-  id: string;
-  status: ReleaseTrainGateStatusV01;
-  required: boolean;
-  package: ReleaseTrainRegistryPackageV01;
-  "evidence-url"?: string;
-}
-
-export interface ReleaseTrainRegistryPackageGatesV01 {
-  "contracts-npm": ReleaseTrainRegistryPackageGateV01;
-  "contracts-crate": ReleaseTrainRegistryPackageGateV01;
-  "sdk-npm": ReleaseTrainRegistryPackageGateV01;
-}
-
-export interface ReleaseTrainArtifactCollectionGateV01 {
-  id: string;
-  status: ReleaseTrainGateStatusV01;
-  required: boolean;
-  repository: string;
-  tag: string;
-  "artifact-ids": string[];
-  "evidence-url"?: string;
-}
-
-export interface ReleaseTrainGithubReleaseAssetGatesV01 {
-  runtime: ReleaseTrainArtifactCollectionGateV01;
-  studio: ReleaseTrainArtifactCollectionGateV01;
-}
-
-export interface ReleaseTrainChecksumGateV01 {
-  id: string;
-  status: ReleaseTrainGateStatusV01;
-  required: boolean;
-  "artifact-ids": string[];
-  "expected-checksums"?: Record<string, ReleaseTrainChecksumV01>;
-  "evidence-url"?: string;
-}
-
-export interface ReleaseTrainRuntimeSmokeGateV01 {
-  id: string;
-  status: ReleaseTrainGateStatusV01;
-  required: boolean;
-  target: ReleaseTrainTargetV01;
-  "artifact-id": string;
-  "evidence-url"?: string;
-}
-
-export type ReleaseTrainRuntimeSmokeGateMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainRuntimeSmokeGateV01>;
-
-export interface ReleaseTrainStudioPackageSmokeGateV01 {
-  id: string;
-  status: ReleaseTrainGateStatusV01;
-  required: boolean;
-  target: ReleaseTrainTargetV01;
-  "desktop-package-artifact-id": string;
-  "runtime-sidecar-artifact-id": string;
-  "evidence-url"?: string;
-}
-
-export type ReleaseTrainStudioPackageSmokeGateMapV01 = Record<ReleaseTrainTargetV01, ReleaseTrainStudioPackageSmokeGateV01>;
-
-export interface ReleaseTrainExamplesConformanceGateV01 {
-  id: string;
-  status: ReleaseTrainGateStatusV01;
-  required: boolean;
-  repository: string;
-  ref: string;
-  version: string;
-  "evidence-url"?: string;
-}
-
-export interface ReleaseTrainDocsPagesDeploymentGateV01 {
-  id: string;
-  status: ReleaseTrainGateStatusV01;
-  required: boolean;
-  "manual-version": string;
-  "manual-path": string;
-  "pages-url": string;
-  "evidence-url"?: string;
-}
-
-export interface ReleaseTrainGatesV01 {
-  "registry-packages": ReleaseTrainRegistryPackageGatesV01;
-  "github-release-assets": ReleaseTrainGithubReleaseAssetGatesV01;
-  "checksum-verification": ReleaseTrainChecksumGateV01;
-  "runtime-smoke": ReleaseTrainRuntimeSmokeGateMapV01;
-  "studio-package-smoke": ReleaseTrainStudioPackageSmokeGateMapV01;
-  "examples-conformance": ReleaseTrainExamplesConformanceGateV01;
-  "docs-pages-deployment": ReleaseTrainDocsPagesDeploymentGateV01;
-}
-
-export interface ReleaseTrainManifestV01 {
-  schema: "skenion.release-train";
-  "schema-version": "0.1.0";
-  "train-id": string;
-  "train-version": string;
-  "protocol-baselines": ReleaseTrainProtocolBaselinesV01;
-  "capability-set": ReleaseTrainCapabilitySetV01;
-  components: ReleaseTrainComponentsV01;
-  "release-gates": ReleaseTrainGatesV01;
-}
-
-export type CompatibilityMatrixTargetV01 = ReleaseTrainTargetV01;
-export type CompatibilityMatrixArtifactKindV01 = ReleaseTrainArtifactKindV01;
-export type CompatibilityMatrixPackageEcosystemV01 = ReleaseTrainPackageEcosystemV01;
-export type CompatibilityMatrixChecksumAlgorithmV01 = ReleaseTrainChecksumAlgorithmV01;
-export type CompatibilityMatrixPromotionStateV01 = "draft" | "candidate" | "promoted" | "rejected";
-export type CompatibilityMatrixConformanceStatusV01 = "pending" | "passed" | "failed";
-
-export interface CompatibilityMatrixChecksumV01 {
-  algorithm: CompatibilityMatrixChecksumAlgorithmV01;
-  value: string | null;
-}
-
-export interface CompatibilityMatrixGithubReleaseAssetSourceV01 {
-  kind: "github-release-asset";
-  repository: string;
-  tag: string;
-  "asset-name": string;
-  url?: string | null;
-}
-
-export interface CompatibilityMatrixArtifactV01 {
-  id: string;
-  target: CompatibilityMatrixTargetV01;
-  kind: CompatibilityMatrixArtifactKindV01;
-  name: string;
-  version: string;
-  source: CompatibilityMatrixGithubReleaseAssetSourceV01;
-  checksum: CompatibilityMatrixChecksumV01;
-  "size-bytes"?: number | null;
-}
-
-export type CompatibilityMatrixTargetArtifactMapV01 = Record<
-  CompatibilityMatrixTargetV01,
-  CompatibilityMatrixArtifactV01
->;
-
-export interface CompatibilityMatrixRegistryPackageV01 {
-  ecosystem: CompatibilityMatrixPackageEcosystemV01;
-  name: string;
-  version: string;
-  tag: string;
-  commit: string;
-  url?: string | null;
-}
-
-export type CompatibilityMatrixProtocolBaselinesV01 = ReleaseTrainProtocolBaselinesV01;
-
-export interface CompatibilityMatrixCapabilitySetV01 {
-  runtime: string[];
-  studio: string[];
-  marketplace: string[];
-  docs: string[];
 }
 
 export interface CompatibilityMatrixContractsComponentV01 {
@@ -2227,7 +1914,6 @@ export interface CompatibilityMatrixContractsComponentV01 {
 
 export interface CompatibilityMatrixRuntimeComponentV01 {
   version: string;
-  assets: CompatibilityMatrixTargetArtifactMapV01;
 }
 
 export interface CompatibilityMatrixSdkComponentV01 {
@@ -2237,30 +1923,6 @@ export interface CompatibilityMatrixSdkComponentV01 {
 
 export interface CompatibilityMatrixStudioComponentV01 {
   version: string;
-  "web-assets": CompatibilityMatrixArtifactV01[];
-  "desktop-assets": CompatibilityMatrixTargetArtifactMapV01;
-  "runtime-sidecars": CompatibilityMatrixTargetArtifactMapV01;
-}
-
-export interface CompatibilityMatrixExamplesComponentV01 {
-  repository: string;
-  ref: string;
-  commit: string;
-  "conformance-status": CompatibilityMatrixConformanceStatusV01;
-  "evidence-url"?: string;
-}
-
-export interface CompatibilityMatrixManualComponentV01 {
-  version: string;
-  path: string;
-  "pages-url": string;
-  "pages-deployed": boolean;
-  "promoted-latest": boolean;
-  "evidence-url"?: string;
-}
-
-export interface CompatibilityMatrixDocsComponentV01 {
-  manual: CompatibilityMatrixManualComponentV01;
 }
 
 export interface CompatibilityMatrixComponentsV01 {
@@ -2268,19 +1930,6 @@ export interface CompatibilityMatrixComponentsV01 {
   runtime: CompatibilityMatrixRuntimeComponentV01;
   sdk: CompatibilityMatrixSdkComponentV01;
   studio: CompatibilityMatrixStudioComponentV01;
-  examples: CompatibilityMatrixExamplesComponentV01;
-  docs: CompatibilityMatrixDocsComponentV01;
-}
-
-export interface CompatibilityMatrixVerificationV01 {
-  "expected-checksums": Record<string, CompatibilityMatrixChecksumV01>;
-}
-
-export interface CompatibilityMatrixPromotionV01 {
-  state: CompatibilityMatrixPromotionStateV01;
-  "promoted-at"?: string;
-  "promoted-by"?: string;
-  "evidence-url"?: string;
 }
 
 export interface CompatibilityMatrixV01 {
@@ -2290,10 +1939,7 @@ export interface CompatibilityMatrixV01 {
   "contracts-line": string;
   "contracts-range": string;
   "protocol-baselines": CompatibilityMatrixProtocolBaselinesV01;
-  capabilities: CompatibilityMatrixCapabilitySetV01;
   components: CompatibilityMatrixComponentsV01;
-  verification: CompatibilityMatrixVerificationV01;
-  promotion: CompatibilityMatrixPromotionV01;
 }
 
 export interface ValidationSuccess<T> {
