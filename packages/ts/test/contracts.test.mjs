@@ -11,6 +11,7 @@ import {
   getBuiltinNodeHelp,
   getBuiltinNodeHelpGraph,
   compatibilityMatrixV01Schema,
+  SKENION_PACKAGE_MANIFEST_FILE_NAME,
   createDefaultViewStateForGraph,
   derivePatchContractV01,
   derivePatchContractsV01,
@@ -22,6 +23,7 @@ import {
   graphV01Schema,
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
+  packageManifestV01Schema,
   planAudioClockBridgeV01,
   planConversion,
   projectV01Schema,
@@ -49,6 +51,8 @@ import {
   validateGraphDocument,
   validateGraphDocumentV01,
   validateGraphFragmentV01,
+  validatePackageManifestV01,
+  validatePackageRootV01,
   validateNodeDefinition,
   validateNodeDefinitionV01,
   validatePatchDefinitionV01,
@@ -72,7 +76,10 @@ import {
   validateViewStateV01,
   validateShaderInterface,
   isCompatibilityMatrixV01,
+  isPackageRegistryListResponse,
   isSameV0CompatibilityLine,
+  isRuntimeExtensionListResponse,
+  isRuntimeLogSnapshotResponse,
   isPasteGraphFragmentRequest,
   isPasteGraphFragmentResponse,
   isReleaseTrainManifestV01,
@@ -109,6 +116,8 @@ test("exports active schema contracts", () => {
   assert.equal(nodeDefinitionV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
   assert.equal(extensionManifestV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(packageManifestV01Schema.properties.schema.const, "skenion.package.manifest");
+  assert.equal(SKENION_PACKAGE_MANIFEST_FILE_NAME, "skenion.package.json");
   assert.equal(releaseTrainV01Schema.properties.schema.const, "skenion.release-train");
   assert.equal(releaseTrainV01Schema.properties["schema-version"].const, "0.1.0");
   assert.equal(compatibilityMatrixV01Schema.properties.schema.const, "skenion.compatibility-matrix");
@@ -118,6 +127,12 @@ test("exports active schema contracts", () => {
   assert.equal(CONTRACTS_COMPATIBILITY_RANGE, deriveV0CompatibilityRange(CONTRACTS_PACKAGE_VERSION));
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(runtimeSessionV0Schema.properties.schema.const, "skenion.runtime.session.info");
+  assert.deepEqual(runtimeSessionV0Schema.$defs.runtimeDiagnostic.required, ["severity", "message"]);
+  assert.equal(runtimeSessionV0Schema.$defs.runtimeDiagnostic.properties.code.type, "string");
+  assert.equal(
+    runtimeSessionV0Schema.$defs.runtimeDiagnostic.properties.details.description,
+    "Arbitrary JSON diagnostic metadata."
+  );
   assert.equal(
     runtimeCollaborationV0Schema.$defs.runtimeCollaborationOperationEnvelope.properties.schema.const,
     "skenion.runtime.collaboration.operation"
@@ -611,6 +626,24 @@ test("validates runtime session profile and replay fixtures", async () => {
   assert.equal(event.sessionRevision, event.snapshot.sessionRevision);
   assert.equal(event.replay.gap.reason, "retention-overflow");
 
+  const eventWithDiagnosticDetails = structuredClone(event);
+  eventWithDiagnosticDetails.diagnostics = [
+    {
+      severity: "warning",
+      message: "Package load reported non-fatal diagnostics.",
+      code: "package-load-diagnostics",
+      details: {
+        packageId: "skenion/core",
+        quietSuccess: true,
+        ignoredDiagnostics: ["info", null, { count: 2 }]
+      }
+    }
+  ];
+  eventWithDiagnosticDetails.snapshot.diagnostics = structuredClone(eventWithDiagnosticDetails.diagnostics);
+
+  assert.equal(validateRuntimeSessionEvent(eventWithDiagnosticDetails).ok, true);
+  assert.equal(isRuntimeSessionEvent(eventWithDiagnosticDetails), true);
+
   const invalidInfoFixtures = [
     "fixtures/runtime-session/v0/invalid/invalid-profile-mode.session-info.json",
     "fixtures/runtime-session/v0/invalid/ownership-mismatch.session-info.json",
@@ -698,6 +731,66 @@ test("validates runtime session profile and replay fixtures", async () => {
   assert.equal(isRuntimeSessionEvent(mismatchedRevision), false);
 });
 
+test("runtime HTTP diagnostics accept optional code and arbitrary JSON details", () => {
+  const diagnostic = {
+    severity: "warning",
+    message: "Package load reported non-fatal diagnostics.",
+    code: "package-load-diagnostics",
+    details: {
+      packageId: "skenion/core",
+      quietSuccess: true,
+      ignoredDiagnostics: ["info", null, { count: 2 }]
+    }
+  };
+  const runtimeLogs = {
+    schema: "skenion.runtime.logs",
+    schemaVersion: "0.1.0",
+    ok: true,
+    events: [],
+    retention: {
+      replayLimit: 200,
+      replayLevels: ["warning", "error"]
+    },
+    diagnostics: [diagnostic]
+  };
+  const extensions = {
+    ok: true,
+    extensions: [
+      {
+        id: "skenion/core",
+        version: "0.1.0",
+        kind: "core-package",
+        runtimeAbiVersion: "0.1.0",
+        manifestPath: "/tmp/skenion/core/skenion.extension.json",
+        status: "loaded",
+        capabilities: ["value.number.v0.1"],
+        providedNodes: ["core.value"],
+        providedCodecs: [],
+        providedTransports: [],
+        providedHelp: ["core.value"],
+        testIds: ["value-baseline"],
+        diagnostics: [diagnostic]
+      }
+    ],
+    diagnostics: [diagnostic]
+  };
+
+  assert.equal(isRuntimeLogSnapshotResponse(runtimeLogs), true);
+  assert.equal(isRuntimeExtensionListResponse(extensions), true);
+
+  const nonStringCode = structuredClone(runtimeLogs);
+  nonStringCode.diagnostics[0].code = 404;
+  assert.equal(isRuntimeLogSnapshotResponse(nonStringCode), false);
+
+  const extraDiagnosticField = structuredClone(runtimeLogs);
+  extraDiagnosticField.diagnostics[0].traceId = "trace-runtime-diagnostic";
+  assert.equal(isRuntimeLogSnapshotResponse(extraDiagnosticField), false);
+
+  const nonJsonDetails = structuredClone(extensions);
+  nonJsonDetails.extensions[0].diagnostics[0].details = undefined;
+  assert.equal(isRuntimeExtensionListResponse(nonJsonDetails), false);
+});
+
 test("validates extension package manifests with help and tests", async () => {
   const currentManifest = await readJson("fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json");
   const currentResult = validateExtensionManifestV01(currentManifest);
@@ -730,6 +823,150 @@ test("validates extension package manifests with help and tests", async () => {
 
   assert.equal(legacyNodeResult.ok, false);
   assert.match(legacyNodeResult.errors.join("\n"), /schemaVersion must be equal to constant/);
+});
+
+test("validates package manifests and package roots", async () => {
+  const patchPackage = await readJson("fixtures/package/v0.1/valid/patch-only.skenion.package.json");
+  const patchPackageResult = validatePackageManifestV01(patchPackage);
+
+  assert.equal(patchPackageResult.ok, true);
+  assert.equal(patchPackage.schema, "skenion.package.manifest");
+  assert.equal(patchPackage.category, "patch");
+  assert.equal(patchPackage.runtimeAbiRange, undefined);
+  assert.equal(patchPackage.provides.patches[0].id, "example.oscillator");
+  assert.equal(patchPackage.diagnostics[0].code, "package-manifest-read");
+  assert.equal(patchPackage.diagnostics[0].details.fileName, SKENION_PACKAGE_MANIFEST_FILE_NAME);
+
+  const mixedPackage = await readJson("fixtures/package/v0.1/valid/mixed-native.skenion.package.json");
+  const mixedPackageResult = validatePackageManifestV01(mixedPackage);
+  assert.equal(mixedPackageResult.ok, true);
+  assert.equal(mixedPackage.category, "mixed");
+  assert.equal(mixedPackage.runtimeAbiRange, ">=0.45.0 <0.46.0");
+  assert.deepEqual(mixedPackage.targets, ["aarch64-apple-darwin", "x86_64-apple-darwin"]);
+
+  const packageRootResult = validatePackageRootV01({
+    schema: "skenion.package.root",
+    schemaVersion: "0.1.0",
+    manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    manifest: patchPackage
+  });
+  assert.equal(packageRootResult.ok, true);
+
+  assert.equal(validatePackageRootV01(null).ok, false);
+
+  const wrongRootSchema = validatePackageRootV01({
+    schema: "skenion.package.directory",
+    schemaVersion: "0.1.0",
+    manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    manifest: patchPackage
+  });
+  assert.equal(wrongRootSchema.ok, false);
+  assert.match(wrongRootSchema.errors.join("\n"), /schema must be skenion\.package\.root/);
+
+  const wrongRootVersion = validatePackageRootV01({
+    schema: "skenion.package.root",
+    schemaVersion: "0.2.0",
+    manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    manifest: patchPackage
+  });
+  assert.equal(wrongRootVersion.ok, false);
+  assert.match(wrongRootVersion.errors.join("\n"), /schemaVersion must be 0\.1\.0/);
+
+  const invalidRootManifest = validatePackageRootV01({
+    schema: "skenion.package.root",
+    schemaVersion: "0.1.0",
+    manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    manifest: { ...patchPackage, schema: "skenion.extension.manifest" }
+  });
+  assert.equal(invalidRootManifest.ok, false);
+  assert.match(invalidRootManifest.errors.join("\n"), /manifest .*schema/);
+
+  const extensionManifest = await readJson("fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json");
+  const extensionSurfaceResult = validatePackageManifestV01(extensionManifest);
+  assert.equal(extensionSurfaceResult.ok, false);
+  assert.match(extensionSurfaceResult.errors.join("\n"), /schema must be equal to constant/);
+
+  const secondMissingEvidence = structuredClone(mixedPackage);
+  secondMissingEvidence.nativeArtifacts[0].evidenceRefs = ["native-attestation", "missing-native-attestation"];
+  const secondMissingEvidenceResult = validatePackageManifestV01(secondMissingEvidence);
+  assert.equal(secondMissingEvidenceResult.ok, false);
+  assert.match(secondMissingEvidenceResult.errors.join("\n"), /missing-native-attestation/);
+
+  const invalidCases = [
+    ["fixtures/package/v0.1/invalid/native-missing-abi.skenion.package.json", /runtimeAbiRange/],
+    ["fixtures/package/v0.1/invalid/native-missing-artifact.skenion.package.json", /nativeArtifacts/],
+    ["fixtures/package/v0.1/invalid/native-missing-evidence.skenion.package.json", /missing evidence/],
+    ["fixtures/package/v0.1/invalid/patch-with-runtime-abi.skenion.package.json", /must NOT be valid|runtimeAbiRange/],
+    ["fixtures/package/v0.1/invalid/extension-only.package-root.json", /skenion\.package\.json/],
+    ["fixtures/package/v0.1/invalid/both-manifests.package-root.json", /unsupported keys/]
+  ];
+
+  for (const [fixture, expected] of invalidCases) {
+    const invalid = await readJson(fixture);
+    const result = fixture.endsWith(".package-root.json")
+      ? validatePackageRootV01(invalid)
+      : validatePackageManifestV01(invalid);
+
+    assert.equal(result.ok, false, fixture);
+    assert.match(result.errors.join("\n"), expected, fixture);
+  }
+});
+
+test("validates package registry DTOs", async () => {
+  const patchPackage = await readJson("fixtures/package/v0.1/valid/patch-only.skenion.package.json");
+  const registry = {
+    ok: true,
+    packages: [
+      {
+        packageId: patchPackage.id,
+        version: patchPackage.version,
+        category: patchPackage.category,
+        source: patchPackage.source,
+        root: patchPackage.root,
+        trust: patchPackage.trust,
+        contracts: patchPackage.contracts,
+        manifestPath: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+        manifestChecksum: patchPackage.checksums[0].checksum,
+        provides: patchPackage.provides,
+        diagnostics: patchPackage.diagnostics
+      }
+    ],
+    diagnostics: []
+  };
+
+  assert.equal(isPackageRegistryListResponse(registry), true);
+
+  const missingCode = structuredClone(registry);
+  delete missingCode.packages[0].diagnostics[0].code;
+  assert.equal(isPackageRegistryListResponse(missingCode), false);
+
+  const invalidPackageId = structuredClone(registry);
+  invalidPackageId.packages[0].packageId = "Bad Package";
+  assert.equal(isPackageRegistryListResponse(invalidPackageId), false);
+
+  const invalidVersion = structuredClone(registry);
+  invalidVersion.packages[0].version = "0.45";
+  assert.equal(isPackageRegistryListResponse(invalidVersion), false);
+
+  const invalidContractsRange = structuredClone(registry);
+  invalidContractsRange.packages[0].contracts.range = ">=0.45.0";
+  assert.equal(isPackageRegistryListResponse(invalidContractsRange), false);
+
+  const invalidTarget = structuredClone(registry);
+  invalidTarget.packages[0].targets = ["wasm32-unknown-unknown"];
+  assert.equal(isPackageRegistryListResponse(invalidTarget), false);
+
+  const invalidChecksum = structuredClone(registry);
+  invalidChecksum.packages[0].manifestChecksum.value = "not-sha256";
+  assert.equal(isPackageRegistryListResponse(invalidChecksum), false);
+
+  const invalidProviderRef = structuredClone(registry);
+  invalidProviderRef.packages[0].provides.patches[0].id = "Example Oscillator";
+  assert.equal(isPackageRegistryListResponse(invalidProviderRef), false);
+
+  const invalidProviderPath = structuredClone(registry);
+  invalidProviderPath.packages[0].provides.patches[0].path = "../outside.json";
+  assert.equal(isPackageRegistryListResponse(invalidProviderPath), false);
 });
 
 test("documents runtime IO discovery HTTP API", async () => {
@@ -773,7 +1010,13 @@ test("documents runtime IO discovery HTTP API", async () => {
     "GraphTargetRef",
     "PatchPath",
     "IdRemapResult",
-    "RuntimeOperationDiagnostic"
+    "RuntimeOperationDiagnostic",
+    "PackageRegistryListResponseV01",
+    "PackageRegistryEntryV01",
+    "PackageDiagnosticV01",
+    "PackageContractsSupportV01",
+    "PackageChecksumV01",
+    "PackageTargetTripleV01"
   ]) {
     assert.match(openApi, new RegExp(`\\b${schemaName}:`));
   }
@@ -789,6 +1032,7 @@ test("documents runtime IO discovery HTTP API", async () => {
   assert.match(openApi, /sessionId:/);
   assert.match(openApi, /RuntimeProjectSnapshot:\n\s+\$ref: "#\/components\/schemas\/ProjectDocumentV01"/);
   assert.match(openApi, /RuntimeMutationRequest:[\s\S]*?operation:\n\s+\$ref: "#\/components\/schemas\/RuntimeOperationEnvelope"/);
+  assert.match(openApi, /RuntimeDiagnostic:[\s\S]*?code:\n\s+type: string[\s\S]*?details:\n\s+description: Arbitrary JSON diagnostic metadata\./);
   assert.doesNotMatch(openApi, /RuntimeMutationGraphPatch:/);
   assert.doesNotMatch(openApi, /GraphDocumentV01:|GraphPatchV01:|GraphPatchEventV01:|GraphPatchHistoryV01:/);
 });
@@ -1965,7 +2209,11 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   for (const fixture of await fixtureFiles("fixtures/project/v0.1/invalid")) {
     const result = validateProjectDocumentV01(await readJson(fixture));
     assert.equal(result.ok, false, fixture);
-    assert.match(result.errors.join("\n"), /duplicate boundary port id/, fixture);
+    assert.match(
+      result.errors.join("\n"),
+      /duplicate boundary port id|lockEntryId .*points to package|does not match lock entry package|locked version .*does not satisfy/,
+      fixture
+    );
   }
 
   const validProject = await readJson("fixtures/project/v0.1/valid/input-only-patch.project.json");
@@ -1985,6 +2233,43 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   const semanticInvalidPatchResult = validatePatchDefinitionV01(semanticInvalidProject.patchLibrary[0]);
   assert.equal(semanticInvalidPatchResult.ok, false);
   assert.match(semanticInvalidPatchResult.errors.join("\n"), /duplicate boundary port id/);
+
+  const dependencyPackageMismatch = validateProjectDocumentV01(
+    await readJson("fixtures/project/v0.1/invalid/package-dependency-package-mismatch.project.json")
+  );
+  assert.equal(dependencyPackageMismatch.ok, false);
+  assert.match(dependencyPackageMismatch.errors.join("\n"), /lockEntryId .*points to package/);
+
+  const providerPackageMismatch = validateProjectDocumentV01(
+    await readJson("fixtures/project/v0.1/invalid/package-provider-package-mismatch.project.json")
+  );
+  assert.equal(providerPackageMismatch.ok, false);
+  assert.match(providerPackageMismatch.errors.join("\n"), /does not match lock entry package/);
+
+  const dependencyVersionMismatch = validateProjectDocumentV01(
+    await readJson("fixtures/project/v0.1/invalid/package-dependency-version-out-of-range.project.json")
+  );
+  assert.equal(dependencyVersionMismatch.ok, false);
+  assert.match(dependencyVersionMismatch.errors.join("\n"), /locked version .*does not satisfy/);
+
+  const validPackageProject = await readJson("fixtures/project/v0.1/valid/package-lock.project.json");
+  const missingDependencyLock = structuredClone(validPackageProject);
+  missingDependencyLock.packageDependencies[0].lockEntryId = "missing-lock-entry";
+  const missingDependencyLockResult = validateProjectDocumentV01(missingDependencyLock);
+  assert.equal(missingDependencyLockResult.ok, false);
+  assert.match(missingDependencyLockResult.errors.join("\n"), /dependency .*missing-lock-entry/);
+
+  const missingResourceLock = structuredClone(validPackageProject);
+  missingResourceLock.resourceLock[0].lockEntryId = "missing-resource-lock-entry";
+  const missingResourceLockResult = validateProjectDocumentV01(missingResourceLock);
+  assert.equal(missingResourceLockResult.ok, false);
+  assert.match(missingResourceLockResult.errors.join("\n"), /resource lock .*missing-resource-lock-entry/);
+
+  const missingProviderLock = structuredClone(validPackageProject);
+  missingProviderLock.providerRefs[0].lockEntryId = "missing-provider-lock-entry";
+  const missingProviderLockResult = validateProjectDocumentV01(missingProviderLock);
+  assert.equal(missingProviderLockResult.ok, false);
+  assert.match(missingProviderLockResult.errors.join("\n"), /provider ref .*missing-provider-lock-entry/);
 
   const graphInvalidPatch = structuredClone(validProject.patchLibrary[0]);
   graphInvalidPatch.graph.nodes.push(structuredClone(graphInvalidPatch.graph.nodes[0]));

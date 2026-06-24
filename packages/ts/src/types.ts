@@ -184,10 +184,19 @@ export type RuntimeIoBindingConfig =
 
 export type RuntimeDiagnosticSeverityV01 = "error" | "warning" | "info";
 export type RuntimeDiagnosticSeverity = RuntimeDiagnosticSeverityV01;
+export type RuntimeDiagnosticDetails =
+  | string
+  | number
+  | boolean
+  | null
+  | RuntimeDiagnosticDetails[]
+  | { [key: string]: RuntimeDiagnosticDetails };
 
 export interface RuntimeDiagnosticV01 {
   severity: RuntimeDiagnosticSeverityV01;
   message: string;
+  code?: string;
+  details?: RuntimeDiagnosticDetails;
 }
 
 export type RuntimeDiagnostic = RuntimeDiagnosticV01;
@@ -730,6 +739,132 @@ export interface ExtensionManifestV01 {
   permissions: string[];
   frontend?: ExtensionFrontendMetadataV01;
   tests?: ExtensionTestDescriptorV01[];
+}
+
+export const SKENION_PACKAGE_MANIFEST_FILE_NAME = "skenion.package.json";
+
+export type PackageCategoryV01 = "patch" | "native" | "mixed";
+export type PackageSourceV01 = "first-party" | "marketplace" | "workspace" | "project-local";
+export type PackageRootV01 = "package" | "project" | "dev-link" | "marketplace-install";
+export type PackageTrustV01 = "trusted" | "untrusted" | "quarantined";
+export type PackageTargetTripleV01 =
+  | "aarch64-apple-darwin"
+  | "x86_64-apple-darwin"
+  | "x86_64-pc-windows-msvc"
+  | "aarch64-pc-windows-msvc"
+  | "x86_64-unknown-linux-gnu"
+  | "aarch64-unknown-linux-gnu";
+export type PackageChecksumAlgorithmV01 = "sha256";
+export type PackageEvidenceKindV01 = "checksum" | "signature" | "sbom" | "attestation";
+export type PackageDiagnosticSeverityV01 = "error" | "warning" | "info";
+
+export interface PackageContractsSupportV01 {
+  line: string;
+  range: string;
+}
+
+export interface PackageProvidedRefV01 {
+  id: string;
+  path: string;
+  description?: string;
+}
+
+export interface PackageProvidesV01 {
+  patches?: PackageProvidedRefV01[];
+  nodes?: PackageProvidedRefV01[];
+  resources?: PackageProvidedRefV01[];
+  help?: PackageProvidedRefV01[];
+}
+
+export interface PackagePathsV01 {
+  patches?: string[];
+  resources?: string[];
+  docs?: string[];
+  tests?: string[];
+}
+
+export interface PackageChecksumV01 {
+  algorithm: PackageChecksumAlgorithmV01;
+  value: string;
+}
+
+export interface PackageChecksumRefV01 {
+  id: string;
+  path: string;
+  checksum: PackageChecksumV01;
+}
+
+export interface PackageEvidenceRefV01 {
+  id: string;
+  kind: PackageEvidenceKindV01;
+  path: string;
+  checksum: PackageChecksumV01;
+}
+
+export interface PackageNativeArtifactV01 {
+  target: PackageTargetTripleV01;
+  path: string;
+  entrypoint: string;
+  checksum: PackageChecksumV01;
+  evidenceRefs: string[];
+}
+
+export interface PackageDiagnosticV01 {
+  severity: PackageDiagnosticSeverityV01;
+  code: string;
+  message: string;
+  details?: RuntimeDiagnosticDetails;
+}
+
+export interface PackageManifestV01 {
+  schema: "skenion.package.manifest";
+  schemaVersion: "0.1.0";
+  id: string;
+  version: string;
+  displayName?: string;
+  category: PackageCategoryV01;
+  source: PackageSourceV01;
+  root: PackageRootV01;
+  trust: PackageTrustV01;
+  contracts: PackageContractsSupportV01;
+  runtimeAbiRange?: string;
+  targets?: PackageTargetTripleV01[];
+  provides: PackageProvidesV01;
+  patchLibrary?: PatchDefinitionV01[];
+  paths: PackagePathsV01;
+  checksums: PackageChecksumRefV01[];
+  evidence: PackageEvidenceRefV01[];
+  nativeArtifacts?: PackageNativeArtifactV01[];
+  diagnostics?: PackageDiagnosticV01[];
+}
+
+export interface PackageRootDocumentV01 {
+  schema: "skenion.package.root";
+  schemaVersion: "0.1.0";
+  manifestFileName: typeof SKENION_PACKAGE_MANIFEST_FILE_NAME;
+  manifest: PackageManifestV01;
+}
+
+export interface PackageRegistryEntryV01 {
+  packageId: string;
+  version: string;
+  category: PackageCategoryV01;
+  source: PackageSourceV01;
+  root: PackageRootV01;
+  trust: PackageTrustV01;
+  contracts: PackageContractsSupportV01;
+  runtimeAbiRange?: string;
+  targets?: PackageTargetTripleV01[];
+  manifestPath: string;
+  manifestChecksum: PackageChecksumV01;
+  provides: PackageProvidesV01;
+  diagnostics: PackageDiagnosticV01[];
+}
+
+export interface PackageRegistryListResponseV01 {
+  ok: boolean;
+  packages: PackageRegistryEntryV01[];
+  diagnostics: PackageDiagnosticV01[];
 }
 
 export interface RuntimeExtensionDescriptor {
@@ -1500,6 +1635,46 @@ export interface ProjectMetadataV01 {
   [key: string]: unknown;
 }
 
+export type ProviderRefKindV01 = "patch" | "node" | "resource" | "native-object" | "codec" | "help";
+
+export interface ProjectPackageDependencyV01 {
+  packageId: string;
+  versionRange: string;
+  lockEntryId: string;
+  required?: boolean;
+}
+
+export interface ProjectPackageLockEntryV01 {
+  id: string;
+  packageId: string;
+  version: string;
+  source: PackageSourceV01;
+  root: PackageRootV01;
+  trust: PackageTrustV01;
+  contractsLine: string;
+  contractsRange: string;
+  manifestPath: string;
+  manifestChecksum: PackageChecksumV01;
+  evidenceRefs?: string[];
+}
+
+export interface ProjectResourceLockEntryV01 {
+  id: string;
+  lockEntryId: string;
+  resourceId: string;
+  path: string;
+  checksum: PackageChecksumV01;
+  evidenceRefs?: string[];
+}
+
+export interface ProviderRefV01 {
+  id: string;
+  kind: ProviderRefKindV01;
+  packageId: string;
+  providedId: string;
+  lockEntryId: string;
+}
+
 export interface PatchDefinitionV01 {
   id: string;
   revision: string;
@@ -1529,6 +1704,10 @@ export interface ProjectDocumentV01 {
   graph: GraphDocumentV01;
   viewState: ViewStateV01;
   patchLibrary: PatchDefinitionV01[];
+  packageDependencies?: ProjectPackageDependencyV01[];
+  packageLock?: ProjectPackageLockEntryV01[];
+  resourceLock?: ProjectResourceLockEntryV01[];
+  providerRefs?: ProviderRefV01[];
   tutorial?: Record<string, unknown>;
   help?: Record<string, unknown>;
 }

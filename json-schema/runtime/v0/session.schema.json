@@ -51,6 +51,12 @@
         },
         "message": {
           "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "details": {
+          "description": "Arbitrary JSON diagnostic metadata."
         }
       },
       "additionalProperties": false

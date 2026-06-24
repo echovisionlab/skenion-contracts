@@ -1,0 +1,46 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-package-dependency-package-mismatch",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-package-dependency-package-mismatch",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [],
+  "packageDependencies": [
+    {
+      "packageId": "example/not-examples",
+      "versionRange": ">=0.45.0 <0.46.0",
+      "lockEntryId": "pkg-skenion-examples-0.45.0"
+    }
+  ],
+  "packageLock": [
+    {
+      "id": "pkg-skenion-examples-0.45.0",
+      "packageId": "skenion/examples",
+      "version": "0.45.0",
+      "source": "first-party",
+      "root": "package",
+      "trust": "trusted",
+      "contractsLine": "0.45",
+      "contractsRange": ">=0.45.0 <0.46.0",
+      "manifestPath": "packages/skenion-examples/skenion.package.json",
+      "manifestChecksum": {
+        "algorithm": "sha256",
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ]
+}

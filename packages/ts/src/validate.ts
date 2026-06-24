@@ -12,6 +12,7 @@ import {
   graphV01Schema,
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
+  packageManifestV01Schema,
   projectV01Schema,
   releaseTrainV01Schema,
   runtimeCollaborationV0Schema,
@@ -39,6 +40,8 @@ import type {
   GraphValidationResultV01,
   NodeDefinitionManifestV01,
   ObjectTextParseResultV01,
+  PackageManifestV01,
+  PackageRootDocumentV01,
   PatchDefinitionV01,
   PasteGraphFragmentRequest,
   PasteGraphFragmentResponse,
@@ -68,6 +71,7 @@ import type {
   ValidationResult,
   ViewStateV01
 } from "./types.js";
+import { SKENION_PACKAGE_MANIFEST_FILE_NAME } from "./types.js";
 import {
   deriveV0CompatibilityLine,
   deriveV0CompatibilityRange,
@@ -154,6 +158,7 @@ const patchDefinitionV01Validator = ajv.compile({
   $ref: "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/patchDefinition"
 });
 const extensionManifestV01Validator = ajv.compile(extensionManifestV01Schema);
+const packageManifestV01Validator = ajv.compile(packageManifestV01Schema);
 const releaseTrainV01Validator = ajv.compile(releaseTrainV01Schema);
 const compatibilityMatrixV01Validator = ajv.compile(compatibilityMatrixV01Schema);
 
@@ -238,6 +243,80 @@ function validateProjectDocumentV01Semantics(project: ProjectDocumentV01): strin
 
   for (const patch of project.patchLibrary) {
     errors.push(...validatePatchDefinitionV01Semantics(patch));
+  }
+
+  errors.push(...validateProjectPackageReferencesV01(project));
+
+  return errors;
+}
+
+function validatePackageManifestV01Semantics(manifest: PackageManifestV01): string[] {
+  const errors: string[] = [];
+  const evidenceIds = new Set(manifest.evidence.map((evidence) => evidence.id));
+
+  errors.push(...duplicateErrors((manifest.provides.patches ?? []).map((provided) => provided.id), "provided patch id"));
+  errors.push(...duplicateErrors((manifest.provides.nodes ?? []).map((provided) => provided.id), "provided node id"));
+  errors.push(...duplicateErrors((manifest.provides.resources ?? []).map((provided) => provided.id), "provided resource id"));
+  errors.push(...duplicateErrors((manifest.provides.help ?? []).map((provided) => provided.id), "provided help id"));
+
+  for (const artifact of manifest.nativeArtifacts ?? []) {
+    if (!evidenceIds.has(artifact.evidenceRefs[0])) {
+      errors.push(`native artifact ${artifact.path} references missing evidence: ${artifact.evidenceRefs[0]}`);
+    }
+    for (const evidenceRef of artifact.evidenceRefs.slice(1)) {
+      if (!evidenceIds.has(evidenceRef)) {
+        errors.push(`native artifact ${artifact.path} references missing evidence: ${evidenceRef}`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function validateProjectPackageReferencesV01(project: ProjectDocumentV01): string[] {
+  const errors: string[] = [];
+  const packageLock = project.packageLock ?? [];
+  const packageLockById = new Map(packageLock.map((entry) => [entry.id, entry]));
+
+  errors.push(...duplicateErrors(packageLock.map((entry) => entry.id), "package lock entry id"));
+  errors.push(...duplicateErrors((project.resourceLock ?? []).map((entry) => entry.id), "resource lock entry id"));
+  errors.push(...duplicateErrors((project.providerRefs ?? []).map((entry) => entry.id), "provider ref id"));
+
+  for (const dependency of project.packageDependencies ?? []) {
+    const lockEntry = packageLockById.get(dependency.lockEntryId);
+    if (!lockEntry) {
+      errors.push(`package dependency ${dependency.packageId} references missing lockEntryId: ${dependency.lockEntryId}`);
+      continue;
+    }
+    if (dependency.packageId !== lockEntry.packageId) {
+      errors.push(
+        `package dependency ${dependency.packageId} lockEntryId ${dependency.lockEntryId} points to package ${lockEntry.packageId}`
+      );
+    }
+    if (!satisfiesV0CompatibilityRange(lockEntry.version, dependency.versionRange)) {
+      errors.push(
+        `package dependency ${dependency.packageId} locked version ${lockEntry.version} does not satisfy ${dependency.versionRange}`
+      );
+    }
+  }
+
+  for (const resource of project.resourceLock ?? []) {
+    if (!packageLockById.has(resource.lockEntryId)) {
+      errors.push(`resource lock ${resource.id} references missing lockEntryId: ${resource.lockEntryId}`);
+    }
+  }
+
+  for (const providerRef of project.providerRefs ?? []) {
+    const lockEntry = packageLockById.get(providerRef.lockEntryId);
+    if (!lockEntry) {
+      errors.push(`provider ref ${providerRef.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
+      continue;
+    }
+    if (providerRef.packageId !== lockEntry.packageId) {
+      errors.push(
+        `provider ref ${providerRef.id} packageId ${providerRef.packageId} does not match lock entry package ${lockEntry.packageId}`
+      );
+    }
   }
 
   return errors;
@@ -826,6 +905,66 @@ export function validateExtensionManifestV01(
   }
 
   return { ok: true, value: manifest };
+}
+
+export function validatePackageManifestV01(
+  document: unknown
+): ValidationResult<PackageManifestV01> {
+  if (!packageManifestV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(packageManifestV01Validator.errors as ErrorObject[]) };
+  }
+
+  const manifest = document as PackageManifestV01;
+  const errors = validatePackageManifestV01Semantics(manifest);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: manifest };
+}
+
+export function validatePackageRootV01(
+  document: unknown
+): ValidationResult<PackageRootDocumentV01> {
+  if (
+    typeof document !== "object" ||
+    document === null ||
+    Array.isArray(document)
+  ) {
+    return { ok: false, errors: ["package root must be an object"] };
+  }
+
+  const root = document as Record<string, unknown>;
+  const extraKeys = Object.keys(root).filter(
+    (key) => !["schema", "schemaVersion", "manifestFileName", "manifest"].includes(key)
+  );
+  if (extraKeys.length > 0) {
+    return { ok: false, errors: [`package root has unsupported keys: ${extraKeys.join(", ")}`] };
+  }
+  if (root.schema !== "skenion.package.root") {
+    return { ok: false, errors: ["package root schema must be skenion.package.root"] };
+  }
+  if (root.schemaVersion !== "0.1.0") {
+    return { ok: false, errors: ["package root schemaVersion must be 0.1.0"] };
+  }
+  if (root.manifestFileName !== SKENION_PACKAGE_MANIFEST_FILE_NAME) {
+    return { ok: false, errors: [`package root manifestFileName must be ${SKENION_PACKAGE_MANIFEST_FILE_NAME}`] };
+  }
+
+  const manifestResult = validatePackageManifestV01(root.manifest);
+  if (!manifestResult.ok) {
+    return { ok: false, errors: manifestResult.errors.map((error) => `manifest ${error}`) };
+  }
+
+  return {
+    ok: true,
+    value: {
+      schema: "skenion.package.root",
+      schemaVersion: "0.1.0",
+      manifestFileName: SKENION_PACKAGE_MANIFEST_FILE_NAME,
+      manifest: manifestResult.value
+    }
+  };
 }
 
 function releaseTrainPackageVersions(manifest: ReleaseTrainManifestV01): Array<[string, ReleaseTrainRegistryPackageV01]> {

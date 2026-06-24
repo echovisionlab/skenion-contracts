@@ -1,0 +1,39 @@
+{
+  "schema": "skenion.package.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/native-missing-artifact",
+  "version": "0.45.0",
+  "category": "native",
+  "source": "workspace",
+  "root": "dev-link",
+  "trust": "untrusted",
+  "contracts": {
+    "line": "0.45",
+    "range": ">=0.45.0 <0.46.0"
+  },
+  "runtimeAbiRange": ">=0.45.0 <0.46.0",
+  "targets": ["aarch64-apple-darwin"],
+  "provides": {},
+  "paths": {},
+  "checksums": [
+    {
+      "id": "manifest",
+      "path": "skenion.package.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "manifest-checksum",
+      "kind": "checksum",
+      "path": "evidence/manifest.sha256",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "6666666666666666666666666666666666666666666666666666666666666666"
+      }
+    }
+  ]
+}

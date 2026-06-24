@@ -1,0 +1,15 @@
+{
+  "schema": "skenion.package.root",
+  "schemaVersion": "0.1.0",
+  "manifestFileName": "skenion.extension.json",
+  "manifest": {
+    "schema": "skenion.extension.manifest",
+    "schemaVersion": "0.1.0",
+    "id": "example/legacy-extension",
+    "version": "0.1.0",
+    "runtimeAbiVersion": "0.1.0",
+    "kind": "core-package",
+    "provides": {},
+    "permissions": []
+  }
+}

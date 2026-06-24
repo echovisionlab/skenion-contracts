@@ -9,6 +9,8 @@ import type {
   GeneratedShaderSourceMapV01,
   GraphTargetRef,
   IdRemapResult,
+  PackageRegistryEntryV01,
+  PackageRegistryListResponseV01,
   PasteGraphFragmentOptions,
   PasteGraphFragmentRequest,
   PasteGraphFragmentResponse,
@@ -86,6 +88,21 @@ const RUNTIME_SESSION_LIFECYCLE_STATES = new Set(["initializing", "ready", "clos
 const RUNTIME_CONNECTION_PROFILE_MODES = new Set(["local-managed", "local-shared", "remote"]);
 const RUNTIME_OWNERSHIP_MODES = new Set(["owned-child", "external", "remote"]);
 const RUNTIME_EVENT_REPLAY_GAP_REASONS = new Set(["retention-overflow", "stream-reset", "unknown"]);
+const PACKAGE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*(\/[a-z0-9][a-z0-9._-]*)*$/;
+const PACKAGE_PROVIDED_ID_PATTERN = /^[a-z0-9][a-z0-9_-]*(\.[a-z0-9][a-z0-9_-]*)*$/;
+const PACKAGE_SEMVER_PATTERN = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const PACKAGE_V0_LINE_PATTERN = /^0\.[0-9]+$/;
+const PACKAGE_V0_RANGE_PATTERN = /^>=0\.[0-9]+\.[0-9]+ <0\.[0-9]+\.[0-9]+$/;
+const PACKAGE_RELATIVE_PATH_PATTERN = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._~!$&'()+,;=:@%/-]+$/;
+const PACKAGE_SHA256_PATTERN = /^[a-fA-F0-9]{64}$/;
+const PACKAGE_TARGET_TRIPLES = new Set([
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+  "aarch64-pc-windows-msvc",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu"
+]);
 
 export function isRuntimeHealth(value: unknown): value is RuntimeHealth {
   return isRecord(value) && typeof value.ok === "boolean" && typeof value.service === "string" && typeof value.version === "string";
@@ -511,6 +528,17 @@ export function isRuntimeExtensionListResponse(value: unknown): value is Runtime
   );
 }
 
+export function isPackageRegistryListResponse(value: unknown): value is PackageRegistryListResponseV01 {
+  return (
+    isRecord(value) &&
+    typeof value.ok === "boolean" &&
+    Array.isArray(value.packages) &&
+    value.packages.every(isPackageRegistryEntry) &&
+    Array.isArray(value.diagnostics) &&
+    value.diagnostics.every(isPackageDiagnostic)
+  );
+}
+
 export function isExtensionManifestV01(value: unknown): value is ExtensionManifestV01 {
   return validateExtensionManifestV01(value).ok;
 }
@@ -828,6 +856,141 @@ function isRuntimeExtensionDescriptor(value: unknown): value is RuntimeExtension
   );
 }
 
+function isPackageRegistryEntry(value: unknown): value is PackageRegistryEntryV01 {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, [
+      "packageId",
+      "version",
+      "category",
+      "source",
+      "root",
+      "trust",
+      "contracts",
+      "runtimeAbiRange",
+      "targets",
+      "manifestPath",
+      "manifestChecksum",
+      "provides",
+      "diagnostics"
+    ]) &&
+    isPackageId(value.packageId) &&
+    isPackageSemver(value.version) &&
+    isPackageCategory(value.category) &&
+    isPackageSource(value.source) &&
+    isPackageRoot(value.root) &&
+    isPackageTrust(value.trust) &&
+    isPackageContracts(value.contracts) &&
+    (value.runtimeAbiRange === undefined || isPackageV0Range(value.runtimeAbiRange)) &&
+    (
+      value.targets === undefined ||
+      (Array.isArray(value.targets) && value.targets.every(isPackageTargetTriple))
+    ) &&
+    isPackageRelativePath(value.manifestPath) &&
+    isPackageChecksum(value.manifestChecksum) &&
+    isPackageProvides(value.provides) &&
+    Array.isArray(value.diagnostics) &&
+    value.diagnostics.every(isPackageDiagnostic)
+  );
+}
+
+function isPackageContracts(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["line", "range"]) &&
+    typeof value.line === "string" &&
+    PACKAGE_V0_LINE_PATTERN.test(value.line) &&
+    isPackageV0Range(value.range)
+  );
+}
+
+function isPackageProvides(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  if (!hasOnlyKeys(value, ["patches", "nodes", "resources", "help"])) {
+    return false;
+  }
+  for (const key of ["patches", "nodes", "resources", "help"]) {
+    const provided = value[key];
+    if (provided !== undefined && (!Array.isArray(provided) || !provided.every(isPackageProvidedRef))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isPackageProvidedRef(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["id", "path", "description"]) &&
+    isPackageProvidedId(value.id) &&
+    isPackageRelativePath(value.path) &&
+    (value.description === undefined || typeof value.description === "string")
+  );
+}
+
+function isPackageChecksum(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["algorithm", "value"]) &&
+    value.algorithm === "sha256" &&
+    typeof value.value === "string" &&
+    PACKAGE_SHA256_PATTERN.test(value.value)
+  );
+}
+
+function isPackageDiagnostic(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["severity", "code", "message", "details"]) &&
+    isRuntimeDiagnosticSeverity(value.severity) &&
+    isNonEmptyString(value.code) &&
+    isNonEmptyString(value.message) &&
+    (value.details === undefined || isJsonValue(value.details))
+  );
+}
+
+function isPackageId(value: unknown): value is string {
+  return typeof value === "string" && PACKAGE_ID_PATTERN.test(value);
+}
+
+function isPackageProvidedId(value: unknown): value is string {
+  return typeof value === "string" && PACKAGE_PROVIDED_ID_PATTERN.test(value);
+}
+
+function isPackageSemver(value: unknown): value is string {
+  return typeof value === "string" && PACKAGE_SEMVER_PATTERN.test(value);
+}
+
+function isPackageV0Range(value: unknown): value is string {
+  return typeof value === "string" && PACKAGE_V0_RANGE_PATTERN.test(value);
+}
+
+function isPackageRelativePath(value: unknown): value is string {
+  return typeof value === "string" && PACKAGE_RELATIVE_PATH_PATTERN.test(value);
+}
+
+function isPackageTargetTriple(value: unknown): value is string {
+  return typeof value === "string" && PACKAGE_TARGET_TRIPLES.has(value);
+}
+
+function isPackageCategory(value: unknown): boolean {
+  return value === "patch" || value === "native" || value === "mixed";
+}
+
+function isPackageSource(value: unknown): boolean {
+  return value === "first-party" || value === "marketplace" || value === "workspace" || value === "project-local";
+}
+
+function isPackageRoot(value: unknown): boolean {
+  return value === "package" || value === "project" || value === "dev-link" || value === "marketplace-install";
+}
+
+function isPackageTrust(value: unknown): boolean {
+  return value === "trusted" || value === "untrusted" || value === "quarantined";
+}
+
 function isGeneratedShaderSourceMap(value: unknown): value is GeneratedShaderSourceMapV01 {
   return (
     isRecord(value) &&
@@ -906,7 +1069,14 @@ function isCanvasNodeView(value: unknown): value is CanvasNodeViewV01 {
 }
 
 function isRuntimeDiagnostic(value: unknown): value is RuntimeDiagnostic {
-  return isRecord(value) && typeof value.message === "string" && isRuntimeDiagnosticSeverity(value.severity);
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["severity", "message", "code", "details"]) &&
+    typeof value.message === "string" &&
+    isRuntimeDiagnosticSeverity(value.severity) &&
+    (value.code === undefined || typeof value.code === "string") &&
+    (!("details" in value) || isJsonValue(value.details))
+  );
 }
 
 function isRuntimeDiagnosticSeverity(value: unknown): value is RuntimeDiagnosticSeverity {
@@ -959,6 +1129,22 @@ function hasOnlyKeys(value: Record<string, unknown>, keys: string[]): boolean {
 
 function optionalPositiveInteger(value: unknown): boolean {
   return value === undefined || (typeof value === "number" && Number.isInteger(value) && value >= 1);
+}
+
+function isJsonValue(value: unknown): boolean {
+  if (value === null || typeof value === "string" || typeof value === "boolean") {
+    return true;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+  if (isRecord(value)) {
+    return Object.values(value).every(isJsonValue);
+  }
+  return false;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

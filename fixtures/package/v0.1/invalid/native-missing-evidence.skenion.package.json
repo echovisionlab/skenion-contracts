@@ -1,0 +1,51 @@
+{
+  "schema": "skenion.package.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/native-missing-evidence",
+  "version": "0.45.0",
+  "category": "native",
+  "source": "workspace",
+  "root": "dev-link",
+  "trust": "untrusted",
+  "contracts": {
+    "line": "0.45",
+    "range": ">=0.45.0 <0.46.0"
+  },
+  "runtimeAbiRange": ">=0.45.0 <0.46.0",
+  "targets": ["aarch64-apple-darwin"],
+  "provides": {},
+  "paths": {},
+  "checksums": [
+    {
+      "id": "manifest",
+      "path": "skenion.package.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "7777777777777777777777777777777777777777777777777777777777777777"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "manifest-checksum",
+      "kind": "checksum",
+      "path": "evidence/manifest.sha256",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "8888888888888888888888888888888888888888888888888888888888888888"
+      }
+    }
+  ],
+  "nativeArtifacts": [
+    {
+      "target": "aarch64-apple-darwin",
+      "path": "native/libsensor.dylib",
+      "entrypoint": "skenion_native_init",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "evidenceRefs": ["missing-native-attestation"]
+    }
+  ]
+}

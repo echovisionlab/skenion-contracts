@@ -1,0 +1,76 @@
+{
+  "schema": "skenion.package.manifest",
+  "schemaVersion": "0.1.0",
+  "id": "example/native-sensor",
+  "version": "0.45.1",
+  "displayName": "Native Sensor",
+  "category": "mixed",
+  "source": "marketplace",
+  "root": "marketplace-install",
+  "trust": "trusted",
+  "contracts": {
+    "line": "0.45",
+    "range": ">=0.45.0 <0.46.0"
+  },
+  "runtimeAbiRange": ">=0.45.0 <0.46.0",
+  "targets": ["aarch64-apple-darwin", "x86_64-apple-darwin"],
+  "provides": {
+    "nodes": [
+      {
+        "id": "example.sensor_reading",
+        "path": "nodes/sensor-reading.skenion.json"
+      }
+    ],
+    "resources": [
+      {
+        "id": "example.sensor_calibration",
+        "path": "resources/calibration.json"
+      }
+    ]
+  },
+  "paths": {
+    "resources": ["resources/calibration.json"],
+    "docs": ["help/sensor-reading.md"]
+  },
+  "checksums": [
+    {
+      "id": "manifest",
+      "path": "skenion.package.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "darwin-arm64-artifact",
+      "path": "native/aarch64-apple-darwin/libsensor.dylib",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "native-attestation",
+      "kind": "attestation",
+      "path": "evidence/native-attestation.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      }
+    }
+  ],
+  "nativeArtifacts": [
+    {
+      "target": "aarch64-apple-darwin",
+      "path": "native/aarch64-apple-darwin/libsensor.dylib",
+      "entrypoint": "skenion_native_init",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "evidenceRefs": ["native-attestation"]
+    }
+  ]
+}
