@@ -1,0 +1,49 @@
+{
+  "schema": "skenion.runtime.paste-graph-fragment.response",
+  "schemaVersion": "0.1.0",
+  "ok": false,
+  "applied": false,
+  "conflict": true,
+  "target": {
+    "path": {
+      "kind": "root"
+    },
+    "baseRevision": "root-rev-1"
+  },
+  "revisionBefore": "root-rev-1",
+  "revisionAfter": null,
+  "historyEntryId": null,
+  "idRemap": {
+    "nodeIdMap": {},
+    "edgeIdMap": {},
+    "omittedEdgeIds": ["edge-stale"]
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "interface-drift",
+      "message": "Edge endpoints no longer match the selected provider interface.",
+      "edges": ["edge-stale"],
+      "interfacePolicy": "preserve-diagnostic",
+      "interfaceDetail": {
+        "edgeId": "edge-stale",
+        "sourceNodeId": "osc",
+        "sourcePortId": "out",
+        "targetNodeId": "filter",
+        "targetPortId": "freq",
+        "missingEndpoint": "target-port",
+        "expectedDirection": "input",
+        "actualDirection": "output",
+        "expectedType": "number.float",
+        "actualType": "signal.audio",
+        "cardinality": {
+          "reason": "merge-policy",
+          "policy": "forbid",
+          "limit": 1,
+          "actual": 2
+        },
+        "recoveryActions": ["drop-edge", "reconnect", "restore-port", "replace-provider"]
+      }
+    }
+  ]
+}

@@ -128,7 +128,32 @@ function validateProjectV01Semantics(file, project) {
   const packageLockById = new Map((project.packageLock ?? []).map((entry) => [entry.id, entry]));
   duplicateCheck(file, (project.packageLock ?? []).map((entry) => entry.id), "package lock entry id");
   duplicateCheck(file, (project.resourceLock ?? []).map((entry) => entry.id), "resource lock entry id");
-  duplicateCheck(file, (project.providerRefs ?? []).map((entry) => entry.id), "provider ref id");
+  duplicateCheck(file, (project.objectBindings ?? []).map((entry) => entry.id), "object binding id");
+
+  for (const lockEntry of project.packageLock ?? []) {
+    if (lockEntry.category === "patch") {
+      if (lockEntry.runtimeAbiRange !== undefined) {
+        fail(file, `patch package lock ${lockEntry.id} must not declare runtimeAbiRange`);
+      }
+      if (lockEntry.target !== undefined) {
+        fail(file, `patch package lock ${lockEntry.id} must not declare target`);
+      }
+      if (lockEntry.nativeArtifacts !== undefined) {
+        fail(file, `patch package lock ${lockEntry.id} must not declare nativeArtifacts`);
+      }
+    }
+    if (lockEntry.category === "native" || lockEntry.category === "mixed") {
+      if (lockEntry.runtimeAbiRange === undefined) {
+        fail(file, `${lockEntry.category} package lock ${lockEntry.id} requires runtimeAbiRange`);
+      }
+      if (lockEntry.target === undefined) {
+        fail(file, `${lockEntry.category} package lock ${lockEntry.id} requires target`);
+      }
+      if (!Array.isArray(lockEntry.nativeArtifacts) || lockEntry.nativeArtifacts.length === 0) {
+        fail(file, `${lockEntry.category} package lock ${lockEntry.id} requires nativeArtifacts`);
+      }
+    }
+  }
 
   for (const dependency of project.packageDependencies ?? []) {
     const lockEntry = packageLockById.get(dependency.lockEntryId);
@@ -147,13 +172,73 @@ function validateProjectV01Semantics(file, project) {
       fail(file, `resource lock ${resource.id} references missing lockEntryId: ${resource.lockEntryId}`);
     }
   }
-  for (const providerRef of project.providerRefs ?? []) {
-    const lockEntry = packageLockById.get(providerRef.lockEntryId);
-    if (!lockEntry) {
-      fail(file, `provider ref ${providerRef.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
+  const bindingIds = new Set((project.objectBindings ?? []).map((entry) => entry.id));
+  for (const node of [
+    ...project.graph.nodes,
+    ...project.patchLibrary.flatMap((patch) => patch.graph.nodes)
+  ]) {
+    if (node.bindingRef !== undefined && !bindingIds.has(node.bindingRef)) {
+      fail(file, `node ${node.id} references missing bindingRef: ${node.bindingRef}`);
     }
-    if (providerRef.packageId !== lockEntry.packageId) {
-      fail(file, `provider ref ${providerRef.id} packageId ${providerRef.packageId} does not match lock entry package ${lockEntry.packageId}`);
+  }
+
+  for (const binding of project.objectBindings ?? []) {
+    const diagnostics = binding.diagnostics ?? [];
+    const hasDiagnostic = (...codes) => diagnostics.some((diagnostic) => codes.includes(diagnostic.code));
+
+    if (binding.status === "resolved" && binding.target === undefined) {
+      fail(file, `resolved object binding ${binding.id} requires target`);
+    }
+    if (binding.status === "missing" && !hasDiagnostic("binding-target-missing")) {
+      fail(file, `missing object binding ${binding.id} requires binding-target-missing diagnostic`);
+    }
+    if (binding.status === "stale" && !hasDiagnostic("binding-target-stale", "binding-interface-drift")) {
+      fail(file, `stale object binding ${binding.id} requires stale or interface-drift diagnostic`);
+    }
+    if (binding.status === "unresolved" && !hasDiagnostic("binding-unresolved")) {
+      fail(file, `unresolved object binding ${binding.id} requires binding-unresolved diagnostic`);
+    }
+    if (binding.status === "ambiguous" && !hasDiagnostic("binding-ambiguous")) {
+      fail(file, `ambiguous object binding ${binding.id} requires binding-ambiguous diagnostic`);
+    }
+
+    if (binding.target?.kind === "projectPatch") {
+      const patch = project.patchLibrary.find((candidate) => candidate.id === binding.target.patchId);
+      if (!patch) {
+        if (binding.status === "resolved") {
+          fail(file, `resolved object binding ${binding.id} references missing project patch: ${binding.target.patchId}`);
+        }
+        if (binding.status !== "missing" && binding.status !== "stale") {
+          fail(file, `object binding ${binding.id} references missing project patch: ${binding.target.patchId}`);
+        }
+        continue;
+      }
+      if (binding.target.revision !== undefined && binding.target.revision !== patch.revision) {
+        if (binding.status === "resolved") {
+          fail(file, `resolved object binding ${binding.id} project patch ${binding.target.patchId} revision is stale`);
+        }
+        if (binding.status !== "stale" || !hasDiagnostic("binding-target-stale", "binding-interface-drift")) {
+          fail(file, `object binding ${binding.id} project patch ${binding.target.patchId} revision is stale without diagnostics`);
+        }
+      }
+      continue;
+    }
+
+    if (binding.target?.kind !== "packageProvider") {
+      continue;
+    }
+    const lockEntry = packageLockById.get(binding.target.lockEntryId);
+    if (!lockEntry) {
+      if (binding.status === "resolved") {
+        fail(file, `resolved object binding ${binding.id} references missing lockEntryId: ${binding.target.lockEntryId}`);
+      }
+      if (binding.status !== "missing" && binding.status !== "stale") {
+        fail(file, `object binding ${binding.id} references missing lockEntryId: ${binding.target.lockEntryId}`);
+      }
+      continue;
+    }
+    if (binding.target.packageId !== lockEntry.packageId) {
+      fail(file, `object binding ${binding.id} packageId ${binding.target.packageId} does not match lock entry package ${lockEntry.packageId}`);
     }
   }
 }

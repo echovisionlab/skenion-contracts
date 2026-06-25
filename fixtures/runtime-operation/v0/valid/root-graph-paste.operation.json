@@ -41,6 +41,7 @@
     },
     "options": {
       "idConflictPolicy": "remap",
+      "interfaceIncidentEdgePolicy": "reject",
       "outsideEndpointPolicy": "reject",
       "preserveRelativePositions": true
     }

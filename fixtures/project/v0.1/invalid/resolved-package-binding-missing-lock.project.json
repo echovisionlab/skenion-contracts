@@ -1,0 +1,36 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-resolved-package-binding-missing-lock",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-resolved-package-binding-missing-lock",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [],
+  "objectBindings": [
+    {
+      "id": "binding-resolved-missing-lock",
+      "objectText": "my-patcher",
+      "status": "resolved",
+      "target": {
+        "kind": "packageProvider",
+        "lockEntryId": "missing-lock-entry",
+        "packageId": "skenion/examples",
+        "capabilityKind": "patch",
+        "providedId": "example.oscillator"
+      }
+    }
+  ]
+}

@@ -6,22 +6,23 @@ use skenion_contracts::{
     GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
     MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
     ObjectTextParseResultV01, PackageCategoryV01, PackageManifestV01,
-    PackageRegistryListResponseV01, PackageRootDocumentV01, PackageRootKindV01, ProjectDocumentV01,
-    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
-    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
-    RuntimeCollaborationOperationResult, RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic,
-    RuntimeDiagnosticSeverity, RuntimeOperationEnvelope, RuntimeSessionEvent,
-    RuntimeSessionEventKind, RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME,
-    StringOrStringsV01, analyze_graph_document_v01, analyze_graph_fragment_v01,
-    apply_midi_clock_message_v01, compatible_data_types_v01, derive_patch_contract_v01,
-    derive_patch_contracts_v01, derive_v0_compatibility_line, derive_v0_compatibility_range,
-    is_same_v0_compatibility_line, midi_clock_snapshot_to_clock_state_v01,
-    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
-    satisfies_v0_compatibility_range, type_label_v01, validate_compatibility_matrix_v01,
-    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_definition_v01, validate_object_text_parse_result_v01,
-    validate_package_manifest_v01, validate_package_root_v01, validate_project_document_v01,
-    validate_runtime_collaboration_event_envelope,
+    PackageRegistryListResponseV01, PackageRootDocumentV01, PackageRootKindV01,
+    PasteGraphFragmentResponse, ProjectDocumentV01, RuntimeCollaborationEventEnvelope,
+    RuntimeCollaborationEventKind, RuntimeCollaborationOperationBatchResult,
+    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic, RuntimeDiagnosticSeverity,
+    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
+    RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01,
+    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
+    compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
+    derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
+    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
+    plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
+    validate_compatibility_matrix_v01, validate_extension_manifest_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
+    validate_object_text_parse_result_v01, validate_package_manifest_v01,
+    validate_package_root_v01, validate_paste_graph_fragment_response,
+    validate_project_document_v01, validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch_result,
     validate_runtime_collaboration_operation_envelope,
     validate_runtime_collaboration_operation_result, validate_runtime_operation_envelope,
@@ -318,6 +319,19 @@ fn parses_public_graph_fragment_paste_contracts() {
         analyze_graph_fragment_v01(fragment, GraphFragmentOutsideEndpointPolicyV01::Reject);
     assert!(analysis.ok);
     validate_graph_fragment_v01(fragment).expect("fragment should validate");
+
+    let response: PasteGraphFragmentResponse = serde_json::from_str(include_str!(
+        "../../../fixtures/runtime-operation/v0/valid/interface-diagnostic.response.json"
+    ))
+    .expect("interface diagnostic response should parse");
+    validate_paste_graph_fragment_response(&response)
+        .expect("interface diagnostic response should validate");
+    let detail = response.diagnostics[0]
+        .interface_detail
+        .as_ref()
+        .expect("interface detail");
+    assert_eq!(detail.edge_id, "edge-stale");
+    assert_eq!(detail.recovery_actions.len(), 4);
 }
 
 #[test]
@@ -1147,8 +1161,37 @@ fn validates_public_package_manifest_contract_surface() {
         "pkg-skenion-examples-0.45.0"
     );
     assert_eq!(
-        project.provider_refs[0].lock_entry_id,
-        "pkg-skenion-examples-0.45.0"
+        project.object_bindings[0]
+            .target
+            .as_ref()
+            .and_then(|target| match target {
+                skenion_contracts::ProjectObjectBindingTargetV01::PackageProvider {
+                    lock_entry_id,
+                    ..
+                } => Some(lock_entry_id.as_str()),
+                _ => None,
+            }),
+        Some("pkg-skenion-examples-0.45.0")
+    );
+    assert_eq!(
+        project.object_bindings[1]
+            .target
+            .as_ref()
+            .and_then(|target| match target {
+                skenion_contracts::ProjectObjectBindingTargetV01::ProjectPatch {
+                    patch_id, ..
+                } => Some(patch_id.as_str()),
+                _ => None,
+            }),
+        Some("local_wrapper")
+    );
+    assert_eq!(
+        project.object_bindings[2].status,
+        skenion_contracts::ProjectObjectBindingStatusV01::Missing
+    );
+    assert_eq!(
+        project.graph.nodes[0].binding_ref.as_deref(),
+        Some("binding-example-oscillator")
     );
 
     let registry_json = serde_json::json!({

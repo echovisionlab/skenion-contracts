@@ -823,9 +823,6 @@ export interface PackageManifestV01 {
   version: string;
   displayName?: string;
   category: PackageCategoryV01;
-  source: PackageSourceV01;
-  root: PackageRootV01;
-  trust: PackageTrustV01;
   contracts: PackageContractsSupportV01;
   runtimeAbiRange?: string;
   targets?: PackageTargetTripleV01[];
@@ -1154,6 +1151,8 @@ export interface GraphNodeV01 {
   id: string;
   kind: string;
   kindVersion: string;
+  objectText?: string;
+  bindingRef?: string;
   params: Record<string, unknown>;
   ports: PortSpecV01[];
   portGroups?: PortGroupSpecV01[];
@@ -1256,9 +1255,42 @@ export type PastePlacement =
   | { kind: "position"; x: number; y: number }
   | { kind: "anchor"; nodeId: string; offsetX?: number; offsetY?: number };
 
+export type InterfaceIncidentEdgePolicyV01 = "drop" | "preserve-diagnostic" | "reject";
+export type InterfaceRecoveryActionIdV01 = "drop-edge" | "reconnect" | "restore-port" | "replace-provider";
+export type InterfaceDiagnosticMissingEndpointV01 = "source-node" | "source-port" | "target-node" | "target-port";
+export type InterfaceDiagnosticCardinalityReasonV01 =
+  | "fan-in"
+  | "fan-out"
+  | "merge-policy"
+  | "min-connections"
+  | "max-connections";
+
+export interface InterfaceDiagnosticCardinalityV01 {
+  reason: InterfaceDiagnosticCardinalityReasonV01;
+  policy?: string;
+  limit?: number | null;
+  actual?: number;
+}
+
+export interface InterfaceDiagnosticDetailV01 {
+  edgeId: string;
+  sourceNodeId: string;
+  sourcePortId: string;
+  targetNodeId: string;
+  targetPortId: string;
+  missingEndpoint?: InterfaceDiagnosticMissingEndpointV01;
+  expectedDirection?: PortDirection;
+  actualDirection?: PortDirection;
+  expectedType?: string;
+  actualType?: string;
+  cardinality?: InterfaceDiagnosticCardinalityV01;
+  recoveryActions: InterfaceRecoveryActionIdV01[];
+}
+
 export interface PasteGraphFragmentOptions {
   outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV01;
   idConflictPolicy?: "remap" | "reject";
+  interfaceIncidentEdgePolicy?: InterfaceIncidentEdgePolicyV01;
   preserveRelativePositions?: boolean;
 }
 
@@ -1305,6 +1337,8 @@ export interface RuntimeOperationDiagnostic {
   duplicates?: string[];
   nodes?: string[];
   edges?: string[];
+  interfacePolicy?: InterfaceIncidentEdgePolicyV01;
+  interfaceDetail?: InterfaceDiagnosticDetailV01;
 }
 
 export interface PasteGraphFragmentResponse {
@@ -1664,6 +1698,7 @@ export interface ProjectPackageLockEntryV01 {
   id: string;
   packageId: string;
   version: string;
+  category: PackageCategoryV01;
   source: PackageSourceV01;
   root: PackageRootV01;
   trust: PackageTrustV01;
@@ -1672,6 +1707,9 @@ export interface ProjectPackageLockEntryV01 {
   manifestPath: string;
   manifestChecksum: PackageChecksumV01;
   evidenceRefs?: string[];
+  runtimeAbiRange?: string;
+  target?: PackageTargetTripleV01;
+  nativeArtifacts?: PackageNativeArtifactV01[];
 }
 
 export interface ProjectResourceLockEntryV01 {
@@ -1683,12 +1721,49 @@ export interface ProjectResourceLockEntryV01 {
   evidenceRefs?: string[];
 }
 
-export interface ProviderRefV01 {
-  id: string;
-  kind: ProviderRefKindV01;
-  packageId: string;
-  providedId: string;
+export type ProjectObjectBindingStatusV01 = "resolved" | "unresolved" | "ambiguous" | "stale" | "missing";
+
+export type ProjectObjectBindingDiagnosticCodeV01 =
+  | "binding-unresolved"
+  | "binding-ambiguous"
+  | "binding-target-missing"
+  | "binding-target-stale"
+  | "binding-lock-mismatch"
+  | "binding-interface-drift";
+
+export interface ProjectObjectBindingDiagnosticV01 {
+  severity: PackageDiagnosticSeverityV01;
+  code: ProjectObjectBindingDiagnosticCodeV01;
+  message: string;
+  details?: RuntimeDiagnosticDetails;
+}
+
+export interface ProjectPatchBindingTargetV01 {
+  kind: "projectPatch";
+  patchId: string;
+  revision?: string;
+  interfaceRevision?: string;
+  interfaceDigest?: PackageChecksumV01;
+}
+
+export interface PackageProviderBindingTargetV01 {
+  kind: "packageProvider";
   lockEntryId: string;
+  packageId: string;
+  capabilityKind: ProviderRefKindV01;
+  providedId: string;
+  alias?: string;
+  displayName?: string;
+}
+
+export type ProjectObjectBindingTargetV01 = ProjectPatchBindingTargetV01 | PackageProviderBindingTargetV01;
+
+export interface ProjectObjectBindingV01 {
+  id: string;
+  objectText: string;
+  status: ProjectObjectBindingStatusV01;
+  target?: ProjectObjectBindingTargetV01;
+  diagnostics?: ProjectObjectBindingDiagnosticV01[];
 }
 
 export interface PatchDefinitionV01 {
@@ -1723,7 +1798,7 @@ export interface ProjectDocumentV01 {
   packageDependencies?: ProjectPackageDependencyV01[];
   packageLock?: ProjectPackageLockEntryV01[];
   resourceLock?: ProjectResourceLockEntryV01[];
-  providerRefs?: ProviderRefV01[];
+  objectBindings?: ProjectObjectBindingV01[];
   tutorial?: Record<string, unknown>;
   help?: Record<string, unknown>;
 }

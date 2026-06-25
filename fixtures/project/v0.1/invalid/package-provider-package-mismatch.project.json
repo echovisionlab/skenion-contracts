@@ -24,6 +24,7 @@
       "id": "pkg-skenion-examples-0.45.0",
       "packageId": "skenion/examples",
       "version": "0.45.0",
+      "category": "patch",
       "source": "first-party",
       "root": "package",
       "trust": "trusted",
@@ -36,13 +37,18 @@
       }
     }
   ],
-  "providerRefs": [
+  "objectBindings": [
     {
-      "id": "provider-example-oscillator",
-      "kind": "patch",
-      "packageId": "example/not-examples",
-      "providedId": "example.oscillator",
-      "lockEntryId": "pkg-skenion-examples-0.45.0"
+      "id": "binding-example-oscillator",
+      "objectText": "my-patcher",
+      "status": "resolved",
+      "target": {
+        "kind": "packageProvider",
+        "lockEntryId": "pkg-skenion-examples-0.45.0",
+        "packageId": "example/not-examples",
+        "capabilityKind": "patch",
+        "providedId": "example.oscillator"
+      }
     }
   ]
 }

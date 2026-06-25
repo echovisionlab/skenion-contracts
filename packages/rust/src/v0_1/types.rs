@@ -365,6 +365,10 @@ pub struct GraphNodeV01 {
     pub id: String,
     pub kind: String,
     pub kind_version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub object_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binding_ref: Option<String>,
     pub params: serde_json::Map<String, Value>,
     pub ports: Vec<PortSpecV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -522,6 +526,79 @@ pub enum IdConflictPolicy {
     Reject,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum InterfaceIncidentEdgePolicyV01 {
+    Drop,
+    PreserveDiagnostic,
+    Reject,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum InterfaceRecoveryActionIdV01 {
+    DropEdge,
+    Reconnect,
+    RestorePort,
+    ReplaceProvider,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum InterfaceDiagnosticMissingEndpointV01 {
+    SourceNode,
+    SourcePort,
+    TargetNode,
+    TargetPort,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum InterfaceDiagnosticCardinalityReasonV01 {
+    FanIn,
+    FanOut,
+    MergePolicy,
+    MinConnections,
+    MaxConnections,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct InterfaceDiagnosticCardinalityV01 {
+    pub reason: InterfaceDiagnosticCardinalityReasonV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub policy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<Option<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actual: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct InterfaceDiagnosticDetailV01 {
+    pub edge_id: String,
+    pub source_node_id: String,
+    pub source_port_id: String,
+    pub target_node_id: String,
+    pub target_port_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub missing_endpoint: Option<InterfaceDiagnosticMissingEndpointV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_direction: Option<PortDirectionV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actual_direction: Option<PortDirectionV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actual_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cardinality: Option<InterfaceDiagnosticCardinalityV01>,
+    pub recovery_actions: Vec<InterfaceRecoveryActionIdV01>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
@@ -530,6 +607,8 @@ pub struct PasteGraphFragmentOptions {
     pub outside_endpoint_policy: Option<GraphFragmentOutsideEndpointPolicyV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id_conflict_policy: Option<IdConflictPolicy>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface_incident_edge_policy: Option<InterfaceIncidentEdgePolicyV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preserve_relative_positions: Option<bool>,
 }
@@ -605,6 +684,10 @@ pub struct RuntimeOperationDiagnostic {
     pub nodes: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub edges: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface_policy: Option<InterfaceIncidentEdgePolicyV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface_detail: Option<InterfaceDiagnosticDetailV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -1594,9 +1677,6 @@ pub struct PackageManifestV01 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     pub category: PackageCategoryV01,
-    pub source: PackageSourceV01,
-    pub root: PackageRootKindV01,
-    pub trust: PackageTrustV01,
     pub contracts: PackageContractsSupportV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runtime_abi_range: Option<String>,
@@ -1695,6 +1775,7 @@ pub struct ProjectPackageLockEntryV01 {
     pub id: String,
     pub package_id: String,
     pub version: String,
+    pub category: PackageCategoryV01,
     pub source: PackageSourceV01,
     pub root: PackageRootKindV01,
     pub trust: PackageTrustV01,
@@ -1704,6 +1785,12 @@ pub struct ProjectPackageLockEntryV01 {
     pub manifest_checksum: PackageChecksumV01,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub evidence_refs: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_abi_range: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<PackageTargetTripleV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub native_artifacts: Vec<PackageNativeArtifactV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -1720,14 +1807,76 @@ pub struct ProjectResourceLockEntryV01 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ProjectObjectBindingStatusV01 {
+    Resolved,
+    Unresolved,
+    Ambiguous,
+    Stale,
+    Missing,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ProjectObjectBindingDiagnosticCodeV01 {
+    BindingUnresolved,
+    BindingAmbiguous,
+    BindingTargetMissing,
+    BindingTargetStale,
+    BindingLockMismatch,
+    BindingInterfaceDrift,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct ProviderRefV01 {
+pub struct ProjectObjectBindingDiagnosticV01 {
+    pub severity: PackageDiagnosticSeverityV01,
+    pub code: ProjectObjectBindingDiagnosticCodeV01,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum ProjectObjectBindingTargetV01 {
+    ProjectPatch {
+        patch_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        revision: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        interface_revision: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        interface_digest: Option<PackageChecksumV01>,
+    },
+    PackageProvider {
+        lock_entry_id: String,
+        package_id: String,
+        capability_kind: ProviderRefKindV01,
+        provided_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        alias: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        display_name: Option<String>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectObjectBindingV01 {
     pub id: String,
-    pub kind: ProviderRefKindV01,
-    pub package_id: String,
-    pub provided_id: String,
-    pub lock_entry_id: String,
+    pub object_text: String,
+    pub status: ProjectObjectBindingStatusV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<ProjectObjectBindingTargetV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diagnostics: Vec<ProjectObjectBindingDiagnosticV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -1798,7 +1947,7 @@ pub struct ProjectDocumentV01 {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub resource_lock: Vec<ProjectResourceLockEntryV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub provider_refs: Vec<ProviderRefV01>,
+    pub object_bindings: Vec<ProjectObjectBindingV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tutorial: Option<serde_json::Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]

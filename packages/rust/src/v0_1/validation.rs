@@ -13,8 +13,10 @@ use super::{
     MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01, PackageManifestV01,
     PackageRootDocumentV01, PasteGraphFragmentRequest, PasteGraphFragmentResponse,
     PatchDefinitionV01, PortDirectionV01, PortSpecV01, ProjectDocumentV01,
-    RuntimeCollaborationAuthSubject, RuntimeCollaborationCausalMetadata,
-    RuntimeCollaborationChange, RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
+    ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
+    ProjectObjectBindingTargetV01, RuntimeCollaborationAuthSubject,
+    RuntimeCollaborationCausalMetadata, RuntimeCollaborationChange,
+    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
     RuntimeCollaborationEventPayload, RuntimeCollaborationNackReason,
     RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationBatchResult,
     RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationPayload,
@@ -84,6 +86,30 @@ fn duplicate_errors(values: Vec<&str>, label: &str) -> Vec<ValidationErrorV01> {
     }
 
     errors
+}
+
+fn is_lower_digit_hyphen_segment(value: &str) -> bool {
+    !value.is_empty()
+        && !value.starts_with('-')
+        && !value.ends_with('-')
+        && value
+            .chars()
+            .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-')
+}
+
+fn is_package_id_v01(value: &str) -> bool {
+    let Some((publisher, package)) = value.split_once('/') else {
+        return false;
+    };
+    !package.contains('/')
+        && is_lower_digit_hyphen_segment(publisher)
+        && is_lower_digit_hyphen_segment(package)
+}
+
+fn is_provided_id_v01(value: &str) -> bool {
+    value
+        .split('.')
+        .all(|segment| is_lower_digit_hyphen_segment(segment))
 }
 
 fn is_message_any_compatible(source_type: &DataTypeV01, target_type: &DataTypeV01) -> bool {
@@ -1399,6 +1425,26 @@ pub fn validate_paste_graph_fragment_response(
             "applied paste response must include revisionAfter",
         ));
     }
+    for diagnostic in &response.diagnostics {
+        if matches!(
+            diagnostic.code.as_str(),
+            "interface-drift" | "invalid-incident-edge"
+        ) && diagnostic.interface_detail.is_none()
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "runtime operation diagnostic {} requires interfaceDetail",
+                diagnostic.code
+            )));
+        }
+        if let Some(detail) = &diagnostic.interface_detail {
+            if detail.recovery_actions.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "runtime operation diagnostic {} interfaceDetail requires recoveryActions",
+                    diagnostic.code
+                )));
+            }
+        }
+    }
 
     if errors.is_empty() {
         Ok(())
@@ -2038,6 +2084,11 @@ pub fn validate_package_manifest_v01(
     }
     if manifest.id.is_empty() {
         errors.push(ValidationErrorV01::new("package id must not be empty"));
+    } else if !is_package_id_v01(&manifest.id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "package id must match publisher/package lowercase digit hyphen grammar: {}",
+            manifest.id
+        )));
     }
     if manifest.version.is_empty() {
         errors.push(ValidationErrorV01::new("package version must not be empty"));
@@ -2062,6 +2113,14 @@ pub fn validate_package_manifest_v01(
             .collect(),
         "provided patch id",
     ));
+    for provided in &manifest.provides.patches {
+        if !is_provided_id_v01(&provided.id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "provided patch id must use lowercase dotted/hyphen grammar without underscores: {}",
+                provided.id
+            )));
+        }
+    }
     errors.extend(duplicate_errors(
         manifest
             .provides
@@ -2071,6 +2130,14 @@ pub fn validate_package_manifest_v01(
             .collect(),
         "provided node id",
     ));
+    for provided in &manifest.provides.nodes {
+        if !is_provided_id_v01(&provided.id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "provided node id must use lowercase dotted/hyphen grammar without underscores: {}",
+                provided.id
+            )));
+        }
+    }
     errors.extend(duplicate_errors(
         manifest
             .provides
@@ -2080,6 +2147,14 @@ pub fn validate_package_manifest_v01(
             .collect(),
         "provided resource id",
     ));
+    for provided in &manifest.provides.resources {
+        if !is_provided_id_v01(&provided.id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "provided resource id must use lowercase dotted/hyphen grammar without underscores: {}",
+                provided.id
+            )));
+        }
+    }
     errors.extend(duplicate_errors(
         manifest
             .provides
@@ -2089,6 +2164,14 @@ pub fn validate_package_manifest_v01(
             .collect(),
         "provided help id",
     ));
+    for provided in &manifest.provides.help {
+        if !is_provided_id_v01(&provided.id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "provided help id must use lowercase dotted/hyphen grammar without underscores: {}",
+                provided.id
+            )));
+        }
+    }
 
     match manifest.category {
         PackageCategoryV01::Patch => {
@@ -2215,14 +2298,71 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
     ));
     errors.extend(duplicate_errors(
         project
-            .provider_refs
+            .object_bindings
             .iter()
             .map(|entry| entry.id.as_str())
             .collect(),
-        "provider ref id",
+        "object binding id",
     ));
 
+    for lock_entry in &project.package_lock {
+        if !is_package_id_v01(&lock_entry.package_id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "package lock {} packageId must match publisher/package lowercase digit hyphen grammar: {}",
+                lock_entry.id, lock_entry.package_id
+            )));
+        }
+        match lock_entry.category {
+            PackageCategoryV01::Patch => {
+                if lock_entry.runtime_abi_range.is_some() {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "patch package lock {} must not declare runtimeAbiRange",
+                        lock_entry.id
+                    )));
+                }
+                if lock_entry.target.is_some() {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "patch package lock {} must not declare target",
+                        lock_entry.id
+                    )));
+                }
+                if !lock_entry.native_artifacts.is_empty() {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "patch package lock {} must not declare nativeArtifacts",
+                        lock_entry.id
+                    )));
+                }
+            }
+            PackageCategoryV01::Native | PackageCategoryV01::Mixed => {
+                if lock_entry.runtime_abi_range.is_none() {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "{:?} package lock {} requires runtimeAbiRange",
+                        lock_entry.category, lock_entry.id
+                    )));
+                }
+                if lock_entry.target.is_none() {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "{:?} package lock {} requires target",
+                        lock_entry.category, lock_entry.id
+                    )));
+                }
+                if lock_entry.native_artifacts.is_empty() {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "{:?} package lock {} requires nativeArtifacts",
+                        lock_entry.category, lock_entry.id
+                    )));
+                }
+            }
+        }
+    }
+
     for dependency in &project.package_dependencies {
+        if !is_package_id_v01(&dependency.package_id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "package dependency packageId must match publisher/package lowercase digit hyphen grammar: {}",
+                dependency.package_id
+            )));
+        }
         let Some(lock_entry) = package_lock_by_id.get(dependency.lock_entry_id.as_str()) else {
             errors.push(ValidationErrorV01::new(format!(
                 "package dependency {} references missing lockEntryId: {}",
@@ -2251,21 +2391,175 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                 resource.id, resource.lock_entry_id
             )));
         }
+        if !is_provided_id_v01(&resource.resource_id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "resource lock {} resourceId must use lowercase dotted/hyphen grammar without underscores: {}",
+                resource.id, resource.resource_id
+            )));
+        }
     }
 
-    for provider_ref in &project.provider_refs {
-        let Some(lock_entry) = package_lock_by_id.get(provider_ref.lock_entry_id.as_str()) else {
+    let patch_by_id: HashMap<&str, _> = project
+        .patch_library
+        .iter()
+        .map(|patch| (patch.id.as_str(), patch))
+        .collect();
+    let binding_ids: HashSet<&str> = project
+        .object_bindings
+        .iter()
+        .map(|binding| binding.id.as_str())
+        .collect();
+    for node in project.graph.nodes.iter().chain(
+        project
+            .patch_library
+            .iter()
+            .flat_map(|patch| patch.graph.nodes.iter()),
+    ) {
+        if let Some(binding_ref) = &node.binding_ref {
+            if !binding_ids.contains(binding_ref.as_str()) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "node {} references missing bindingRef: {}",
+                    node.id, binding_ref
+                )));
+            }
+        }
+    }
+
+    for binding in &project.object_bindings {
+        let has_diagnostic = |codes: &[ProjectObjectBindingDiagnosticCodeV01]| {
+            binding
+                .diagnostics
+                .iter()
+                .any(|diagnostic| codes.contains(&diagnostic.code))
+        };
+
+        if binding.status == ProjectObjectBindingStatusV01::Resolved && binding.target.is_none() {
             errors.push(ValidationErrorV01::new(format!(
-                "provider ref {} references missing lockEntryId: {}",
-                provider_ref.id, provider_ref.lock_entry_id
+                "resolved object binding {} requires target",
+                binding.id
             )));
             continue;
-        };
-        if provider_ref.package_id != lock_entry.package_id {
+        }
+        if binding.status == ProjectObjectBindingStatusV01::Missing
+            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::BindingTargetMissing])
+        {
             errors.push(ValidationErrorV01::new(format!(
-                "provider ref {} packageId {} does not match lock entry package {}",
-                provider_ref.id, provider_ref.package_id, lock_entry.package_id
+                "missing object binding {} requires binding-target-missing diagnostic",
+                binding.id
             )));
+        }
+        if binding.status == ProjectObjectBindingStatusV01::Stale
+            && !has_diagnostic(&[
+                ProjectObjectBindingDiagnosticCodeV01::BindingTargetStale,
+                ProjectObjectBindingDiagnosticCodeV01::BindingInterfaceDrift,
+            ])
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "stale object binding {} requires stale or interface-drift diagnostic",
+                binding.id
+            )));
+        }
+        if binding.status == ProjectObjectBindingStatusV01::Unresolved
+            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::BindingUnresolved])
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "unresolved object binding {} requires binding-unresolved diagnostic",
+                binding.id
+            )));
+        }
+        if binding.status == ProjectObjectBindingStatusV01::Ambiguous
+            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::BindingAmbiguous])
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "ambiguous object binding {} requires binding-ambiguous diagnostic",
+                binding.id
+            )));
+        }
+
+        match &binding.target {
+            Some(ProjectObjectBindingTargetV01::ProjectPatch {
+                patch_id, revision, ..
+            }) => {
+                let Some(patch) = patch_by_id.get(patch_id.as_str()) else {
+                    if binding.status == ProjectObjectBindingStatusV01::Resolved {
+                        errors.push(ValidationErrorV01::new(format!(
+                            "resolved object binding {} references missing project patch: {}",
+                            binding.id, patch_id
+                        )));
+                    } else if binding.status != ProjectObjectBindingStatusV01::Missing
+                        && binding.status != ProjectObjectBindingStatusV01::Stale
+                    {
+                        errors.push(ValidationErrorV01::new(format!(
+                            "object binding {} references missing project patch: {}",
+                            binding.id, patch_id
+                        )));
+                    }
+                    continue;
+                };
+                if revision
+                    .as_ref()
+                    .is_some_and(|revision| revision != &patch.revision)
+                {
+                    if binding.status == ProjectObjectBindingStatusV01::Resolved {
+                        errors.push(ValidationErrorV01::new(format!(
+                            "resolved object binding {} project patch {} revision is stale",
+                            binding.id, patch_id
+                        )));
+                    } else if binding.status != ProjectObjectBindingStatusV01::Stale
+                        || !has_diagnostic(&[
+                            ProjectObjectBindingDiagnosticCodeV01::BindingTargetStale,
+                            ProjectObjectBindingDiagnosticCodeV01::BindingInterfaceDrift,
+                        ])
+                    {
+                        errors.push(ValidationErrorV01::new(format!(
+                            "object binding {} project patch {} revision is stale without diagnostics",
+                            binding.id, patch_id
+                        )));
+                    }
+                }
+            }
+            Some(ProjectObjectBindingTargetV01::PackageProvider {
+                lock_entry_id,
+                package_id,
+                provided_id,
+                ..
+            }) => {
+                if !is_package_id_v01(package_id) {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "object binding {} packageId must match publisher/package lowercase digit hyphen grammar: {}",
+                        binding.id, package_id
+                    )));
+                }
+                if !is_provided_id_v01(provided_id) {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "object binding {} providedId must use lowercase dotted/hyphen grammar without underscores: {}",
+                        binding.id, provided_id
+                    )));
+                }
+                let Some(lock_entry) = package_lock_by_id.get(lock_entry_id.as_str()) else {
+                    if binding.status == ProjectObjectBindingStatusV01::Resolved {
+                        errors.push(ValidationErrorV01::new(format!(
+                            "resolved object binding {} references missing lockEntryId: {}",
+                            binding.id, lock_entry_id
+                        )));
+                    } else if binding.status != ProjectObjectBindingStatusV01::Missing
+                        && binding.status != ProjectObjectBindingStatusV01::Stale
+                    {
+                        errors.push(ValidationErrorV01::new(format!(
+                            "object binding {} references missing lockEntryId: {}",
+                            binding.id, lock_entry_id
+                        )));
+                    }
+                    continue;
+                };
+                if package_id != &lock_entry.package_id {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "object binding {} packageId {} does not match lock entry package {}",
+                        binding.id, package_id, lock_entry.package_id
+                    )));
+                }
+            }
+            None => {}
         }
     }
 
@@ -3170,6 +3464,7 @@ mod tests {
         outside_operation.request.options = Some(PasteGraphFragmentOptions {
             outside_endpoint_policy: Some(GraphFragmentOutsideEndpointPolicyV01::Omit),
             id_conflict_policy: Some(IdConflictPolicy::Remap),
+            interface_incident_edge_policy: None,
             preserve_relative_positions: Some(true),
         });
         let omit_result = validate_runtime_operation_envelope(&outside_operation);
@@ -3215,6 +3510,8 @@ mod tests {
                 duplicates: None,
                 nodes: None,
                 edges: None,
+                interface_policy: None,
+                interface_detail: None,
             }],
         };
         validate_paste_graph_fragment_response(&response).expect("response should validate");
@@ -3932,6 +4229,8 @@ mod tests {
             id: "source_two".to_owned(),
             kind: "core.value".to_owned(),
             kind_version: "0.1.0".to_owned(),
+            object_text: None,
+            binding_ref: None,
             params: serde_json::Map::new(),
             ports: vec![PortSpecV01 {
                 id: "out".to_owned(),
@@ -4575,6 +4874,8 @@ mod tests {
             id: "grouped".to_owned(),
             kind: "core.grouped".to_owned(),
             kind_version: "0.1.0".to_owned(),
+            object_text: None,
+            binding_ref: None,
             params: serde_json::Map::new(),
             ports: Vec::new(),
             port_groups: Some(vec![super::super::PortGroupSpecV01 {

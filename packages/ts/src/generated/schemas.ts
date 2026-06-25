@@ -68,6 +68,14 @@ export const graphV01Schema = {
           "type": "string",
           "minLength": 1
         },
+        "objectText": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bindingRef": {
+          "type": "string",
+          "minLength": 1
+        },
         "params": {
           "type": "object",
           "additionalProperties": true
@@ -674,10 +682,10 @@ export const projectV01Schema = {
       },
       "default": []
     },
-    "providerRefs": {
+    "objectBindings": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/providerRef"
+        "$ref": "#/$defs/objectBinding"
       },
       "default": []
     },
@@ -740,11 +748,11 @@ export const projectV01Schema = {
     },
     "packageId": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$"
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
     },
     "providedId": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]*(\\.[a-z0-9][a-z0-9_-]*)*$"
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$"
     },
     "semver": {
       "type": "string",
@@ -769,6 +777,13 @@ export const projectV01Schema = {
         "marketplace",
         "workspace",
         "project-local"
+      ]
+    },
+    "packageCategory": {
+      "enum": [
+        "patch",
+        "native",
+        "mixed"
       ]
     },
     "packageRoot": {
@@ -835,6 +850,7 @@ export const projectV01Schema = {
         "id",
         "packageId",
         "version",
+        "category",
         "source",
         "root",
         "trust",
@@ -853,6 +869,9 @@ export const projectV01Schema = {
         },
         "version": {
           "$ref": "#/$defs/semver"
+        },
+        "category": {
+          "$ref": "#/$defs/packageCategory"
         },
         "source": {
           "$ref": "#/$defs/packageSource"
@@ -882,8 +901,86 @@ export const projectV01Schema = {
             "minLength": 1
           },
           "uniqueItems": true
+        },
+        "runtimeAbiRange": {
+          "$ref": "#/$defs/semverRange"
+        },
+        "target": {
+          "$ref": "#/$defs/targetTriple"
+        },
+        "nativeArtifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nativeArtifact"
+          }
         }
       },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "category": {
+                "const": "patch"
+              }
+            },
+            "required": [
+              "category"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "runtimeAbiRange"
+                  ]
+                },
+                {
+                  "required": [
+                    "target"
+                  ]
+                },
+                {
+                  "required": [
+                    "nativeArtifacts"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "category": {
+                "enum": [
+                  "native",
+                  "mixed"
+                ]
+              }
+            },
+            "required": [
+              "category"
+            ]
+          },
+          "then": {
+            "required": [
+              "runtimeAbiRange",
+              "target",
+              "nativeArtifacts"
+            ],
+            "properties": {
+              "nativeArtifacts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/nativeArtifact"
+                },
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ],
       "additionalProperties": false
     },
     "resourceLockEntry": {
@@ -924,21 +1021,275 @@ export const projectV01Schema = {
       },
       "additionalProperties": false
     },
-    "providerRef": {
+    "objectBinding": {
       "type": "object",
       "required": [
         "id",
-        "kind",
-        "packageId",
-        "providedId",
-        "lockEntryId"
+        "objectText",
+        "status"
       ],
       "properties": {
         "id": {
           "type": "string",
           "minLength": 1
         },
+        "objectText": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "resolved",
+            "unresolved",
+            "ambiguous",
+            "stale",
+            "missing"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/objectBindingTarget"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/objectBindingDiagnostic"
+          },
+          "default": []
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "resolved"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "target"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "missing"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "target",
+              "diagnostics"
+            ],
+            "properties": {
+              "diagnostics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/objectBindingDiagnostic"
+                },
+                "minItems": 1,
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "const": "binding-target-missing"
+                    }
+                  },
+                  "required": [
+                    "code"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "stale"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "target",
+              "diagnostics"
+            ],
+            "properties": {
+              "diagnostics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/objectBindingDiagnostic"
+                },
+                "minItems": 1,
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "binding-target-stale",
+                        "binding-interface-drift"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "unresolved"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "diagnostics"
+            ],
+            "properties": {
+              "diagnostics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/objectBindingDiagnostic"
+                },
+                "minItems": 1,
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "const": "binding-unresolved"
+                    }
+                  },
+                  "required": [
+                    "code"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ambiguous"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "diagnostics"
+            ],
+            "properties": {
+              "diagnostics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/objectBindingDiagnostic"
+                },
+                "minItems": 1,
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "const": "binding-ambiguous"
+                    }
+                  },
+                  "required": [
+                    "code"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "objectBindingTarget": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/projectPatchBindingTarget"
+        },
+        {
+          "$ref": "#/$defs/packageProviderBindingTarget"
+        }
+      ]
+    },
+    "projectPatchBindingTarget": {
+      "type": "object",
+      "required": [
+        "kind",
+        "patchId"
+      ],
+      "properties": {
         "kind": {
+          "const": "projectPatch"
+        },
+        "patchId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "interfaceRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "interfaceDigest": {
+          "$ref": "#/$defs/checksum"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageProviderBindingTarget": {
+      "type": "object",
+      "required": [
+        "kind",
+        "lockEntryId",
+        "packageId",
+        "capabilityKind",
+        "providedId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "packageProvider"
+        },
+        "lockEntryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "packageId": {
+          "$ref": "#/$defs/packageId"
+        },
+        "capabilityKind": {
           "enum": [
             "patch",
             "node",
@@ -948,15 +1299,96 @@ export const projectV01Schema = {
             "help"
           ]
         },
-        "packageId": {
-          "$ref": "#/$defs/packageId"
-        },
         "providedId": {
           "$ref": "#/$defs/providedId"
         },
-        "lockEntryId": {
+        "alias": {
           "type": "string",
           "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "objectBindingDiagnostic": {
+      "type": "object",
+      "required": [
+        "severity",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "code": {
+          "enum": [
+            "binding-unresolved",
+            "binding-ambiguous",
+            "binding-target-missing",
+            "binding-target-stale",
+            "binding-lock-mismatch",
+            "binding-interface-drift"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "description": "Arbitrary JSON diagnostic metadata."
+        }
+      },
+      "additionalProperties": false
+    },
+    "targetTriple": {
+      "enum": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ]
+    },
+    "nativeArtifact": {
+      "type": "object",
+      "required": [
+        "target",
+        "path",
+        "entrypoint",
+        "checksum",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/targetTriple"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "entrypoint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
         }
       },
       "additionalProperties": false
@@ -1200,6 +1632,10 @@ export const runtimeOperationV0Schema = {
           ],
           "default": "remap"
         },
+        "interfaceIncidentEdgePolicy": {
+          "$ref": "#/$defs/interfaceIncidentEdgePolicy",
+          "default": "reject"
+        },
         "preserveRelativePositions": {
           "type": "boolean",
           "default": true
@@ -1285,6 +1721,134 @@ export const runtimeOperationV0Schema = {
         "info"
       ]
     },
+    "interfaceIncidentEdgePolicy": {
+      "enum": [
+        "drop",
+        "preserve-diagnostic",
+        "reject"
+      ]
+    },
+    "interfaceRecoveryActionId": {
+      "enum": [
+        "drop-edge",
+        "reconnect",
+        "restore-port",
+        "replace-provider"
+      ]
+    },
+    "interfaceDiagnosticMissingEndpoint": {
+      "enum": [
+        "source-node",
+        "source-port",
+        "target-node",
+        "target-port"
+      ]
+    },
+    "interfaceDiagnosticDirection": {
+      "enum": [
+        "input",
+        "output"
+      ]
+    },
+    "interfaceDiagnosticCardinality": {
+      "type": "object",
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "reason": {
+          "enum": [
+            "fan-in",
+            "fan-out",
+            "merge-policy",
+            "min-connections",
+            "max-connections"
+          ]
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "interfaceDiagnosticDetail": {
+      "type": "object",
+      "required": [
+        "edgeId",
+        "sourceNodeId",
+        "sourcePortId",
+        "targetNodeId",
+        "targetPortId",
+        "recoveryActions"
+      ],
+      "properties": {
+        "edgeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourcePortId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetPortId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "missingEndpoint": {
+          "$ref": "#/$defs/interfaceDiagnosticMissingEndpoint"
+        },
+        "expectedDirection": {
+          "$ref": "#/$defs/interfaceDiagnosticDirection"
+        },
+        "actualDirection": {
+          "$ref": "#/$defs/interfaceDiagnosticDirection"
+        },
+        "expectedType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actualType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cardinality": {
+          "$ref": "#/$defs/interfaceDiagnosticCardinality"
+        },
+        "recoveryActions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interfaceRecoveryActionId"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
     "runtimeOperationDiagnostic": {
       "type": "object",
       "required": [
@@ -1304,6 +1868,8 @@ export const runtimeOperationV0Schema = {
             "duplicate-target-path",
             "fragment-edge-outside-selection",
             "id-conflict",
+            "interface-drift",
+            "invalid-incident-edge",
             "invalid-target-path",
             "operation-rebased",
             "target-not-found",
@@ -1348,6 +1914,12 @@ export const runtimeOperationV0Schema = {
             "type": "string",
             "minLength": 1
           }
+        },
+        "interfacePolicy": {
+          "$ref": "#/$defs/interfaceIncidentEdgePolicy"
+        },
+        "interfaceDetail": {
+          "$ref": "#/$defs/interfaceDiagnosticDetail"
         }
       },
       "additionalProperties": false
@@ -4639,9 +5211,6 @@ export const packageManifestV01Schema = {
     "id",
     "version",
     "category",
-    "source",
-    "root",
-    "trust",
     "contracts",
     "provides",
     "paths",
@@ -4667,15 +5236,6 @@ export const packageManifestV01Schema = {
     },
     "category": {
       "$ref": "#/$defs/packageCategory"
-    },
-    "source": {
-      "$ref": "#/$defs/packageSource"
-    },
-    "root": {
-      "$ref": "#/$defs/packageRoot"
-    },
-    "trust": {
-      "$ref": "#/$defs/packageTrust"
     },
     "contracts": {
       "$ref": "#/$defs/contractsSupport"
@@ -4802,11 +5362,11 @@ export const packageManifestV01Schema = {
   "$defs": {
     "packageId": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$"
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
     },
     "providedId": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]*(\\.[a-z0-9][a-z0-9_-]*)*$"
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$"
     },
     "semver": {
       "type": "string",
@@ -4825,29 +5385,6 @@ export const packageManifestV01Schema = {
         "patch",
         "native",
         "mixed"
-      ]
-    },
-    "packageSource": {
-      "enum": [
-        "first-party",
-        "marketplace",
-        "workspace",
-        "project-local"
-      ]
-    },
-    "packageRoot": {
-      "enum": [
-        "package",
-        "project",
-        "dev-link",
-        "marketplace-install"
-      ]
-    },
-    "packageTrust": {
-      "enum": [
-        "trusted",
-        "untrusted",
-        "quarantined"
       ]
     },
     "targetTriple": {

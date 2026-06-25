@@ -4,9 +4,6 @@
   "id": "example/patch-with-abi",
   "version": "0.45.0",
   "category": "patch",
-  "source": "workspace",
-  "root": "dev-link",
-  "trust": "untrusted",
   "contracts": {
     "line": "0.45",
     "range": ">=0.45.0 <0.46.0"

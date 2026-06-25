@@ -8,7 +8,17 @@
     "schemaVersion": "0.1.0",
     "id": "root-package-lock",
     "revision": "1",
-    "nodes": [],
+    "nodes": [
+      {
+        "id": "external-oscillator",
+        "kind": "custom.external",
+        "kindVersion": "0.1.0",
+        "objectText": "my-patcher",
+        "bindingRef": "binding-example-oscillator",
+        "params": {},
+        "ports": []
+      }
+    ],
     "edges": []
   },
   "viewState": {
@@ -45,6 +55,7 @@
       "id": "pkg-skenion-examples-0.45.0",
       "packageId": "skenion/examples",
       "version": "0.45.0",
+      "category": "patch",
       "source": "first-party",
       "root": "package",
       "trust": "trusted",
@@ -71,13 +82,62 @@
       "evidenceRefs": ["manifest-checksum"]
     }
   ],
-  "providerRefs": [
+  "objectBindings": [
     {
-      "id": "provider-example-oscillator",
-      "kind": "patch",
-      "packageId": "skenion/examples",
-      "providedId": "example.oscillator",
-      "lockEntryId": "pkg-skenion-examples-0.45.0"
+      "id": "binding-example-oscillator",
+      "objectText": "my-patcher",
+      "status": "resolved",
+      "target": {
+        "kind": "packageProvider",
+        "lockEntryId": "pkg-skenion-examples-0.45.0",
+        "packageId": "skenion/examples",
+        "capabilityKind": "patch",
+        "providedId": "example.oscillator",
+        "alias": "my-patcher",
+        "displayName": "Example Oscillator"
+      }
+    },
+    {
+      "id": "binding-local-wrapper",
+      "objectText": "p local_wrapper",
+      "status": "resolved",
+      "target": {
+        "kind": "projectPatch",
+        "patchId": "local_wrapper",
+        "revision": "1"
+      }
+    },
+    {
+      "id": "binding-missing-provider",
+      "objectText": "missing-provider",
+      "status": "missing",
+      "target": {
+        "kind": "packageProvider",
+        "lockEntryId": "missing-lock-entry",
+        "packageId": "skenion/examples",
+        "capabilityKind": "patch",
+        "providedId": "example.missing-provider",
+        "alias": "missing-provider"
+      },
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "binding-target-missing",
+          "message": "The previously selected package provider is not available in the current project load."
+        }
+      ]
+    },
+    {
+      "id": "binding-ambiguous-patcher",
+      "objectText": "ambiguous-patcher",
+      "status": "ambiguous",
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "binding-ambiguous",
+          "message": "Multiple providers can satisfy this object text; explicit selection is required."
+        }
+      ]
     }
   ]
 }

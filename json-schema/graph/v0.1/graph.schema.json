@@ -53,6 +53,14 @@
           "type": "string",
           "minLength": 1
         },
+        "objectText": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bindingRef": {
+          "type": "string",
+          "minLength": 1
+        },
         "params": {
           "type": "object",
           "additionalProperties": true

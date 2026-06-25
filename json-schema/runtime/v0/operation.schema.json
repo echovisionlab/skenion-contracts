@@ -196,6 +196,10 @@
           "enum": ["remap", "reject"],
           "default": "remap"
         },
+        "interfaceIncidentEdgePolicy": {
+          "$ref": "#/$defs/interfaceIncidentEdgePolicy",
+          "default": "reject"
+        },
         "preserveRelativePositions": {
           "type": "boolean",
           "default": true
@@ -270,6 +274,109 @@
     "runtimeOperationDiagnosticSeverity": {
       "enum": ["error", "warning", "info"]
     },
+    "interfaceIncidentEdgePolicy": {
+      "enum": ["drop", "preserve-diagnostic", "reject"]
+    },
+    "interfaceRecoveryActionId": {
+      "enum": ["drop-edge", "reconnect", "restore-port", "replace-provider"]
+    },
+    "interfaceDiagnosticMissingEndpoint": {
+      "enum": ["source-node", "source-port", "target-node", "target-port"]
+    },
+    "interfaceDiagnosticDirection": {
+      "enum": ["input", "output"]
+    },
+    "interfaceDiagnosticCardinality": {
+      "type": "object",
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "enum": ["fan-in", "fan-out", "merge-policy", "min-connections", "max-connections"]
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "interfaceDiagnosticDetail": {
+      "type": "object",
+      "required": [
+        "edgeId",
+        "sourceNodeId",
+        "sourcePortId",
+        "targetNodeId",
+        "targetPortId",
+        "recoveryActions"
+      ],
+      "properties": {
+        "edgeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourcePortId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetPortId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "missingEndpoint": {
+          "$ref": "#/$defs/interfaceDiagnosticMissingEndpoint"
+        },
+        "expectedDirection": {
+          "$ref": "#/$defs/interfaceDiagnosticDirection"
+        },
+        "actualDirection": {
+          "$ref": "#/$defs/interfaceDiagnosticDirection"
+        },
+        "expectedType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actualType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cardinality": {
+          "$ref": "#/$defs/interfaceDiagnosticCardinality"
+        },
+        "recoveryActions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interfaceRecoveryActionId"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
     "runtimeOperationDiagnostic": {
       "type": "object",
       "required": ["severity", "code", "message"],
@@ -285,6 +392,8 @@
             "duplicate-target-path",
             "fragment-edge-outside-selection",
             "id-conflict",
+            "interface-drift",
+            "invalid-incident-edge",
             "invalid-target-path",
             "operation-rebased",
             "target-not-found",
@@ -329,6 +438,12 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "interfacePolicy": {
+          "$ref": "#/$defs/interfaceIncidentEdgePolicy"
+        },
+        "interfaceDetail": {
+          "$ref": "#/$defs/interfaceDiagnosticDetail"
         }
       },
       "additionalProperties": false

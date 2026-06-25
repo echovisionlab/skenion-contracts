@@ -5,9 +5,6 @@
   "version": "0.45.0",
   "displayName": "Skenion Examples",
   "category": "patch",
-  "source": "first-party",
-  "root": "package",
-  "trust": "trusted",
   "contracts": {
     "line": "0.45",
     "range": ">=0.45.0 <0.46.0"

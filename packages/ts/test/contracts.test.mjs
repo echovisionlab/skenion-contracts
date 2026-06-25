@@ -448,6 +448,9 @@ test("validates package manifests and package roots", async () => {
   assert.equal(patchPackageResult.ok, true);
   assert.equal(patchPackage.schema, "skenion.package.manifest");
   assert.equal(patchPackage.category, "patch");
+  assert.equal(patchPackage.source, undefined);
+  assert.equal(patchPackage.root, undefined);
+  assert.equal(patchPackage.trust, undefined);
   assert.equal(patchPackage.runtimeAbiRange, undefined);
   assert.equal(patchPackage.provides.patches[0].id, "example.oscillator");
   assert.equal(patchPackage.diagnostics[0].code, "package-manifest-read");
@@ -508,6 +511,18 @@ test("validates package manifests and package roots", async () => {
   assert.equal(secondMissingEvidenceResult.ok, false);
   assert.match(secondMissingEvidenceResult.errors.join("\n"), /missing-native-attestation/);
 
+  const dottedPackageId = structuredClone(patchPackage);
+  dottedPackageId.id = "skenion.examples";
+  assert.equal(validatePackageManifestV01(dottedPackageId).ok, false);
+
+  const underscoredProvidedId = structuredClone(patchPackage);
+  underscoredProvidedId.provides.patches[0].id = "example.bad_id";
+  assert.equal(validatePackageManifestV01(underscoredProvidedId).ok, false);
+
+  const manifestInstallState = structuredClone(patchPackage);
+  manifestInstallState.source = "first-party";
+  assert.equal(validatePackageManifestV01(manifestInstallState).ok, false);
+
   const invalidCases = [
     ["fixtures/package/v0.1/invalid/native-missing-abi.skenion.package.json", /runtimeAbiRange/],
     ["fixtures/package/v0.1/invalid/native-missing-artifact.skenion.package.json", /nativeArtifacts/],
@@ -537,9 +552,9 @@ test("validates package registry DTOs", async () => {
         packageId: patchPackage.id,
         version: patchPackage.version,
         category: patchPackage.category,
-        source: patchPackage.source,
-        root: patchPackage.root,
-        trust: patchPackage.trust,
+        source: "first-party",
+        root: "package",
+        trust: "trusted",
         contracts: patchPackage.contracts,
         manifestPath: SKENION_PACKAGE_MANIFEST_FILE_NAME,
         manifestChecksum: patchPackage.checksums[0].checksum,
@@ -1504,6 +1519,24 @@ test("validates session-addressed paste operation contracts", async () => {
     "edge-source-sink": "edge-source-sink_2"
   });
 
+  assert.equal(root.request.options.interfaceIncidentEdgePolicy, "reject");
+  const interfaceResponse = await readJson("fixtures/runtime-operation/v0/valid/interface-diagnostic.response.json");
+  assert.equal(validatePasteGraphFragmentResponse(interfaceResponse).ok, true);
+  assert.equal(isPasteGraphFragmentResponse(interfaceResponse), true);
+  assert.equal(interfaceResponse.diagnostics[0].interfacePolicy, "preserve-diagnostic");
+  assert.equal(interfaceResponse.diagnostics[0].interfaceDetail.missingEndpoint, "target-port");
+  assert.deepEqual(interfaceResponse.diagnostics[0].interfaceDetail.recoveryActions, [
+    "drop-edge",
+    "reconnect",
+    "restore-port",
+    "replace-provider"
+  ]);
+
+  const missingInterfaceDetail = structuredClone(interfaceResponse);
+  delete missingInterfaceDetail.diagnostics[0].interfaceDetail;
+  assert.equal(validatePasteGraphFragmentResponse(missingInterfaceDetail).ok, false);
+  assert.equal(isPasteGraphFragmentResponse(missingInterfaceDetail), false);
+
   const invalidEnvelope = structuredClone(root);
   invalidEnvelope.kind = "loadProject";
   assert.equal(validateRuntimeOperationEnvelope(invalidEnvelope).ok, false);
@@ -1846,7 +1879,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
     assert.equal(result.ok, false, fixture);
     assert.match(
       result.errors.join("\n"),
-      /duplicate boundary port id|lockEntryId .*points to package|does not match lock entry package|locked version .*does not satisfy/,
+      /duplicate boundary port id|lockEntryId .*points to package|does not match lock entry package|locked version .*does not satisfy|nativeArtifacts|required property 'target'|requires target|missing lockEntryId|missing project patch/,
       fixture
     );
   }
@@ -1900,11 +1933,144 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   assert.equal(missingResourceLockResult.ok, false);
   assert.match(missingResourceLockResult.errors.join("\n"), /resource lock .*missing-resource-lock-entry/);
 
-  const missingProviderLock = structuredClone(validPackageProject);
-  missingProviderLock.providerRefs[0].lockEntryId = "missing-provider-lock-entry";
-  const missingProviderLockResult = validateProjectDocumentV01(missingProviderLock);
-  assert.equal(missingProviderLockResult.ok, false);
-  assert.match(missingProviderLockResult.errors.join("\n"), /provider ref .*missing-provider-lock-entry/);
+  const missingProviderBinding = validPackageProject.objectBindings.find((binding) => binding.id === "binding-missing-provider");
+  assert.equal(missingProviderBinding.status, "missing");
+  assert.equal(validateProjectDocumentV01(validPackageProject).ok, true);
+
+  for (const [status, bindingIndex, expected] of [
+    ["missing", 2, /missing object binding .*binding-target-missing/],
+    ["stale", 1, /stale object binding .*binding-target-stale or binding-interface-drift/],
+    ["unresolved", 0, /unresolved object binding .*binding-unresolved/],
+    ["ambiguous", 3, /ambiguous object binding .*binding-ambiguous/]
+  ]) {
+    const missingDiagnostics = structuredClone(validPackageProject);
+    missingDiagnostics.objectBindings[bindingIndex].status = status;
+    delete missingDiagnostics.objectBindings[bindingIndex].diagnostics;
+    const missingDiagnosticsResult = validateProjectDocumentV01(missingDiagnostics);
+    assert.equal(missingDiagnosticsResult.ok, false, status);
+    assert.match(missingDiagnosticsResult.errors.join("\n"), expected, status);
+  }
+
+  const malformedBindingList = structuredClone(validPackageProject);
+  malformedBindingList.objectBindings = [null];
+  assert.equal(validateProjectDocumentV01(malformedBindingList).ok, false);
+
+  const nonArrayBindingList = structuredClone(validPackageProject);
+  nonArrayBindingList.objectBindings = "not-a-binding-list";
+  assert.equal(validateProjectDocumentV01(nonArrayBindingList).ok, false);
+
+  const malformedBindingStatus = structuredClone(validPackageProject);
+  malformedBindingStatus.objectBindings = [{}];
+  assert.equal(validateProjectDocumentV01(malformedBindingStatus).ok, false);
+
+  const malformedDiagnostic = structuredClone(validPackageProject);
+  malformedDiagnostic.objectBindings[2].diagnostics = [null];
+  const malformedDiagnosticResult = validateProjectDocumentV01(malformedDiagnostic);
+  assert.equal(malformedDiagnosticResult.ok, false);
+  assert.match(malformedDiagnosticResult.errors.join("\n"), /missing object binding .*binding-target-missing/);
+
+  const wrongDiagnosticCode = structuredClone(validPackageProject);
+  wrongDiagnosticCode.objectBindings[2].diagnostics = [
+    {
+      severity: "warning",
+      code: "binding-unresolved",
+      message: "This diagnostic does not satisfy a missing binding."
+    }
+  ];
+  const wrongDiagnosticCodeResult = validateProjectDocumentV01(wrongDiagnosticCode);
+  assert.equal(wrongDiagnosticCodeResult.ok, false);
+  assert.match(wrongDiagnosticCodeResult.errors.join("\n"), /missing object binding .*binding-target-missing/);
+
+  const resolvedNoTarget = validateProjectDocumentV01(
+    await readJson("fixtures/project/v0.1/invalid/resolved-binding-missing-target.project.json")
+  );
+  assert.equal(resolvedNoTarget.ok, false);
+  assert.match(resolvedNoTarget.errors.join("\n"), /required property 'target'|requires target/);
+
+  const resolvedPackageMissingLock = validateProjectDocumentV01(
+    await readJson("fixtures/project/v0.1/invalid/resolved-package-binding-missing-lock.project.json")
+  );
+  assert.equal(resolvedPackageMissingLock.ok, false);
+  assert.match(resolvedPackageMissingLock.errors.join("\n"), /resolved object binding .*missing lockEntryId/);
+
+  const resolvedProjectMissingPatch = validateProjectDocumentV01(
+    await readJson("fixtures/project/v0.1/invalid/resolved-project-patch-binding-missing-patch.project.json")
+  );
+  assert.equal(resolvedProjectMissingPatch.ok, false);
+  assert.match(resolvedProjectMissingPatch.errors.join("\n"), /resolved object binding .*missing project patch/);
+
+  const unresolvedProjectMissingPatch = structuredClone(validPackageProject);
+  unresolvedProjectMissingPatch.objectBindings[1].status = "unresolved";
+  unresolvedProjectMissingPatch.objectBindings[1].target.patchId = "missing_patch";
+  unresolvedProjectMissingPatch.objectBindings[1].diagnostics = [
+    {
+      severity: "warning",
+      code: "binding-unresolved",
+      message: "Project patch selection has not been resolved."
+    }
+  ];
+  const unresolvedProjectMissingPatchResult = validateProjectDocumentV01(unresolvedProjectMissingPatch);
+  assert.equal(unresolvedProjectMissingPatchResult.ok, false);
+  assert.match(unresolvedProjectMissingPatchResult.errors.join("\n"), /object binding .*missing project patch/);
+
+  const unresolvedPackageMissingLock = structuredClone(validPackageProject);
+  unresolvedPackageMissingLock.objectBindings[0].status = "unresolved";
+  unresolvedPackageMissingLock.objectBindings[0].target.lockEntryId = "missing-lock";
+  unresolvedPackageMissingLock.objectBindings[0].diagnostics = [
+    {
+      severity: "warning",
+      code: "binding-unresolved",
+      message: "Package provider selection has not been resolved."
+    }
+  ];
+  const unresolvedPackageMissingLockResult = validateProjectDocumentV01(unresolvedPackageMissingLock);
+  assert.equal(unresolvedPackageMissingLockResult.ok, false);
+  assert.match(unresolvedPackageMissingLockResult.errors.join("\n"), /object binding .*missing lockEntryId/);
+
+  const missingBindingRef = structuredClone(validPackageProject);
+  missingBindingRef.graph.nodes[0].bindingRef = "missing-binding";
+  const missingBindingRefResult = validateProjectDocumentV01(missingBindingRef);
+  assert.equal(missingBindingRefResult.ok, false);
+  assert.match(missingBindingRefResult.errors.join("\n"), /bindingRef: missing-binding/);
+
+  const staleProjectPatchBinding = structuredClone(validPackageProject);
+  staleProjectPatchBinding.objectBindings[1].target.revision = "stale-revision";
+  const staleProjectPatchBindingResult = validateProjectDocumentV01(staleProjectPatchBinding);
+  assert.equal(staleProjectPatchBindingResult.ok, false);
+  assert.match(staleProjectPatchBindingResult.errors.join("\n"), /resolved object binding .*revision is stale/);
+
+  staleProjectPatchBinding.objectBindings[1].status = "stale";
+  staleProjectPatchBinding.objectBindings[1].diagnostics = [
+    {
+      severity: "warning",
+      code: "binding-target-stale",
+      message: "The project-local patch binding points at an older known revision."
+    }
+  ];
+  assert.equal(validateProjectDocumentV01(staleProjectPatchBinding).ok, true);
+
+  staleProjectPatchBinding.objectBindings[1].diagnostics = [
+    {
+      severity: "warning",
+      code: "binding-interface-drift",
+      message: "The project-local patch interface changed since the binding was last planned."
+    }
+  ];
+  assert.equal(validateProjectDocumentV01(staleProjectPatchBinding).ok, true);
+
+  const unresolvedStaleProjectPatchBinding = structuredClone(validPackageProject);
+  unresolvedStaleProjectPatchBinding.objectBindings[1].status = "unresolved";
+  unresolvedStaleProjectPatchBinding.objectBindings[1].target.revision = "stale-revision";
+  unresolvedStaleProjectPatchBinding.objectBindings[1].diagnostics = [
+    {
+      severity: "warning",
+      code: "binding-unresolved",
+      message: "The binding is unresolved, but it also carries old revision evidence."
+    }
+  ];
+  const unresolvedStaleProjectPatchBindingResult = validateProjectDocumentV01(unresolvedStaleProjectPatchBinding);
+  assert.equal(unresolvedStaleProjectPatchBindingResult.ok, false);
+  assert.match(unresolvedStaleProjectPatchBindingResult.errors.join("\n"), /revision is stale without diagnostics/);
 
   const graphInvalidPatch = structuredClone(validProject.patchLibrary[0]);
   graphInvalidPatch.graph.nodes.push(structuredClone(graphInvalidPatch.graph.nodes[0]));

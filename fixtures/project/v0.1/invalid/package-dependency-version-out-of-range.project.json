@@ -31,6 +31,7 @@
       "id": "pkg-skenion-examples-0.45.0",
       "packageId": "skenion/examples",
       "version": "0.45.0",
+      "category": "patch",
       "source": "first-party",
       "root": "package",
       "trust": "trusted",

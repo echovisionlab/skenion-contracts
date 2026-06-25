@@ -1,0 +1,41 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-native-lock-missing-artifact",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-native-lock-missing-artifact",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [],
+  "packageLock": [
+    {
+      "id": "pkg-example-native-sensor-0.45.1",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "category": "mixed",
+      "source": "marketplace",
+      "root": "marketplace-install",
+      "trust": "trusted",
+      "contractsLine": "0.45",
+      "contractsRange": ">=0.45.0 <0.46.0",
+      "manifestPath": "registry/example/native-sensor/skenion.package.json",
+      "manifestChecksum": {
+        "algorithm": "sha256",
+        "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "runtimeAbiRange": ">=0.45.0 <0.46.0"
+    }
+  ]
+}

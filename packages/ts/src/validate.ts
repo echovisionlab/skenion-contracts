@@ -265,10 +265,11 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
   const errors: string[] = [];
   const packageLock = project.packageLock ?? [];
   const packageLockById = new Map(packageLock.map((entry) => [entry.id, entry]));
+  const patchById = new Map(project.patchLibrary.map((patch) => [patch.id, patch]));
 
   errors.push(...duplicateErrors(packageLock.map((entry) => entry.id), "package lock entry id"));
   errors.push(...duplicateErrors((project.resourceLock ?? []).map((entry) => entry.id), "resource lock entry id"));
-  errors.push(...duplicateErrors((project.providerRefs ?? []).map((entry) => entry.id), "provider ref id"));
+  errors.push(...duplicateErrors((project.objectBindings ?? []).map((entry) => entry.id), "object binding id"));
 
   for (const dependency of project.packageDependencies ?? []) {
     const lockEntry = packageLockById.get(dependency.lockEntryId);
@@ -294,15 +295,55 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
     }
   }
 
-  for (const providerRef of project.providerRefs ?? []) {
+  const bindingIds = new Set((project.objectBindings ?? []).map((entry) => entry.id));
+  for (const node of [
+    ...project.graph.nodes,
+    ...project.patchLibrary.flatMap((patch) => patch.graph.nodes)
+  ]) {
+    if (node.bindingRef !== undefined && !bindingIds.has(node.bindingRef)) {
+      errors.push(`node ${node.id} references missing bindingRef: ${node.bindingRef}`);
+    }
+  }
+
+  for (const binding of project.objectBindings ?? []) {
+    if (binding.target?.kind === "projectPatch") {
+      const target = binding.target;
+      const patch = patchById.get(target.patchId);
+      if (!patch) {
+        if (binding.status === "resolved") {
+          errors.push(`resolved object binding ${binding.id} references missing project patch: ${target.patchId}`);
+        } else if (binding.status !== "missing" && binding.status !== "stale") {
+          errors.push(`object binding ${binding.id} references missing project patch: ${target.patchId}`);
+        }
+        continue;
+      }
+      if (patch && target.revision !== undefined && target.revision !== patch.revision) {
+        if (binding.status === "resolved") {
+          errors.push(`resolved object binding ${binding.id} project patch ${target.patchId} revision is stale`);
+        } else if (binding.status !== "stale") {
+          errors.push(`object binding ${binding.id} project patch ${target.patchId} revision is stale without diagnostics`);
+        }
+      }
+      continue;
+    }
+
+    if (binding.target?.kind !== "packageProvider") {
+      continue;
+    }
+
+    const providerRef = binding.target;
     const lockEntry = packageLockById.get(providerRef.lockEntryId);
     if (!lockEntry) {
-      errors.push(`provider ref ${providerRef.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
+      if (binding.status === "resolved") {
+        errors.push(`resolved object binding ${binding.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
+      } else if (binding.status !== "missing" && binding.status !== "stale") {
+        errors.push(`object binding ${binding.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
+      }
       continue;
     }
     if (providerRef.packageId !== lockEntry.packageId) {
       errors.push(
-        `provider ref ${providerRef.id} packageId ${providerRef.packageId} does not match lock entry package ${lockEntry.packageId}`
+        `object binding ${binding.id} packageId ${providerRef.packageId} does not match lock entry package ${lockEntry.packageId}`
       );
     }
   }
@@ -1055,6 +1096,11 @@ export function validatePatchDefinitionV01(
 export function validateProjectDocumentV01(
   document: unknown
 ): ValidationResult<ProjectDocumentV01> {
+  const bindingStatusErrors = validateProjectObjectBindingStatusInvariants(document);
+  if (bindingStatusErrors.length > 0) {
+    return { ok: false, errors: bindingStatusErrors };
+  }
+
   if (!projectV01Validator(document)) {
     return { ok: false, errors: schemaErrors(projectV01Validator.errors as ErrorObject[]) };
   }
@@ -1066,6 +1112,49 @@ export function validateProjectDocumentV01(
   }
 
   return { ok: true, value: project };
+}
+
+function validateProjectObjectBindingStatusInvariants(document: unknown): string[] {
+  if (typeof document !== "object" || document === null || !Array.isArray((document as { objectBindings?: unknown }).objectBindings)) {
+    return [];
+  }
+
+  const errors: string[] = [];
+  const requiredDiagnosticByStatus = new Map([
+    ["missing", ["binding-target-missing"]],
+    ["stale", ["binding-target-stale", "binding-interface-drift"]],
+    ["unresolved", ["binding-unresolved"]],
+    ["ambiguous", ["binding-ambiguous"]]
+  ]);
+
+  for (const binding of (document as { objectBindings: unknown[] }).objectBindings) {
+    if (typeof binding !== "object" || binding === null) {
+      continue;
+    }
+    const record = binding as { id?: unknown; status?: unknown; target?: unknown; diagnostics?: unknown };
+    const id = typeof record.id === "string" ? record.id : "<unknown>";
+    if (record.status === "resolved" && record.target === undefined) {
+      errors.push(`resolved object binding ${id} requires target`);
+      continue;
+    }
+    if (typeof record.status !== "string" || !requiredDiagnosticByStatus.has(record.status)) {
+      continue;
+    }
+    const requiredCodes = requiredDiagnosticByStatus.get(record.status)!;
+    const diagnostics = Array.isArray(record.diagnostics) ? record.diagnostics : [];
+    const hasRequiredDiagnostic = diagnostics.some((diagnostic) => {
+      if (typeof diagnostic !== "object" || diagnostic === null) {
+        return false;
+      }
+      const code = (diagnostic as { code?: unknown }).code;
+      return typeof code === "string" && requiredCodes.includes(code);
+    });
+    if (!hasRequiredDiagnostic) {
+      errors.push(`${record.status} object binding ${id} requires ${requiredCodes.join(" or ")} diagnostic`);
+    }
+  }
+
+  return errors;
 }
 
 export function validateProjectDocument(document: unknown): ValidationResult<ProjectDocumentV01> {
@@ -1465,5 +1554,16 @@ export function validatePasteGraphFragmentResponse(
     return { ok: false, errors: schemaErrors(pasteGraphFragmentResponseValidator.errors as ErrorObject[]) };
   }
 
-  return { ok: true, value: document as PasteGraphFragmentResponse };
+  const response = document as PasteGraphFragmentResponse;
+  const errors: string[] = [];
+  for (const diagnostic of response.diagnostics) {
+    if ((diagnostic.code === "interface-drift" || diagnostic.code === "invalid-incident-edge") && diagnostic.interfaceDetail === undefined) {
+      errors.push(`runtime operation diagnostic ${diagnostic.code} requires interfaceDetail`);
+    }
+  }
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: response };
 }

@@ -9,9 +9,6 @@
     "id",
     "version",
     "category",
-    "source",
-    "root",
-    "trust",
     "contracts",
     "provides",
     "paths",
@@ -37,15 +34,6 @@
     },
     "category": {
       "$ref": "#/$defs/packageCategory"
-    },
-    "source": {
-      "$ref": "#/$defs/packageSource"
-    },
-    "root": {
-      "$ref": "#/$defs/packageRoot"
-    },
-    "trust": {
-      "$ref": "#/$defs/packageTrust"
     },
     "contracts": {
       "$ref": "#/$defs/contractsSupport"
@@ -155,11 +143,11 @@
   "$defs": {
     "packageId": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$"
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
     },
     "providedId": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]*(\\.[a-z0-9][a-z0-9_-]*)*$"
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$"
     },
     "semver": {
       "type": "string",
@@ -175,15 +163,6 @@
     },
     "packageCategory": {
       "enum": ["patch", "native", "mixed"]
-    },
-    "packageSource": {
-      "enum": ["first-party", "marketplace", "workspace", "project-local"]
-    },
-    "packageRoot": {
-      "enum": ["package", "project", "dev-link", "marketplace-install"]
-    },
-    "packageTrust": {
-      "enum": ["trusted", "untrusted", "quarantined"]
     },
     "targetTriple": {
       "enum": [

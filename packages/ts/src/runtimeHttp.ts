@@ -79,17 +79,23 @@ const RUNTIME_OPERATION_DIAGNOSTIC_CODES = new Set([
   "duplicate-target-path",
   "fragment-edge-outside-selection",
   "id-conflict",
+  "interface-drift",
+  "invalid-incident-edge",
   "invalid-target-path",
   "operation-rebased",
   "target-not-found",
   "unsupported-operation"
 ]);
+const INTERFACE_INCIDENT_EDGE_POLICIES = new Set(["drop", "preserve-diagnostic", "reject"]);
+const INTERFACE_RECOVERY_ACTION_IDS = new Set(["drop-edge", "reconnect", "restore-port", "replace-provider"]);
+const INTERFACE_MISSING_ENDPOINTS = new Set(["source-node", "source-port", "target-node", "target-port"]);
+const INTERFACE_CARDINALITY_REASONS = new Set(["fan-in", "fan-out", "merge-policy", "min-connections", "max-connections"]);
 const RUNTIME_SESSION_LIFECYCLE_STATES = new Set(["initializing", "ready", "closing", "closed", "error"]);
 const RUNTIME_CONNECTION_PROFILE_MODES = new Set(["local-managed", "local-shared", "remote"]);
 const RUNTIME_OWNERSHIP_MODES = new Set(["owned-child", "external", "remote"]);
 const RUNTIME_EVENT_REPLAY_GAP_REASONS = new Set(["retention-overflow", "stream-reset", "unknown"]);
-const PACKAGE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*(\/[a-z0-9][a-z0-9._-]*)*$/;
-const PACKAGE_PROVIDED_ID_PATTERN = /^[a-z0-9][a-z0-9_-]*(\.[a-z0-9][a-z0-9_-]*)*$/;
+const PACKAGE_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+const PACKAGE_PROVIDED_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$/;
 const PACKAGE_SEMVER_PATTERN = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const PACKAGE_V0_LINE_PATTERN = /^0\.[0-9]+$/;
 const PACKAGE_V0_RANGE_PATTERN = /^>=0\.[0-9]+\.[0-9]+ <0\.[0-9]+\.[0-9]+$/;
@@ -636,6 +642,10 @@ function isPasteGraphFragmentOptions(value: unknown): value is PasteGraphFragmen
       isRecord(value) &&
       (value.outsideEndpointPolicy === undefined || value.outsideEndpointPolicy === "reject" || value.outsideEndpointPolicy === "omit") &&
       (value.idConflictPolicy === undefined || value.idConflictPolicy === "remap" || value.idConflictPolicy === "reject") &&
+      (
+        value.interfaceIncidentEdgePolicy === undefined ||
+        (typeof value.interfaceIncidentEdgePolicy === "string" && INTERFACE_INCIDENT_EDGE_POLICIES.has(value.interfaceIncidentEdgePolicy))
+      ) &&
       (value.preserveRelativePositions === undefined || typeof value.preserveRelativePositions === "boolean")
     )
   );
@@ -673,7 +683,41 @@ function isRuntimeOperationDiagnostic(value: unknown): value is RuntimeOperation
     (value.actualRevision === undefined || typeof value.actualRevision === "string") &&
     (value.duplicates === undefined || (Array.isArray(value.duplicates) && value.duplicates.every((entry) => typeof entry === "string"))) &&
     (value.nodes === undefined || (Array.isArray(value.nodes) && value.nodes.every((entry) => typeof entry === "string"))) &&
-    (value.edges === undefined || (Array.isArray(value.edges) && value.edges.every((entry) => typeof entry === "string")))
+    (value.edges === undefined || (Array.isArray(value.edges) && value.edges.every((entry) => typeof entry === "string"))) &&
+    (value.interfacePolicy === undefined || (typeof value.interfacePolicy === "string" && INTERFACE_INCIDENT_EDGE_POLICIES.has(value.interfacePolicy))) &&
+    (value.interfaceDetail === undefined || isInterfaceDiagnosticDetail(value.interfaceDetail)) &&
+    ((value.code !== "interface-drift" && value.code !== "invalid-incident-edge") || value.interfaceDetail !== undefined)
+  );
+}
+
+function isInterfaceDiagnosticDetail(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.edgeId === "string" &&
+    typeof value.sourceNodeId === "string" &&
+    typeof value.sourcePortId === "string" &&
+    typeof value.targetNodeId === "string" &&
+    typeof value.targetPortId === "string" &&
+    (value.missingEndpoint === undefined || (typeof value.missingEndpoint === "string" && INTERFACE_MISSING_ENDPOINTS.has(value.missingEndpoint))) &&
+    (value.expectedDirection === undefined || value.expectedDirection === "input" || value.expectedDirection === "output") &&
+    (value.actualDirection === undefined || value.actualDirection === "input" || value.actualDirection === "output") &&
+    (value.expectedType === undefined || typeof value.expectedType === "string") &&
+    (value.actualType === undefined || typeof value.actualType === "string") &&
+    (value.cardinality === undefined || isInterfaceDiagnosticCardinality(value.cardinality)) &&
+    Array.isArray(value.recoveryActions) &&
+    value.recoveryActions.length > 0 &&
+    value.recoveryActions.every((entry) => typeof entry === "string" && INTERFACE_RECOVERY_ACTION_IDS.has(entry))
+  );
+}
+
+function isInterfaceDiagnosticCardinality(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.reason === "string" &&
+    INTERFACE_CARDINALITY_REASONS.has(value.reason) &&
+    (value.policy === undefined || typeof value.policy === "string") &&
+    (value.limit === undefined || value.limit === null || (typeof value.limit === "number" && Number.isInteger(value.limit) && value.limit >= 0)) &&
+    (value.actual === undefined || (typeof value.actual === "number" && Number.isInteger(value.actual) && value.actual >= 0))
   );
 }
 

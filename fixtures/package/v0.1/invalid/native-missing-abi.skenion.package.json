@@ -4,9 +4,6 @@
   "id": "example/native-missing-abi",
   "version": "0.45.0",
   "category": "native",
-  "source": "workspace",
-  "root": "dev-link",
-  "trust": "untrusted",
   "contracts": {
     "line": "0.45",
     "range": ">=0.45.0 <0.46.0"
@@ -15,7 +12,7 @@
   "provides": {
     "nodes": [
       {
-        "id": "example.native_missing_abi",
+        "id": "example.native-missing-abi",
         "path": "nodes/native-missing-abi.json"
       }
     ]

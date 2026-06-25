@@ -1295,6 +1295,10 @@ fn validates_package_manifest_semantic_branches() {
         "package id must not be empty",
     );
     assert_package_manifest_error(
+        |manifest| manifest.id = "skenion.examples".to_owned(),
+        "package id must match publisher/package",
+    );
+    assert_package_manifest_error(
         |manifest| manifest.version.clear(),
         "package version must not be empty",
     );
@@ -1325,6 +1329,10 @@ fn validates_package_manifest_semantic_branches() {
             manifest.native_artifacts = native_manifest.native_artifacts;
         },
         "patch package must not declare nativeArtifacts",
+    );
+    assert_package_manifest_error(
+        |manifest| manifest.provides.patches[0].id = "example.bad_id".to_owned(),
+        "without underscores",
     );
 
     let mut native_missing_targets = package_manifest_fixture(
@@ -1458,6 +1466,22 @@ fn validates_project_package_lock_reference_failures() {
             "../../fixtures/project/v0.1/invalid/package-dependency-version-out-of-range.project.json",
             "locked version 0.45.0 does not satisfy >=0.46.0 <0.47.0",
         ),
+        (
+            "../../fixtures/project/v0.1/invalid/native-lock-missing-artifact.project.json",
+            "requires nativeArtifacts",
+        ),
+        (
+            "../../fixtures/project/v0.1/invalid/resolved-binding-missing-target.project.json",
+            "requires target",
+        ),
+        (
+            "../../fixtures/project/v0.1/invalid/resolved-package-binding-missing-lock.project.json",
+            "resolved object binding binding-resolved-missing-lock references missing lockEntryId",
+        ),
+        (
+            "../../fixtures/project/v0.1/invalid/resolved-project-patch-binding-missing-patch.project.json",
+            "resolved object binding binding-resolved-missing-patch references missing project patch",
+        ),
     ] {
         let file = Path::new(env!("CARGO_MANIFEST_DIR")).join(fixture);
         let project: ProjectDocumentV01 =
@@ -1502,14 +1526,17 @@ fn validates_project_package_missing_lock_references() {
             .contains("references missing lockEntryId: missing-resource-lock")
     );
 
-    let mut missing_provider_lock = base_project;
-    missing_provider_lock.provider_refs[0].lock_entry_id = "missing-provider-lock".to_owned();
-    let report = validate_project_document_v01(&missing_provider_lock)
-        .expect_err("missing provider lock should fail validation");
+    validate_project_document_v01(&base_project)
+        .expect("missing package-provider binding with diagnostics should remain valid");
+
+    let mut missing_binding_ref = base_project;
+    missing_binding_ref.graph.nodes[0].binding_ref = Some("missing-binding".to_owned());
+    let report = validate_project_document_v01(&missing_binding_ref)
+        .expect_err("missing node bindingRef should fail validation");
     assert!(
         report
             .to_string()
-            .contains("references missing lockEntryId: missing-provider-lock")
+            .contains("node external-oscillator references missing bindingRef: missing-binding")
     );
 }
 

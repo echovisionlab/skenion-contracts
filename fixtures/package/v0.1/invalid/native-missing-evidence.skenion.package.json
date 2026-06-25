@@ -4,9 +4,6 @@
   "id": "example/native-missing-evidence",
   "version": "0.45.0",
   "category": "native",
-  "source": "workspace",
-  "root": "dev-link",
-  "trust": "untrusted",
   "contracts": {
     "line": "0.45",
     "range": ">=0.45.0 <0.46.0"

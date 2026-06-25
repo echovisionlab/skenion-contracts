@@ -1,0 +1,29 @@
+{
+  "schema": "skenion.project",
+  "schemaVersion": "0.1.0",
+  "id": "project-resolved-binding-missing-target",
+  "revision": "1",
+  "graph": {
+    "schema": "skenion.graph",
+    "schemaVersion": "0.1.0",
+    "id": "root-resolved-binding-missing-target",
+    "revision": "1",
+    "nodes": [],
+    "edges": []
+  },
+  "viewState": {
+    "schema": "skenion.view-state",
+    "schemaVersion": "0.1.0",
+    "canvas": {
+      "nodes": {}
+    }
+  },
+  "patchLibrary": [],
+  "objectBindings": [
+    {
+      "id": "binding-resolved-missing-target",
+      "objectText": "my-patcher",
+      "status": "resolved"
+    }
+  ]
+}
