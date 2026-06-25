@@ -135,9 +135,6 @@ fn is_package_semver_v01(value: &str) -> bool {
     if !build.is_empty() && !is_semver_suffix(build) {
         return false;
     }
-    if without_build.contains('+') {
-        return false;
-    }
 
     let (core, prerelease) = without_build.split_once('-').unwrap_or((without_build, ""));
     if !prerelease.is_empty() && !is_semver_suffix(prerelease) {
@@ -145,9 +142,7 @@ fn is_package_semver_v01(value: &str) -> bool {
     }
 
     let mut parts = core.split('.');
-    let Some(major) = parts.next() else {
-        return false;
-    };
+    let major = parts.next().unwrap_or("");
     let Some(minor) = parts.next() else {
         return false;
     };
@@ -181,32 +176,38 @@ fn is_http_url_v01(value: &str) -> bool {
 }
 
 fn is_relative_path_v01(value: &str) -> bool {
-    !value.is_empty()
-        && !value.starts_with('/')
-        && !value.split('/').any(|segment| segment == "..")
-        && value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric()
-                || matches!(
-                    byte,
-                    b'.' | b'_'
-                        | b'~'
-                        | b'!'
-                        | b'$'
-                        | b'&'
-                        | b'\''
-                        | b'('
-                        | b')'
-                        | b'+'
-                        | b','
-                        | b';'
-                        | b'='
-                        | b':'
-                        | b'@'
-                        | b'%'
-                        | b'/'
-                        | b'-'
-                )
-        })
+    if value.is_empty() {
+        return false;
+    }
+    if value.starts_with('/') {
+        return false;
+    }
+    if value.split('/').any(|segment| segment == "..") {
+        return false;
+    }
+    value.bytes().all(|byte| {
+        byte.is_ascii_alphanumeric()
+            || matches!(
+                byte,
+                b'.' | b'_'
+                    | b'~'
+                    | b'!'
+                    | b'$'
+                    | b'&'
+                    | b'\''
+                    | b'('
+                    | b')'
+                    | b'+'
+                    | b','
+                    | b';'
+                    | b'='
+                    | b':'
+                    | b'@'
+                    | b'%'
+                    | b'/'
+                    | b'-'
+            )
+    })
 }
 
 fn is_sha256_hex_v01(value: &str) -> bool {
