@@ -12,6 +12,10 @@
           "jsonpath": "$.version"
         },
         {
+          "type": "generic",
+          "path": "packages/ts/src/generated/package-version.ts"
+        },
+        {
           "type": "toml",
           "path": "packages/rust/Cargo.toml",
           "jsonpath": "$.package.version"
