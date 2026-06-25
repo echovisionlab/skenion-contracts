@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.49.0](https://github.com/skenion/skenion-contracts/compare/v0.48.0...v0.49.0) (2026-06-25)
+
+
+### Features
+
+* **contracts:** add package install update plan contracts ([#167](https://github.com/skenion/skenion-contracts/issues/167)) ([8eb2580](https://github.com/skenion/skenion-contracts/commit/8eb25802f15af8eb9aa88c910e56822b49294ff9))
+
 ## [0.48.0](https://github.com/skenion/skenion-contracts/compare/v0.47.0...v0.48.0) (2026-06-25)
 
 
