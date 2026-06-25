@@ -1,0 +1,84 @@
+{
+  "schema": "skenion.package.install-plan.request",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-target-mismatch",
+  "intent": "install",
+  "packageId": "skenion/examples",
+  "desired": {
+    "versionRange": ">=0.45.0 <0.46.0"
+  },
+  "target": {
+    "os": "linux",
+    "arch": "x86_64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    }
+  },
+  "current": {
+    "packageLock": [],
+    "objectBindings": []
+  },
+  "candidates": [
+    {
+      "listing": {
+        "schema": "skenion.package.listing",
+        "schemaVersion": "0.1.0",
+        "packageId": "skenion/examples",
+        "version": "0.45.0",
+        "displayName": "Skenion Examples",
+        "summary": "Reusable example patch library.",
+        "category": "patch",
+        "tags": ["examples", "patches"],
+        "license": "Apache-2.0",
+        "contracts": {
+          "line": "0.45",
+          "range": ">=0.45.0 <0.46.0"
+        },
+        "targetSupport": {
+          "kind": "target-independent",
+          "summary": "Patch packages run on every Runtime target that supports this Contracts line."
+        },
+        "provides": {
+          "patches": [
+            {
+              "id": "example.oscillator",
+              "description": "Simple oscillator patch."
+            }
+          ],
+          "capabilities": ["patch-library"]
+        },
+        "artifactEvidence": {
+          "artifacts": [
+            {
+              "kind": "manifest",
+              "path": "skenion.package.json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "evidenceRefs": ["manifest-checksum"]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "manifest-checksum",
+              "kind": "checksum",
+              "path": "evidence/manifest.sha256",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            }
+          ]
+        },
+        "discoverySignals": {
+          "stargazerCount": 128,
+          "rankingScore": 0.92
+        },
+        "diagnostics": []
+      }
+    }
+  ]
+}

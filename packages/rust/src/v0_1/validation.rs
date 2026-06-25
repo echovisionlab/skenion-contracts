@@ -12,9 +12,12 @@ use super::{
     ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01, GraphDocumentV01,
     GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
     GraphFragmentValidationResultV01, GraphValidationDiagnosticV01, GraphValidationResultV01,
-    MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01, PackageDiscoveryResponseV01,
+    MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01, PackageDiagnosticSeverityV01,
+    PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
+    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
+    PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01,
     PackageListingArtifactKindV01, PackageListingTargetSupportKindV01, PackageListingV01,
-    PackageManifestV01, PackageRootDocumentV01, PasteGraphFragmentRequest,
+    PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
     PasteGraphFragmentResponse, PatchDefinitionV01, PortDirectionV01, PortSpecV01,
     ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
     ProjectObjectBindingTargetV01, RuntimeCollaborationAuthSubject,
@@ -2797,6 +2800,566 @@ pub fn validate_package_discovery_response_v01(
     ));
     for listing in &response.listings {
         errors.extend(package_listing_errors(listing));
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+fn package_install_plan_expected_triple(
+    target: &PackageInstallPlanTargetV01,
+) -> PackageTargetTripleV01 {
+    match (&target.os, &target.arch) {
+        (PackageInstallPlanTargetOsV01::Macos, PackageInstallPlanTargetArchV01::Aarch64) => {
+            PackageTargetTripleV01::Aarch64AppleDarwin
+        }
+        (PackageInstallPlanTargetOsV01::Macos, PackageInstallPlanTargetArchV01::X8664) => {
+            PackageTargetTripleV01::X8664AppleDarwin
+        }
+        (PackageInstallPlanTargetOsV01::Windows, PackageInstallPlanTargetArchV01::Aarch64) => {
+            PackageTargetTripleV01::Aarch64WindowsMsvc
+        }
+        (PackageInstallPlanTargetOsV01::Windows, PackageInstallPlanTargetArchV01::X8664) => {
+            PackageTargetTripleV01::X8664WindowsMsvc
+        }
+        (PackageInstallPlanTargetOsV01::Linux, PackageInstallPlanTargetArchV01::Aarch64) => {
+            PackageTargetTripleV01::Aarch64LinuxGnu
+        }
+        (PackageInstallPlanTargetOsV01::Linux, PackageInstallPlanTargetArchV01::X8664) => {
+            PackageTargetTripleV01::X8664LinuxGnu
+        }
+    }
+}
+
+fn package_install_plan_target_errors(
+    target: &PackageInstallPlanTargetV01,
+) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+    let expected = package_install_plan_expected_triple(target);
+
+    if target.triple != expected {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan target {:?}/{:?} must use target triple {:?}",
+            target.os, target.arch, expected
+        )));
+    }
+    let contracts_lower_bound =
+        compatibility_range_lower_bound(&target.contracts.range).unwrap_or_default();
+    if derive_v0_compatibility_line(contracts_lower_bound).as_deref()
+        != Some(target.contracts.line.as_str())
+        || derive_v0_compatibility_range(contracts_lower_bound).as_deref()
+            != Some(target.contracts.range.as_str())
+    {
+        errors.push(ValidationErrorV01::new(
+            "package install plan target contracts line must match contracts range",
+        ));
+    }
+    if let Some(runtime_abi_range) = &target.runtime_abi_range
+        && !is_current_v0_compatibility_range(runtime_abi_range)
+    {
+        errors.push(ValidationErrorV01::new(
+            "package install plan target runtimeAbiRange must be a current v0 compatibility range",
+        ));
+    }
+
+    errors
+}
+
+fn package_install_plan_lock_entry_errors(
+    lock_entry: &super::ProjectPackageLockEntryV01,
+) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+
+    if !is_package_id_v01(&lock_entry.package_id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan lock {} packageId must match publisher/package lowercase digit hyphen grammar: {}",
+            lock_entry.id, lock_entry.package_id
+        )));
+    }
+    if !is_relative_path_v01(&lock_entry.manifest_path) {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan lock {} manifestPath must be relative and stay inside the package",
+            lock_entry.id
+        )));
+    }
+    validate_package_checksum_v01(
+        &mut errors,
+        &format!("package install plan lock {}", lock_entry.id),
+        &lock_entry.manifest_checksum,
+    );
+
+    match lock_entry.category {
+        PackageCategoryV01::Patch => {
+            if lock_entry.runtime_abi_range.is_some() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "patch package install plan lock {} must not declare runtimeAbiRange",
+                    lock_entry.id
+                )));
+            }
+            if lock_entry.target.is_some() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "patch package install plan lock {} must not declare target",
+                    lock_entry.id
+                )));
+            }
+            if !lock_entry.native_artifacts.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "patch package install plan lock {} must not declare nativeArtifacts",
+                    lock_entry.id
+                )));
+            }
+        }
+        PackageCategoryV01::Native | PackageCategoryV01::Mixed => {
+            if lock_entry.runtime_abi_range.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{:?} package install plan lock {} requires runtimeAbiRange",
+                    lock_entry.category, lock_entry.id
+                )));
+            }
+            if lock_entry.target.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{:?} package install plan lock {} requires target",
+                    lock_entry.category, lock_entry.id
+                )));
+            }
+            if lock_entry.native_artifacts.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{:?} package install plan lock {} requires nativeArtifacts",
+                    lock_entry.category, lock_entry.id
+                )));
+            }
+        }
+    }
+
+    errors
+}
+
+pub fn validate_package_install_plan_request_v01(
+    request: &PackageInstallPlanRequestV01,
+) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if request.schema != "skenion.package.install-plan.request" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schema skenion.package.install-plan.request, found {}",
+            request.schema
+        )));
+    }
+    if request.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            request.schema_version
+        )));
+    }
+    if request.request_id.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "package install plan requestId must not be empty",
+        ));
+    }
+    if !is_package_id_v01(&request.package_id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan packageId must match publisher/package lowercase digit hyphen grammar: {}",
+            request.package_id
+        )));
+    }
+    if request.desired.version.is_none() && request.desired.version_range.is_none() {
+        errors.push(ValidationErrorV01::new(
+            "package install plan desired requires version or versionRange",
+        ));
+    }
+    if let Some(version) = &request.desired.version
+        && !is_package_semver_v01(version)
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan desired version must be SemVer: {version}"
+        )));
+    }
+    if let Some(version_range) = &request.desired.version_range
+        && !is_current_v0_compatibility_range(version_range)
+    {
+        errors.push(ValidationErrorV01::new(
+            "package install plan desired versionRange must be a current v0 compatibility range",
+        ));
+    }
+
+    errors.extend(package_install_plan_target_errors(&request.target));
+    errors.extend(duplicate_errors(
+        request
+            .current
+            .package_lock
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect(),
+        "package install plan lock entry id",
+    ));
+    errors.extend(duplicate_errors(
+        request
+            .current
+            .object_bindings
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect(),
+        "package install plan object binding id",
+    ));
+
+    let package_lock_ids: HashSet<&str> = request
+        .current
+        .package_lock
+        .iter()
+        .map(|entry| entry.id.as_str())
+        .collect();
+    if matches!(request.intent, PackageInstallPlanIntentV01::Update)
+        && request.current.installed_lock_entry_id.is_none()
+    {
+        errors.push(ValidationErrorV01::new(
+            "package install plan update requires installedLockEntryId",
+        ));
+    }
+    if let Some(installed_lock_entry_id) = &request.current.installed_lock_entry_id
+        && !package_lock_ids.contains(installed_lock_entry_id.as_str())
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan references missing installedLockEntryId: {installed_lock_entry_id}"
+        )));
+    }
+
+    for lock_entry in &request.current.package_lock {
+        errors.extend(package_install_plan_lock_entry_errors(lock_entry));
+    }
+    for rollback_candidate in &request.rollback_candidates {
+        errors.extend(package_install_plan_lock_entry_errors(rollback_candidate));
+    }
+    for binding in &request.current.object_bindings {
+        if let Some(ProjectObjectBindingTargetV01::PackageProvider { lock_entry_id, .. }) =
+            &binding.target
+            && !package_lock_ids.contains(lock_entry_id.as_str())
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "package install plan object binding {} references missing lockEntryId: {}",
+                binding.id, lock_entry_id
+            )));
+        }
+    }
+
+    if request.candidates.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "package install plan request requires candidates",
+        ));
+    }
+    for candidate in &request.candidates {
+        errors.extend(package_listing_errors(&candidate.listing));
+        if candidate.listing.package_id != request.package_id {
+            errors.push(ValidationErrorV01::new(format!(
+                "package install plan candidate {} does not match request packageId {}",
+                candidate.listing.package_id, request.package_id
+            )));
+        }
+        if let Some(manifest) = &candidate.manifest {
+            if let Err(report) = validate_package_manifest_v01(manifest) {
+                errors.extend(report.errors);
+            }
+            if manifest.id != candidate.listing.package_id {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan candidate manifest id {} does not match listing packageId {}",
+                    manifest.id, candidate.listing.package_id
+                )));
+            }
+            if manifest.version != candidate.listing.version {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan candidate manifest version {} does not match listing version {}",
+                    manifest.version, candidate.listing.version
+                )));
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+fn package_install_plan_action_errors(
+    action: &super::PackageInstallPlanActionV01,
+    index: usize,
+) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+
+    if action.id.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "package install plan action id must not be empty",
+        ));
+    }
+    if action.order != index as u64 {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan action {} order must be {}",
+            action.id, index
+        )));
+    }
+    if !is_package_id_v01(&action.package_id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan action {} packageId must match publisher/package lowercase digit hyphen grammar: {}",
+            action.id, action.package_id
+        )));
+    }
+    if let Some(version) = &action.version
+        && !is_package_semver_v01(version)
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan action {} version must be SemVer: {}",
+            action.id, version
+        )));
+    }
+    if let Some(artifact) = &action.artifact {
+        if !is_relative_path_v01(&artifact.path) {
+            errors.push(ValidationErrorV01::new(format!(
+                "package install plan action {} artifact path must be relative and stay inside the package",
+                action.id
+            )));
+        }
+        validate_package_checksum_v01(
+            &mut errors,
+            &format!("package install plan action {} artifact", action.id),
+            &artifact.checksum,
+        );
+        if artifact.evidence_refs.is_empty() {
+            errors.push(ValidationErrorV01::new(format!(
+                "package install plan action {} artifact requires evidenceRefs",
+                action.id
+            )));
+        }
+    }
+
+    match action.kind {
+        PackageInstallPlanActionKindV01::Download | PackageInstallPlanActionKindV01::Verify => {
+            if action.version.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan {:?} action {} requires version",
+                    action.kind, action.id
+                )));
+            }
+            if action.artifact.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan {:?} action {} requires artifact",
+                    action.kind, action.id
+                )));
+            }
+            if action.evidence_refs.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan {:?} action {} requires evidenceRefs",
+                    action.kind, action.id
+                )));
+            }
+        }
+        PackageInstallPlanActionKindV01::Stage => {
+            if action.version.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan stage action {} requires version",
+                    action.id
+                )));
+            }
+        }
+        PackageInstallPlanActionKindV01::Replace => {
+            if action.version.is_none()
+                || action.lock_entry_id.is_none()
+                || action.to_lock_entry_id.is_none()
+            {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan replace action {} requires version, lockEntryId, and toLockEntryId",
+                    action.id
+                )));
+            }
+        }
+        PackageInstallPlanActionKindV01::Disable | PackageInstallPlanActionKindV01::Keep => {
+            if action.lock_entry_id.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan {:?} action {} requires lockEntryId",
+                    action.kind, action.id
+                )));
+            }
+        }
+        PackageInstallPlanActionKindV01::Rollback => {
+            if action.lock_entry_id.is_none() || action.rollback_lock_entry_id.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan rollback action {} requires lockEntryId and rollbackLockEntryId",
+                    action.id
+                )));
+            }
+        }
+        PackageInstallPlanActionKindV01::Reject => {
+            if action.diagnostic_refs.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan reject action {} requires diagnosticRefs",
+                    action.id
+                )));
+            }
+        }
+    }
+
+    errors
+}
+
+pub fn validate_package_install_plan_response_v01(
+    response: &PackageInstallPlanResponseV01,
+) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if response.schema != "skenion.package.install-plan.response" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schema skenion.package.install-plan.response, found {}",
+            response.schema
+        )));
+    }
+    if response.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            response.schema_version
+        )));
+    }
+    if response.request_id.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "package install plan response requestId must not be empty",
+        ));
+    }
+    if !is_package_id_v01(&response.package_id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan response packageId must match publisher/package lowercase digit hyphen grammar: {}",
+            response.package_id
+        )));
+    }
+    if let Some(selected_version) = &response.selected_version
+        && !is_package_semver_v01(selected_version)
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan selectedVersion must be SemVer: {selected_version}"
+        )));
+    }
+    errors.extend(package_install_plan_target_errors(&response.target));
+    if response.checks.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "package install plan response requires checks",
+        ));
+    }
+
+    errors.extend(duplicate_errors(
+        response
+            .actions
+            .iter()
+            .map(|action| action.id.as_str())
+            .collect(),
+        "package install plan action id",
+    ));
+    errors.extend(duplicate_errors(
+        response
+            .diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.id.as_str())
+            .collect(),
+        "package install plan diagnostic id",
+    ));
+
+    let diagnostic_ids: HashSet<&str> = response
+        .diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.id.as_str())
+        .collect();
+    for diagnostic in &response.diagnostics {
+        if diagnostic.id.is_empty() {
+            errors.push(ValidationErrorV01::new(
+                "package install plan diagnostic id must not be empty",
+            ));
+        }
+        if diagnostic.message.is_empty() {
+            errors.push(ValidationErrorV01::new(format!(
+                "package install plan diagnostic {} message must not be empty",
+                diagnostic.id
+            )));
+        }
+    }
+    for check in &response.checks {
+        if matches!(check.status, PackageInstallPlanCheckStatusV01::Fail)
+            && check.diagnostic_refs.is_empty()
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "package install plan failing check {:?} requires diagnosticRefs",
+                check.kind
+            )));
+        }
+        for diagnostic_ref in &check.diagnostic_refs {
+            if !diagnostic_ids.contains(diagnostic_ref.as_str()) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan check {:?} references missing diagnostic {}",
+                    check.kind, diagnostic_ref
+                )));
+            }
+        }
+    }
+    for (index, action) in response.actions.iter().enumerate() {
+        errors.extend(package_install_plan_action_errors(action, index));
+        for diagnostic_ref in &action.diagnostic_refs {
+            if !diagnostic_ids.contains(diagnostic_ref.as_str()) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan action {} references missing diagnostic {}",
+                    action.id, diagnostic_ref
+                )));
+            }
+        }
+        for capability_change in &action.capability_changes {
+            if capability_change.id.is_empty() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan action {} capability change id must not be empty",
+                    action.id
+                )));
+            }
+            if let Some(diagnostic_ref) = &capability_change.diagnostic_ref
+                && !diagnostic_ids.contains(diagnostic_ref.as_str())
+            {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan action {} capability change references missing diagnostic {}",
+                    action.id, diagnostic_ref
+                )));
+            }
+        }
+    }
+
+    let has_reject_action = response
+        .actions
+        .iter()
+        .any(|action| matches!(action.kind, PackageInstallPlanActionKindV01::Reject));
+    let has_error_diagnostic = response
+        .diagnostics
+        .iter()
+        .any(|diagnostic| matches!(diagnostic.severity, PackageDiagnosticSeverityV01::Error));
+    let has_failed_check = response
+        .checks
+        .iter()
+        .any(|check| matches!(check.status, PackageInstallPlanCheckStatusV01::Fail));
+    if response.ok {
+        if has_failed_check {
+            errors.push(ValidationErrorV01::new(
+                "successful package install plan response must not include failed checks",
+            ));
+        }
+        if has_reject_action {
+            errors.push(ValidationErrorV01::new(
+                "successful package install plan response must not include reject actions",
+            ));
+        }
+    } else {
+        if !has_reject_action {
+            errors.push(ValidationErrorV01::new(
+                "failed package install plan response requires a reject action",
+            ));
+        }
+        if !has_error_diagnostic {
+            errors.push(ValidationErrorV01::new(
+                "failed package install plan response requires an error diagnostic",
+            ));
+        }
     }
 
     if errors.is_empty() {

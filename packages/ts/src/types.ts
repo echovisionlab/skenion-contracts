@@ -952,6 +952,146 @@ export interface PackageDiscoveryResponseV01 {
   diagnostics: PackageListingDiagnosticV01[];
 }
 
+export type PackageInstallPlanIntentV01 = "install" | "update";
+export type PackageInstallPlanTargetOsV01 = "macos" | "windows" | "linux";
+export type PackageInstallPlanTargetArchV01 = "aarch64" | "x86_64";
+export type PackageInstallPlanActionKindV01 =
+  | "download"
+  | "verify"
+  | "stage"
+  | "replace"
+  | "disable"
+  | "rollback"
+  | "keep"
+  | "reject";
+export type PackageInstallPlanCheckKindV01 =
+  | "contracts-line"
+  | "runtime-abi"
+  | "target-triple"
+  | "checksum"
+  | "provenance"
+  | "capability-change"
+  | "lock-state";
+export type PackageInstallPlanCheckStatusV01 = "pass" | "warning" | "fail" | "skipped";
+export type PackageInstallPlanCapabilityChangeKindV01 = "add" | "remove" | "keep";
+export type PackageInstallPlanCapabilityKindV01 = ProviderRefKindV01 | "capability";
+export type PackageInstallPlanDiagnosticCodeV01 =
+  | "incompatible-contracts-line"
+  | "incompatible-runtime-abi"
+  | "unsupported-target"
+  | "missing-artifact"
+  | "checksum-mismatch"
+  | "missing-provenance-evidence"
+  | "missing-lock-entry"
+  | "ambiguous-package-id"
+  | "stale-installed-lock"
+  | "removed-capability"
+  | "rollback-unavailable";
+
+export interface PackageInstallPlanDesiredV01 {
+  version?: string;
+  versionRange?: string;
+}
+
+export interface PackageInstallPlanTargetV01 {
+  os: PackageInstallPlanTargetOsV01;
+  arch: PackageInstallPlanTargetArchV01;
+  triple: PackageTargetTripleV01;
+  contracts: PackageContractsSupportV01;
+  runtimeAbiRange?: string;
+}
+
+export interface PackageInstallPlanCurrentStateV01 {
+  packageLock: ProjectPackageLockEntryV01[];
+  objectBindings: ProjectObjectBindingV01[];
+  installedLockEntryId?: string;
+}
+
+export interface PackageInstallPlanCandidateV01 {
+  listing: PackageListingV01;
+  manifest?: PackageManifestV01;
+}
+
+/**
+ * Declarative package install/update planning input.
+ *
+ * The request carries current lock/binding state plus candidate package
+ * listing and optional manifest evidence. It intentionally has no endpoint,
+ * registry write, filesystem mutation, or native loading semantics.
+ */
+export interface PackageInstallPlanRequestV01 {
+  schema: "skenion.package.install-plan.request";
+  schemaVersion: "0.1.0";
+  requestId: string;
+  intent: PackageInstallPlanIntentV01;
+  packageId: string;
+  desired: PackageInstallPlanDesiredV01;
+  target: PackageInstallPlanTargetV01;
+  current: PackageInstallPlanCurrentStateV01;
+  candidates: PackageInstallPlanCandidateV01[];
+  rollbackCandidates?: ProjectPackageLockEntryV01[];
+}
+
+export interface PackageInstallPlanCheckV01 {
+  kind: PackageInstallPlanCheckKindV01;
+  status: PackageInstallPlanCheckStatusV01;
+  diagnosticRefs?: string[];
+  message?: string;
+}
+
+export interface PackageInstallPlanCapabilityChangeV01 {
+  kind: PackageInstallPlanCapabilityChangeKindV01;
+  capabilityKind: PackageInstallPlanCapabilityKindV01;
+  id: string;
+  diagnosticRef?: string;
+}
+
+export interface PackageInstallPlanActionV01 {
+  id: string;
+  order: number;
+  kind: PackageInstallPlanActionKindV01;
+  packageId: string;
+  version?: string;
+  lockEntryId?: string;
+  toLockEntryId?: string;
+  rollbackLockEntryId?: string;
+  target?: PackageTargetTripleV01;
+  artifact?: PackageListingArtifactSummaryV01;
+  checksum?: PackageChecksumV01;
+  evidenceRefs?: string[];
+  capabilityChanges?: PackageInstallPlanCapabilityChangeV01[];
+  diagnosticRefs?: string[];
+  reason?: string;
+}
+
+export interface PackageInstallPlanDiagnosticV01 {
+  id: string;
+  severity: PackageDiagnosticSeverityV01;
+  code: PackageInstallPlanDiagnosticCodeV01;
+  message: string;
+  details?: RuntimeDiagnosticDetails;
+}
+
+/**
+ * Declarative package install/update planning output.
+ *
+ * A response can express a safe keep/no-op, ordered download/verify/stage/
+ * replace actions, rollback, or fail-closed rejection with diagnostics. The
+ * actions are planning records only and do not authorize Runtime mutation.
+ */
+export interface PackageInstallPlanResponseV01 {
+  schema: "skenion.package.install-plan.response";
+  schemaVersion: "0.1.0";
+  requestId: string;
+  ok: boolean;
+  packageId: string;
+  selectedVersion?: string;
+  target: PackageInstallPlanTargetV01;
+  checks: PackageInstallPlanCheckV01[];
+  actions: PackageInstallPlanActionV01[];
+  diagnostics: PackageInstallPlanDiagnosticV01[];
+}
+
 /**
  * Runtime HTTP package registry entry exposed to clients.
  *

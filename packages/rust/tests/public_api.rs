@@ -6,25 +6,29 @@ use skenion_contracts::{
     GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
     MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
     ObjectTextParseResultV01, PackageCategoryV01, PackageDiscoveryResponseV01,
+    PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
+    PackageInstallPlanDiagnosticCodeV01, PackageInstallPlanIntentV01, PackageInstallPlanRequestV01,
+    PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01,
     PackageListingArtifactKindV01, PackageListingDiagnosticCodeV01,
     PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
     PackageRegistryListResponseV01, PackageRootDocumentV01, PackageRootKindV01,
     PackageTargetTripleV01, PasteGraphFragmentResponse, ProjectDocumentV01,
-    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
-    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
-    RuntimeCollaborationOperationResult, RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic,
-    RuntimeDiagnosticSeverity, RuntimeOperationEnvelope, RuntimeSessionEvent,
-    RuntimeSessionEventKind, RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME,
-    StringOrStringsV01, analyze_graph_document_v01, analyze_graph_fragment_v01,
-    apply_midi_clock_message_v01, compatible_data_types_v01, derive_patch_contract_v01,
-    derive_patch_contracts_v01, derive_v0_compatibility_line, derive_v0_compatibility_range,
-    is_same_v0_compatibility_line, midi_clock_snapshot_to_clock_state_v01,
-    parse_midi_clock_message_v01, parse_object_text_v01, plan_audio_clock_bridge_v01,
-    satisfies_v0_compatibility_range, type_label_v01, validate_compatibility_matrix_v01,
-    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_definition_v01, validate_object_text_parse_result_v01,
-    validate_package_discovery_response_v01, validate_package_listing_v01,
-    validate_package_manifest_v01, validate_package_root_v01,
+    ProjectObjectBindingTargetV01, RuntimeCollaborationEventEnvelope,
+    RuntimeCollaborationEventKind, RuntimeCollaborationOperationBatchResult,
+    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
+    RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic, RuntimeDiagnosticSeverity,
+    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
+    RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01,
+    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
+    compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
+    derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
+    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
+    plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
+    validate_compatibility_matrix_v01, validate_extension_manifest_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
+    validate_object_text_parse_result_v01, validate_package_discovery_response_v01,
+    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
+    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_response, validate_project_document_v01,
     validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch_result,
@@ -1705,6 +1709,569 @@ fn validates_public_package_manifest_contract_surface() {
         malformed_discovery_identity_text.contains("expected schema skenion.package.discovery")
     );
     assert!(malformed_discovery_identity_text.contains("expected schemaVersion 0.1.0"));
+}
+
+#[test]
+fn validates_public_package_install_plan_contract_surface() {
+    let request: PackageInstallPlanRequestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/valid/update-plan-request.skenion.package-install-plan-request.json"
+    ))
+    .expect("install plan request should parse");
+    validate_package_install_plan_request_v01(&request)
+        .expect("install plan request should validate");
+    assert_eq!(request.schema, "skenion.package.install-plan.request");
+    assert_eq!(request.package_id, "example/native-sensor");
+    assert_eq!(
+        request.current.installed_lock_entry_id.as_deref(),
+        Some("pkg-example-native-sensor-0.45.0")
+    );
+    assert_eq!(request.candidates[0].listing.package_id, request.package_id);
+
+    let mut install_request = request.clone();
+    install_request.intent = PackageInstallPlanIntentV01::Install;
+    install_request.current.installed_lock_entry_id = None;
+    install_request.desired.version = None;
+    install_request.candidates[0].manifest = None;
+    validate_package_install_plan_request_v01(&install_request)
+        .expect("install request without installed lock or manifest should validate");
+
+    let mut missing_installed_lock = request.clone();
+    missing_installed_lock.current.installed_lock_entry_id = Some("missing-lock".to_owned());
+    let missing_installed_lock_report =
+        validate_package_install_plan_request_v01(&missing_installed_lock)
+            .expect_err("missing installed lock should fail");
+    assert!(
+        missing_installed_lock_report
+            .to_string()
+            .contains("missing installedLockEntryId")
+    );
+
+    let mut mismatched_candidate = install_request.clone();
+    mismatched_candidate.candidates[0].listing.package_id = "example/other-package".to_owned();
+    let mismatched_candidate_report =
+        validate_package_install_plan_request_v01(&mismatched_candidate)
+            .expect_err("candidate packageId mismatch should fail");
+    assert!(
+        mismatched_candidate_report
+            .to_string()
+            .contains("does not match request packageId")
+    );
+
+    let target_mismatch: PackageInstallPlanRequestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/invalid/plan-request-target-mismatch.skenion.package-install-plan-request.json"
+    ))
+    .expect("target mismatch request should parse before semantic validation");
+    let target_mismatch_report = validate_package_install_plan_request_v01(&target_mismatch)
+        .expect_err("target mismatch should fail");
+    assert!(
+        target_mismatch_report
+            .to_string()
+            .contains("must use target triple")
+    );
+
+    let update_response: PackageInstallPlanResponseV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/valid/update-plan-response.skenion.package-install-plan-response.json"
+    ))
+    .expect("install plan response should parse");
+    validate_package_install_plan_response_v01(&update_response)
+        .expect("install plan response should validate");
+    assert!(update_response.ok);
+    assert_eq!(
+        update_response.actions[0].kind,
+        PackageInstallPlanActionKindV01::Download
+    );
+    assert_eq!(
+        update_response.actions[5].capability_changes[0].id,
+        "example.sensor-calibration"
+    );
+
+    let keep_response: PackageInstallPlanResponseV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/valid/keep-plan-response.skenion.package-install-plan-response.json"
+    ))
+    .expect("keep response should parse");
+    validate_package_install_plan_response_v01(&keep_response)
+        .expect("keep response should validate");
+    assert_eq!(
+        keep_response.checks[1].status,
+        PackageInstallPlanCheckStatusV01::Skipped
+    );
+
+    let rollback_response: PackageInstallPlanResponseV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/valid/rollback-plan-response.skenion.package-install-plan-response.json"
+    ))
+    .expect("rollback response should parse");
+    validate_package_install_plan_response_v01(&rollback_response)
+        .expect("rollback response should validate");
+    assert_eq!(
+        rollback_response.actions[0].kind,
+        PackageInstallPlanActionKindV01::Rollback
+    );
+
+    let reject_response: PackageInstallPlanResponseV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/valid/reject-plan-response.skenion.package-install-plan-response.json"
+    ))
+    .expect("reject response should parse");
+    validate_package_install_plan_response_v01(&reject_response)
+        .expect("reject response should validate");
+    assert!(!reject_response.ok);
+    assert_eq!(
+        reject_response.diagnostics[0].code,
+        PackageInstallPlanDiagnosticCodeV01::UnsupportedTarget
+    );
+
+    let unordered_actions: PackageInstallPlanResponseV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/invalid/plan-response-unordered-actions.skenion.package-install-plan-response.json"
+    ))
+    .expect("unordered response should parse before semantic validation");
+    let unordered_actions_report = validate_package_install_plan_response_v01(&unordered_actions)
+        .expect_err("unordered actions should fail");
+    assert!(
+        unordered_actions_report
+            .to_string()
+            .contains("order must be 0")
+    );
+
+    let reject_without_error: PackageInstallPlanResponseV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/invalid/plan-response-reject-without-error.skenion.package-install-plan-response.json"
+    ))
+    .expect("reject without error should parse before semantic validation");
+    let reject_without_error_report =
+        validate_package_install_plan_response_v01(&reject_without_error)
+            .expect_err("failed plan without error diagnostic should fail");
+    assert!(
+        reject_without_error_report
+            .to_string()
+            .contains("requires an error diagnostic")
+    );
+
+    let mut response_target_mismatch = keep_response.clone();
+    response_target_mismatch.target.os = PackageInstallPlanTargetOsV01::Linux;
+    response_target_mismatch.target.arch = PackageInstallPlanTargetArchV01::X8664;
+    let response_target_mismatch_report =
+        validate_package_install_plan_response_v01(&response_target_mismatch)
+            .expect_err("response target mismatch should fail");
+    assert!(
+        response_target_mismatch_report
+            .to_string()
+            .contains("must use target triple")
+    );
+
+    let mut successful_reject = reject_response.clone();
+    successful_reject.ok = true;
+    let successful_reject_report = validate_package_install_plan_response_v01(&successful_reject)
+        .expect_err("successful plan must not carry reject action");
+    assert!(
+        successful_reject_report
+            .to_string()
+            .contains("must not include reject actions")
+    );
+
+    for (os, arch, triple) in [
+        (
+            PackageInstallPlanTargetOsV01::Macos,
+            PackageInstallPlanTargetArchV01::X8664,
+            PackageTargetTripleV01::X8664AppleDarwin,
+        ),
+        (
+            PackageInstallPlanTargetOsV01::Windows,
+            PackageInstallPlanTargetArchV01::Aarch64,
+            PackageTargetTripleV01::Aarch64WindowsMsvc,
+        ),
+        (
+            PackageInstallPlanTargetOsV01::Windows,
+            PackageInstallPlanTargetArchV01::X8664,
+            PackageTargetTripleV01::X8664WindowsMsvc,
+        ),
+        (
+            PackageInstallPlanTargetOsV01::Linux,
+            PackageInstallPlanTargetArchV01::Aarch64,
+            PackageTargetTripleV01::Aarch64LinuxGnu,
+        ),
+    ] {
+        let mut target_variant = keep_response.clone();
+        target_variant.target.os = os;
+        target_variant.target.arch = arch;
+        target_variant.target.triple = triple;
+        validate_package_install_plan_response_v01(&target_variant)
+            .expect("supported target os/arch combination should validate");
+    }
+
+    let mut malformed_request_identity = request.clone();
+    malformed_request_identity.schema = "wrong.plan.request".to_owned();
+    malformed_request_identity.schema_version = "9.9.9".to_owned();
+    malformed_request_identity.request_id.clear();
+    malformed_request_identity.package_id = "Bad Package".to_owned();
+    malformed_request_identity.desired.version = None;
+    malformed_request_identity.desired.version_range = None;
+    let malformed_request_identity_report =
+        validate_package_install_plan_request_v01(&malformed_request_identity)
+            .expect_err("malformed request identity should fail");
+    let malformed_request_identity_text = malformed_request_identity_report.to_string();
+    assert!(malformed_request_identity_text.contains("expected schema"));
+    assert!(malformed_request_identity_text.contains("expected schemaVersion"));
+    assert!(malformed_request_identity_text.contains("requestId"));
+    assert!(malformed_request_identity_text.contains("packageId"));
+    assert!(malformed_request_identity_text.contains("desired requires"));
+
+    let mut malformed_desired = request.clone();
+    malformed_desired.desired.version = Some("0.45".to_owned());
+    malformed_desired.desired.version_range = Some("0.45.0".to_owned());
+    let malformed_desired_report = validate_package_install_plan_request_v01(&malformed_desired)
+        .expect_err("malformed desired version fields should fail");
+    let malformed_desired_text = malformed_desired_report.to_string();
+    assert!(malformed_desired_text.contains("desired version must be SemVer"));
+    assert!(malformed_desired_text.contains("desired versionRange"));
+
+    let mut malformed_target_contracts = request.clone();
+    malformed_target_contracts.target.contracts.line = "0.44".to_owned();
+    malformed_target_contracts.target.runtime_abi_range = Some("0.45.0".to_owned());
+    let malformed_target_contracts_report =
+        validate_package_install_plan_request_v01(&malformed_target_contracts)
+            .expect_err("malformed target contracts should fail");
+    let malformed_target_contracts_text = malformed_target_contracts_report.to_string();
+    assert!(malformed_target_contracts_text.contains("target contracts line"));
+    assert!(malformed_target_contracts_text.contains("target runtimeAbiRange"));
+
+    let mut malformed_lock = request.clone();
+    malformed_lock.current.package_lock[0].package_id = "Bad Package".to_owned();
+    malformed_lock.current.package_lock[0].manifest_path =
+        "/absolute/skenion.package.json".to_owned();
+    malformed_lock.current.package_lock[0]
+        .manifest_checksum
+        .value = "not-sha256".to_owned();
+    malformed_lock.current.package_lock[0].category = PackageCategoryV01::Patch;
+    let malformed_lock_report = validate_package_install_plan_request_v01(&malformed_lock)
+        .expect_err("malformed lock entry should fail");
+    let malformed_lock_text = malformed_lock_report.to_string();
+    assert!(malformed_lock_text.contains("lock"));
+    assert!(malformed_lock_text.contains("manifestPath"));
+    assert!(malformed_lock_text.contains("checksum"));
+    assert!(malformed_lock_text.contains("must not declare runtimeAbiRange"));
+    assert!(malformed_lock_text.contains("must not declare target"));
+    assert!(malformed_lock_text.contains("must not declare nativeArtifacts"));
+
+    let mut missing_native_lock_fields = request.clone();
+    missing_native_lock_fields.current.package_lock[0].runtime_abi_range = None;
+    missing_native_lock_fields.current.package_lock[0].target = None;
+    missing_native_lock_fields.current.package_lock[0]
+        .native_artifacts
+        .clear();
+    let missing_native_lock_fields_report =
+        validate_package_install_plan_request_v01(&missing_native_lock_fields)
+            .expect_err("native lock without native evidence should fail");
+    let missing_native_lock_fields_text = missing_native_lock_fields_report.to_string();
+    assert!(missing_native_lock_fields_text.contains("requires runtimeAbiRange"));
+    assert!(missing_native_lock_fields_text.contains("requires target"));
+    assert!(missing_native_lock_fields_text.contains("requires nativeArtifacts"));
+
+    let mut duplicate_current_state = request.clone();
+    duplicate_current_state
+        .current
+        .package_lock
+        .push(duplicate_current_state.current.package_lock[0].clone());
+    duplicate_current_state
+        .current
+        .object_bindings
+        .push(duplicate_current_state.current.object_bindings[0].clone());
+    let duplicate_current_state_report =
+        validate_package_install_plan_request_v01(&duplicate_current_state)
+            .expect_err("duplicate current state ids should fail");
+    let duplicate_current_state_text = duplicate_current_state_report.to_string();
+    assert!(duplicate_current_state_text.contains("duplicate package install plan lock entry id"));
+    assert!(
+        duplicate_current_state_text.contains("duplicate package install plan object binding id")
+    );
+
+    let mut update_without_installed_lock = request.clone();
+    update_without_installed_lock
+        .current
+        .installed_lock_entry_id = None;
+    let update_without_installed_lock_report =
+        validate_package_install_plan_request_v01(&update_without_installed_lock)
+            .expect_err("update without installed lock should fail");
+    assert!(
+        update_without_installed_lock_report
+            .to_string()
+            .contains("update requires installedLockEntryId")
+    );
+
+    let mut missing_binding_lock = request.clone();
+    if let Some(ProjectObjectBindingTargetV01::PackageProvider { lock_entry_id, .. }) =
+        &mut missing_binding_lock.current.object_bindings[0].target
+    {
+        *lock_entry_id = "missing-lock".to_owned();
+    }
+    let missing_binding_lock_report =
+        validate_package_install_plan_request_v01(&missing_binding_lock)
+            .expect_err("binding with missing lock should fail");
+    assert!(
+        missing_binding_lock_report
+            .to_string()
+            .contains("object binding")
+    );
+
+    let mut request_without_candidates = request.clone();
+    request_without_candidates.candidates.clear();
+    let request_without_candidates_report =
+        validate_package_install_plan_request_v01(&request_without_candidates)
+            .expect_err("request without candidates should fail");
+    assert!(
+        request_without_candidates_report
+            .to_string()
+            .contains("requires candidates")
+    );
+
+    let mut invalid_candidate_manifest = request.clone();
+    invalid_candidate_manifest.candidates[0]
+        .manifest
+        .as_mut()
+        .expect("fixture has manifest")
+        .native_artifacts[0]
+        .evidence_refs = vec!["missing-evidence".to_owned()];
+    let invalid_candidate_manifest_report =
+        validate_package_install_plan_request_v01(&invalid_candidate_manifest)
+            .expect_err("invalid candidate manifest should fail");
+    assert!(
+        invalid_candidate_manifest_report
+            .to_string()
+            .contains("missing evidence")
+    );
+
+    let mut mismatched_manifest_id = request.clone();
+    mismatched_manifest_id.candidates[0]
+        .manifest
+        .as_mut()
+        .expect("fixture has manifest")
+        .id = "example/other-package".to_owned();
+    let mismatched_manifest_id_report =
+        validate_package_install_plan_request_v01(&mismatched_manifest_id)
+            .expect_err("manifest id mismatch should fail");
+    assert!(
+        mismatched_manifest_id_report
+            .to_string()
+            .contains("manifest id")
+    );
+
+    let mut mismatched_manifest_version = request.clone();
+    mismatched_manifest_version.candidates[0]
+        .manifest
+        .as_mut()
+        .expect("fixture has manifest")
+        .version = "0.45.0".to_owned();
+    let mismatched_manifest_version_report =
+        validate_package_install_plan_request_v01(&mismatched_manifest_version)
+            .expect_err("manifest version mismatch should fail");
+    assert!(
+        mismatched_manifest_version_report
+            .to_string()
+            .contains("manifest version")
+    );
+
+    let mut malformed_response_identity = keep_response.clone();
+    malformed_response_identity.schema = "wrong.plan.response".to_owned();
+    malformed_response_identity.schema_version = "9.9.9".to_owned();
+    malformed_response_identity.request_id.clear();
+    malformed_response_identity.package_id = "Bad Package".to_owned();
+    malformed_response_identity.selected_version = Some("0.45".to_owned());
+    malformed_response_identity.checks.clear();
+    let malformed_response_identity_report =
+        validate_package_install_plan_response_v01(&malformed_response_identity)
+            .expect_err("malformed response identity should fail");
+    let malformed_response_identity_text = malformed_response_identity_report.to_string();
+    assert!(malformed_response_identity_text.contains("expected schema"));
+    assert!(malformed_response_identity_text.contains("expected schemaVersion"));
+    assert!(malformed_response_identity_text.contains("requestId"));
+    assert!(malformed_response_identity_text.contains("packageId"));
+    assert!(malformed_response_identity_text.contains("selectedVersion"));
+    assert!(malformed_response_identity_text.contains("requires checks"));
+
+    let mut duplicate_response_ids = reject_response.clone();
+    duplicate_response_ids
+        .actions
+        .push(duplicate_response_ids.actions[0].clone());
+    duplicate_response_ids
+        .diagnostics
+        .push(duplicate_response_ids.diagnostics[0].clone());
+    let duplicate_response_ids_report =
+        validate_package_install_plan_response_v01(&duplicate_response_ids)
+            .expect_err("duplicate response ids should fail");
+    let duplicate_response_ids_text = duplicate_response_ids_report.to_string();
+    assert!(duplicate_response_ids_text.contains("duplicate package install plan action id"));
+    assert!(duplicate_response_ids_text.contains("duplicate package install plan diagnostic id"));
+
+    let mut malformed_diagnostic = reject_response.clone();
+    malformed_diagnostic.diagnostics[0].id.clear();
+    malformed_diagnostic.diagnostics[0].message.clear();
+    let malformed_diagnostic_report =
+        validate_package_install_plan_response_v01(&malformed_diagnostic)
+            .expect_err("malformed diagnostic should fail");
+    let malformed_diagnostic_text = malformed_diagnostic_report.to_string();
+    assert!(malformed_diagnostic_text.contains("diagnostic id"));
+    assert!(malformed_diagnostic_text.contains("message must not be empty"));
+
+    let mut failing_check_without_ref = reject_response.clone();
+    failing_check_without_ref.checks[0].diagnostic_refs.clear();
+    let failing_check_without_ref_report =
+        validate_package_install_plan_response_v01(&failing_check_without_ref)
+            .expect_err("failing check without diagnostic ref should fail");
+    assert!(
+        failing_check_without_ref_report
+            .to_string()
+            .contains("failing check")
+    );
+
+    let mut missing_check_diagnostic = reject_response.clone();
+    missing_check_diagnostic.checks[0].diagnostic_refs = vec!["missing-diagnostic".to_owned()];
+    let missing_check_diagnostic_report =
+        validate_package_install_plan_response_v01(&missing_check_diagnostic)
+            .expect_err("missing check diagnostic ref should fail");
+    assert!(
+        missing_check_diagnostic_report
+            .to_string()
+            .contains("references missing diagnostic")
+    );
+
+    let mut malformed_download_action = update_response.clone();
+    malformed_download_action.actions[0].id.clear();
+    malformed_download_action.actions[0].package_id = "Bad Package".to_owned();
+    malformed_download_action.actions[0].version = Some("0.45".to_owned());
+    malformed_download_action.actions[0]
+        .artifact
+        .as_mut()
+        .expect("fixture has artifact")
+        .path = "../outside".to_owned();
+    malformed_download_action.actions[0]
+        .artifact
+        .as_mut()
+        .expect("fixture has artifact")
+        .checksum
+        .value = "bad".to_owned();
+    malformed_download_action.actions[0]
+        .artifact
+        .as_mut()
+        .expect("fixture has artifact")
+        .evidence_refs
+        .clear();
+    let malformed_download_action_report =
+        validate_package_install_plan_response_v01(&malformed_download_action)
+            .expect_err("malformed download action should fail");
+    let malformed_download_action_text = malformed_download_action_report.to_string();
+    assert!(malformed_download_action_text.contains("action id"));
+    assert!(malformed_download_action_text.contains("packageId"));
+    assert!(malformed_download_action_text.contains("version must be SemVer"));
+    assert!(malformed_download_action_text.contains("artifact path"));
+    assert!(malformed_download_action_text.contains("checksum"));
+    assert!(malformed_download_action_text.contains("artifact requires evidenceRefs"));
+
+    let mut missing_download_fields = update_response.clone();
+    missing_download_fields.actions[0].version = None;
+    missing_download_fields.actions[0].artifact = None;
+    missing_download_fields.actions[0].evidence_refs.clear();
+    let missing_download_fields_report =
+        validate_package_install_plan_response_v01(&missing_download_fields)
+            .expect_err("download action missing required fields should fail");
+    let missing_download_fields_text = missing_download_fields_report.to_string();
+    assert!(missing_download_fields_text.contains("requires version"));
+    assert!(missing_download_fields_text.contains("requires artifact"));
+    assert!(missing_download_fields_text.contains("requires evidenceRefs"));
+
+    let mut missing_stage_version = update_response.clone();
+    missing_stage_version.actions[3].version = None;
+    let missing_stage_version_report =
+        validate_package_install_plan_response_v01(&missing_stage_version)
+            .expect_err("stage action missing version should fail");
+    assert!(
+        missing_stage_version_report
+            .to_string()
+            .contains("stage action")
+    );
+
+    let mut missing_replace_fields = update_response.clone();
+    missing_replace_fields.actions[5].version = None;
+    missing_replace_fields.actions[5].lock_entry_id = None;
+    missing_replace_fields.actions[5].to_lock_entry_id = None;
+    let missing_replace_fields_report =
+        validate_package_install_plan_response_v01(&missing_replace_fields)
+            .expect_err("replace action missing fields should fail");
+    assert!(
+        missing_replace_fields_report
+            .to_string()
+            .contains("replace action")
+    );
+
+    let mut missing_disable_lock = update_response.clone();
+    missing_disable_lock.actions[4].lock_entry_id = None;
+    let missing_disable_lock_report =
+        validate_package_install_plan_response_v01(&missing_disable_lock)
+            .expect_err("disable action missing lock should fail");
+    assert!(
+        missing_disable_lock_report
+            .to_string()
+            .contains("requires lockEntryId")
+    );
+
+    let mut missing_rollback_fields = rollback_response.clone();
+    missing_rollback_fields.actions[0].lock_entry_id = None;
+    missing_rollback_fields.actions[0].rollback_lock_entry_id = None;
+    let missing_rollback_fields_report =
+        validate_package_install_plan_response_v01(&missing_rollback_fields)
+            .expect_err("rollback action missing fields should fail");
+    assert!(
+        missing_rollback_fields_report
+            .to_string()
+            .contains("rollback action")
+    );
+
+    let mut missing_reject_diagnostics = reject_response.clone();
+    missing_reject_diagnostics.actions[0]
+        .diagnostic_refs
+        .clear();
+    let missing_reject_diagnostics_report =
+        validate_package_install_plan_response_v01(&missing_reject_diagnostics)
+            .expect_err("reject action missing diagnostic refs should fail");
+    assert!(
+        missing_reject_diagnostics_report
+            .to_string()
+            .contains("reject action")
+    );
+
+    let mut missing_action_diagnostic = reject_response.clone();
+    missing_action_diagnostic.actions[0].diagnostic_refs = vec!["missing-diagnostic".to_owned()];
+    let missing_action_diagnostic_report =
+        validate_package_install_plan_response_v01(&missing_action_diagnostic)
+            .expect_err("action missing diagnostic ref should fail");
+    assert!(
+        missing_action_diagnostic_report
+            .to_string()
+            .contains("action reject-native-sensor-windows-arm64 references missing diagnostic")
+    );
+
+    let mut malformed_capability_change = update_response.clone();
+    malformed_capability_change.actions[5].capability_changes[0]
+        .id
+        .clear();
+    malformed_capability_change.actions[5].capability_changes[0].diagnostic_ref =
+        Some("missing-diagnostic".to_owned());
+    let malformed_capability_change_report =
+        validate_package_install_plan_response_v01(&malformed_capability_change)
+            .expect_err("malformed capability change should fail");
+    let malformed_capability_change_text = malformed_capability_change_report.to_string();
+    assert!(malformed_capability_change_text.contains("capability change id"));
+    assert!(
+        malformed_capability_change_text
+            .contains("capability change references missing diagnostic")
+    );
+
+    let mut failed_without_reject = reject_response.clone();
+    failed_without_reject.actions.clear();
+    let failed_without_reject_report =
+        validate_package_install_plan_response_v01(&failed_without_reject)
+            .expect_err("failed plan without reject action should fail");
+    assert!(
+        failed_without_reject_report
+            .to_string()
+            .contains("requires a reject action")
+    );
 }
 
 #[test]

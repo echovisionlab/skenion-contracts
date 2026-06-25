@@ -6274,6 +6274,721 @@ export const packageDiscoveryV01Schema = {
   "additionalProperties": false
 } as const;
 
+export const packageInstallPlanRequestV01Schema = {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/package/v0.1/package-install-plan-request.schema.json",
+  "title": "skenion Package Install/Update Plan Request v0.1",
+  "description": "Declarative package install/update planning input. It references current project package lock and object binding state, desired package version/range, candidate listing/manifest evidence, and the Runtime host target. It does not request filesystem mutation, registry writes, or Runtime native loading.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "requestId",
+    "intent",
+    "packageId",
+    "desired",
+    "target",
+    "current",
+    "candidates"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.package.install-plan.request"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intent": {
+      "$ref": "#/$defs/packageInstallPlanIntent"
+    },
+    "packageId": {
+      "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageId"
+    },
+    "desired": {
+      "$ref": "#/$defs/packageInstallPlanDesired"
+    },
+    "target": {
+      "$ref": "#/$defs/packageInstallPlanTarget"
+    },
+    "current": {
+      "$ref": "#/$defs/packageInstallPlanCurrentState"
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageInstallPlanCandidate"
+      },
+      "minItems": 1
+    },
+    "rollbackCandidates": {
+      "type": "array",
+      "items": {
+        "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/packageLockEntry"
+      },
+      "default": []
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "intent": {
+            "const": "update"
+          }
+        },
+        "required": [
+          "intent"
+        ]
+      },
+      "then": {
+        "properties": {
+          "current": {
+            "type": "object",
+            "required": [
+              "installedLockEntryId"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "packageInstallPlanIntent": {
+      "enum": [
+        "install",
+        "update"
+      ]
+    },
+    "packageInstallPlanDesired": {
+      "type": "object",
+      "anyOf": [
+        {
+          "required": [
+            "version"
+          ]
+        },
+        {
+          "required": [
+            "versionRange"
+          ]
+        }
+      ],
+      "properties": {
+        "version": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semver"
+        },
+        "versionRange": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semverRange"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageInstallPlanTargetOs": {
+      "enum": [
+        "macos",
+        "windows",
+        "linux"
+      ]
+    },
+    "packageInstallPlanTargetArch": {
+      "enum": [
+        "aarch64",
+        "x86_64"
+      ]
+    },
+    "packageInstallPlanTarget": {
+      "type": "object",
+      "required": [
+        "os",
+        "arch",
+        "triple",
+        "contracts"
+      ],
+      "properties": {
+        "os": {
+          "$ref": "#/$defs/packageInstallPlanTargetOs"
+        },
+        "arch": {
+          "$ref": "#/$defs/packageInstallPlanTargetArch"
+        },
+        "triple": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/targetTriple"
+        },
+        "contracts": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/contractsSupport"
+        },
+        "runtimeAbiRange": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semverRange"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageInstallPlanCurrentState": {
+      "type": "object",
+      "required": [
+        "packageLock",
+        "objectBindings"
+      ],
+      "properties": {
+        "packageLock": {
+          "type": "array",
+          "items": {
+            "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/packageLockEntry"
+          },
+          "default": []
+        },
+        "objectBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/objectBinding"
+          },
+          "default": []
+        },
+        "installedLockEntryId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageInstallPlanCandidate": {
+      "type": "object",
+      "required": [
+        "listing"
+      ],
+      "properties": {
+        "listing": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json"
+        },
+        "manifest": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-manifest.schema.json"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
+export const packageInstallPlanResponseV01Schema = {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/package/v0.1/package-install-plan-response.schema.json",
+  "title": "skenion Package Install/Update Plan Response v0.1",
+  "description": "Declarative package install/update planning output. It can express a safe no-op, ordered install/update actions, rollback actions, and fail-closed rejection with structured diagnostics. Actions are planning records only; Runtime filesystem mutation and registry writes are intentionally out of scope.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "requestId",
+    "ok",
+    "packageId",
+    "target",
+    "checks",
+    "actions",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.package.install-plan.response"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "packageId": {
+      "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageId"
+    },
+    "selectedVersion": {
+      "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semver"
+    },
+    "target": {
+      "$ref": "https://skenion.dev/schemas/package/v0.1/package-install-plan-request.schema.json#/$defs/packageInstallPlanTarget"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageInstallPlanCheck"
+      },
+      "minItems": 1
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageInstallPlanAction"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageInstallPlanDiagnostic"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": false
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "then": {
+        "properties": {
+          "actions": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "reject"
+                }
+              }
+            }
+          },
+          "diagnostics": {
+            "type": "array",
+            "minItems": 1,
+            "contains": {
+              "type": "object",
+              "required": [
+                "severity"
+              ],
+              "properties": {
+                "severity": {
+                  "const": "error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "then": {
+        "properties": {
+          "checks": {
+            "type": "array",
+            "not": {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "const": "fail"
+                  }
+                }
+              }
+            }
+          },
+          "actions": {
+            "type": "array",
+            "not": {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "reject"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "diagnosticRefArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "packageInstallPlanCheckKind": {
+      "enum": [
+        "contracts-line",
+        "runtime-abi",
+        "target-triple",
+        "checksum",
+        "provenance",
+        "capability-change",
+        "lock-state"
+      ]
+    },
+    "packageInstallPlanCheckStatus": {
+      "enum": [
+        "pass",
+        "warning",
+        "fail",
+        "skipped"
+      ]
+    },
+    "packageInstallPlanCheck": {
+      "type": "object",
+      "required": [
+        "kind",
+        "status"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/packageInstallPlanCheckKind"
+        },
+        "status": {
+          "$ref": "#/$defs/packageInstallPlanCheckStatus"
+        },
+        "diagnosticRefs": {
+          "$ref": "#/$defs/diagnosticRefArray"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "fail"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "diagnosticRefs"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "packageInstallPlanActionKind": {
+      "enum": [
+        "download",
+        "verify",
+        "stage",
+        "replace",
+        "disable",
+        "rollback",
+        "keep",
+        "reject"
+      ]
+    },
+    "packageInstallPlanCapabilityChangeKind": {
+      "enum": [
+        "add",
+        "remove",
+        "keep"
+      ]
+    },
+    "packageInstallPlanCapabilityKind": {
+      "enum": [
+        "patch",
+        "node",
+        "resource",
+        "native-object",
+        "codec",
+        "help",
+        "capability"
+      ]
+    },
+    "packageInstallPlanCapabilityChange": {
+      "type": "object",
+      "required": [
+        "kind",
+        "capabilityKind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/packageInstallPlanCapabilityChangeKind"
+        },
+        "capabilityKind": {
+          "$ref": "#/$defs/packageInstallPlanCapabilityKind"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "diagnosticRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageInstallPlanAction": {
+      "type": "object",
+      "required": [
+        "id",
+        "order",
+        "kind",
+        "packageId"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "$ref": "#/$defs/packageInstallPlanActionKind"
+        },
+        "packageId": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageId"
+        },
+        "version": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semver"
+        },
+        "lockEntryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toLockEntryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rollbackLockEntryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/targetTriple"
+        },
+        "artifact": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/artifactSummary"
+        },
+        "checksum": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/checksum"
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/diagnosticRefArray"
+        },
+        "capabilityChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/packageInstallPlanCapabilityChange"
+          },
+          "default": []
+        },
+        "diagnosticRefs": {
+          "$ref": "#/$defs/diagnosticRefArray"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "download",
+                  "verify"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "version",
+              "artifact",
+              "evidenceRefs"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "stage"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "version"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "replace"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "version",
+              "lockEntryId",
+              "toLockEntryId"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "disable",
+                  "keep"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "lockEntryId"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "rollback"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "lockEntryId",
+              "rollbackLockEntryId"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "reject"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "diagnosticRefs"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "packageInstallPlanDiagnosticCode": {
+      "enum": [
+        "incompatible-contracts-line",
+        "incompatible-runtime-abi",
+        "unsupported-target",
+        "missing-artifact",
+        "checksum-mismatch",
+        "missing-provenance-evidence",
+        "missing-lock-entry",
+        "ambiguous-package-id",
+        "stale-installed-lock",
+        "removed-capability",
+        "rollback-unavailable"
+      ]
+    },
+    "packageInstallPlanDiagnostic": {
+      "type": "object",
+      "required": [
+        "id",
+        "severity",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "code": {
+          "$ref": "#/$defs/packageInstallPlanDiagnosticCode"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "description": "Arbitrary JSON diagnostic metadata."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
 export const compatibilityMatrixV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/compatibility-matrix/v0.1/compatibility-matrix.schema.json",

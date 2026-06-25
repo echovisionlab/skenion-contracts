@@ -1,0 +1,98 @@
+{
+  "schema": "skenion.package.install-plan.request",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-patch-lock-with-runtime-abi",
+  "intent": "install",
+  "packageId": "skenion/examples",
+  "desired": {
+    "version": "0.45.0"
+  },
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    }
+  },
+  "current": {
+    "packageLock": [
+      {
+        "id": "pkg-skenion-examples-0.45.0",
+        "packageId": "skenion/examples",
+        "version": "0.45.0",
+        "category": "patch",
+        "source": "marketplace",
+        "root": "marketplace-install",
+        "trust": "trusted",
+        "contractsLine": "0.45",
+        "contractsRange": ">=0.45.0 <0.46.0",
+        "manifestPath": "registry/skenion/examples/0.45.0/skenion.package.json",
+        "manifestChecksum": {
+          "algorithm": "sha256",
+          "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "runtimeAbiRange": ">=0.45.0 <0.46.0"
+      }
+    ],
+    "objectBindings": []
+  },
+  "candidates": [
+    {
+      "listing": {
+        "schema": "skenion.package.listing",
+        "schemaVersion": "0.1.0",
+        "packageId": "skenion/examples",
+        "version": "0.45.0",
+        "displayName": "Skenion Examples",
+        "summary": "Reusable example patches for learning Skenion.",
+        "category": "patch",
+        "license": "Apache-2.0",
+        "contracts": {
+          "line": "0.45",
+          "range": ">=0.45.0 <0.46.0"
+        },
+        "targetSupport": {
+          "kind": "target-independent"
+        },
+        "provides": {
+          "patches": [
+            {
+              "id": "example.oscillator"
+            }
+          ]
+        },
+        "artifactEvidence": {
+          "artifacts": [
+            {
+              "kind": "manifest",
+              "path": "skenion.package.json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "evidenceRefs": ["manifest-checksum"]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "manifest-checksum",
+              "kind": "checksum",
+              "path": "evidence/manifest.sha256",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "discoverySignals": {
+          "stargazerCount": 1,
+          "rankingScore": 0.1
+        },
+        "diagnostics": []
+      }
+    }
+  ]
+}

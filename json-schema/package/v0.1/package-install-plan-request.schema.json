@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/package/v0.1/package-install-plan-request.schema.json",
+  "title": "skenion Package Install/Update Plan Request v0.1",
+  "description": "Declarative package install/update planning input. It references current project package lock and object binding state, desired package version/range, candidate listing/manifest evidence, and the Runtime host target. It does not request filesystem mutation, registry writes, or Runtime native loading.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "requestId",
+    "intent",
+    "packageId",
+    "desired",
+    "target",
+    "current",
+    "candidates"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.package.install-plan.request"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intent": {
+      "$ref": "#/$defs/packageInstallPlanIntent"
+    },
+    "packageId": {
+      "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageId"
+    },
+    "desired": {
+      "$ref": "#/$defs/packageInstallPlanDesired"
+    },
+    "target": {
+      "$ref": "#/$defs/packageInstallPlanTarget"
+    },
+    "current": {
+      "$ref": "#/$defs/packageInstallPlanCurrentState"
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/packageInstallPlanCandidate"
+      },
+      "minItems": 1
+    },
+    "rollbackCandidates": {
+      "type": "array",
+      "items": {
+        "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/packageLockEntry"
+      },
+      "default": []
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "intent": {
+            "const": "update"
+          }
+        },
+        "required": ["intent"]
+      },
+      "then": {
+        "properties": {
+          "current": {
+            "type": "object",
+            "required": ["installedLockEntryId"]
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "packageInstallPlanIntent": {
+      "enum": ["install", "update"]
+    },
+    "packageInstallPlanDesired": {
+      "type": "object",
+      "anyOf": [
+        {
+          "required": ["version"]
+        },
+        {
+          "required": ["versionRange"]
+        }
+      ],
+      "properties": {
+        "version": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semver"
+        },
+        "versionRange": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semverRange"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageInstallPlanTargetOs": {
+      "enum": ["macos", "windows", "linux"]
+    },
+    "packageInstallPlanTargetArch": {
+      "enum": ["aarch64", "x86_64"]
+    },
+    "packageInstallPlanTarget": {
+      "type": "object",
+      "required": ["os", "arch", "triple", "contracts"],
+      "properties": {
+        "os": {
+          "$ref": "#/$defs/packageInstallPlanTargetOs"
+        },
+        "arch": {
+          "$ref": "#/$defs/packageInstallPlanTargetArch"
+        },
+        "triple": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/targetTriple"
+        },
+        "contracts": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/contractsSupport"
+        },
+        "runtimeAbiRange": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semverRange"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageInstallPlanCurrentState": {
+      "type": "object",
+      "required": ["packageLock", "objectBindings"],
+      "properties": {
+        "packageLock": {
+          "type": "array",
+          "items": {
+            "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/packageLockEntry"
+          },
+          "default": []
+        },
+        "objectBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json#/$defs/objectBinding"
+          },
+          "default": []
+        },
+        "installedLockEntryId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "packageInstallPlanCandidate": {
+      "type": "object",
+      "required": ["listing"],
+      "properties": {
+        "listing": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json"
+        },
+        "manifest": {
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-manifest.schema.json"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

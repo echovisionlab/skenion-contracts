@@ -1,0 +1,45 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-keep-examples",
+  "ok": true,
+  "packageId": "skenion/examples",
+  "selectedVersion": "0.45.0",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    }
+  },
+  "checks": [
+    {
+      "kind": "contracts-line",
+      "status": "pass",
+      "message": "Installed package already satisfies the requested Contracts line."
+    },
+    {
+      "kind": "runtime-abi",
+      "status": "skipped",
+      "message": "Patch-only packages do not require Runtime ABI evidence."
+    },
+    {
+      "kind": "capability-change",
+      "status": "pass",
+      "message": "No capability changes are required."
+    }
+  ],
+  "actions": [
+    {
+      "id": "keep-installed-examples",
+      "order": 0,
+      "kind": "keep",
+      "packageId": "skenion/examples",
+      "lockEntryId": "pkg-skenion-examples-0.45.0",
+      "reason": "Installed package already satisfies the desired range."
+    }
+  ],
+  "diagnostics": []
+}

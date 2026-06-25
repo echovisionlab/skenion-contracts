@@ -5,18 +5,20 @@ use std::{fs, path::Path};
 use skenion_contracts::{
     GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
     NodeDefinitionManifestV01, ObjectTextParseResultV01, PackageDiagnosticSeverityV01,
-    PackageDiscoveryResponseV01, PackageListingV01, PackageManifestV01, PackageRootDocumentV01,
-    PasteGraphFragmentResponse, ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01,
-    ProjectObjectBindingDiagnosticV01, ProjectObjectBindingStatusV01,
-    ProjectObjectBindingTargetV01, RuntimeCollaborationEventEnvelope,
-    RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationBatchResult,
-    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
-    RuntimeCollaborationPresenceEnvelope, RuntimeCollaborationSelectionEnvelope,
-    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionInfoResponse,
-    analyze_graph_document_v01, analyze_graph_fragment_v01, parse_object_text_v01,
-    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
-    validate_object_text_parse_result_v01, validate_package_discovery_response_v01,
-    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
+    PackageDiscoveryResponseV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
+    PackageListingV01, PackageManifestV01, PackageRootDocumentV01, PasteGraphFragmentResponse,
+    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingDiagnosticV01,
+    ProjectObjectBindingStatusV01, ProjectObjectBindingTargetV01,
+    RuntimeCollaborationEventEnvelope, RuntimeCollaborationOperationBatch,
+    RuntimeCollaborationOperationBatchResult, RuntimeCollaborationOperationEnvelope,
+    RuntimeCollaborationOperationResult, RuntimeCollaborationPresenceEnvelope,
+    RuntimeCollaborationSelectionEnvelope, RuntimeOperationEnvelope, RuntimeSessionEvent,
+    RuntimeSessionInfoResponse, analyze_graph_document_v01, analyze_graph_fragment_v01,
+    parse_object_text_v01, validate_graph_document_v01, validate_graph_fragment_v01,
+    validate_node_definition_v01, validate_object_text_parse_result_v01,
+    validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
+    validate_package_install_plan_response_v01, validate_package_listing_v01,
+    validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_response, validate_patch_definition_v01,
     validate_project_document_v01, validate_runtime_collaboration_event_envelope,
     validate_runtime_collaboration_operation_batch,
@@ -1305,6 +1307,32 @@ fn validates_package_manifest_fixtures() {
                 assert_eq!(response.schema, "skenion.package.discovery");
                 assert_eq!(response.schema_version, "0.1.0");
             }
+            Some("skenion.package.install-plan.request") => {
+                let request: PackageInstallPlanRequestV01 = serde_json::from_value(value)
+                    .unwrap_or_else(|error| {
+                        panic!(
+                            "{} should parse as package install plan request: {error}",
+                            file.display()
+                        )
+                    });
+                validate_package_install_plan_request_v01(&request)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+                assert_eq!(request.schema, "skenion.package.install-plan.request");
+                assert_eq!(request.schema_version, "0.1.0");
+            }
+            Some("skenion.package.install-plan.response") => {
+                let response: PackageInstallPlanResponseV01 = serde_json::from_value(value)
+                    .unwrap_or_else(|error| {
+                        panic!(
+                            "{} should parse as package install plan response: {error}",
+                            file.display()
+                        )
+                    });
+                validate_package_install_plan_response_v01(&response)
+                    .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
+                assert_eq!(response.schema, "skenion.package.install-plan.response");
+                assert_eq!(response.schema_version, "0.1.0");
+            }
             other => panic!("{} has unexpected schema {other:?}", file.display()),
         }
     }
@@ -1349,6 +1377,26 @@ fn validates_package_manifest_fixtures() {
                 if let Ok(response) = response {
                     assert!(
                         validate_package_discovery_response_v01(&response).is_err(),
+                        "{} should be invalid",
+                        file.display()
+                    );
+                }
+            }
+            Some("skenion.package.install-plan.request") => {
+                let request = serde_json::from_value::<PackageInstallPlanRequestV01>(value);
+                if let Ok(request) = request {
+                    assert!(
+                        validate_package_install_plan_request_v01(&request).is_err(),
+                        "{} should be invalid",
+                        file.display()
+                    );
+                }
+            }
+            Some("skenion.package.install-plan.response") => {
+                let response = serde_json::from_value::<PackageInstallPlanResponseV01>(value);
+                if let Ok(response) = response {
+                    assert!(
+                        validate_package_install_plan_response_v01(&response).is_err(),
                         "{} should be invalid",
                         file.display()
                     );

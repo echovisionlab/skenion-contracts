@@ -1,0 +1,62 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-reject-native-sensor-windows-arm64",
+  "ok": false,
+  "packageId": "example/native-sensor",
+  "target": {
+    "os": "windows",
+    "arch": "aarch64",
+    "triple": "aarch64-pc-windows-msvc",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "checks": [
+    {
+      "kind": "target-triple",
+      "status": "fail",
+      "diagnosticRefs": ["diag-unsupported-target"],
+      "message": "No native artifact is available for the requested target."
+    },
+    {
+      "kind": "provenance",
+      "status": "fail",
+      "diagnosticRefs": ["diag-missing-artifact"],
+      "message": "The requested target has no artifact evidence to verify."
+    }
+  ],
+  "actions": [
+    {
+      "id": "reject-native-sensor-windows-arm64",
+      "order": 0,
+      "kind": "reject",
+      "packageId": "example/native-sensor",
+      "diagnosticRefs": ["diag-unsupported-target", "diag-missing-artifact"],
+      "reason": "Fail closed because the requested native target is unsupported."
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "diag-unsupported-target",
+      "severity": "error",
+      "code": "unsupported-target",
+      "message": "example/native-sensor does not publish a native artifact for aarch64-pc-windows-msvc.",
+      "details": {
+        "target": "aarch64-pc-windows-msvc"
+      }
+    },
+    {
+      "id": "diag-missing-artifact",
+      "severity": "error",
+      "code": "missing-artifact",
+      "message": "No artifact summary is available for the requested target.",
+      "details": {
+        "packageId": "example/native-sensor",
+        "version": "0.45.1"
+      }
+    }
+  ]
+}

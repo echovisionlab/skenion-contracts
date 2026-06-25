@@ -1,0 +1,41 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-reject-without-error",
+  "ok": false,
+  "packageId": "example/native-sensor",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "checks": [
+    {
+      "kind": "lock-state",
+      "status": "fail",
+      "diagnosticRefs": ["diag-rollback-warning"]
+    }
+  ],
+  "actions": [
+    {
+      "id": "reject-without-error",
+      "order": 0,
+      "kind": "reject",
+      "packageId": "example/native-sensor",
+      "diagnosticRefs": ["diag-rollback-warning"]
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "diag-rollback-warning",
+      "severity": "warning",
+      "code": "rollback-unavailable",
+      "message": "Rollback evidence is unavailable."
+    }
+  ]
+}

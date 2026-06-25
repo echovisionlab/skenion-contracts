@@ -1,0 +1,46 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-removed-capability-missing-diagnostic-ref",
+  "ok": true,
+  "packageId": "example/native-sensor",
+  "selectedVersion": "0.45.1",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "checks": [
+    {
+      "kind": "capability-change",
+      "status": "warning",
+      "diagnosticRefs": ["diag-removed-capability"],
+      "message": "A capability would be removed by the update."
+    }
+  ],
+  "actions": [
+    {
+      "id": "replace-native-sensor",
+      "order": 0,
+      "kind": "replace",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "lockEntryId": "pkg-example-native-sensor-0.45.0",
+      "toLockEntryId": "pkg-example-native-sensor-0.45.1",
+      "capabilityChanges": [
+        {
+          "kind": "remove",
+          "capabilityKind": "resource",
+          "id": "example.sensor-calibration",
+          "diagnosticRef": "diag-removed-capability"
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

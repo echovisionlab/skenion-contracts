@@ -51,6 +51,7 @@ pub use validation::{
     analyze_graph_fragment_v01, compatible_data_types_v01, type_label_v01,
     validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
     validate_node_definition_v01, validate_package_discovery_response_v01,
+    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
     validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_paste_graph_fragment_response,
     validate_patch_definition_v01, validate_project_document_v01,

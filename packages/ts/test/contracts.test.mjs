@@ -24,6 +24,8 @@ import {
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
   packageDiscoveryV01Schema,
+  packageInstallPlanRequestV01Schema,
+  packageInstallPlanResponseV01Schema,
   packageListingV01Schema,
   packageManifestV01Schema,
   planAudioClockBridgeV01,
@@ -53,6 +55,8 @@ import {
   validateGraphDocumentV01,
   validateGraphFragmentV01,
   validatePackageDiscoveryResponseV01,
+  validatePackageInstallPlanRequestV01,
+  validatePackageInstallPlanResponseV01,
   validatePackageListingV01,
   validatePackageManifestV01,
   validatePackageRootV01,
@@ -79,6 +83,8 @@ import {
   validateShaderInterface,
   isCompatibilityMatrixV01,
   isPackageDiscoveryResponseV01,
+  isPackageInstallPlanRequestV01,
+  isPackageInstallPlanResponseV01,
   isPackageListingV01,
   isPackageRegistryListResponse,
   isSameV0CompatibilityLine,
@@ -122,6 +128,8 @@ test("exports active schema contracts", () => {
   assert.equal(packageManifestV01Schema.properties.schema.const, "skenion.package.manifest");
   assert.equal(packageListingV01Schema.properties.schema.const, "skenion.package.listing");
   assert.equal(packageDiscoveryV01Schema.properties.schema.const, "skenion.package.discovery");
+  assert.equal(packageInstallPlanRequestV01Schema.properties.schema.const, "skenion.package.install-plan.request");
+  assert.equal(packageInstallPlanResponseV01Schema.properties.schema.const, "skenion.package.install-plan.response");
   assert.equal(SKENION_PACKAGE_MANIFEST_FILE_NAME, "skenion.package.json");
   assert.equal(compatibilityMatrixV01Schema.properties.schema.const, "skenion.compatibility-matrix");
   assert.equal(compatibilityMatrixV01Schema.properties["schema-version"].const, "0.1.0");
@@ -721,6 +729,248 @@ test("validates public package listing and discovery DTOs", async () => {
     assert.equal(result.ok, false, fixture);
     assert.match(result.errors.join("\n"), expected, fixture);
   }
+});
+
+test("validates package install and update plan DTOs", async () => {
+  const request = await readJson("fixtures/package/v0.1/valid/update-plan-request.skenion.package-install-plan-request.json");
+  const requestResult = validatePackageInstallPlanRequestV01(request);
+  assert.equal(requestResult.ok, true);
+  assert.equal(isPackageInstallPlanRequestV01(request), true);
+  assert.equal(request.schema, "skenion.package.install-plan.request");
+  assert.equal(request.current.packageLock[0].manifestPath.startsWith("/"), false);
+  assert.equal(request.candidates[0].listing.packageId, request.packageId);
+  assert.equal(request.candidates[0].manifest.id, request.packageId);
+
+  const installRequest = structuredClone(request);
+  installRequest.intent = "install";
+  delete installRequest.current.installedLockEntryId;
+  delete installRequest.desired.version;
+  delete installRequest.candidates[0].manifest;
+  assert.equal(validatePackageInstallPlanRequestV01(installRequest).ok, true);
+
+  const exactInstallRequest = structuredClone(installRequest);
+  exactInstallRequest.desired = { version: "0.45.1" };
+  assert.equal(validatePackageInstallPlanRequestV01(exactInstallRequest).ok, true);
+
+  const missingInstalledLock = structuredClone(request);
+  missingInstalledLock.current.installedLockEntryId = "missing-lock-entry";
+  const missingInstalledLockResult = validatePackageInstallPlanRequestV01(missingInstalledLock);
+  assert.equal(missingInstalledLockResult.ok, false);
+  assert.match(missingInstalledLockResult.errors.join("\n"), /missing installedLockEntryId/);
+
+  const mismatchedCandidate = structuredClone(installRequest);
+  mismatchedCandidate.candidates[0].listing.packageId = "example/other-package";
+  const mismatchedCandidateResult = validatePackageInstallPlanRequestV01(mismatchedCandidate);
+  assert.equal(mismatchedCandidateResult.ok, false);
+  assert.match(mismatchedCandidateResult.errors.join("\n"), /does not match request packageId/);
+
+  const mismatchedManifest = structuredClone(request);
+  mismatchedManifest.candidates[0].manifest.id = "example/other-package";
+  const mismatchedManifestResult = validatePackageInstallPlanRequestV01(mismatchedManifest);
+  assert.equal(mismatchedManifestResult.ok, false);
+  assert.match(mismatchedManifestResult.errors.join("\n"), /manifest id/);
+
+  const mismatchedManifestVersion = structuredClone(request);
+  mismatchedManifestVersion.candidates[0].manifest.version = "0.45.0";
+  const mismatchedManifestVersionResult = validatePackageInstallPlanRequestV01(mismatchedManifestVersion);
+  assert.equal(mismatchedManifestVersionResult.ok, false);
+  assert.match(mismatchedManifestVersionResult.errors.join("\n"), /manifest version/);
+
+  const targetMismatch = await readJson("fixtures/package/v0.1/invalid/plan-request-target-mismatch.skenion.package-install-plan-request.json");
+  const targetMismatchResult = validatePackageInstallPlanRequestV01(targetMismatch);
+  assert.equal(targetMismatchResult.ok, false);
+  assert.match(targetMismatchResult.errors.join("\n"), /target .* must use target triple/);
+
+  const targetContractsMismatch = structuredClone(request);
+  targetContractsMismatch.target.contracts.range = ">=0.45.1 <0.46.0";
+  const targetContractsMismatchResult = validatePackageInstallPlanRequestV01(targetContractsMismatch);
+  assert.equal(targetContractsMismatchResult.ok, false);
+  assert.match(targetContractsMismatchResult.errors.join("\n"), /target contracts line/);
+
+  const targetRuntimeAbiMismatch = structuredClone(request);
+  targetRuntimeAbiMismatch.target.runtimeAbiRange = ">=0.45.1 <0.46.0";
+  const targetRuntimeAbiMismatchResult = validatePackageInstallPlanRequestV01(targetRuntimeAbiMismatch);
+  assert.equal(targetRuntimeAbiMismatchResult.ok, false);
+  assert.match(targetRuntimeAbiMismatchResult.errors.join("\n"), /target runtimeAbiRange/);
+
+  const desiredRangeMismatch = structuredClone(request);
+  desiredRangeMismatch.desired.versionRange = ">=0.45.1 <0.46.0";
+  const desiredRangeMismatchResult = validatePackageInstallPlanRequestV01(desiredRangeMismatch);
+  assert.equal(desiredRangeMismatchResult.ok, false);
+  assert.match(desiredRangeMismatchResult.errors.join("\n"), /desired versionRange/);
+
+  const patchLockWithNativeEvidence = structuredClone(request);
+  patchLockWithNativeEvidence.current.packageLock[0].category = "patch";
+  const patchLockWithNativeEvidenceResult = validatePackageInstallPlanRequestV01(patchLockWithNativeEvidence);
+  assert.equal(patchLockWithNativeEvidenceResult.ok, false);
+  assert.match(patchLockWithNativeEvidenceResult.errors.join("\n"), /must not declare runtimeAbiRange/);
+  assert.match(patchLockWithNativeEvidenceResult.errors.join("\n"), /must not declare target/);
+  assert.match(patchLockWithNativeEvidenceResult.errors.join("\n"), /must not declare nativeArtifacts/);
+
+  const mixedLockWithoutNativeEvidence = structuredClone(request);
+  delete mixedLockWithoutNativeEvidence.current.packageLock[0].runtimeAbiRange;
+  delete mixedLockWithoutNativeEvidence.current.packageLock[0].target;
+  delete mixedLockWithoutNativeEvidence.current.packageLock[0].nativeArtifacts;
+  const mixedLockWithoutNativeEvidenceResult = validatePackageInstallPlanRequestV01(mixedLockWithoutNativeEvidence);
+  assert.equal(mixedLockWithoutNativeEvidenceResult.ok, false);
+  assert.match(mixedLockWithoutNativeEvidenceResult.errors.join("\n"), /requires runtimeAbiRange/);
+  assert.match(mixedLockWithoutNativeEvidenceResult.errors.join("\n"), /requires target/);
+  assert.match(mixedLockWithoutNativeEvidenceResult.errors.join("\n"), /requires nativeArtifacts/);
+
+  const nativeLockCurrentState = structuredClone(request);
+  nativeLockCurrentState.current.packageLock[0].category = "native";
+  assert.equal(validatePackageInstallPlanRequestV01(nativeLockCurrentState).ok, true);
+
+  const invalidPlanRequests = [
+    [
+      "fixtures/package/v0.1/invalid/plan-request-missing-binding-lock-entry.skenion.package-install-plan-request.json",
+      /object binding .* references missing lockEntryId/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-request-stale-installed-lock.skenion.package-install-plan-request.json",
+      /missing installedLockEntryId/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-request-noncanonical-desired-version-range.skenion.package-install-plan-request.json",
+      /desired versionRange/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-request-patch-lock-with-runtime-abi.skenion.package-install-plan-request.json",
+      /must not declare runtimeAbiRange/
+    ]
+  ];
+
+  for (const [fixture, expected] of invalidPlanRequests) {
+    const invalid = await readJson(fixture);
+    const invalidResult = validatePackageInstallPlanRequestV01(invalid);
+    assert.equal(invalidResult.ok, false, fixture);
+    assert.match(invalidResult.errors.join("\n"), expected, fixture);
+  }
+
+  assert.equal(validatePackageInstallPlanRequestV01({ schema: "skenion.package.listing" }).ok, false);
+  assert.equal(validatePackageInstallPlanRequestV01({ schema: "skenion.package.install-plan.request" }).ok, false);
+  assert.equal(validatePackageInstallPlanRequestV01("skenion.package.install-plan.request").ok, false);
+  const requestWithNullLockEntry = structuredClone(request);
+  requestWithNullLockEntry.current.packageLock = [null];
+  assert.equal(validatePackageInstallPlanRequestV01(requestWithNullLockEntry).ok, false);
+
+  assert.equal(validatePackageInstallPlanRequestV01(null).ok, false);
+
+  const updateResponse = await readJson("fixtures/package/v0.1/valid/update-plan-response.skenion.package-install-plan-response.json");
+  const updateResponseResult = validatePackageInstallPlanResponseV01(updateResponse);
+  assert.equal(updateResponseResult.ok, true);
+  assert.equal(isPackageInstallPlanResponseV01(updateResponse), true);
+  assert.equal(updateResponse.schema, "skenion.package.install-plan.response");
+  assert.deepEqual(updateResponse.actions.map((action) => action.kind), [
+    "download",
+    "download",
+    "verify",
+    "stage",
+    "disable",
+    "replace"
+  ]);
+  assert.equal(updateResponse.actions[5].capabilityChanges[0].capabilityKind, "resource");
+
+  const keepResponse = await readJson("fixtures/package/v0.1/valid/keep-plan-response.skenion.package-install-plan-response.json");
+  assert.equal(validatePackageInstallPlanResponseV01(keepResponse).ok, true);
+  assert.equal(keepResponse.actions[0].kind, "keep");
+  assert.equal(keepResponse.checks[1].status, "skipped");
+
+  const rollbackResponse = await readJson("fixtures/package/v0.1/valid/rollback-plan-response.skenion.package-install-plan-response.json");
+  assert.equal(validatePackageInstallPlanResponseV01(rollbackResponse).ok, true);
+  assert.equal(rollbackResponse.actions[0].kind, "rollback");
+
+  const rejectResponse = await readJson("fixtures/package/v0.1/valid/reject-plan-response.skenion.package-install-plan-response.json");
+  assert.equal(validatePackageInstallPlanResponseV01(rejectResponse).ok, true);
+  assert.equal(rejectResponse.ok, false);
+  assert.equal(rejectResponse.actions[0].kind, "reject");
+  assert.equal(rejectResponse.diagnostics[0].code, "unsupported-target");
+
+  const unorderedActions = await readJson("fixtures/package/v0.1/invalid/plan-response-unordered-actions.skenion.package-install-plan-response.json");
+  const unorderedActionsResult = validatePackageInstallPlanResponseV01(unorderedActions);
+  assert.equal(unorderedActionsResult.ok, false);
+  assert.match(unorderedActionsResult.errors.join("\n"), /order must be 0/);
+
+  const rejectWithoutError = await readJson("fixtures/package/v0.1/invalid/plan-response-reject-without-error.skenion.package-install-plan-response.json");
+  const rejectWithoutErrorResult = validatePackageInstallPlanResponseV01(rejectWithoutError);
+  assert.equal(rejectWithoutErrorResult.ok, false);
+  assert.match(rejectWithoutErrorResult.errors.join("\n"), /requires an error diagnostic/);
+
+  const responseTargetMismatch = structuredClone(keepResponse);
+  responseTargetMismatch.target.os = "linux";
+  responseTargetMismatch.target.arch = "x86_64";
+  const responseTargetMismatchResult = validatePackageInstallPlanResponseV01(responseTargetMismatch);
+  assert.equal(responseTargetMismatchResult.ok, false);
+  assert.match(responseTargetMismatchResult.errors.join("\n"), /target .* must use target triple/);
+
+  const successfulReject = structuredClone(rejectResponse);
+  successfulReject.ok = true;
+  const successfulRejectResult = validatePackageInstallPlanResponseV01(successfulReject);
+  assert.equal(successfulRejectResult.ok, false);
+  assert.match(successfulRejectResult.errors.join("\n"), /must not include failed checks|must not include reject actions/);
+
+  const failedResponseWithoutReject = structuredClone(rejectResponse);
+  failedResponseWithoutReject.actions = [];
+  const failedResponseWithoutRejectResult = validatePackageInstallPlanResponseV01(failedResponseWithoutReject);
+  assert.equal(failedResponseWithoutRejectResult.ok, false);
+  assert.match(failedResponseWithoutRejectResult.errors.join("\n"), /requires a reject action/);
+
+  const failedCheckWithEmptyDiagnosticRefs = structuredClone(rejectResponse);
+  failedCheckWithEmptyDiagnosticRefs.checks[0].diagnosticRefs = [];
+  const failedCheckWithEmptyDiagnosticRefsResult = validatePackageInstallPlanResponseV01(failedCheckWithEmptyDiagnosticRefs);
+  assert.equal(failedCheckWithEmptyDiagnosticRefsResult.ok, false);
+  assert.match(failedCheckWithEmptyDiagnosticRefsResult.errors.join("\n"), /failing check .* requires diagnosticRefs/);
+
+  const rejectActionWithEmptyDiagnosticRefs = structuredClone(rejectResponse);
+  rejectActionWithEmptyDiagnosticRefs.actions[0].diagnosticRefs = [];
+  const rejectActionWithEmptyDiagnosticRefsResult = validatePackageInstallPlanResponseV01(rejectActionWithEmptyDiagnosticRefs);
+  assert.equal(rejectActionWithEmptyDiagnosticRefsResult.ok, false);
+  assert.match(rejectActionWithEmptyDiagnosticRefsResult.errors.join("\n"), /reject action .* requires diagnosticRefs/);
+
+  const invalidResponseShape = structuredClone(updateResponse);
+  invalidResponseShape.checks = [null];
+  invalidResponseShape.actions = [null];
+  invalidResponseShape.diagnostics = [null];
+  assert.equal(validatePackageInstallPlanResponseV01(invalidResponseShape).ok, false);
+
+  const invalidPlanResponses = [
+    [
+      "fixtures/package/v0.1/invalid/plan-response-ok-with-fail-check.skenion.package-install-plan-response.json",
+      /must not include failed checks/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-response-removed-capability-missing-diagnostic-ref.skenion.package-install-plan-response.json",
+      /references missing diagnostic/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-response-rollback-unavailable-missing-action-diagnostic.skenion.package-install-plan-response.json",
+      /references missing diagnostic/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-response-checksum-mismatch-bad-checksum.skenion.package-install-plan-response.json",
+      /pattern|checksum|must match/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-response-missing-provenance-evidence-ref.skenion.package-install-plan-response.json",
+      /references missing diagnostic/
+    ],
+    [
+      "fixtures/package/v0.1/invalid/plan-response-missing-diagnostic-refs.skenion.package-install-plan-response.json",
+      /requires diagnosticRefs/
+    ]
+  ];
+
+  for (const [fixture, expected] of invalidPlanResponses) {
+    const invalid = await readJson(fixture);
+    const invalidResult = validatePackageInstallPlanResponseV01(invalid);
+    assert.equal(invalidResult.ok, false, fixture);
+    assert.match(invalidResult.errors.join("\n"), expected, fixture);
+  }
+
+  assert.equal(validatePackageInstallPlanResponseV01({ schema: "skenion.package.listing" }).ok, false);
+  assert.equal(validatePackageInstallPlanResponseV01({ schema: "skenion.package.install-plan.response" }).ok, false);
+  assert.equal(validatePackageInstallPlanResponseV01("skenion.package.install-plan.response").ok, false);
+  assert.equal(validatePackageInstallPlanResponseV01(null).ok, false);
 });
 
 test("documents runtime HTTP endpoints that use Contracts DTOs", async () => {

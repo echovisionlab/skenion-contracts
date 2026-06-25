@@ -1,0 +1,42 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-rollback-native-sensor",
+  "ok": true,
+  "packageId": "example/native-sensor",
+  "selectedVersion": "0.45.0",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "checks": [
+    {
+      "kind": "lock-state",
+      "status": "pass",
+      "message": "Rollback lock entry is available."
+    },
+    {
+      "kind": "runtime-abi",
+      "status": "pass",
+      "message": "Rollback artifact Runtime ABI range remains compatible."
+    }
+  ],
+  "actions": [
+    {
+      "id": "rollback-native-sensor",
+      "order": 0,
+      "kind": "rollback",
+      "packageId": "example/native-sensor",
+      "lockEntryId": "pkg-example-native-sensor-0.45.1",
+      "rollbackLockEntryId": "pkg-example-native-sensor-0.45.0",
+      "reason": "Return to the last installed lock entry."
+    }
+  ],
+  "diagnostics": []
+}

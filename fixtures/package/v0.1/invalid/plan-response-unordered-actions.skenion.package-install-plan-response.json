@@ -1,0 +1,40 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-unordered-actions",
+  "ok": true,
+  "packageId": "skenion/examples",
+  "selectedVersion": "0.45.0",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    }
+  },
+  "checks": [
+    {
+      "kind": "contracts-line",
+      "status": "pass"
+    }
+  ],
+  "actions": [
+    {
+      "id": "keep-examples-late",
+      "order": 1,
+      "kind": "keep",
+      "packageId": "skenion/examples",
+      "lockEntryId": "pkg-skenion-examples-0.45.0"
+    },
+    {
+      "id": "keep-examples-early",
+      "order": 0,
+      "kind": "keep",
+      "packageId": "skenion/examples",
+      "lockEntryId": "pkg-skenion-examples-0.45.0"
+    }
+  ],
+  "diagnostics": []
+}

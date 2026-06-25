@@ -1,0 +1,292 @@
+{
+  "schema": "skenion.package.install-plan.request",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-update-native-sensor",
+  "intent": "update",
+  "packageId": "example/native-sensor",
+  "desired": {
+    "version": "0.45.1",
+    "versionRange": ">=0.45.0 <0.46.0"
+  },
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "current": {
+    "installedLockEntryId": "pkg-example-native-sensor-0.45.0",
+    "packageLock": [
+      {
+        "id": "pkg-example-native-sensor-0.45.0",
+        "packageId": "example/native-sensor",
+        "version": "0.45.0",
+        "category": "mixed",
+        "source": "marketplace",
+        "root": "marketplace-install",
+        "trust": "trusted",
+        "contractsLine": "0.45",
+        "contractsRange": ">=0.45.0 <0.46.0",
+        "manifestPath": "registry/example/native-sensor/0.45.0/skenion.package.json",
+        "manifestChecksum": {
+          "algorithm": "sha256",
+          "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "evidenceRefs": ["native-attestation"],
+        "runtimeAbiRange": ">=0.45.0 <0.46.0",
+        "target": "aarch64-apple-darwin",
+        "nativeArtifacts": [
+          {
+            "target": "aarch64-apple-darwin",
+            "path": "registry/example/native-sensor/0.45.0/native/aarch64-apple-darwin/libsensor.dylib",
+            "entrypoint": "skenion_native_init",
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "evidenceRefs": ["native-attestation"]
+          }
+        ]
+      }
+    ],
+    "objectBindings": [
+      {
+        "id": "binding-sensor-reading",
+        "objectText": "sensor-reading",
+        "status": "resolved",
+        "target": {
+          "kind": "packageProvider",
+          "lockEntryId": "pkg-example-native-sensor-0.45.0",
+          "packageId": "example/native-sensor",
+          "capabilityKind": "node",
+          "providedId": "example.sensor-reading",
+          "alias": "sensor-reading",
+          "displayName": "Sensor Reading"
+        }
+      }
+    ]
+  },
+  "candidates": [
+    {
+      "listing": {
+        "schema": "skenion.package.listing",
+        "schemaVersion": "0.1.0",
+        "packageId": "example/native-sensor",
+        "version": "0.45.1",
+        "displayName": "Native Sensor",
+        "summary": "Native sensor node package with calibrated resources.",
+        "description": "A target-specific mixed package listing that exposes node and resource capabilities.",
+        "category": "mixed",
+        "tags": ["native", "sensor"],
+        "license": "Apache-2.0",
+        "homepageUrl": "https://skenion.dev/packages/native-sensor",
+        "repositoryUrl": "https://github.com/skenion/native-sensor",
+        "contracts": {
+          "line": "0.45",
+          "range": ">=0.45.0 <0.46.0"
+        },
+        "runtimeAbiRange": ">=0.45.0 <0.46.0",
+        "targetSupport": {
+          "kind": "targeted",
+          "targets": ["aarch64-apple-darwin", "x86_64-apple-darwin"],
+          "summary": "Native artifacts are currently published for macOS arm64 and x64."
+        },
+        "provides": {
+          "nodes": [
+            {
+              "id": "example.sensor-reading",
+              "description": "Reads calibrated values from the native sensor binding."
+            }
+          ],
+          "resources": [
+            {
+              "id": "example.sensor-calibration",
+              "description": "Calibration table used by the sensor node."
+            }
+          ],
+          "nativeObjects": [
+            {
+              "id": "example.sensor-native",
+              "description": "Native object entrypoint for sensor readings."
+            }
+          ],
+          "codecs": [
+            {
+              "id": "example.sensor-calibration-json",
+              "description": "Calibration resource codec."
+            }
+          ],
+          "capabilities": ["native-object", "codec", "resource-provider"]
+        },
+        "artifactEvidence": {
+          "artifacts": [
+            {
+              "kind": "manifest",
+              "path": "skenion.package.json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              },
+              "evidenceRefs": ["manifest-checksum"]
+            },
+            {
+              "kind": "native-artifact",
+              "target": "aarch64-apple-darwin",
+              "path": "native/aarch64-apple-darwin/libsensor.dylib",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+              },
+              "evidenceRefs": ["native-attestation"]
+            },
+            {
+              "kind": "native-artifact",
+              "target": "x86_64-apple-darwin",
+              "path": "native/x86_64-apple-darwin/libsensor.dylib",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              },
+              "evidenceRefs": ["native-attestation"]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "manifest-checksum",
+              "kind": "checksum",
+              "path": "evidence/manifest.sha256",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+              }
+            },
+            {
+              "id": "native-attestation",
+              "kind": "attestation",
+              "path": "evidence/native-attestation.json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "1111111111111111111111111111111111111111111111111111111111111111"
+              }
+            }
+          ]
+        },
+        "discoverySignals": {
+          "stargazerCount": 42,
+          "rankingScore": 0.71
+        },
+        "diagnostics": []
+      },
+      "manifest": {
+        "schema": "skenion.package.manifest",
+        "schemaVersion": "0.1.0",
+        "id": "example/native-sensor",
+        "version": "0.45.1",
+        "displayName": "Native Sensor",
+        "category": "mixed",
+        "contracts": {
+          "line": "0.45",
+          "range": ">=0.45.0 <0.46.0"
+        },
+        "runtimeAbiRange": ">=0.45.0 <0.46.0",
+        "targets": ["aarch64-apple-darwin", "x86_64-apple-darwin"],
+        "provides": {
+          "nodes": [
+            {
+              "id": "example.sensor-reading",
+              "path": "nodes/sensor-reading.skenion.json"
+            }
+          ],
+          "resources": [
+            {
+              "id": "example.sensor-calibration",
+              "path": "resources/calibration.json"
+            }
+          ]
+        },
+        "paths": {
+          "resources": ["resources/calibration.json"],
+          "docs": ["help/sensor-reading.md"]
+        },
+        "checksums": [
+          {
+            "id": "manifest",
+            "path": "skenion.package.json",
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            }
+          },
+          {
+            "id": "darwin-arm64-artifact",
+            "path": "native/aarch64-apple-darwin/libsensor.dylib",
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          }
+        ],
+        "evidence": [
+          {
+            "id": "native-attestation",
+            "kind": "attestation",
+            "path": "evidence/native-attestation.json",
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          }
+        ],
+        "nativeArtifacts": [
+          {
+            "target": "aarch64-apple-darwin",
+            "path": "native/aarch64-apple-darwin/libsensor.dylib",
+            "entrypoint": "skenion_native_init",
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "evidenceRefs": ["native-attestation"]
+          }
+        ]
+      }
+    }
+  ],
+  "rollbackCandidates": [
+    {
+      "id": "pkg-example-native-sensor-0.45.0",
+      "packageId": "example/native-sensor",
+      "version": "0.45.0",
+      "category": "mixed",
+      "source": "marketplace",
+      "root": "marketplace-install",
+      "trust": "trusted",
+      "contractsLine": "0.45",
+      "contractsRange": ">=0.45.0 <0.46.0",
+      "manifestPath": "registry/example/native-sensor/0.45.0/skenion.package.json",
+      "manifestChecksum": {
+        "algorithm": "sha256",
+        "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "evidenceRefs": ["native-attestation"],
+      "runtimeAbiRange": ">=0.45.0 <0.46.0",
+      "target": "aarch64-apple-darwin",
+      "nativeArtifacts": [
+        {
+          "target": "aarch64-apple-darwin",
+          "path": "registry/example/native-sensor/0.45.0/native/aarch64-apple-darwin/libsensor.dylib",
+          "entrypoint": "skenion_native_init",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "evidenceRefs": ["native-attestation"]
+        }
+      ]
+    }
+  ]
+}

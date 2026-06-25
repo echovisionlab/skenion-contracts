@@ -1874,6 +1874,253 @@ pub struct PackageDiscoveryResponseV01 {
     pub diagnostics: Vec<PackageListingDiagnosticV01>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageInstallPlanIntentV01 {
+    Install,
+    Update,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageInstallPlanTargetOsV01 {
+    Macos,
+    Windows,
+    Linux,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub enum PackageInstallPlanTargetArchV01 {
+    #[serde(rename = "aarch64")]
+    Aarch64,
+    #[serde(rename = "x86_64")]
+    X8664,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageInstallPlanActionKindV01 {
+    Download,
+    Verify,
+    Stage,
+    Replace,
+    Disable,
+    Rollback,
+    Keep,
+    Reject,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageInstallPlanCheckKindV01 {
+    ContractsLine,
+    RuntimeAbi,
+    TargetTriple,
+    Checksum,
+    Provenance,
+    CapabilityChange,
+    LockState,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageInstallPlanCheckStatusV01 {
+    Pass,
+    Warning,
+    Fail,
+    Skipped,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageInstallPlanCapabilityChangeKindV01 {
+    Add,
+    Remove,
+    Keep,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageInstallPlanCapabilityKindV01 {
+    Patch,
+    Node,
+    Resource,
+    NativeObject,
+    Codec,
+    Help,
+    Capability,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackageInstallPlanDiagnosticCodeV01 {
+    IncompatibleContractsLine,
+    IncompatibleRuntimeAbi,
+    UnsupportedTarget,
+    MissingArtifact,
+    ChecksumMismatch,
+    MissingProvenanceEvidence,
+    MissingLockEntry,
+    AmbiguousPackageId,
+    StaleInstalledLock,
+    RemovedCapability,
+    RollbackUnavailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanDesiredV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_range: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanTargetV01 {
+    pub os: PackageInstallPlanTargetOsV01,
+    pub arch: PackageInstallPlanTargetArchV01,
+    pub triple: PackageTargetTripleV01,
+    pub contracts: PackageContractsSupportV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_abi_range: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanCurrentStateV01 {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub package_lock: Vec<ProjectPackageLockEntryV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub object_bindings: Vec<ProjectObjectBindingV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub installed_lock_entry_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanCandidateV01 {
+    pub listing: PackageListingV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub manifest: Option<PackageManifestV01>,
+}
+
+/// Declarative package install/update planning input.
+///
+/// Carries current lock/binding state plus candidate package listing and
+/// optional manifest evidence. It intentionally has no endpoint, registry
+/// write, filesystem mutation, or native loading semantics.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanRequestV01 {
+    pub schema: String,
+    pub schema_version: String,
+    pub request_id: String,
+    pub intent: PackageInstallPlanIntentV01,
+    pub package_id: String,
+    pub desired: PackageInstallPlanDesiredV01,
+    pub target: PackageInstallPlanTargetV01,
+    pub current: PackageInstallPlanCurrentStateV01,
+    pub candidates: Vec<PackageInstallPlanCandidateV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub rollback_candidates: Vec<ProjectPackageLockEntryV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanCheckV01 {
+    pub kind: PackageInstallPlanCheckKindV01,
+    pub status: PackageInstallPlanCheckStatusV01,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diagnostic_refs: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanCapabilityChangeV01 {
+    pub kind: PackageInstallPlanCapabilityChangeKindV01,
+    pub capability_kind: PackageInstallPlanCapabilityKindV01,
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostic_ref: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanActionV01 {
+    pub id: String,
+    pub order: u64,
+    pub kind: PackageInstallPlanActionKindV01,
+    pub package_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lock_entry_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub to_lock_entry_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rollback_lock_entry_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<PackageTargetTripleV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artifact: Option<PackageListingArtifactSummaryV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub checksum: Option<PackageChecksumV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evidence_refs: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capability_changes: Vec<PackageInstallPlanCapabilityChangeV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diagnostic_refs: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanDiagnosticV01 {
+    pub id: String,
+    pub severity: PackageDiagnosticSeverityV01,
+    pub code: PackageInstallPlanDiagnosticCodeV01,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
+/// Declarative package install/update planning output.
+///
+/// A response can express a safe keep/no-op, ordered download/verify/stage/
+/// replace actions, rollback, or fail-closed rejection with diagnostics. The
+/// actions are planning records only and do not authorize Runtime mutation.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageInstallPlanResponseV01 {
+    pub schema: String,
+    pub schema_version: String,
+    pub request_id: String,
+    pub ok: bool,
+    pub package_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_version: Option<String>,
+    pub target: PackageInstallPlanTargetV01,
+    pub checks: Vec<PackageInstallPlanCheckV01>,
+    pub actions: Vec<PackageInstallPlanActionV01>,
+    pub diagnostics: Vec<PackageInstallPlanDiagnosticV01>,
+}
+
 /// Runtime HTTP package registry entry exposed to clients.
 ///
 /// This is a Contracts-owned projection of package manifest identity, provided

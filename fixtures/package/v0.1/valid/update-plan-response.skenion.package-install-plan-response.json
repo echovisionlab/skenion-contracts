@@ -1,0 +1,138 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-update-native-sensor",
+  "ok": true,
+  "packageId": "example/native-sensor",
+  "selectedVersion": "0.45.1",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "checks": [
+    {
+      "kind": "contracts-line",
+      "status": "pass",
+      "message": "Listing Contracts line matches the target Contracts line."
+    },
+    {
+      "kind": "runtime-abi",
+      "status": "pass",
+      "message": "Native artifact Runtime ABI range is compatible with the target Runtime."
+    },
+    {
+      "kind": "target-triple",
+      "status": "pass",
+      "message": "The candidate listing has an artifact for aarch64-apple-darwin."
+    },
+    {
+      "kind": "checksum",
+      "status": "pass",
+      "message": "Planned artifacts carry checksum evidence."
+    },
+    {
+      "kind": "provenance",
+      "status": "pass",
+      "message": "Manifest and native artifact evidence references are present."
+    },
+    {
+      "kind": "capability-change",
+      "status": "pass",
+      "message": "The update adds a resource capability and removes none."
+    }
+  ],
+  "actions": [
+    {
+      "id": "download-native-sensor-manifest",
+      "order": 0,
+      "kind": "download",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "artifact": {
+        "kind": "manifest",
+        "path": "skenion.package.json",
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "evidenceRefs": ["manifest-checksum"]
+      },
+      "evidenceRefs": ["manifest-checksum"]
+    },
+    {
+      "id": "download-native-sensor-darwin-arm64",
+      "order": 1,
+      "kind": "download",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "target": "aarch64-apple-darwin",
+      "artifact": {
+        "kind": "native-artifact",
+        "target": "aarch64-apple-darwin",
+        "path": "native/aarch64-apple-darwin/libsensor.dylib",
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "evidenceRefs": ["native-attestation"]
+      },
+      "evidenceRefs": ["native-attestation"]
+    },
+    {
+      "id": "verify-native-sensor-manifest",
+      "order": 2,
+      "kind": "verify",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "artifact": {
+        "kind": "manifest",
+        "path": "skenion.package.json",
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "evidenceRefs": ["manifest-checksum"]
+      },
+      "evidenceRefs": ["manifest-checksum"]
+    },
+    {
+      "id": "stage-native-sensor",
+      "order": 3,
+      "kind": "stage",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "target": "aarch64-apple-darwin",
+      "evidenceRefs": ["manifest-checksum", "native-attestation"]
+    },
+    {
+      "id": "disable-current-native-sensor",
+      "order": 4,
+      "kind": "disable",
+      "packageId": "example/native-sensor",
+      "lockEntryId": "pkg-example-native-sensor-0.45.0"
+    },
+    {
+      "id": "replace-native-sensor",
+      "order": 5,
+      "kind": "replace",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "lockEntryId": "pkg-example-native-sensor-0.45.0",
+      "toLockEntryId": "pkg-example-native-sensor-0.45.1",
+      "capabilityChanges": [
+        {
+          "kind": "add",
+          "capabilityKind": "resource",
+          "id": "example.sensor-calibration"
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

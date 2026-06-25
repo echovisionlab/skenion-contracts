@@ -57,6 +57,12 @@ const packageListingV01Schema = await readSchema(
 const packageDiscoveryV01Schema = await readSchema(
   "json-schema/package/v0.1/package-discovery.schema.json"
 );
+const packageInstallPlanRequestV01Schema = await readSchema(
+  "json-schema/package/v0.1/package-install-plan-request.schema.json"
+);
+const packageInstallPlanResponseV01Schema = await readSchema(
+  "json-schema/package/v0.1/package-install-plan-response.schema.json"
+);
 const compatibilityMatrixV01Schema = await readSchema(
   "json-schema/compatibility-matrix/v0.1/compatibility-matrix.schema.json"
 );
@@ -98,6 +104,10 @@ await writeFile(
     `export const packageListingV01Schema = ${JSON.stringify(packageListingV01Schema, null, 2)} as const;`,
     "",
     `export const packageDiscoveryV01Schema = ${JSON.stringify(packageDiscoveryV01Schema, null, 2)} as const;`,
+    "",
+    `export const packageInstallPlanRequestV01Schema = ${JSON.stringify(packageInstallPlanRequestV01Schema, null, 2)} as const;`,
+    "",
+    `export const packageInstallPlanResponseV01Schema = ${JSON.stringify(packageInstallPlanResponseV01Schema, null, 2)} as const;`,
     "",
     `export const compatibilityMatrixV01Schema = ${JSON.stringify(compatibilityMatrixV01Schema, null, 2)} as const;`,
     ""

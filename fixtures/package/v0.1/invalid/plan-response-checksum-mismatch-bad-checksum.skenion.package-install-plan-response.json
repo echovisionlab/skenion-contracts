@@ -1,0 +1,60 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-checksum-mismatch-bad-checksum",
+  "ok": false,
+  "packageId": "example/native-sensor",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "checks": [
+    {
+      "kind": "checksum",
+      "status": "fail",
+      "diagnosticRefs": ["diag-checksum-mismatch"],
+      "message": "Artifact checksum evidence does not match."
+    }
+  ],
+  "actions": [
+    {
+      "id": "verify-native-sensor",
+      "order": 0,
+      "kind": "verify",
+      "packageId": "example/native-sensor",
+      "version": "0.45.1",
+      "artifact": {
+        "kind": "native-artifact",
+        "target": "aarch64-apple-darwin",
+        "path": "native/aarch64-apple-darwin/libsensor.dylib",
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "not-a-checksum"
+        },
+        "evidenceRefs": ["native-attestation"]
+      },
+      "evidenceRefs": ["native-attestation"]
+    },
+    {
+      "id": "reject-checksum-mismatch",
+      "order": 1,
+      "kind": "reject",
+      "packageId": "example/native-sensor",
+      "diagnosticRefs": ["diag-checksum-mismatch"]
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "diag-checksum-mismatch",
+      "severity": "error",
+      "code": "checksum-mismatch",
+      "message": "Native artifact checksum did not match the listing evidence."
+    }
+  ]
+}

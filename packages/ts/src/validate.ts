@@ -13,6 +13,8 @@ import {
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
   packageDiscoveryV01Schema,
+  packageInstallPlanRequestV01Schema,
+  packageInstallPlanResponseV01Schema,
   packageListingV01Schema,
   packageManifestV01Schema,
   projectV01Schema,
@@ -39,6 +41,9 @@ import type {
   NodeDefinitionManifestV01,
   ObjectTextParseResultV01,
   PackageDiscoveryResponseV01,
+  PackageInstallPlanRequestV01,
+  PackageInstallPlanResponseV01,
+  PackageInstallPlanTargetV01,
   PackageListingV01,
   PackageManifestV01,
   PackageRootDocumentV01,
@@ -47,6 +52,7 @@ import type {
   PasteGraphFragmentResponse,
   PortSpecV01,
   ProjectDocumentV01,
+  ProjectPackageLockEntryV01,
   RuntimeCollaborationAuthSubject,
   RuntimeCollaborationCausalMetadata,
   RuntimeCollaborationEventEnvelope,
@@ -155,6 +161,8 @@ const packageManifestV01Validator = ajv.compile(packageManifestV01Schema);
 ajv.addSchema(packageListingV01Schema);
 const packageListingV01Validator = ajv.compile(packageListingV01Schema);
 const packageDiscoveryV01Validator = ajv.compile(packageDiscoveryV01Schema);
+const packageInstallPlanRequestV01Validator = ajv.compile(packageInstallPlanRequestV01Schema);
+const packageInstallPlanResponseV01Validator = ajv.compile(packageInstallPlanResponseV01Schema);
 const compatibilityMatrixV01Validator = ajv.compile(compatibilityMatrixV01Schema);
 
 function schemaErrors(errors: ErrorObject[]): string[] {
@@ -329,6 +337,287 @@ function validatePackageDiscoveryResponseV01Semantics(response: PackageDiscovery
 
   for (const listing of response.listings) {
     errors.push(...validatePackageListingV01Semantics(listing));
+  }
+
+  return errors;
+}
+
+const packagePlanTargetTriples: Record<
+  PackageInstallPlanTargetV01["os"],
+  Record<PackageInstallPlanTargetV01["arch"], string>
+> = {
+  macos: {
+    aarch64: "aarch64-apple-darwin",
+    x86_64: "x86_64-apple-darwin"
+  },
+  windows: {
+    aarch64: "aarch64-pc-windows-msvc",
+    x86_64: "x86_64-pc-windows-msvc"
+  },
+  linux: {
+    aarch64: "aarch64-unknown-linux-gnu",
+    x86_64: "x86_64-unknown-linux-gnu"
+  }
+};
+
+function validatePackageInstallPlanTargetV01Semantics(
+  target: PackageInstallPlanTargetV01
+): string[] {
+  const errors: string[] = [];
+  const expectedTriple = packagePlanTargetTriples[target.os][target.arch];
+  if (target.triple !== expectedTriple) {
+    errors.push(`package install plan target ${target.os}/${target.arch} must use target triple ${expectedTriple}`);
+  }
+
+  const contractsLowerBoundVersion = target.contracts.range.slice(2).split(" ", 1)[0];
+  if (
+    deriveV0CompatibilityLine(contractsLowerBoundVersion) !== target.contracts.line ||
+    deriveV0CompatibilityRange(contractsLowerBoundVersion) !== target.contracts.range
+  ) {
+    errors.push("package install plan target contracts line must match contracts range");
+  }
+
+  if (target.runtimeAbiRange !== undefined) {
+    const runtimeAbiLowerBoundVersion = target.runtimeAbiRange.slice(2).split(" ", 1)[0];
+    if (deriveV0CompatibilityRange(runtimeAbiLowerBoundVersion) !== target.runtimeAbiRange) {
+      errors.push("package install plan target runtimeAbiRange must be a current v0 compatibility range");
+    }
+  }
+
+  return errors;
+}
+
+function validatePackageInstallPlanLockEntryV01Semantics(
+  lockEntry: ProjectPackageLockEntryV01
+): string[] {
+  const errors: string[] = [];
+
+  if (lockEntry.category === "patch") {
+    if (lockEntry.runtimeAbiRange !== undefined) {
+      errors.push(`patch package install plan lock ${lockEntry.id} must not declare runtimeAbiRange`);
+    }
+    if (lockEntry.target !== undefined) {
+      errors.push(`patch package install plan lock ${lockEntry.id} must not declare target`);
+    }
+    if (lockEntry.nativeArtifacts !== undefined) {
+      errors.push(`patch package install plan lock ${lockEntry.id} must not declare nativeArtifacts`);
+    }
+  }
+
+  if (lockEntry.category === "native" || lockEntry.category === "mixed") {
+    if (lockEntry.runtimeAbiRange === undefined) {
+      errors.push(`${lockEntry.category} package install plan lock ${lockEntry.id} requires runtimeAbiRange`);
+    }
+    if (lockEntry.target === undefined) {
+      errors.push(`${lockEntry.category} package install plan lock ${lockEntry.id} requires target`);
+    }
+    if (!Array.isArray(lockEntry.nativeArtifacts) || lockEntry.nativeArtifacts.length === 0) {
+      errors.push(`${lockEntry.category} package install plan lock ${lockEntry.id} requires nativeArtifacts`);
+    }
+  }
+
+  return errors;
+}
+
+function validatePackageInstallPlanRequestPreSchemaSemantics(document: unknown): string[] {
+  if (document === null || typeof document !== "object") {
+    return [];
+  }
+
+  const request = document as {
+    schema?: unknown;
+    current?: {
+      packageLock?: unknown;
+    };
+    rollbackCandidates?: unknown;
+  };
+  if (request.schema !== "skenion.package.install-plan.request") {
+    return [];
+  }
+
+  const errors: string[] = [];
+  const packageLock = Array.isArray(request.current?.packageLock) ? request.current.packageLock : [];
+  const rollbackCandidates = Array.isArray(request.rollbackCandidates) ? request.rollbackCandidates : [];
+  for (const lockEntry of [...packageLock, ...rollbackCandidates]) {
+    if (lockEntry === null || typeof lockEntry !== "object") {
+      continue;
+    }
+    errors.push(...validatePackageInstallPlanLockEntryV01Semantics(lockEntry as ProjectPackageLockEntryV01));
+  }
+
+  return errors;
+}
+
+function validatePackageInstallPlanResponsePreSchemaSemantics(document: unknown): string[] {
+  if (document === null || typeof document !== "object") {
+    return [];
+  }
+
+  const response = document as {
+    schema?: unknown;
+    ok?: unknown;
+    checks?: unknown;
+    actions?: unknown;
+    diagnostics?: unknown;
+  };
+  if (response.schema !== "skenion.package.install-plan.response") {
+    return [];
+  }
+
+  const errors: string[] = [];
+  const checks = Array.isArray(response.checks) ? response.checks : [];
+  const actions = Array.isArray(response.actions) ? response.actions : [];
+  const diagnostics = Array.isArray(response.diagnostics) ? response.diagnostics : [];
+
+  for (const check of checks) {
+    if (check === null || typeof check !== "object") {
+      continue;
+    }
+    const diagnosticRefs = (check as { diagnosticRefs?: unknown }).diagnosticRefs;
+    if (
+      (check as { status?: unknown }).status === "fail" &&
+      (!Array.isArray(diagnosticRefs) || diagnosticRefs.length === 0)
+    ) {
+      errors.push(`package install plan failing check ${(check as { kind?: unknown }).kind} requires diagnosticRefs`);
+    }
+  }
+
+  for (const action of actions) {
+    if (action === null || typeof action !== "object") {
+      continue;
+    }
+    const diagnosticRefs = (action as { diagnosticRefs?: unknown }).diagnosticRefs;
+    if (
+      (action as { kind?: unknown }).kind === "reject" &&
+      (!Array.isArray(diagnosticRefs) || diagnosticRefs.length === 0)
+    ) {
+      errors.push(`package install plan reject action ${(action as { id?: unknown }).id} requires diagnosticRefs`);
+    }
+  }
+
+  const hasFailedCheck = checks.some((check) => {
+    return check !== null && typeof check === "object" && (check as { status?: unknown }).status === "fail";
+  });
+  const hasRejectAction = actions.some((action) => {
+    return action !== null && typeof action === "object" && (action as { kind?: unknown }).kind === "reject";
+  });
+  const hasErrorDiagnostic = diagnostics.some((diagnostic) => {
+    return diagnostic !== null && typeof diagnostic === "object" && (diagnostic as { severity?: unknown }).severity === "error";
+  });
+
+  if (response.ok === true) {
+    if (hasFailedCheck) {
+      errors.push("successful package install plan response must not include failed checks");
+    }
+    if (hasRejectAction) {
+      errors.push("successful package install plan response must not include reject actions");
+    }
+  }
+
+  if (response.ok === false) {
+    if (!hasRejectAction) {
+      errors.push("failed package install plan response requires a reject action");
+    }
+    if (!hasErrorDiagnostic) {
+      errors.push("failed package install plan response requires an error diagnostic");
+    }
+  }
+
+  return errors;
+}
+
+function validatePackageInstallPlanRequestV01Semantics(
+  request: PackageInstallPlanRequestV01
+): string[] {
+  const errors = validatePackageInstallPlanTargetV01Semantics(request.target);
+  const packageLockIds = new Set(request.current.packageLock.map((entry) => entry.id));
+
+  if (request.desired.versionRange !== undefined) {
+    const desiredLowerBoundVersion = request.desired.versionRange.slice(2).split(" ", 1)[0];
+    if (deriveV0CompatibilityRange(desiredLowerBoundVersion) !== request.desired.versionRange) {
+      errors.push("package install plan desired versionRange must be a current v0 compatibility range");
+    }
+  }
+
+  errors.push(...duplicateErrors(request.current.packageLock.map((entry) => entry.id), "package install plan lock entry id"));
+  errors.push(...duplicateErrors(request.current.objectBindings.map((entry) => entry.id), "package install plan object binding id"));
+
+  if (
+    request.current.installedLockEntryId !== undefined &&
+    !packageLockIds.has(request.current.installedLockEntryId)
+  ) {
+    errors.push(`package install plan references missing installedLockEntryId: ${request.current.installedLockEntryId}`);
+  }
+
+  for (const lockEntry of request.current.packageLock) {
+    errors.push(...validatePackageInstallPlanLockEntryV01Semantics(lockEntry));
+  }
+
+  for (const rollbackCandidate of request.rollbackCandidates ?? []) {
+    errors.push(...validatePackageInstallPlanLockEntryV01Semantics(rollbackCandidate));
+  }
+
+  for (const binding of request.current.objectBindings) {
+    if (binding.target?.kind === "packageProvider" && !packageLockIds.has(binding.target.lockEntryId)) {
+      errors.push(`package install plan object binding ${binding.id} references missing lockEntryId: ${binding.target.lockEntryId}`);
+    }
+  }
+
+  for (const candidate of request.candidates) {
+    errors.push(...validatePackageListingV01Semantics(candidate.listing));
+    if (candidate.listing.packageId !== request.packageId) {
+      errors.push(`package install plan candidate ${candidate.listing.packageId} does not match request packageId ${request.packageId}`);
+    }
+
+    if (candidate.manifest !== undefined) {
+      errors.push(...validatePackageManifestV01Semantics(candidate.manifest));
+      if (candidate.manifest.id !== candidate.listing.packageId) {
+        errors.push(`package install plan candidate manifest id ${candidate.manifest.id} does not match listing packageId ${candidate.listing.packageId}`);
+      }
+      if (candidate.manifest.version !== candidate.listing.version) {
+        errors.push(`package install plan candidate manifest version ${candidate.manifest.version} does not match listing version ${candidate.listing.version}`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function validatePackageInstallPlanResponseV01Semantics(
+  response: PackageInstallPlanResponseV01
+): string[] {
+  const errors = validatePackageInstallPlanTargetV01Semantics(response.target);
+
+  errors.push(...duplicateErrors(response.actions.map((action) => action.id), "package install plan action id"));
+  errors.push(...duplicateErrors(response.diagnostics.map((diagnostic) => diagnostic.id), "package install plan diagnostic id"));
+
+  const diagnosticIds = new Set(response.diagnostics.map((diagnostic) => diagnostic.id));
+  for (const check of response.checks) {
+    for (const diagnosticRef of check.diagnosticRefs ?? []) {
+      if (!diagnosticIds.has(diagnosticRef)) {
+        errors.push(`package install plan check ${check.kind} references missing diagnostic ${diagnosticRef}`);
+      }
+    }
+  }
+
+  for (const [index, action] of response.actions.entries()) {
+    if (action.order !== index) {
+      errors.push(`package install plan action ${action.id} order must be ${index}`);
+    }
+
+    for (const diagnosticRef of action.diagnosticRefs ?? []) {
+      if (!diagnosticIds.has(diagnosticRef)) {
+        errors.push(`package install plan action ${action.id} references missing diagnostic ${diagnosticRef}`);
+      }
+    }
+
+    for (const capabilityChange of action.capabilityChanges ?? []) {
+      if (capabilityChange.diagnosticRef !== undefined && !diagnosticIds.has(capabilityChange.diagnosticRef)) {
+        errors.push(
+          `package install plan action ${action.id} capability change references missing diagnostic ${capabilityChange.diagnosticRef}`
+        );
+      }
+    }
   }
 
   return errors;
@@ -1057,6 +1346,48 @@ export function validatePackageDiscoveryResponseV01(
   return { ok: true, value: response };
 }
 
+export function validatePackageInstallPlanRequestV01(
+  document: unknown
+): ValidationResult<PackageInstallPlanRequestV01> {
+  const preSchemaErrors = validatePackageInstallPlanRequestPreSchemaSemantics(document);
+  if (preSchemaErrors.length > 0) {
+    return { ok: false, errors: preSchemaErrors };
+  }
+
+  if (!packageInstallPlanRequestV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(packageInstallPlanRequestV01Validator.errors as ErrorObject[]) };
+  }
+
+  const request = document as PackageInstallPlanRequestV01;
+  const errors = validatePackageInstallPlanRequestV01Semantics(request);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: request };
+}
+
+export function validatePackageInstallPlanResponseV01(
+  document: unknown
+): ValidationResult<PackageInstallPlanResponseV01> {
+  const preSchemaErrors = validatePackageInstallPlanResponsePreSchemaSemantics(document);
+  if (preSchemaErrors.length > 0) {
+    return { ok: false, errors: preSchemaErrors };
+  }
+
+  if (!packageInstallPlanResponseV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(packageInstallPlanResponseV01Validator.errors as ErrorObject[]) };
+  }
+
+  const response = document as PackageInstallPlanResponseV01;
+  const errors = validatePackageInstallPlanResponseV01Semantics(response);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: response };
+}
+
 export function isPackageListingV01(document: unknown): document is PackageListingV01 {
   return validatePackageListingV01(document).ok;
 }
@@ -1065,6 +1396,18 @@ export function isPackageDiscoveryResponseV01(
   document: unknown
 ): document is PackageDiscoveryResponseV01 {
   return validatePackageDiscoveryResponseV01(document).ok;
+}
+
+export function isPackageInstallPlanRequestV01(
+  document: unknown
+): document is PackageInstallPlanRequestV01 {
+  return validatePackageInstallPlanRequestV01(document).ok;
+}
+
+export function isPackageInstallPlanResponseV01(
+  document: unknown
+): document is PackageInstallPlanResponseV01 {
+  return validatePackageInstallPlanResponseV01(document).ok;
 }
 
 export function validatePackageRootV01(

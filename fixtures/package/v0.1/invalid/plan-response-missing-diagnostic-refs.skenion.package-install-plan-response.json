@@ -1,0 +1,40 @@
+{
+  "schema": "skenion.package.install-plan.response",
+  "schemaVersion": "0.1.0",
+  "requestId": "plan-missing-diagnostic-refs",
+  "ok": false,
+  "packageId": "example/native-sensor",
+  "target": {
+    "os": "macos",
+    "arch": "aarch64",
+    "triple": "aarch64-apple-darwin",
+    "contracts": {
+      "line": "0.45",
+      "range": ">=0.45.0 <0.46.0"
+    },
+    "runtimeAbiRange": ">=0.45.0 <0.46.0"
+  },
+  "checks": [
+    {
+      "kind": "checksum",
+      "status": "fail",
+      "message": "Checksum validation failed without a diagnostic reference."
+    }
+  ],
+  "actions": [
+    {
+      "id": "reject-missing-diagnostic-refs",
+      "order": 0,
+      "kind": "reject",
+      "packageId": "example/native-sensor"
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "diag-checksum-mismatch",
+      "severity": "error",
+      "code": "checksum-mismatch",
+      "message": "Checksum validation failed."
+    }
+  ]
+}
