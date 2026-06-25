@@ -60,6 +60,17 @@ pnpm install
 pnpm run ci
 ```
 
+For CI parity on release and workflow changes, also run the Rust package gates:
+
+```bash
+cargo metadata --manifest-path packages/rust/Cargo.toml --locked --format-version 1 >/dev/null
+cargo package --manifest-path packages/rust/Cargo.toml --locked --no-verify
+cargo fmt --check --manifest-path packages/rust/Cargo.toml
+cargo clippy --manifest-path packages/rust/Cargo.toml --all-targets --all-features -- -D warnings
+cargo llvm-cov --manifest-path packages/rust/Cargo.toml --all-targets --all-features --fail-uncovered-lines 0 --fail-under-functions 100
+git diff --exit-code -- packages/rust/Cargo.lock
+```
+
 ## Status
 
 Bootstrap repository for the skenion project. Implementation follows the public architecture and release rules defined in [skenion/skenion](https://github.com/skenion/skenion).

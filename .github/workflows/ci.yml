@@ -16,8 +16,6 @@ jobs:
   contracts:
     name: Contracts validation
     runs-on: ubuntu-latest
-    env:
-      RELEASE_PLEASE_LOCKFILE_SYNC_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'release-please--branches--main--components--skenion-contracts' }}
     steps:
       - uses: actions/checkout@v6
       - uses: bufbuild/buf-setup-action@v1.50.0
@@ -41,22 +39,7 @@ jobs:
           cache-on-failure: "true"
       - name: Check Rust lockfile is release-clean
         run: |
-          if ! cargo metadata --manifest-path packages/rust/Cargo.toml --locked --format-version 1 >/dev/null; then
-            if [[ "${RELEASE_PLEASE_LOCKFILE_SYNC_BRANCH}" == "true" ]]; then
-              cargo metadata --manifest-path packages/rust/Cargo.toml --format-version 1 >/dev/null
-              if git diff --quiet -- packages/rust/Cargo.lock; then
-                echo "Unlocked cargo metadata succeeded on the Release Please branch, but packages/rust/Cargo.lock did not change." >&2
-                exit 1
-              fi
-
-              echo "::notice::Release Please branch is waiting for Sync Release Lockfile to push the Cargo.lock update; strict lockfile/package validation will run on the synchronized commit."
-              exit 0
-            fi
-
-            echo "Rust lockfile is not release-clean." >&2
-            exit 1
-          fi
-
+          cargo metadata --manifest-path packages/rust/Cargo.toml --locked --format-version 1 >/dev/null
           cargo package --manifest-path packages/rust/Cargo.toml --locked --no-verify
           git diff --exit-code -- packages/rust/Cargo.lock
       - name: Rust fmt
