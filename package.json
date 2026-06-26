@@ -8,6 +8,7 @@
   "scripts": {
     "ci": "pnpm lint && pnpm --filter @skenion/contracts run ci",
     "build": "pnpm --filter @skenion/contracts run build",
+    "local-integration:evidence": "node scripts/local-integration-evidence.mjs",
     "test": "pnpm --filter @skenion/contracts run test",
     "lint": "pnpm lint:buf && pnpm lint:json",
     "lint:buf": "buf format --diff --exit-code && buf lint",

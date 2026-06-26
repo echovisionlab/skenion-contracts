@@ -60,6 +60,22 @@ pnpm install
 pnpm run ci
 ```
 
+For sibling-repository source integration, build the local package and capture
+machine-readable evidence for the consumer issue or PR:
+
+```bash
+pnpm run build
+pnpm run local-integration:evidence
+```
+
+The evidence command prints JSON with the local TypeScript package path/version,
+the required `dist/index.js` and `dist/index.d.ts` entries, the Rust crate
+path/version, and the current git branch, commit, and dirty state. It fails
+without publishing or mutating release state when required local build outputs
+are missing. Committed dependency manifests remain registry-first; sibling
+repositories should use this evidence only for explicit unreleased source
+integration work.
+
 For CI parity on release and workflow changes, also run the Rust package gates:
 
 ```bash

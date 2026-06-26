@@ -32,6 +32,12 @@ Registry publishing must happen only through GitHub Actions release workflows
 and Release Please. Local verification may use dry-run commands, but never run a
 local npm or crates.io upload.
 
+For explicit sibling-repository source integration, use
+`pnpm run local-integration:evidence` after `pnpm run build` to emit
+machine-readable local package/crate path, version, git branch/commit, and dirty
+state evidence. This command is developer evidence only: it must not publish,
+mutate release state, or replace registry-first committed dependency manifests.
+
 All release-state writes must happen inside GitHub Actions as well. Do not
 create, edit, delete, promote, demote, or repair GitHub Releases, release
 assets, tags, prerelease/draft flags, release notes, compatibility matrices,
