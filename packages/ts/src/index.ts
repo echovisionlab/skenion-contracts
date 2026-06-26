@@ -1,20 +1,4 @@
 export {
-  builtinManifestV01,
-  builtinNodeDefinitionsV01,
-  builtinNodeHelpGraphsV01,
-  builtinNodeHelpV01,
-  getBuiltinNodeDefinition,
-  getBuiltinNodeHelp,
-  getBuiltinNodeHelpGraph
-} from "./builtins.generated.js";
-export type {
-  BuiltinManifestV01,
-  BuiltinNodeHelpExampleV01,
-  BuiltinNodeHelpGraphV01,
-  BuiltinNodeHelpItemV01,
-  BuiltinNodeHelpV01
-} from "./builtins.generated.js";
-export {
   compatibilityMatrixV01Schema,
   controlMessageV01Schema,
   extensionManifestV01Schema,

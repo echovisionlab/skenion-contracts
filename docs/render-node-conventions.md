@@ -1,25 +1,21 @@
 # Render Node Conventions v0.1
 
-This document records built-in render node conventions that are intentionally
-small and stable enough for examples, runtimes, and Studio tooling to share.
+This document records Runtime-owned render node convention examples that were
+used while exercising the v0.1 node-definition and graph contracts. Contracts
+does not publish these examples as the canonical first-party object inventory.
+Actual object availability and execution behavior come from Runtime/package
+registries.
 
-The graph schema is unchanged. Render node behavior is defined by node
-definition manifests plus graph node params.
-
-Canonical built-in node manifests live under `builtins/v0.1/nodes`. This
-document explains behavior and ABI expectations; it is not the source of truth
-for manifest JSON. Consumers should import `builtinNodeDefinitionsV01` from
-`@skenion/contracts` or audit their local copies against the builtins directory.
+The graph schema is unchanged. Render node behavior is described by
+`NodeDefinitionManifestV01` documents plus graph node params. Consumers should
+discover the concrete definitions from Runtime/package surfaces, not from
+`@skenion/contracts`.
 
 ## `render.clear-color`
 
 `render.clear-color` is the first built-in render node convention.
 
-Canonical manifest:
-
-`builtins/v0.1/nodes/render.clear-color.node.json`
-
-Shape:
+Example definition shape:
 
 ```json
 {
@@ -79,10 +75,6 @@ selected by wiring `render.clear-color:out` into `render.output:in`.
 `core.color` is a value source convention used by render nodes that accept
 `control.color` controls.
 
-Canonical manifest:
-
-`builtins/v0.1/nodes/core.color.node.json`
-
 Graph node params:
 
 ```json
@@ -108,11 +100,7 @@ The current built-in shader path only supports WGSL through `params.language`.
 Uniform inputs are graph instance ports generated from source annotations, not
 fixed manifest ports.
 
-Canonical manifest:
-
-`builtins/v0.1/nodes/render.fullscreen-shader.node.json`
-
-Shape:
+Example definition shape:
 
 ```json
 {

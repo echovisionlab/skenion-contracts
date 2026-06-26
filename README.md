@@ -2,7 +2,14 @@
 
 Versioned contracts, schemas, generated protocol packages, and conformance tests for skenion.
 
-This repository is the source of truth for TypeScript/Rust communication contracts.
+This repository is the source of truth for TypeScript/Rust communication
+contracts: schemas, DTOs, generated schema/shape validators, generated types,
+fixtures, and Runtime HTTP shapes. It is not the source of truth for the
+first-party object registry, executable object inventory, live connection
+acceptance, or session mutation acceptance. Runtime and package registries own
+object availability, registry-aware validation, object execution, operation
+acceptance, and connection authority while using the Contracts-defined manifest
+and payload shapes.
 Human-readable delivery and processing model docs live in
 [skenion/skenion-docs](https://github.com/skenion/skenion-docs).
 
@@ -10,9 +17,10 @@ Human-readable delivery and processing model docs live in
 
 - Protobuf + Buf for live runtime control messages.
 - JSON Schema for persisted graph and project documents.
-- JSON Schema for node definition manifests.
+- JSON Schema for node definition manifests, object interface definitions, and
+  package manifests.
 - OpenAPI for HTTP runtime surfaces such as health, snapshots, assets, and diagnostics.
-- Golden fixtures and conformance tests for TypeScript/Rust compatibility.
+- Golden fixtures and conformance tests for TypeScript/Rust shape compatibility.
 - Typed node interfaces for value, event, stream, and resource ports.
 
 The active graph/project contract is v0.1. Runtime-authoritative session
@@ -92,8 +100,9 @@ git diff --exit-code -- packages/rust/Cargo.lock
 Bootstrap repository for the skenion project. Implementation follows the public architecture and release rules defined in [skenion/skenion](https://github.com/skenion/skenion).
 
 The `@skenion/contracts` npm package and `skenion-contracts` Rust crate remain
-publishable release artifacts because they are importable contract and validator
-libraries. Publishing still runs only through GitHub Actions release workflows.
+publishable release artifacts because they are importable contract and
+schema/shape validator libraries. Publishing still runs only through GitHub
+Actions release workflows.
 
 Contracts packages also export canonical v0 compatibility-line helpers and the
 `skenion.compatibility-matrix` schema/types/validators. The compatibility
@@ -102,6 +111,12 @@ component versions, and protocol baselines. Runtime/Studio release artifacts,
 checksums, S3 locations, promotion gates, and product release-set completeness
 belong to the repositories and workflows that produce those artifacts, not to
 the Contracts package.
+
+The `@skenion/contracts` package does not export `builtins/v0.1` as a canonical
+public builtin object inventory. Checked-in builtin JSON remains local fixture
+and validation material for the contract shapes; consumers should discover
+first-party and package-provided object definitions from Runtime/package
+surfaces that use `NodeDefinitionManifestV01`.
 
 ## License And Credit
 

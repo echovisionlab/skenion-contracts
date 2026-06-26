@@ -1,20 +1,20 @@
 # Control Value Semantics
 
 skenion control messages carry selectors and typed atoms. This document defines
-the pre-v1 control payload behavior used by built-in control objects and
-runtime control events.
+the pre-v1 control payload behavior used by runtime control events and
+Runtime/package-provided objects. Contracts owns the payload and selector
+shapes, not the concrete object inventory.
 
 ## Control Objects And Payloads
 
-The current canonical behavior-named control objects are:
+Runtime-owned behavior-named control object examples include:
 
 - `core.bang` for trigger behavior. It emits `event.bang`; `event.bang` is not
   an object identity.
 - `core.message` for saved message-box behavior. It emits a `ControlMessage`
   selector plus typed atoms.
 
-The current numeric/color stored-payload objects remain pre-v1 compatibility
-surface:
+Runtime-owned numeric/color stored-payload object examples include:
 
 - `core.float` for `control.number.float` payloads
 - `core.int` for `control.number.int` payloads
@@ -70,8 +70,9 @@ patches unless a later user action explicitly edits the graph.
 `control.number.float` is a generic floating-point control payload and must not globally imply
 `0..1`. Range constraints belong to a specific shader uniform, UI widget,
 clamp/map node, or later interface metadata. Runtime shader demos may clamp
-values at the uniform extraction boundary, but the canonical `core.float`
-builtin itself stays unconstrained.
+values at the uniform extraction boundary, but a generic floating-point control
+object definition should stay unconstrained unless that Runtime/package
+definition says otherwise.
 
 ## Comments And Messages
 
@@ -94,11 +95,11 @@ in `docs/control-routing.md`.
 
 ## Pre-v1 Compatibility
 
-This is a pre-v1 contract. Breaking built-in node shape changes are allowed
+This is a pre-v1 contract. Breaking node-definition shape changes are allowed
 while skenion is still converging on the runtime/editor control model.
 
 The previous generic value-object surface with separate visual `bang` and `set`
 input ports is removed. Numeric/color stored-payload objects expose only `in`,
 `cold`, and `value`; `bang` and `set` remain `ControlMessage.selector` values
 handled by the receiving object. Bool/string payload-named object identities are
-not canonical v0.1 builtins.
+not valid Contracts examples for object identity.

@@ -3,7 +3,9 @@
 skenion v0.1 uses object-owned typed routing for non-local control values.
 Behavior-named control, message, panel, and annotation objects can publish to or
 receive from named channels through `sendName` and `receiveName` params.
-Standalone routing objects are not part of the builtin object model.
+Concrete routing-capable object availability belongs to Runtime/package
+registries. Standalone routing objects are not part of the Contracts object
+model.
 
 ## Object-Owned Channels
 
@@ -43,18 +45,14 @@ When an object emits a value, Runtime also writes the emitted value to
 `<control-port-type>:<sendName>` if `sendName` is non-empty. When Runtime receives a
 compatible channel update for an object's `receiveName`, it may update that
 object's runtime state or dispatch the incoming message to an object handler.
-For `core.bang`, compatible non-set channel messages trigger `out` as
-`event.bang`; `set ...` is accepted silently and does not emit.
+A trigger-style Runtime object can treat compatible non-set channel messages as
+`event.bang`; `set ...` may be accepted silently without emitting.
 
 The graph must still use explicit edges for execution dependencies. Hidden
 shader or render reads from channel names are not part of v0.1.
 
-Primary routing-capable objects include:
-
-- `core.float`, `core.int`, `core.uint`
-- `core.color`, `core.message`
-- `core.comment`, `core.panel`
-- `core.bang`
+Primary routing-capable Runtime/package objects usually include numeric/color
+controls, message boxes, annotations, panels, and trigger controls.
 
 ## Panel Controls
 
@@ -62,14 +60,14 @@ Widget params choose the visible object style without changing the canonical
 node kind. These interactions are performance-time state changes, not graph
 edits:
 
-- `core.bang` accepts incoming control messages; non-set messages emit
+- trigger controls accept incoming control messages; non-set messages emit
   `event.bang`, while `set ...` is silent
-- `core.comment` accepts `set <text>` on `in` and updates runtime display text
+- annotation controls can accept `set <text>` on `in` and update runtime display
+  text without output
+- panel controls can accept `set <hex>` on `in` and update runtime panel color
   without output
-- `core.panel` accepts `set <hex>` on `in` and updates runtime panel color
-  without output
-- `core.float` with `widget: "slider"` sends typed payloads to the hot `in`
-  inlet and emits `control.number.float`
+- numeric slider controls send typed payloads to the hot `in` inlet and emit
+  `control.number.float`
 - Bool and string payloads are selectors/atoms handled by behavior-named
   objects. Toggle/text UI objects are deferred until they have behavior-named
   contracts.

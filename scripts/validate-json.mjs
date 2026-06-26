@@ -1585,7 +1585,7 @@ function validateBuiltinHelpGraph(file, graph, id, manifest) {
   const builtinKinds = new Set(manifest.nodes);
   for (const node of graph.nodes) {
     if (!builtinKinds.has(node.kind)) {
-      fail(file, `help graph node ${node.id} uses non-canonical builtin kind ${node.kind}`);
+      fail(file, `help graph fixture node ${node.id} uses kind ${node.kind} outside the fixture manifest`);
     }
     if (node.kindVersion !== "0.1.0") {
       fail(file, `help graph node ${node.id} kindVersion must be 0.1.0`);

@@ -2,14 +2,11 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import * as contracts from "../dist/index.js";
 import {
-  builtinNodeDefinitionsV01,
   CONTRACTS_COMPATIBILITY_LINE,
   CONTRACTS_COMPATIBILITY_RANGE,
   CONTRACTS_PACKAGE_VERSION,
-  getBuiltinNodeDefinition,
-  getBuiltinNodeHelp,
-  getBuiltinNodeHelpGraph,
   compatibilityMatrixV01Schema,
   SKENION_PACKAGE_MANIFEST_FILE_NAME,
   createDefaultViewStateForGraph,
@@ -118,10 +115,17 @@ async function fixtureFiles(relativePath) {
 const tsPackageJson = await readJson("packages/ts/package.json");
 
 test("exports active schema contracts", () => {
-  assert.ok(builtinNodeDefinitionsV01.length > 0);
-  assert.equal(getBuiltinNodeDefinition("render.output")?.id, "render.output");
-  assert.equal(getBuiltinNodeHelp("render.output")?.id, "render.output");
-  assert.equal(getBuiltinNodeHelpGraph("render.output")?.id, "help-render-output");
+  for (const removedBuiltinExport of [
+    "builtinManifestV01",
+    "builtinNodeDefinitionsV01",
+    "builtinNodeHelpGraphsV01",
+    "builtinNodeHelpV01",
+    "getBuiltinNodeDefinition",
+    "getBuiltinNodeHelp",
+    "getBuiltinNodeHelpGraph"
+  ]) {
+    assert.equal(Object.hasOwn(contracts, removedBuiltinExport), false, removedBuiltinExport);
+  }
   assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(projectV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(runtimeProjectRequestV0Schema.required.includes("nodes"), true);
@@ -164,82 +168,70 @@ test("exports active schema contracts", () => {
   ]);
 });
 
-test("builtin typed control boxes expose message hot inlet selector policy", () => {
-  const typedControls = [
-    ["core.float", "control.number.float", ["control.number.float", "control.number.int", "control.number.uint", "control.bool"], ["bang", "set", "float", "int", "uint", "bool"]],
-    ["core.int", "control.number.int", ["control.number.float", "control.number.int", "control.number.uint", "control.bool"], ["bang", "set", "float", "int", "uint", "bool"]],
-    ["core.uint", "control.number.uint", ["control.number.float", "control.number.int", "control.number.uint", "control.bool"], ["bang", "set", "float", "int", "uint", "bool"]],
-    ["core.color", "control.color", ["control.color"], ["bang", "set", "color"]]
-  ];
+test("node definition schema validates message selector policy shape", () => {
+  const definition = {
+    schema: "skenion.node.definition",
+    schemaVersion: "0.1.0",
+    id: "test.message-selector-policy",
+    version: "0.1.0",
+    displayName: "Message Selector Policy Fixture",
+    category: "Test",
+    ports: [
+      {
+        id: "in",
+        direction: "input",
+        type: "control.message.any",
+        accepts: [
+          "control.number.float",
+          "control.number.int",
+          "control.number.uint",
+          "control.bool",
+          "control.string",
+          "control.color",
+          "event.bang"
+        ],
+        triggerMode: "trigger",
+        latch: true,
+        messageSelectors: {
+          accepted: ["bang", "set", "float", "int", "uint", "bool", "symbol", "list", "anything"],
+          silent: ["set"],
+          store: ["set"],
+          emit: ["bang"],
+          trigger: ["bang", "float", "int", "uint", "bool", "symbol", "list", "anything"]
+        }
+      },
+      {
+        id: "cold",
+        direction: "input",
+        type: "control.number.float",
+        triggerMode: "passive",
+        latch: true
+      },
+      {
+        id: "out",
+        direction: "output",
+        type: "control.number.float"
+      }
+    ],
+    execution: { model: "control" },
+    state: { persistent: true },
+    permissions: [],
+    capabilities: []
+  };
 
-  assert.equal(getBuiltinNodeDefinition("core.bool"), undefined);
-  assert.equal(getBuiltinNodeDefinition("core.string"), undefined);
-  assert.equal(getBuiltinNodeHelp("core.bool"), undefined);
-  assert.equal(getBuiltinNodeHelp("core.string"), undefined);
-  assert.equal(getBuiltinNodeHelpGraph("core.bool"), undefined);
-  assert.equal(getBuiltinNodeHelpGraph("core.string"), undefined);
+  assert.equal(validateNodeDefinitionV01(definition).ok, true);
 
-  for (const [id, payloadType, typedAccepts, selectors] of typedControls) {
-    const definition = getBuiltinNodeDefinition(id);
-    const hot = definition.ports.find((port) => port.id === "in");
-    const cold = definition.ports.find((port) => port.id === "cold");
-    const output = definition.ports.find((port) => port.id === "value");
+  const missingSelectors = structuredClone(definition);
+  delete missingSelectors.ports[0].messageSelectors;
+  const missingSelectorsResult = validateNodeDefinitionV01(missingSelectors);
+  assert.equal(missingSelectorsResult.ok, false);
+  assert.match(missingSelectorsResult.errors.join("\n"), /requires messageSelectors/);
 
-    assert.equal(definition.execution.model, "control", id);
-    assert.equal(hot.type, "control.message.any", id);
-    assert.equal(hot.triggerMode, "trigger", id);
-    assert.equal(hot.latch, true, id);
-    assert.deepEqual(hot.accepts, [...typedAccepts, "event.bang"], id);
-    assert.deepEqual(hot.messageSelectors.accepted, selectors, id);
-    assert.deepEqual(hot.messageSelectors.silent, ["set"], id);
-    assert.equal(hot.messageSelectors.store.includes("set"), true, id);
-    assert.equal(hot.messageSelectors.emit.includes("bang"), true, id);
-
-    assert.equal(cold.type, payloadType, id);
-    assert.equal(cold.triggerMode, "passive", id);
-    assert.equal(cold.latch, true, id);
-    assert.equal(cold.accepts.includes("event.bang"), false, id);
-    assert.equal(cold.accepts.includes("control.message.any"), false, id);
-    assert.equal(output.type, payloadType, id);
-  }
-
-  const messageIn = getBuiltinNodeDefinition("core.message").ports.find((port) => port.id === "in");
-  assert.equal(getBuiltinNodeDefinition("core.message").execution.model, "control");
-  assert.equal(messageIn.type, "control.message.any");
-  for (const type of ["control.number.float", "control.number.int", "control.number.uint", "control.bool", "control.string", "control.color", "event.bang"]) {
-    assert.equal(messageIn.accepts.includes(type), true, type);
-  }
-  for (const selector of ["bang", "set", "float", "int", "uint", "bool", "symbol", "list", "anything"]) {
-    assert.equal(messageIn.messageSelectors.accepted.includes(selector), true, selector);
-  }
-  assert.deepEqual(messageIn.messageSelectors.silent, ["set"]);
-  assert.deepEqual(messageIn.messageSelectors.store, ["set"]);
-
-  const bangIn = getBuiltinNodeDefinition("core.bang").ports.find((port) => port.id === "in");
-  assert.equal(bangIn.type, "control.message.any");
-  for (const type of ["control.number.float", "control.number.int", "control.number.uint", "control.bool", "control.string", "control.color", "event.bang"]) {
-    assert.equal(bangIn.accepts.includes(type), true, type);
-  }
-  assert.equal(bangIn.messageSelectors.accepted.includes("set"), true);
-  assert.deepEqual(bangIn.messageSelectors.silent, ["set"]);
-  assert.equal(bangIn.messageSelectors.trigger.includes("set"), false);
-  assert.equal(bangIn.messageSelectors.emit.includes("set"), false);
-  assert.equal(bangIn.messageSelectors.store?.includes("set") ?? false, false);
-  assert.equal(bangIn.messageSelectors.trigger.includes("float"), true);
-  assert.equal(getBuiltinNodeDefinition("core.bang").ports.find((port) => port.id === "out").type, "event.bang");
-
-  for (const id of ["core.comment", "core.panel"]) {
-    const definition = getBuiltinNodeDefinition(id);
-    const hot = definition.ports.find((port) => port.id === "in");
-    assert.equal(hot.type, "control.message.any", id);
-    assert.equal(hot.messageSelectors.accepted.includes("set"), true, id);
-    assert.deepEqual(hot.messageSelectors.silent, ["set"], id);
-    assert.deepEqual(hot.messageSelectors.store, ["set"], id);
-    assert.equal(hot.messageSelectors.trigger?.includes("set") ?? false, false, id);
-    assert.equal(hot.messageSelectors.emit?.includes("set") ?? false, false, id);
-    assert.equal(hot.messageSelectors.trigger?.includes("bang") ?? false, false, id);
-    assert.equal(definition.ports.some((port) => port.direction === "output"), false, id);
-  }
+  const unacceptedTrigger = structuredClone(definition);
+  unacceptedTrigger.ports[0].messageSelectors.trigger.push("unknown");
+  const unacceptedTriggerResult = validateNodeDefinitionV01(unacceptedTrigger);
+  assert.equal(unacceptedTriggerResult.ok, false);
+  assert.match(unacceptedTriggerResult.errors.join("\n"), /selector unknown is not accepted/);
 });
 
 test("derives v0 compatibility lines and ranges", () => {
