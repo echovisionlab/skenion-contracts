@@ -2,33 +2,33 @@
 
 Versioned contracts, schemas, generated protocol packages, and conformance tests for skenion.
 
-This repository is the source of truth for TypeScript/Rust communication
-contracts: schemas, DTOs, generated schema/shape validators, generated types,
-fixtures, and Runtime HTTP shapes. It is not the source of truth for the
-first-party object registry, executable object inventory, live connection
-acceptance, or session mutation acceptance. Runtime and package registries own
-object availability, registry-aware validation, object execution, operation
-acceptance, and connection authority while using the Contracts-defined manifest
-and payload shapes.
+This repository is the source of truth for shared TypeScript/Rust document and
+payload contracts: schemas, DTOs, generated schema/shape validators, generated
+types, and fixtures. It is not the source of truth for Runtime HTTP,
+WebSocket/SSE, replay, collaboration, live connection, session mutation, or
+Runtime client authority. Runtime and package registries own object
+availability, registry-aware validation, object execution, operation
+acceptance, endpoint envelopes, and connection authority while using the
+Contracts-defined manifest and graph payload shapes where those payloads are
+shared.
 Human-readable delivery and processing model docs live in
 [skenion/skenion-docs](https://github.com/skenion/skenion-docs).
 
 ## Contract Surfaces
 
-- Protobuf + Buf for live runtime control messages.
 - JSON Schema for persisted graph and project documents.
 - JSON Schema for node definition manifests, object interface definitions, and
   package manifests.
-- OpenAPI for HTTP runtime surfaces such as health, snapshots, assets, and diagnostics.
 - Golden fixtures and conformance tests for TypeScript/Rust shape compatibility.
 - Typed node interfaces for value, event, stream, and resource ports.
 
-The active graph/project contract is v0.1. Runtime-authoritative session
-snapshots expose `ProjectDocumentV01` at `RuntimeSessionSnapshot.project`;
-active graph mutation surfaces use `RuntimeOperationEnvelope`,
-`GraphTargetRef`, and `GraphFragmentV01`. The v0.1 label is the current rich
-graph shape, including patch libraries, graph fragments, view state,
-extension-provided nodes, and runtime operation/collaboration contracts. Older
+The active graph/project contract is v0.1. `GraphFragmentV01`, `GraphTargetRef`,
+`PatchPath`, `PastePlacement`, and `PasteGraphFragmentRequest` remain shared
+graph transform payloads. Runtime-owned operation envelopes, session/replay
+events, collaboration messages, logs, endpoint responses, and package-registry
+client wrappers are not Contracts public API. The v0.1 label is the current
+rich graph shape, including patch libraries, graph fragments, view state,
+package manifests/listings/install plans, and extension-provided nodes. Older
 v0.1 graph/project/patch compatibility and migration helpers are not active
 contract surfaces.
 
@@ -39,9 +39,7 @@ a separate user-facing node class.
 ## Repository Layout
 
 ```text
-proto/          Protobuf packages for live runtime contracts
 json-schema/    JSON Schemas for graph and node definition data
-openapi/        HTTP API contracts
 fixtures/       Valid and invalid example documents and patches
 golden/         Binary and JSON golden vectors
 conformance/    Cross-language compatibility tests

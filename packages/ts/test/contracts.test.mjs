@@ -28,10 +28,6 @@ import {
   planAudioClockBridgeV01,
   planConversion,
   projectV01Schema,
-  runtimeCollaborationV0Schema,
-  runtimeOperationV0Schema,
-  runtimeProjectRequestV0Schema,
-  runtimeSessionV0Schema,
   parseObjectTextV01,
   representationForDataType,
   representationRegistryV01,
@@ -62,22 +58,9 @@ import {
   validateNodeDefinitionV01,
   validatePatchDefinitionV01,
   validatePasteGraphFragmentRequest,
-  validatePasteGraphFragmentResponse,
   validateProjectDocument,
   validateProjectDocumentV01,
-  validateRuntimeProjectRequest,
-  validateRuntimeProjectRequestV01,
   validateCompatibilityMatrixV01,
-  validateRuntimeCollaborationEventEnvelope,
-  validateRuntimeCollaborationOperationBatch,
-  validateRuntimeCollaborationOperationBatchResult,
-  validateRuntimeCollaborationOperationEnvelope,
-  validateRuntimeCollaborationOperationResult,
-  validateRuntimeCollaborationPresenceEnvelope,
-  validateRuntimeCollaborationSelectionEnvelope,
-  validateRuntimeOperationEnvelope,
-  validateRuntimeSessionEvent,
-  validateRuntimeSessionInfoResponse,
   validateViewState,
   validateViewStateV01,
   validateShaderInterface,
@@ -86,15 +69,7 @@ import {
   isPackageInstallPlanRequestV01,
   isPackageInstallPlanResponseV01,
   isPackageListingV01,
-  isPackageRegistryListResponse,
   isSameV0CompatibilityLine,
-  isRuntimeExtensionListResponse,
-  isRuntimeLogSnapshotResponse,
-  isPasteGraphFragmentRequest,
-  isPasteGraphFragmentResponse,
-  isRuntimeOperationEnvelope,
-  isRuntimeSessionEvent,
-  isRuntimeSessionInfoResponse,
   satisfiesV0CompatibilityRange
 } from "../dist/index.js";
 
@@ -128,8 +103,6 @@ test("exports active schema contracts", () => {
   }
   assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(projectV01Schema.properties.schemaVersion.const, "0.1.0");
-  assert.equal(runtimeProjectRequestV0Schema.required.includes("nodes"), true);
-  assert.equal(runtimeProjectRequestV0Schema.properties.nodes.minItems, 1);
   assert.equal(viewStateV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(nodeDefinitionV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
@@ -146,17 +119,6 @@ test("exports active schema contracts", () => {
   assert.equal(CONTRACTS_COMPATIBILITY_LINE, deriveV0CompatibilityLine(CONTRACTS_PACKAGE_VERSION));
   assert.equal(CONTRACTS_COMPATIBILITY_RANGE, deriveV0CompatibilityRange(CONTRACTS_PACKAGE_VERSION));
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
-  assert.equal(runtimeSessionV0Schema.properties.schema.const, "skenion.runtime.session.info");
-  assert.deepEqual(runtimeSessionV0Schema.$defs.runtimeDiagnostic.required, ["severity", "message"]);
-  assert.equal(runtimeSessionV0Schema.$defs.runtimeDiagnostic.properties.code.type, "string");
-  assert.equal(
-    runtimeSessionV0Schema.$defs.runtimeDiagnostic.properties.details.description,
-    "Arbitrary JSON diagnostic metadata."
-  );
-  assert.equal(
-    runtimeCollaborationV0Schema.$defs.runtimeCollaborationOperationEnvelope.properties.schema.const,
-    "skenion.runtime.collaboration.operation"
-  );
   assert.equal(controlMessageV01Schema.properties.selector.type, "string");
   assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
     "interface-analysis",
@@ -166,6 +128,28 @@ test("exports active schema contracts", () => {
     "render-pipeline",
     "render-frame"
   ]);
+  for (const runtimeExport of [
+    "runtimeProjectRequestV0Schema",
+    "runtimeOperationV0Schema",
+    "runtimeSessionV0Schema",
+    "runtimeCollaborationV0Schema",
+    "validateRuntimeProjectRequest",
+    "validateRuntimeOperationEnvelope",
+    "validateRuntimeSessionEvent",
+    "validateRuntimeSessionInfoResponse",
+    "validateRuntimeCollaborationOperationEnvelope",
+    "validatePasteGraphFragmentResponse",
+    "RuntimeOperationEnvelope",
+    "RuntimeSessionEvent",
+    "RuntimeCollaborationOperationEnvelope",
+    "PasteGraphFragmentResponse",
+    "isRuntimeOperationEnvelope",
+    "isRuntimeSessionEvent",
+    "isRuntimeLogSnapshotResponse",
+    "isPackageRegistryListResponse"
+  ]) {
+    assert.equal(Object.hasOwn(contracts, runtimeExport), false, runtimeExport);
+  }
 });
 
 test("node definition schema validates message selector policy shape", () => {
@@ -303,201 +287,6 @@ test("validates compatibility matrix fixtures and semantic failures", async () =
   assert.match(releaseArtifactSurfaceResult.errors.join("\n"), /additional properties/);
 });
 
-test("validates runtime session profile and replay fixtures", async () => {
-  const infoFixtures = [
-    "fixtures/runtime-session/v0/valid/local-managed-session-info.json",
-    "fixtures/runtime-session/v0/valid/local-shared-session-info.json",
-    "fixtures/runtime-session/v0/valid/remote-session-info.json"
-  ];
-
-  for (const fixture of infoFixtures) {
-    const info = await readJson(fixture);
-    const infoResult = validateRuntimeSessionInfoResponse(info);
-
-    assert.equal(infoResult.ok, true, fixture);
-    assert.equal(isRuntimeSessionInfoResponse(info), true, fixture);
-    assert.equal(info.capabilities.authPolicy, "deferred");
-  }
-
-  const localManaged = await readJson("fixtures/runtime-session/v0/valid/local-managed-session-info.json");
-  assert.equal(localManaged.profile.mode, "local-managed");
-  assert.equal(localManaged.profile.ownership, "owned-child");
-  assert.deepEqual(localManaged.capabilities.profiles, ["local-managed", "local-shared", "remote"]);
-
-  const event = await readJson("fixtures/runtime-session/v0/valid/replayed-session-event.json");
-  const eventResult = validateRuntimeSessionEvent(event);
-
-  assert.equal(eventResult.ok, true);
-  assert.equal(isRuntimeSessionEvent(event), true);
-  assert.equal(event.sessionId, "session-a");
-  assert.equal(event.sessionRevision, event.snapshot.sessionRevision);
-  assert.equal(event.replay.gap.reason, "retention-overflow");
-
-  const eventWithDiagnosticDetails = structuredClone(event);
-  eventWithDiagnosticDetails.diagnostics = [
-    {
-      severity: "warning",
-      message: "Package load reported non-fatal diagnostics.",
-      code: "package-load-diagnostics",
-      details: {
-        packageId: "skenion/core",
-        quietSuccess: true,
-        ignoredDiagnostics: ["info", null, { count: 2 }]
-      }
-    }
-  ];
-  eventWithDiagnosticDetails.snapshot.diagnostics = structuredClone(eventWithDiagnosticDetails.diagnostics);
-
-  assert.equal(validateRuntimeSessionEvent(eventWithDiagnosticDetails).ok, true);
-  assert.equal(isRuntimeSessionEvent(eventWithDiagnosticDetails), true);
-
-  const invalidInfoFixtures = [
-    "fixtures/runtime-session/v0/invalid/invalid-profile-mode.session-info.json",
-    "fixtures/runtime-session/v0/invalid/ownership-mismatch.session-info.json",
-    "fixtures/runtime-session/v0/invalid/empty-profile-metadata.session-info.json"
-  ];
-
-  for (const fixture of invalidInfoFixtures) {
-    const invalidInfo = await readJson(fixture);
-    const invalidInfoResult = validateRuntimeSessionInfoResponse(invalidInfo);
-
-    assert.equal(invalidInfoResult.ok, false, fixture);
-    assert.equal(isRuntimeSessionInfoResponse(invalidInfo), false, fixture);
-  }
-
-  const extraProfile = structuredClone(localManaged);
-  extraProfile.profile.endpoint.extra = true;
-  assert.equal(validateRuntimeSessionInfoResponse(extraProfile).ok, false);
-  assert.equal(isRuntimeSessionInfoResponse(extraProfile), false);
-
-  const invalidEventFixtures = [
-    "fixtures/runtime-session/v0/invalid/missing-replay.session-event.json",
-    "fixtures/runtime-session/v0/invalid/extra-operation-keys.session-event.json",
-    "fixtures/runtime-session/v0/invalid/empty-replay-cursor.session-event.json",
-    "fixtures/runtime-session/v0/invalid/replay-additional-property.session-event.json",
-    "fixtures/runtime-session/v0/invalid/replay-gap-order.session-event.json",
-    "fixtures/runtime-session/v0/invalid/scalar-plan.session-event.json",
-    "fixtures/runtime-session/v0/invalid/nested-mutation-client-id.session-event.json",
-    "fixtures/runtime-session/v0/invalid/malformed-nested-operation.session-event.json"
-  ];
-
-  for (const fixture of invalidEventFixtures) {
-    const invalidEvent = await readJson(fixture);
-    const invalidEventResult = validateRuntimeSessionEvent(invalidEvent);
-
-    assert.equal(invalidEventResult.ok, false, fixture);
-    assert.equal(isRuntimeSessionEvent(invalidEvent), false, fixture);
-  }
-
-  const extraViewPatchView = structuredClone(event);
-  extraViewPatchView.kind = "mutate";
-  extraViewPatchView.history.entries = [
-    {
-      id: "history-extra-view",
-      sequence: 8,
-      kind: "apply",
-      mutation: {
-        viewPatch: {
-          baseViewRevision: 2,
-          ops: [
-            {
-              op: "setNodeView",
-              nodeId: "node-a",
-              view: { x: 0, y: 0, extra: true }
-            }
-          ]
-        }
-      },
-      inverseMutation: {
-        viewPatch: {
-          baseViewRevision: 3,
-          ops: [
-            {
-              op: "moveNodeView",
-              nodeId: "node-a",
-              to: { x: 1, y: 1 }
-            }
-          ]
-        }
-      },
-      clientId: "studio-main",
-      createdAt: "2026-06-22T00:00:05.000Z"
-    }
-  ];
-  assert.equal(validateRuntimeSessionEvent(extraViewPatchView).ok, false);
-  assert.equal(isRuntimeSessionEvent(extraViewPatchView), false);
-
-  const extraReplay = structuredClone(event);
-  extraReplay.replay.extra = true;
-  assert.equal(validateRuntimeSessionEvent(extraReplay).ok, false);
-  assert.equal(isRuntimeSessionEvent(extraReplay), false);
-
-  const mismatchedRevision = structuredClone(event);
-  mismatchedRevision.sessionRevision = event.snapshot.sessionRevision + 1;
-  assert.equal(validateRuntimeSessionEvent(mismatchedRevision).ok, false);
-  assert.equal(isRuntimeSessionEvent(mismatchedRevision), false);
-});
-
-test("runtime HTTP diagnostics accept optional code and arbitrary JSON details", () => {
-  const diagnostic = {
-    severity: "warning",
-    message: "Package load reported non-fatal diagnostics.",
-    code: "package-load-diagnostics",
-    details: {
-      packageId: "skenion/core",
-      quietSuccess: true,
-      ignoredDiagnostics: ["info", null, { count: 2 }]
-    }
-  };
-  const runtimeLogs = {
-    schema: "skenion.runtime.logs",
-    schemaVersion: "0.1.0",
-    ok: true,
-    events: [],
-    retention: {
-      replayLimit: 200,
-      replayLevels: ["warning", "error"]
-    },
-    diagnostics: [diagnostic]
-  };
-  const extensions = {
-    ok: true,
-    extensions: [
-      {
-        id: "skenion/core",
-        version: "0.1.0",
-        kind: "core-package",
-        runtimeAbiVersion: "0.1.0",
-        manifestPath: "/tmp/skenion/core/skenion.extension.json",
-        status: "loaded",
-        capabilities: ["number.float.v0.1"],
-        providedNodes: ["core.float"],
-        providedCodecs: [],
-        providedTransports: [],
-        providedHelp: ["core.float"],
-        testIds: ["float-baseline"],
-        diagnostics: [diagnostic]
-      }
-    ],
-    diagnostics: [diagnostic]
-  };
-
-  assert.equal(isRuntimeLogSnapshotResponse(runtimeLogs), true);
-  assert.equal(isRuntimeExtensionListResponse(extensions), true);
-
-  const nonStringCode = structuredClone(runtimeLogs);
-  nonStringCode.diagnostics[0].code = 404;
-  assert.equal(isRuntimeLogSnapshotResponse(nonStringCode), false);
-
-  const extraDiagnosticField = structuredClone(runtimeLogs);
-  extraDiagnosticField.diagnostics[0].traceId = "trace-runtime-diagnostic";
-  assert.equal(isRuntimeLogSnapshotResponse(extraDiagnosticField), false);
-
-  const nonJsonDetails = structuredClone(extensions);
-  nonJsonDetails.extensions[0].diagnostics[0].details = undefined;
-  assert.equal(isRuntimeExtensionListResponse(nonJsonDetails), false);
-});
-
 test("validates extension package manifests with help and tests", async () => {
   const currentManifest = await readJson("fixtures/extension/v0.1/valid/minimal-native-extension.manifest.json");
   const currentResult = validateExtensionManifestV01(currentManifest);
@@ -632,79 +421,6 @@ test("validates package manifests and package roots", async () => {
     assert.equal(result.ok, false, fixture);
     assert.match(result.errors.join("\n"), expected, fixture);
   }
-});
-
-test("validates package registry DTOs", async () => {
-  const patchPackage = await readJson("fixtures/package/v0.1/valid/patch-only.skenion.package.json");
-  const registry = {
-    ok: true,
-    packages: [
-      {
-        packageId: patchPackage.id,
-        version: patchPackage.version,
-        category: patchPackage.category,
-        source: "first-party",
-        root: "package",
-        trust: "trusted",
-        contracts: patchPackage.contracts,
-        manifestPath: SKENION_PACKAGE_MANIFEST_FILE_NAME,
-        manifestChecksum: patchPackage.checksums[0].checksum,
-        provides: patchPackage.provides,
-        diagnostics: patchPackage.diagnostics
-      }
-    ],
-    diagnostics: []
-  };
-
-  assert.equal(isPackageRegistryListResponse(registry), true);
-
-  const registryRevision = structuredClone(registry);
-  registryRevision.revision = "registry-rev-1";
-  assert.equal(isPackageRegistryListResponse(registryRevision), false);
-
-  const registryEventCursor = structuredClone(registry);
-  registryEventCursor.eventId = "event-1";
-  assert.equal(isPackageRegistryListResponse(registryEventCursor), false);
-
-  const packageRuntimeState = structuredClone(registry);
-  packageRuntimeState.packages[0].state = "active";
-  assert.equal(isPackageRegistryListResponse(packageRuntimeState), false);
-
-  const packageLedgerMetadata = structuredClone(registry);
-  packageLedgerMetadata.packages[0].revision = "pkg-rev-1";
-  assert.equal(isPackageRegistryListResponse(packageLedgerMetadata), false);
-
-  const missingCode = structuredClone(registry);
-  delete missingCode.packages[0].diagnostics[0].code;
-  assert.equal(isPackageRegistryListResponse(missingCode), false);
-
-  const invalidPackageId = structuredClone(registry);
-  invalidPackageId.packages[0].packageId = "Bad Package";
-  assert.equal(isPackageRegistryListResponse(invalidPackageId), false);
-
-  const invalidVersion = structuredClone(registry);
-  invalidVersion.packages[0].version = "0.45";
-  assert.equal(isPackageRegistryListResponse(invalidVersion), false);
-
-  const invalidContractsRange = structuredClone(registry);
-  invalidContractsRange.packages[0].contracts.range = ">=0.45.0";
-  assert.equal(isPackageRegistryListResponse(invalidContractsRange), false);
-
-  const invalidTarget = structuredClone(registry);
-  invalidTarget.packages[0].targets = ["wasm32-unknown-unknown"];
-  assert.equal(isPackageRegistryListResponse(invalidTarget), false);
-
-  const invalidChecksum = structuredClone(registry);
-  invalidChecksum.packages[0].manifestChecksum.value = "not-sha256";
-  assert.equal(isPackageRegistryListResponse(invalidChecksum), false);
-
-  const invalidProviderRef = structuredClone(registry);
-  invalidProviderRef.packages[0].provides.patches[0].id = "Example Oscillator";
-  assert.equal(isPackageRegistryListResponse(invalidProviderRef), false);
-
-  const invalidProviderPath = structuredClone(registry);
-  invalidProviderPath.packages[0].provides.patches[0].path = "../outside.json";
-  assert.equal(isPackageRegistryListResponse(invalidProviderPath), false);
 });
 
 test("validates public package listing and discovery DTOs", async () => {
@@ -1046,91 +762,6 @@ test("validates package install and update plan DTOs", async () => {
   assert.equal(validatePackageInstallPlanResponseV01({ schema: "skenion.package.install-plan.response" }).ok, false);
   assert.equal(validatePackageInstallPlanResponseV01("skenion.package.install-plan.response").ok, false);
   assert.equal(validatePackageInstallPlanResponseV01(null).ok, false);
-});
-
-test("documents runtime HTTP endpoints that use Contracts DTOs", async () => {
-  const openApi = await readFile(path.join(repoRoot, "openapi/runtime-http.v0.yaml"), "utf8");
-
-  for (const pathName of [
-    "/v0/packages:",
-    "/v0/io/devices:"
-  ]) {
-    assert.match(openApi, new RegExp(pathName.replace(/[{}]/g, "\\$&")));
-  }
-
-  for (const legacyPath of [
-    "/v0/clock/midi/inputs:",
-    "/v0/clock/midi/start:",
-    "/v0/clock/midi/stop:",
-    "/v0/clock/sources:",
-    "/v0/clock/sources/{sourceId}:"
-  ]) {
-    assert.doesNotMatch(openApi, new RegExp(legacyPath.replace(/[{}]/g, "\\$&")));
-  }
-
-  for (const schemaName of [
-    "RuntimeIoDeviceListResponse",
-    "RuntimeIoDeviceDescriptor",
-    "RuntimeIoBindingConfig",
-    "RuntimeIoDiagnostic",
-    "RuntimeProjectRequestV01",
-    "RuntimeSessionInfoResponse",
-    "RuntimeConnectionProfile",
-    "RuntimeSessionCapabilitySet",
-    "RuntimeEventReplayMetadata",
-    "RuntimeOperationEnvelope",
-    "PasteGraphFragmentRequest",
-    "PasteGraphFragmentResponse",
-    "RuntimeCollaborationOperationEnvelope",
-    "RuntimeCollaborationOperationBatch",
-    "RuntimeCollaborationOperationResult",
-    "RuntimeCollaborationOperationBatchResult",
-    "RuntimeCollaborationPresenceEnvelope",
-    "RuntimeCollaborationSelectionEnvelope",
-    "RuntimeCollaborationEventEnvelope",
-    "GraphTargetRef",
-    "PatchPath",
-    "IdRemapResult",
-    "RuntimeOperationDiagnostic",
-    "PackageRegistryListResponseV01",
-    "PackageRegistryEntryV01",
-    "PackageDiagnosticV01",
-    "PackageContractsSupportV01",
-    "PackageChecksumV01",
-    "PackageTargetTripleV01"
-  ]) {
-    assert.match(openApi, new RegExp(`\\b${schemaName}:`));
-  }
-
-  assert.match(openApi, /\/v0\/sessions\/\{sessionId\}:/);
-  assert.match(openApi, /\/v0\/sessions\/\{sessionId\}\/operations:/);
-  assert.match(openApi, /\/v0\/sessions\/\{sessionId\}\/events\/stream:/);
-  assert.doesNotMatch(openApi, /^  \/v0\/session(?:\/|:)/m);
-  assert.doesNotMatch(openApi, /Compatibility\/default-session alias|defaultSessionAlias|legacy \/v0\/session/);
-  assert.match(openApi, /name: since/);
-  assert.match(openApi, /authPolicy:/);
-  assert.match(openApi, /sessions\.events\.stream/);
-  assert.match(openApi, /sessionId:/);
-  assert.match(openApi, /ProjectRequest:\n\s+\$ref: "#\/components\/schemas\/RuntimeProjectRequestV01"/);
-  assert.match(openApi, /RuntimeProjectRequestV01:\n\s+\$ref: "\.\.\/json-schema\/runtime\/v0\/project-request\.schema\.json"/);
-  assert.match(openApi, /RuntimeProjectSnapshot:\n\s+\$ref: "#\/components\/schemas\/ProjectDocumentV01"/);
-  assert.match(openApi, /RuntimeMutationRequest:[\s\S]*?operation:\n\s+\$ref: "#\/components\/schemas\/RuntimeOperationEnvelope"/);
-  assert.match(openApi, /RuntimeDiagnostic:[\s\S]*?code:\n\s+type: string[\s\S]*?details:\n\s+description: Arbitrary JSON diagnostic metadata\./);
-  assert.match(openApi, /\/v0\/packages[\s\S]*?PackageRegistryListResponseV01/);
-  assert.match(openApi, /Runtime may keep registry revisions, event ids, transaction state/);
-  assert.doesNotMatch(openApi, /RuntimeMutationGraphPatch:/);
-  assert.doesNotMatch(openApi, /GraphDocumentV01:|GraphPatchV01:|GraphPatchEventV01:|GraphPatchHistoryV01:/);
-});
-
-test("runtime protobuf wire uses active runtime operations", async () => {
-  const envelopeProto = await readFile(path.join(repoRoot, "proto/skenion/runtime/v1/envelope.proto"), "utf8");
-
-  assert.match(envelopeProto, /message ApplyRuntimeOperation/);
-  assert.match(envelopeProto, /bytes operation_json = 1;/);
-  assert.match(envelopeProto, /reserved 20;/);
-  assert.match(envelopeProto, /reserved "apply_graph_patch";/);
-  assert.match(envelopeProto, /ApplyRuntimeOperation apply_runtime_operation = 22;/);
-  assert.doesNotMatch(envelopeProto, /ApplyRuntimeOperation apply_runtime_operation = 20;|ApplyGraphPatch|patch_json/);
 });
 
 test("validates object text parse result fixtures", async () => {
@@ -1980,6 +1611,146 @@ test("exports and validates v0.1 graph fragment contracts", async () => {
   assert.match(invalidSetEmitResult.errors.join("\n"), /emit must not include set/);
 });
 
+test("validates graph fragment paste requests as transform payloads", async () => {
+  const fragment = await readJson("fixtures/graph-fragment/v0.1/valid/internal-edge.fragment.json");
+  const request = {
+    target: {
+      path: { kind: "root" },
+      baseRevision: "root-rev-1"
+    },
+    fragment,
+    placement: { kind: "position", x: 20, y: 40 },
+    options: {
+      outsideEndpointPolicy: "reject",
+      idConflictPolicy: "remap",
+      interfaceIncidentEdgePolicy: "reject",
+      preserveRelativePositions: true
+    }
+  };
+
+  assert.equal(validatePasteGraphFragmentRequest(request).ok, true);
+  assert.equal(validatePasteGraphFragmentRequest({ ...request, options: undefined }).ok, true);
+
+  const projectPatchRequest = structuredClone(request);
+  projectPatchRequest.target.path = {
+    kind: "project-patch-definition",
+    patchId: "filter"
+  };
+  assert.equal(validatePasteGraphFragmentRequest(projectPatchRequest).ok, true);
+
+  const packagePatchRequest = structuredClone(request);
+  packagePatchRequest.target.path = {
+    kind: "package-patch-definition",
+    packageId: "example/filter",
+    patchId: "filter",
+    version: "1.0.0"
+  };
+  packagePatchRequest.target.targetRevision = "root-rev-2";
+  packagePatchRequest.placement = { kind: "anchor", nodeId: "osc", offsetX: 4, offsetY: 8 };
+  packagePatchRequest.options = {
+    idConflictPolicy: "reject",
+    interfaceIncidentEdgePolicy: "drop",
+    preserveRelativePositions: false
+  };
+  assert.equal(validatePasteGraphFragmentRequest(packagePatchRequest).ok, true);
+
+  const embeddedPatchRequest = structuredClone(request);
+  embeddedPatchRequest.target.path = {
+    kind: "embedded-patch-instance",
+    ownerPath: ["patch", "subpatch"],
+    nodeId: "embedded"
+  };
+  embeddedPatchRequest.placement = { kind: "anchor", nodeId: "osc" };
+  embeddedPatchRequest.options = { interfaceIncidentEdgePolicy: "preserve-diagnostic" };
+  assert.equal(validatePasteGraphFragmentRequest(embeddedPatchRequest).ok, true);
+
+  const helpWorkingCopyRequest = structuredClone(request);
+  helpWorkingCopyRequest.target.path = {
+    kind: "help-working-copy",
+    workingCopyId: "help-1",
+    sourcePackageId: "example/filter",
+    sourcePatchId: "filter-help"
+  };
+  assert.equal(validatePasteGraphFragmentRequest(helpWorkingCopyRequest).ok, true);
+
+  const outsideFragment = await readJson("fixtures/graph-fragment/v0.1/invalid/outside-endpoint.fragment.json");
+  const rejectedOutside = structuredClone(request);
+  rejectedOutside.fragment = outsideFragment;
+  assert.equal(validatePasteGraphFragmentRequest(rejectedOutside).ok, false);
+
+  const omittedOutside = structuredClone(rejectedOutside);
+  omittedOutside.options.outsideEndpointPolicy = "omit";
+  assert.equal(validatePasteGraphFragmentRequest(omittedOutside).ok, true);
+
+  const missingTarget = structuredClone(request);
+  delete missingTarget.target;
+  const missingTargetResult = validatePasteGraphFragmentRequest(missingTarget);
+  assert.equal(missingTargetResult.ok, false);
+  assert.match(missingTargetResult.errors.join("\n"), /target/);
+
+  assert.deepEqual(validatePasteGraphFragmentRequest(null), { ok: false, errors: ["/ must be object"] });
+
+  const invalidRequests = [
+    [{ ...request, target: { path: null, baseRevision: "root-rev-1" } }, /target\/path/],
+    [{ ...request, target: { path: { kind: "root", extra: true }, baseRevision: "root-rev-1" } }, /target\/path/],
+    [{ ...request, target: { path: { kind: "root" }, baseRevision: "" } }, /baseRevision/],
+    [
+      { ...request, target: { path: { kind: "root" }, baseRevision: "root-rev-1", targetRevision: "" } },
+      /targetRevision/
+    ],
+    [
+      { ...request, target: { path: { kind: "package-patch-definition", packageId: "", patchId: "filter" }, baseRevision: "root-rev-1" } },
+      /target\/path/
+    ],
+    [
+      {
+        ...request,
+        target: {
+          path: { kind: "package-patch-definition", packageId: "example/filter", patchId: "filter", version: 1 },
+          baseRevision: "root-rev-1"
+        }
+      },
+      /target\/path/
+    ],
+    [
+      {
+        ...request,
+        target: {
+          path: { kind: "embedded-patch-instance", ownerPath: ["patch", 1], nodeId: "embedded" },
+          baseRevision: "root-rev-1"
+        }
+      },
+      /target\/path/
+    ],
+    [
+      {
+        ...request,
+        target: {
+          path: { kind: "help-working-copy", workingCopyId: "", sourcePackageId: 7 },
+          baseRevision: "root-rev-1"
+        }
+      },
+      /target\/path/
+    ],
+    [
+      { ...request, target: { path: { kind: "runtime-session" }, baseRevision: "root-rev-1" } },
+      /target\/path/
+    ],
+    [{ ...request, placement: { kind: "position", x: 1 } }, /placement/],
+    [{ ...request, placement: { kind: "anchor", nodeId: "osc", offsetX: "left" } }, /placement/],
+    [{ ...request, options: "reject" }, /options/],
+    [{ ...request, options: { outsideEndpointPolicy: "clip" } }, /options/],
+    [{ ...request, options: { idConflictPolicy: "rename" } }, /options/],
+    [{ ...request, options: { interfaceIncidentEdgePolicy: "keep" } }, /options/],
+    [{ ...request, options: { preserveRelativePositions: "yes" } }, /options/]
+  ];
+  for (const [candidate, expected] of invalidRequests) {
+    const result = validatePasteGraphFragmentRequest(candidate);
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join("\n"), expected);
+  }
+});
+
 test("rejects v0.2 graph, project, patch, and fragment contract labels", async () => {
   const graph = await readJson("fixtures/graph/v0.1/valid/render-output.graph.json");
   const unsupportedGraph = structuredClone(graph);
@@ -2007,393 +1778,6 @@ test("rejects v0.2 graph, project, patch, and fragment contract labels", async (
   const fragmentResult = validateGraphFragmentV01(unsupportedFragment);
   assert.equal(fragmentResult.ok, false);
   assert.match(fragmentResult.errors.join("\n"), /schemaVersion/);
-});
-
-test("validates session-addressed paste operation contracts", async () => {
-  assert.equal(runtimeOperationV0Schema.properties.schema.const, "skenion.runtime.operation");
-  assert.equal(runtimeOperationV0Schema.$defs.pasteGraphFragmentRequest.required[0], "target");
-
-  const root = await readJson("fixtures/runtime-operation/v0/valid/root-graph-paste.operation.json");
-  const projectPatch = await readJson("fixtures/runtime-operation/v0/valid/project-patch-definition-paste.operation.json");
-  const helpWorkingCopy = await readJson("fixtures/runtime-operation/v0/valid/help-working-copy-paste.operation.json");
-
-  for (const operation of [root, projectPatch, helpWorkingCopy]) {
-    assert.equal(validateRuntimeOperationEnvelope(operation).ok, true);
-    assert.equal(validatePasteGraphFragmentRequest(operation.request).ok, true);
-    assert.equal(isRuntimeOperationEnvelope(operation), true);
-    assert.equal(isPasteGraphFragmentRequest(operation.request), true);
-  }
-
-  assert.equal(root.request.target.path.kind, "root");
-  assert.equal("attribution" in root, false);
-  assert.equal(projectPatch.request.target.path.kind, "project-patch-definition");
-  assert.equal(helpWorkingCopy.request.target.path.kind, "help-working-copy");
-
-  const diagnosticsResponse = await readJson("fixtures/runtime-operation/v0/valid/target-path-diagnostics.response.json");
-  assert.equal(validatePasteGraphFragmentResponse(diagnosticsResponse).ok, true);
-  assert.equal(isPasteGraphFragmentResponse(diagnosticsResponse), true);
-  assert.deepEqual(diagnosticsResponse.diagnostics.map((entry) => entry.code), [
-    "invalid-target-path",
-    "duplicate-target-path"
-  ]);
-  assert.equal(diagnosticsResponse.diagnostics[0].path, "/request/target/path");
-  assert.deepEqual(diagnosticsResponse.idRemap, {
-    nodeIdMap: {},
-    edgeIdMap: {},
-    omittedEdgeIds: []
-  });
-
-  const remapResponse = await readJson("fixtures/runtime-operation/v0/valid/id-remap.response.json");
-  assert.equal(validatePasteGraphFragmentResponse(remapResponse).ok, true);
-  assert.equal(isPasteGraphFragmentResponse(remapResponse), true);
-  assert.deepEqual(remapResponse.idRemap.nodeIdMap, {
-    source: "source_2",
-    sink: "sink_2"
-  });
-  assert.deepEqual(remapResponse.idRemap.edgeIdMap, {
-    "edge-source-sink": "edge-source-sink_2"
-  });
-
-  assert.equal(root.request.options.interfaceIncidentEdgePolicy, "reject");
-  const interfaceResponse = await readJson("fixtures/runtime-operation/v0/valid/interface-diagnostic.response.json");
-  assert.equal(validatePasteGraphFragmentResponse(interfaceResponse).ok, true);
-  assert.equal(isPasteGraphFragmentResponse(interfaceResponse), true);
-  assert.equal(interfaceResponse.diagnostics[0].interfacePolicy, "preserve-diagnostic");
-  assert.equal(interfaceResponse.diagnostics[0].interfaceDetail.missingEndpoint, "target-port");
-  assert.deepEqual(interfaceResponse.diagnostics[0].interfaceDetail.recoveryActions, [
-    "drop-edge",
-    "reconnect",
-    "restore-port",
-    "replace-provider"
-  ]);
-
-  const missingInterfaceDetail = structuredClone(interfaceResponse);
-  delete missingInterfaceDetail.diagnostics[0].interfaceDetail;
-  assert.equal(validatePasteGraphFragmentResponse(missingInterfaceDetail).ok, false);
-  assert.equal(isPasteGraphFragmentResponse(missingInterfaceDetail), false);
-
-  const invalidEnvelope = structuredClone(root);
-  invalidEnvelope.kind = "loadProject";
-  assert.equal(validateRuntimeOperationEnvelope(invalidEnvelope).ok, false);
-  assert.equal(isRuntimeOperationEnvelope(invalidEnvelope), false);
-
-  const invalidRequest = structuredClone(root.request);
-  delete invalidRequest.target;
-  assert.equal(validatePasteGraphFragmentRequest(invalidRequest).ok, false);
-  assert.equal(isPasteGraphFragmentRequest(invalidRequest), false);
-
-  const outsideFragment = await readJson("fixtures/graph-fragment/v0.1/invalid/outside-endpoint.fragment.json");
-  const defaultOutsideRequest = structuredClone(root.request);
-  defaultOutsideRequest.fragment = outsideFragment;
-  assert.equal(validatePasteGraphFragmentRequest(defaultOutsideRequest).ok, false);
-  const defaultOutsideEnvelope = structuredClone(root);
-  defaultOutsideEnvelope.request = defaultOutsideRequest;
-  assert.equal(validateRuntimeOperationEnvelope(defaultOutsideEnvelope).ok, false);
-
-  const omitOutsideRequest = structuredClone(defaultOutsideRequest);
-  omitOutsideRequest.options = { outsideEndpointPolicy: "omit" };
-  assert.equal(validatePasteGraphFragmentRequest(omitOutsideRequest).ok, true);
-
-  const invalidResponse = structuredClone(diagnosticsResponse);
-  invalidResponse.diagnostics[0].code = "not-a-contract-code";
-  assert.equal(validatePasteGraphFragmentResponse(invalidResponse).ok, false);
-  assert.equal(isPasteGraphFragmentResponse(invalidResponse), false);
-});
-
-function validateCollaborationDocument(document) {
-  switch (document.schema) {
-    case "skenion.runtime.collaboration.operation":
-      return validateRuntimeCollaborationOperationEnvelope(document);
-    case "skenion.runtime.collaboration.operation-batch":
-      return validateRuntimeCollaborationOperationBatch(document);
-    case "skenion.runtime.collaboration.operation-batch-result":
-      return validateRuntimeCollaborationOperationBatchResult(document);
-    case "skenion.runtime.collaboration.operation-result":
-      return validateRuntimeCollaborationOperationResult(document);
-    case "skenion.runtime.collaboration.presence":
-      return validateRuntimeCollaborationPresenceEnvelope(document);
-    case "skenion.runtime.collaboration.selection":
-      return validateRuntimeCollaborationSelectionEnvelope(document);
-    case "skenion.runtime.collaboration.event":
-      return validateRuntimeCollaborationEventEnvelope(document);
-    default:
-      return { ok: false, errors: [`unexpected collaboration schema ${document.schema}`] };
-  }
-}
-
-test("validates realtime collaboration operation, presence, causality, and undo contracts", async () => {
-  assert.equal(
-    runtimeCollaborationV0Schema.$defs.runtimeCollaborationOperationEnvelope.required.includes("idempotencyKey"),
-    true
-  );
-  assert.equal(
-    runtimeCollaborationV0Schema.$defs.runtimeCollaborationPresenceEnvelope.properties.presence.$ref,
-    "#/$defs/runtimeCollaborationPresence"
-  );
-
-  for (const fixture of await fixtureFiles("fixtures/runtime-collaboration/v0/valid")) {
-    const document = await readJson(fixture);
-    const result = validateCollaborationDocument(document);
-
-    assert.equal(result.ok, true, fixture);
-  }
-
-  for (const fixture of await fixtureFiles("fixtures/runtime-collaboration/v0/invalid")) {
-    const document = await readJson(fixture);
-    const result = validateCollaborationDocument(document);
-
-    assert.equal(result.ok, false, fixture);
-  }
-
-  const changeSet = await readJson("fixtures/runtime-collaboration/v0/valid/change-set.operation.json");
-  assert.equal(validateRuntimeCollaborationOperationEnvelope(changeSet).ok, true);
-  assert.deepEqual(changeSet.payload.changes.map((change) => change.op), [
-    "node.add",
-    "node.move",
-    "edge.connect",
-    "node.delete"
-  ]);
-  assert.notEqual(changeSet.participantId, changeSet.authSubject.subjectId);
-  assert.equal("clientWindowId" in changeSet, false);
-
-  const invalidPastePayload = await readJson("fixtures/runtime-collaboration/v0/valid/paste-fragment.operation.json");
-  invalidPastePayload.payload.request.fragment = await readJson(
-    "fixtures/graph-fragment/v0.1/invalid/outside-endpoint.fragment.json"
-  );
-  const invalidPastePayloadResult = validateRuntimeCollaborationOperationEnvelope(invalidPastePayload);
-  assert.equal(invalidPastePayloadResult.ok, false);
-  assert.match(invalidPastePayloadResult.errors.join("\n"), /fragment-edge-outside-selection/);
-
-  const duplicateResult = await readJson(
-    "fixtures/runtime-collaboration/v0/valid/duplicate-idempotency.operation-result.json"
-  );
-  assert.equal(validateRuntimeCollaborationOperationResult(duplicateResult).ok, true);
-  assert.equal(duplicateResult.status, "duplicate");
-  assert.equal(duplicateResult.nack.reason, "duplicate-idempotency-key");
-
-  const duplicateBatch = await readJson(
-    "fixtures/runtime-collaboration/v0/invalid/duplicate-idempotency.operation-batch.json"
-  );
-  const duplicateBatchResult = validateRuntimeCollaborationOperationBatch(duplicateBatch);
-  assert.equal(duplicateBatchResult.ok, false);
-  assert.match(duplicateBatchResult.errors.join("\n"), /duplicate collaboration idempotency key/);
-
-  const invalidBatchShape = structuredClone(duplicateBatch);
-  delete invalidBatchShape.operations;
-  assert.equal(validateRuntimeCollaborationOperationBatch(invalidBatchShape).ok, false);
-
-  const sessionMismatchBatch = await readJson("fixtures/runtime-collaboration/v0/valid/operation-batch.json");
-  sessionMismatchBatch.operations[0].sessionId = "session-other";
-  const sessionMismatchBatchResult = validateRuntimeCollaborationOperationBatch(sessionMismatchBatch);
-  assert.equal(sessionMismatchBatchResult.ok, false);
-  assert.match(sessionMismatchBatchResult.errors.join("\n"), /sessionId must match/);
-
-  const batchResult = await readJson("fixtures/runtime-collaboration/v0/valid/operation-batch-result.json");
-  assert.equal(validateRuntimeCollaborationOperationBatchResult(batchResult).ok, true);
-  assert.deepEqual(batchResult.results.map((result) => result.status), ["accepted", "rejected"]);
-
-  const invalidBatchResultShape = structuredClone(batchResult);
-  delete invalidBatchResultShape.results;
-  assert.equal(validateRuntimeCollaborationOperationBatchResult(invalidBatchResultShape).ok, false);
-
-  const batchResultMismatch = await readJson(
-    "fixtures/runtime-collaboration/v0/invalid/batch-result-session-mismatch.operation-batch-result.json"
-  );
-  const batchResultMismatchResult =
-    validateRuntimeCollaborationOperationBatchResult(batchResultMismatch);
-  assert.equal(batchResultMismatchResult.ok, false);
-  assert.match(batchResultMismatchResult.errors.join("\n"), /batch result operation sessionId/);
-
-  const staleCausal = await readJson("fixtures/runtime-collaboration/v0/invalid/stale-causal-vector.operation.json");
-  const staleCausalResult = validateRuntimeCollaborationOperationEnvelope(staleCausal);
-  assert.equal(staleCausalResult.ok, false);
-  assert.match(staleCausalResult.errors.join("\n"), /causal vector maximum/);
-
-  const missingParticipantVector = await readJson("fixtures/runtime-collaboration/v0/valid/participant-undo.operation.json");
-  missingParticipantVector.causal.vector = { "participant-b": 2 };
-  const missingParticipantVectorResult = validateRuntimeCollaborationOperationEnvelope(missingParticipantVector);
-  assert.equal(missingParticipantVectorResult.ok, false);
-  assert.match(missingParticipantVectorResult.errors.join("\n"), /must include participantId/);
-
-  const presence = await readJson("fixtures/runtime-collaboration/v0/valid/active.presence.json");
-  assert.equal(validateRuntimeCollaborationPresenceEnvelope(presence).ok, true);
-  assert.equal(presence.updatedAt < presence.expiresAt, true);
-  assert.notEqual(presence.participantId, presence.authSubject.subjectId);
-
-  const deferredAuthPresence = structuredClone(presence);
-  deferredAuthPresence.authSubject = { kind: "deferred" };
-  assert.equal(validateRuntimeCollaborationPresenceEnvelope(deferredAuthPresence).ok, true);
-
-  const invalidPresenceShape = structuredClone(presence);
-  delete invalidPresenceShape.expiresAt;
-  assert.equal(validateRuntimeCollaborationPresenceEnvelope(invalidPresenceShape).ok, false);
-
-  const selection = await readJson("fixtures/runtime-collaboration/v0/valid/remote-selection.selection.json");
-  assert.equal(validateRuntimeCollaborationSelectionEnvelope(selection).ok, true);
-  assert.deepEqual(selection.selection.ranges.map((range) => range.kind), ["nodes", "edges", "text"]);
-  assert.deepEqual(selection.selection.ranges[2].anchor, {
-    nodeId: "message-1",
-    field: "text",
-    offset: 0
-  });
-  assert.equal(selection.cursor.clientWindowId, "window-b");
-
-  const undo = await readJson("fixtures/runtime-collaboration/v0/valid/participant-undo.operation.json");
-  assert.equal(validateRuntimeCollaborationOperationEnvelope(undo).ok, true);
-  assert.equal(undo.payload.scope.kind, "participant");
-  assert.equal(undo.payload.scope.participantId, undo.participantId);
-
-  const undoMismatch = await readJson("fixtures/runtime-collaboration/v0/invalid/undo-scope-mismatch.operation.json");
-  const undoMismatchResult = validateRuntimeCollaborationOperationEnvelope(undoMismatch);
-  assert.equal(undoMismatchResult.ok, false);
-  assert.match(undoMismatchResult.errors.join("\n"), /scope participantId/);
-
-  const rebase = await readJson("fixtures/runtime-collaboration/v0/valid/rebased.operation-result.json");
-  assert.equal(validateRuntimeCollaborationOperationResult(rebase).ok, true);
-  assert.equal(rebase.status, "rebased");
-  assert.equal(rebase.rebase.strategy, "ot-transform");
-  assert.equal(rebase.rebase.transformedPayload.kind, "changeSet");
-
-  const mixedRebase = await readJson(
-    "fixtures/runtime-collaboration/v0/valid/rebased-mixed-change-set.operation-result.json"
-  );
-  assert.equal(validateRuntimeCollaborationOperationResult(mixedRebase).ok, true);
-  assert.deepEqual(mixedRebase.rebase.transformedPayload.changes.map((change) => change.op), [
-    "node.add",
-    "node.move",
-    "node.delete",
-    "edge.connect"
-  ]);
-
-  const pasteRebase = await readJson(
-    "fixtures/runtime-collaboration/v0/valid/rebased-paste-fragment.operation-result.json"
-  );
-  assert.equal(validateRuntimeCollaborationOperationResult(pasteRebase).ok, true);
-  assert.equal(pasteRebase.rebase.transformedPayload.kind, "pasteGraphFragment");
-
-  const invalidRebaseStrategy = await readJson(
-    "fixtures/runtime-collaboration/v0/invalid/rebase-unknown-strategy.operation-result.json"
-  );
-  assert.equal(validateRuntimeCollaborationOperationResult(invalidRebaseStrategy).ok, false);
-
-  const extraWindow = await readJson("fixtures/runtime-collaboration/v0/invalid/extra-client-window.operation.json");
-  const extraWindowResult = validateRuntimeCollaborationOperationEnvelope(extraWindow);
-  assert.equal(extraWindowResult.ok, false);
-  assert.match(extraWindowResult.errors.join("\n"), /must NOT have additional properties/);
-
-  const missingRanges = await readJson("fixtures/runtime-collaboration/v0/invalid/selection-missing-ranges.selection.json");
-  const missingRangesResult = validateRuntimeCollaborationSelectionEnvelope(missingRanges);
-  assert.equal(missingRangesResult.ok, false);
-  assert.match(missingRangesResult.errors.join("\n"), /ranges/);
-
-  const expiredSelection = structuredClone(selection);
-  expiredSelection.expiresAt = "2026-06-22T00:00:02.000Z";
-  const expiredSelectionResult = validateRuntimeCollaborationSelectionEnvelope(expiredSelection);
-  assert.equal(expiredSelectionResult.ok, false);
-  assert.match(expiredSelectionResult.errors.join("\n"), /selection expiresAt/);
-
-  const event = await readJson("fixtures/runtime-collaboration/v0/valid/operation-result.event.json");
-  assert.equal(validateRuntimeCollaborationEventEnvelope(event).ok, true);
-  assert.equal(event.replay.cursor, "6");
-
-  const validGapEvent = structuredClone(event);
-  validGapEvent.replay.gap = {
-    expectedSequence: 4,
-    actualSequence: 6,
-    reason: "unknown"
-  };
-  validGapEvent.replay.replayed = true;
-  assert.equal(validateRuntimeCollaborationEventEnvelope(validGapEvent).ok, true);
-
-  const invalidEventShape = structuredClone(event);
-  delete invalidEventShape.replay;
-  assert.equal(validateRuntimeCollaborationEventEnvelope(invalidEventShape).ok, false);
-
-  const invalidEvent = await readJson("fixtures/runtime-collaboration/v0/invalid/event-replay-gap-order.event.json");
-  const invalidEventResult = validateRuntimeCollaborationEventEnvelope(invalidEvent);
-  assert.equal(invalidEventResult.ok, false);
-  assert.match(invalidEventResult.errors.join("\n"), /replay gap expectedSequence/);
-
-  const mismatchedEvent = await readJson(
-    "fixtures/runtime-collaboration/v0/invalid/event-kind-payload-mismatch.event.json"
-  );
-  const mismatchedEventResult = validateRuntimeCollaborationEventEnvelope(mismatchedEvent);
-  assert.equal(mismatchedEventResult.ok, false);
-  assert.match(mismatchedEventResult.errors.join("\n"), /kind/);
-
-  const invalidResultShape = structuredClone(duplicateResult);
-  delete invalidResultShape.status;
-  assert.equal(validateRuntimeCollaborationOperationResult(invalidResultShape).ok, false);
-
-  const acceptedWithNack = await readJson("fixtures/runtime-collaboration/v0/valid/accepted.operation-result.json");
-  acceptedWithNack.nack = {
-    reason: "invalid-operation"
-  };
-  const acceptedWithNackResult = validateRuntimeCollaborationOperationResult(acceptedWithNack);
-  assert.equal(acceptedWithNackResult.ok, false);
-  assert.match(acceptedWithNackResult.errors.join("\n"), /must not include nack/);
-
-  const rejectedMissingNack = structuredClone(duplicateResult);
-  rejectedMissingNack.status = "rejected";
-  delete rejectedMissingNack.nack;
-  const rejectedMissingNackResult = validateRuntimeCollaborationOperationResult(rejectedMissingNack);
-  assert.equal(rejectedMissingNackResult.ok, false);
-  assert.match(rejectedMissingNackResult.errors.join("\n"), /must include nack/);
-
-  const duplicateWrongReason = structuredClone(duplicateResult);
-  duplicateWrongReason.nack.reason = "invalid-operation";
-  const duplicateWrongReasonResult = validateRuntimeCollaborationOperationResult(duplicateWrongReason);
-  assert.equal(duplicateWrongReasonResult.ok, false);
-  assert.match(duplicateWrongReasonResult.errors.join("\n"), /duplicate-idempotency-key/);
-
-  const rebasedMissingRebase = structuredClone(rebase);
-  delete rebasedMissingRebase.rebase;
-  const rebasedMissingRebaseResult = validateRuntimeCollaborationOperationResult(rebasedMissingRebase);
-  assert.equal(rebasedMissingRebaseResult.ok, false);
-  assert.match(rebasedMissingRebaseResult.errors.join("\n"), /must include rebase metadata/);
-});
-
-test("runtime session events are session-addressed", () => {
-  const event = {
-    schema: "skenion.runtime.session.event",
-    schemaVersion: "0.1.0",
-    id: "event-1",
-    sessionId: "session-a",
-    sequence: 1,
-    sessionRevision: 1,
-    kind: "snapshot",
-    snapshot: {
-      sessionRevision: 1,
-      viewRevision: 1,
-      controlRevision: 0,
-      project: null,
-      diagnostics: [],
-      plan: null
-    },
-    history: {
-      schema: "skenion.runtime.history",
-      schemaVersion: "0.1.0",
-      entries: [],
-      canUndo: false,
-      canRedo: false,
-      undoDepth: 0,
-      redoDepth: 0
-    },
-    replay: {
-      cursor: "1",
-      previousCursor: null,
-      replayed: false,
-      gap: null,
-      overflow: false
-    },
-    diagnostics: [],
-    createdAt: "2026-06-21T00:00:00.000Z"
-  };
-
-  assert.equal(isRuntimeSessionEvent(event), true);
-  const missingSession = structuredClone(event);
-  delete missingSession.sessionId;
-  assert.equal(isRuntimeSessionEvent(missingSession), false);
 });
 
 test("exports and validates v0.1 project patch library contracts", async () => {
@@ -2612,77 +1996,6 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   const graphInvalidPatchResult = validatePatchDefinitionV01(graphInvalidPatch);
   assert.equal(graphInvalidPatchResult.ok, false);
   assert.match(graphInvalidPatchResult.errors.join("\n"), /duplicate node id/);
-});
-
-test("validates runtime project request nodes envelope", async () => {
-  const validRequest = await readJson("fixtures/runtime-project/v0/valid/project-with-nodes.runtime-project.json");
-  const validResult = validateRuntimeProjectRequestV01(validRequest);
-  assert.equal(validateRuntimeProjectRequest(validRequest).ok, true);
-  assert.equal(validResult.ok, true);
-  assert.equal(validateProjectDocumentV01(validRequest).ok, false);
-
-  const boundaryNodeRequest = structuredClone(validRequest);
-  boundaryNodeRequest.graph.nodes = [
-    {
-      id: "frequency_in",
-      kind: "core.inlet",
-      kindVersion: "0.1.0",
-      params: { portId: "frequency" },
-      ports: [
-        { id: "out", direction: "output", type: "control.number.float" }
-      ]
-    }
-  ];
-  boundaryNodeRequest.graph.edges = [];
-  boundaryNodeRequest.patchLibrary = [];
-  boundaryNodeRequest.viewState.canvas.nodes = {};
-  assert.equal(validateRuntimeProjectRequestV01(boundaryNodeRequest).ok, true);
-
-  const patchNodeRequest = structuredClone(validRequest);
-  patchNodeRequest.patchLibrary = [
-    {
-      id: "runtime_patch",
-      revision: "1",
-      graph: {
-        ...structuredClone(validRequest.graph),
-        id: "runtime-project-patch"
-      }
-    }
-  ];
-  assert.equal(validateRuntimeProjectRequestV01(patchNodeRequest).ok, true);
-
-  const invalidProjectShape = structuredClone(validRequest);
-  invalidProjectShape.graph.nodes.push(structuredClone(invalidProjectShape.graph.nodes[0]));
-  const invalidProjectShapeResult = validateRuntimeProjectRequestV01(invalidProjectShape);
-  assert.equal(invalidProjectShapeResult.ok, false);
-  assert.match(invalidProjectShapeResult.errors.join("\n"), /duplicate node id/);
-
-  const invalidNodeDefinition = structuredClone(validRequest);
-  invalidNodeDefinition.nodes[0].ports[0].type = "number.float";
-  const invalidNodeDefinitionResult = validateRuntimeProjectRequestV01(invalidNodeDefinition);
-  assert.equal(invalidNodeDefinitionResult.ok, false);
-  assert.match(invalidNodeDefinitionResult.errors.join("\n"), /runtime project node core\.float@0\.1\.0/);
-  assert.match(invalidNodeDefinitionResult.errors.join("\n"), /legacy port type/);
-
-  const missingNodes = await readJson("fixtures/runtime-project/v0/invalid/missing-nodes.runtime-project.json");
-  const missingNodesResult = validateRuntimeProjectRequestV01(missingNodes);
-  assert.equal(missingNodesResult.ok, false);
-  assert.match(missingNodesResult.errors.join("\n"), /nodes/);
-
-  const emptyNodes = await readJson("fixtures/runtime-project/v0/invalid/empty-nodes.runtime-project.json");
-  const emptyNodesResult = validateRuntimeProjectRequestV01(emptyNodes);
-  assert.equal(emptyNodesResult.ok, false);
-  assert.match(emptyNodesResult.errors.join("\n"), /fewer than 1|at least one node definition/);
-
-  const missingDefinition = await readJson("fixtures/runtime-project/v0/invalid/missing-node-definition.runtime-project.json");
-  const missingDefinitionResult = validateRuntimeProjectRequestV01(missingDefinition);
-  assert.equal(missingDefinitionResult.ok, false);
-  assert.match(missingDefinitionResult.errors.join("\n"), /missing node definition: core\.float@0\.1\.0/);
-
-  const mismatch = await readJson("fixtures/runtime-project/v0/invalid/node-definition-version-mismatch.runtime-project.json");
-  const mismatchResult = validateRuntimeProjectRequestV01(mismatch);
-  assert.equal(mismatchResult.ok, false);
-  assert.match(mismatchResult.errors.join("\n"), /node definition version mismatch: core\.float@0\.1\.0/);
 });
 
 test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", async () => {

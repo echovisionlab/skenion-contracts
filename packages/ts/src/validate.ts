@@ -18,10 +18,6 @@ import {
   packageListingV01Schema,
   packageManifestV01Schema,
   projectV01Schema,
-  runtimeCollaborationV0Schema,
-  runtimeOperationV0Schema,
-  runtimeProjectRequestV0Schema,
-  runtimeSessionV0Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
@@ -50,24 +46,9 @@ import type {
   PackageRootDocumentV01,
   PatchDefinitionV01,
   PasteGraphFragmentRequest,
-  PasteGraphFragmentResponse,
   PortSpecV01,
   ProjectDocumentV01,
   ProjectPackageLockEntryV01,
-  RuntimeCollaborationAuthSubject,
-  RuntimeCollaborationCausalMetadata,
-  RuntimeCollaborationEventEnvelope,
-  RuntimeCollaborationOperationBatch,
-  RuntimeCollaborationOperationBatchResult,
-  RuntimeCollaborationOperationEnvelope,
-  RuntimeCollaborationOperationPayload,
-  RuntimeCollaborationOperationResult,
-  RuntimeCollaborationPresenceEnvelope,
-  RuntimeCollaborationSelectionEnvelope,
-  RuntimeOperationEnvelope,
-  RuntimeProjectRequestV01,
-  RuntimeSessionEvent,
-  RuntimeSessionInfoResponse,
   ShaderInterfaceV01,
   ValidationResult,
   ViewStateV01
@@ -90,71 +71,14 @@ ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(projectV01Schema);
-ajv.addSchema(runtimeProjectRequestV0Schema);
-ajv.addSchema(runtimeOperationV0Schema);
-ajv.addSchema(runtimeSessionV0Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphFragmentV01Validator = ajv.compile(graphFragmentV01Schema);
-const runtimeOperationV0Validator = ajv.compile(runtimeOperationV0Schema);
-ajv.compile(runtimeCollaborationV0Schema);
-const runtimeCollaborationOperationEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationEnvelope"
-});
-const runtimeCollaborationOperationBatchValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatch"
-});
-const runtimeCollaborationOperationResultValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-result.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationResult"
-});
-const runtimeCollaborationOperationBatchResultValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch-result.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatchResult"
-});
-const runtimeCollaborationPresenceEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-presence.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationPresenceEnvelope"
-});
-const runtimeCollaborationSelectionEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-selection.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationSelectionEnvelope"
-});
-const runtimeCollaborationEventEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-event.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationEventEnvelope"
-});
-const runtimeSessionInfoResponseValidator = ajv.compile(runtimeSessionV0Schema);
-const runtimeSessionEventValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/session-event.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/session.schema.json#/$defs/runtimeSessionEvent"
-});
-const pasteGraphFragmentRequestValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-request.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentRequest"
-});
-const pasteGraphFragmentResponseValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-response.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
-});
 const controlMessageV01Validator = ajv.compile(controlMessageV01Schema);
 const objectTextParseResultV01Validator = ajv.compile(objectTextParseResultV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
-const runtimeProjectRequestV0Validator = ajv.compile(runtimeProjectRequestV0Schema);
 const patchDefinitionV01Validator = ajv.compile({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://skenion.dev/schemas/project/v0.1/patch-definition.schema.json",
@@ -1869,496 +1793,127 @@ export function validateProjectDocument(document: unknown): ValidationResult<Pro
   return validateProjectDocumentV01(document);
 }
 
-function projectDocumentFromRuntimeProjectRequest(request: RuntimeProjectRequestV01): ProjectDocumentV01 {
-  const { nodes: _nodes, ...projectDocument } = request;
-  return projectDocument;
-}
-
-function requiresRuntimeNodeDefinition(kind: string): boolean {
-  return kind !== "core.inlet" && kind !== "core.outlet";
-}
-
-function validateRuntimeProjectRequestNodeDefinitions(request: RuntimeProjectRequestV01): string[] {
-  const errors = duplicateErrors(
-    request.nodes.map((definition) => `${definition.id}@${definition.version}`),
-    "runtime project node definition"
-  );
-  const definitionKeys = new Set<string>();
-  const versionsById = new Map<string, Set<string>>();
-
-  for (const definition of request.nodes) {
-    definitionKeys.add(`${definition.id}@${definition.version}`);
-    const versions = versionsById.get(definition.id) ?? new Set<string>();
-    versions.add(definition.version);
-    versionsById.set(definition.id, versions);
-  }
-
-  const validateGraphNodes = (graph: GraphDocumentV01, label: string) => {
-    for (const node of graph.nodes) {
-      if (!requiresRuntimeNodeDefinition(node.kind)) {
-        continue;
-      }
-      const requiredKey = `${node.kind}@${node.kindVersion}`;
-      if (definitionKeys.has(requiredKey)) {
-        continue;
-      }
-
-      const providedVersions = versionsById.get(node.kind);
-      if (providedVersions && providedVersions.size > 0) {
-        errors.push(
-          `node definition version mismatch: ${requiredKey} (${label} node ${node.id}; provided versions: ${[...providedVersions].sort().join(", ")})`
-        );
-      } else {
-        errors.push(`missing node definition: ${requiredKey} (${label} node ${node.id})`);
-      }
-    }
-  };
-
-  validateGraphNodes(request.graph, "root graph");
-  for (const patch of request.patchLibrary) {
-    validateGraphNodes(patch.graph, `patch ${patch.id}`);
-  }
-
-  return errors;
-}
-
-export function validateRuntimeProjectRequestV01(
-  document: unknown
-): ValidationResult<RuntimeProjectRequestV01> {
-  if (!runtimeProjectRequestV0Validator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeProjectRequestV0Validator.errors as ErrorObject[]) };
-  }
-
-  const request = document as RuntimeProjectRequestV01;
-  const projectResult = validateProjectDocumentV01(projectDocumentFromRuntimeProjectRequest(request));
-  if (!projectResult.ok) {
-    return { ok: false, errors: projectResult.errors };
-  }
-
-  const errors = [
-    ...request.nodes.flatMap((definition) =>
-      validateNodeDefinitionV01Semantics(definition).map(
-        (error) => `runtime project node ${definition.id}@${definition.version}: ${error}`
-      )
-    ),
-    ...validateRuntimeProjectRequestNodeDefinitions(request)
-  ];
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: request };
-}
-
-export function validateRuntimeProjectRequest(
-  document: unknown
-): ValidationResult<RuntimeProjectRequestV01> {
-  return validateRuntimeProjectRequestV01(document);
-}
-
-export function validateRuntimeOperationEnvelope(
-  document: unknown
-): ValidationResult<RuntimeOperationEnvelope> {
-  if (!runtimeOperationV0Validator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeOperationV0Validator.errors as ErrorObject[]) };
-  }
-
-  const envelope = document as RuntimeOperationEnvelope;
-  const requestResult = validatePasteGraphFragmentRequest(envelope.request);
-  if (!requestResult.ok) {
-    return { ok: false, errors: requestResult.errors };
-  }
-
-  return { ok: true, value: envelope };
-}
-
-export function validateRuntimeCollaborationOperationEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationEnvelope> {
-  if (!runtimeCollaborationOperationEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const envelope = document as RuntimeCollaborationOperationEnvelope;
-  const errors = validateRuntimeCollaborationOperationEnvelopeSemantics(envelope);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: envelope };
-}
-
-export function validateRuntimeCollaborationOperationBatch(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationBatch> {
-  if (!runtimeCollaborationOperationBatchValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationBatchValidator.errors as ErrorObject[])
-    };
-  }
-
-  const batch = document as RuntimeCollaborationOperationBatch;
-  const errors = validateRuntimeCollaborationOperationBatchSemantics(batch);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: batch };
-}
-
-export function validateRuntimeCollaborationOperationResult(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationResult> {
-  if (!runtimeCollaborationOperationResultValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationResultValidator.errors as ErrorObject[])
-    };
-  }
-
-  const result = document as RuntimeCollaborationOperationResult;
-  const errors = validateRuntimeCollaborationOperationResultSemantics(result);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: result };
-}
-
-export function validateRuntimeCollaborationOperationBatchResult(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationBatchResult> {
-  if (!runtimeCollaborationOperationBatchResultValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationBatchResultValidator.errors as ErrorObject[])
-    };
-  }
-
-  const result = document as RuntimeCollaborationOperationBatchResult;
-  const errors = validateRuntimeCollaborationOperationBatchResultSemantics(result);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: result };
-}
-
-export function validateRuntimeCollaborationPresenceEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationPresenceEnvelope> {
-  if (!runtimeCollaborationPresenceEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationPresenceEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const presence = document as RuntimeCollaborationPresenceEnvelope;
-  const errors = validateRuntimeCollaborationPresenceSemantics(presence);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: presence };
-}
-
-export function validateRuntimeCollaborationSelectionEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationSelectionEnvelope> {
-  if (!runtimeCollaborationSelectionEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationSelectionEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const selection = document as RuntimeCollaborationSelectionEnvelope;
-  const errors = validateRuntimeCollaborationSelectionSemantics(selection);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: selection };
-}
-
-export function validateRuntimeCollaborationEventEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationEventEnvelope> {
-  if (!runtimeCollaborationEventEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationEventEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const event = document as RuntimeCollaborationEventEnvelope;
-  const errors = validateRuntimeCollaborationEventSemantics(event);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: event };
-}
-
-export function validateRuntimeSessionInfoResponse(
-  document: unknown
-): ValidationResult<RuntimeSessionInfoResponse> {
-  if (!runtimeSessionInfoResponseValidator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeSessionInfoResponseValidator.errors as ErrorObject[]) };
-  }
-
-  return { ok: true, value: document as RuntimeSessionInfoResponse };
-}
-
-export function validateRuntimeSessionEvent(
-  document: unknown
-): ValidationResult<RuntimeSessionEvent> {
-  if (!runtimeSessionEventValidator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeSessionEventValidator.errors as ErrorObject[]) };
-  }
-
-  const event = document as RuntimeSessionEvent;
-  const errors = validateRuntimeSessionEventSemantics(event);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: event };
-}
-
-function validateRuntimeSessionEventSemantics(event: RuntimeSessionEvent): string[] {
-  const errors: string[] = [];
-  if (event.replay.gap && event.replay.gap.expectedSequence >= event.replay.gap.actualSequence) {
-    errors.push("replay gap expectedSequence must be less than actualSequence");
-  }
-  if (event.sessionRevision !== event.snapshot.sessionRevision) {
-    errors.push("sessionRevision must match snapshot.sessionRevision");
-  }
-  return errors;
-}
-
-function validateRuntimeCollaborationCausality(
-  causal: RuntimeCollaborationCausalMetadata,
-  label: string
-): string[] {
-  const vectorValues = Object.values(causal.vector);
-  const maxVector = vectorValues.reduce((max, value) => Math.max(max, value), 0);
-  return causal.baseSequence < maxVector
-    ? [`${label} baseSequence must be greater than or equal to the causal vector maximum`]
-    : [];
-}
-
-function validateRuntimeCollaborationAuthSeparation(
-  participantId: string,
-  authSubject: RuntimeCollaborationAuthSubject | undefined,
-  label: string
-): string[] {
-  if (authSubject?.subjectId && authSubject.subjectId === participantId) {
-    return [`${label} participantId must not mirror auth subject id`];
-  }
-  return [];
-}
-
-function validateRuntimeCollaborationExpiry(
-  updatedAt: string,
-  expiresAt: string,
-  label: string
-): string[] {
-  return expiresAt <= updatedAt
-    ? [`${label} expiresAt must be later than updatedAt`]
-    : [];
-}
-
-function validateRuntimeCollaborationPayload(
-  payload: RuntimeCollaborationOperationPayload,
-  participantId: string
-): string[] {
-  if (payload.kind === "changeSet") {
-    return duplicateErrors(
-      payload.changes.map((change) => change.changeId),
-      "collaboration change id"
-    );
-  }
-
-  if (payload.kind === "pasteGraphFragment") {
-    const requestResult = validatePasteGraphFragmentRequest(payload.request);
-    return requestResult.ok ? [] : requestResult.errors;
-  }
-
-  if (payload.scope.participantId !== participantId) {
-    return ["undoRedo scope participantId must match operation participantId"];
-  }
-  return [];
-}
-
-function validateRuntimeCollaborationOperationEnvelopeSemantics(
-  envelope: RuntimeCollaborationOperationEnvelope
-): string[] {
-  const errors = [
-    ...validateRuntimeCollaborationCausality(envelope.causal, "operation causal"),
-    ...validateRuntimeCollaborationAuthSeparation(
-      envelope.participantId,
-      envelope.authSubject,
-      "operation"
-    ),
-    ...validateRuntimeCollaborationPayload(envelope.payload, envelope.participantId)
-  ];
-
-  if (!(envelope.participantId in envelope.causal.vector)) {
-    errors.push("operation causal vector must include participantId");
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationOperationBatchSemantics(
-  batch: RuntimeCollaborationOperationBatch
-): string[] {
-  const errors = duplicateErrors(
-    batch.operations.map((operation) => operation.idempotencyKey),
-    "collaboration idempotency key"
-  );
-
-  for (const operation of batch.operations) {
-    if (operation.sessionId !== batch.sessionId) {
-      errors.push("collaboration batch operation sessionId must match batch sessionId");
-    }
-    errors.push(...validateRuntimeCollaborationOperationEnvelopeSemantics(operation));
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationOperationResultSemantics(
-  result: RuntimeCollaborationOperationResult
-): string[] {
-  const errors = validateRuntimeCollaborationCausality(result.causal, "operation result causal");
-  const hasAck = result.ack !== undefined;
-  const hasNack = result.nack !== undefined;
-  const hasRebase = result.rebase !== undefined;
-
-  if ((result.status === "accepted" || result.status === "rebased") && !hasAck) {
-    errors.push("accepted or rebased collaboration result must include ack");
-  }
-  if (result.status === "accepted" && (hasNack || hasRebase)) {
-    errors.push("accepted collaboration result must not include nack or rebase");
-  }
-  if ((result.status === "duplicate" || result.status === "rejected") && !hasNack) {
-    errors.push("duplicate or rejected collaboration result must include nack");
-  }
-  if (result.status === "duplicate" && result.nack?.reason !== "duplicate-idempotency-key") {
-    errors.push("duplicate collaboration result nack reason must be duplicate-idempotency-key");
-  }
-  if (result.status === "rebased" && !hasRebase) {
-    errors.push("rebased collaboration result must include rebase metadata");
-  }
-  if (result.rebase) {
-    errors.push(
-      ...validateRuntimeCollaborationCausality(result.rebase.from, "rebase from causal"),
-      ...validateRuntimeCollaborationCausality(result.rebase.to, "rebase to causal")
-    );
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationOperationBatchResultSemantics(
-  result: RuntimeCollaborationOperationBatchResult
-): string[] {
-  const errors = duplicateErrors(
-    result.results.map((operationResult) => operationResult.idempotencyKey),
-    "collaboration batch result idempotency key"
-  );
-
-  for (const operationResult of result.results) {
-    if (operationResult.sessionId !== result.sessionId) {
-      errors.push("collaboration batch result operation sessionId must match batch result sessionId");
-    }
-    errors.push(...validateRuntimeCollaborationOperationResultSemantics(operationResult));
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationPresenceSemantics(
-  presence: RuntimeCollaborationPresenceEnvelope
-): string[] {
-  return [
-    ...validateRuntimeCollaborationAuthSeparation(
-      presence.participantId,
-      presence.authSubject,
-      "presence"
-    ),
-    ...validateRuntimeCollaborationExpiry(
-      presence.updatedAt,
-      presence.expiresAt,
-      "presence"
-    )
-  ];
-}
-
-function validateRuntimeCollaborationSelectionSemantics(
-  selection: RuntimeCollaborationSelectionEnvelope
-): string[] {
-  return validateRuntimeCollaborationExpiry(
-    selection.updatedAt,
-    selection.expiresAt,
-    "selection"
-  );
-}
-
-function validateRuntimeCollaborationEventSemantics(
-  event: RuntimeCollaborationEventEnvelope
-): string[] {
-  const errors = validateRuntimeCollaborationCausality(event.causal, "collaboration event causal");
-
-  if (event.replay.gap && event.replay.gap.expectedSequence >= event.replay.gap.actualSequence) {
-    errors.push("collaboration event replay gap expectedSequence must be less than actualSequence");
-  }
-
-  return errors;
-}
-
 export function validatePasteGraphFragmentRequest(
   document: unknown
 ): ValidationResult<PasteGraphFragmentRequest> {
-  if (!pasteGraphFragmentRequestValidator(document)) {
-    return { ok: false, errors: schemaErrors(pasteGraphFragmentRequestValidator.errors as ErrorObject[]) };
-  }
-
-  const request = document as PasteGraphFragmentRequest;
-  const fragmentResult = validateGraphFragmentV01(request.fragment, {
-    outsideEndpointPolicy: request.options?.outsideEndpointPolicy
-  });
-  if (!fragmentResult.ok) {
-    return { ok: false, errors: fragmentResult.errors };
-  }
-
-  return { ok: true, value: request };
-}
-
-export function validatePasteGraphFragmentResponse(
-  document: unknown
-): ValidationResult<PasteGraphFragmentResponse> {
-  if (!pasteGraphFragmentResponseValidator(document)) {
-    return { ok: false, errors: schemaErrors(pasteGraphFragmentResponseValidator.errors as ErrorObject[]) };
-  }
-
-  const response = document as PasteGraphFragmentResponse;
   const errors: string[] = [];
-  for (const diagnostic of response.diagnostics) {
-    if ((diagnostic.code === "interface-drift" || diagnostic.code === "invalid-incident-edge") && diagnostic.interfaceDetail === undefined) {
-      errors.push(`runtime operation diagnostic ${diagnostic.code} requires interfaceDetail`);
+
+  if (!isRecord(document)) {
+    return { ok: false, errors: ["/ must be object"] };
+  }
+
+  const target = document.target;
+  if (!isRecord(target)) {
+    errors.push("/target must be object");
+  } else {
+    if (!isGraphTargetPath(target.path)) {
+      errors.push("/target/path must be a supported graph target path");
+    }
+    if (typeof target.baseRevision !== "string" || target.baseRevision.length === 0) {
+      errors.push("/target/baseRevision must be a non-empty string");
+    }
+    if (
+      target.targetRevision !== undefined &&
+      (typeof target.targetRevision !== "string" || target.targetRevision.length === 0)
+    ) {
+      errors.push("/target/targetRevision must be a non-empty string when present");
     }
   }
+
+  if (
+    document.placement !== undefined &&
+    !(
+      isRecord(document.placement) &&
+      (
+        (document.placement.kind === "position" &&
+          typeof document.placement.x === "number" &&
+          typeof document.placement.y === "number") ||
+        (document.placement.kind === "anchor" &&
+          typeof document.placement.nodeId === "string" &&
+          (document.placement.offsetX === undefined || typeof document.placement.offsetX === "number") &&
+          (document.placement.offsetY === undefined || typeof document.placement.offsetY === "number"))
+      )
+    )
+  ) {
+    errors.push("/placement must be a supported paste placement");
+  }
+
+  const options = document.options;
+  if (
+    options !== undefined &&
+    !(
+      isRecord(options) &&
+      (options.outsideEndpointPolicy === undefined ||
+        options.outsideEndpointPolicy === "reject" ||
+        options.outsideEndpointPolicy === "omit") &&
+      (options.idConflictPolicy === undefined ||
+        options.idConflictPolicy === "remap" ||
+        options.idConflictPolicy === "reject") &&
+      (options.interfaceIncidentEdgePolicy === undefined ||
+        options.interfaceIncidentEdgePolicy === "drop" ||
+        options.interfaceIncidentEdgePolicy === "preserve-diagnostic" ||
+        options.interfaceIncidentEdgePolicy === "reject") &&
+      (options.preserveRelativePositions === undefined ||
+        typeof options.preserveRelativePositions === "boolean")
+    )
+  ) {
+    errors.push("/options must be supported paste graph fragment options");
+  }
+
+  const outsideEndpointPolicy = isRecord(options) &&
+    (options.outsideEndpointPolicy === "reject" || options.outsideEndpointPolicy === "omit")
+    ? options.outsideEndpointPolicy
+    : undefined;
+  const fragmentResult = validateGraphFragmentV01(document.fragment, { outsideEndpointPolicy });
+  if (!fragmentResult.ok) {
+    errors.push(...fragmentResult.errors);
+  }
+
   if (errors.length > 0) {
     return { ok: false, errors };
   }
 
-  return { ok: true, value: response };
+  return { ok: true, value: document as unknown as PasteGraphFragmentRequest };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isGraphTargetPath(path: unknown): boolean {
+  if (!isRecord(path)) {
+    return false;
+  }
+  if (path.kind === "root") {
+    return Object.keys(path).length === 1;
+  }
+  if (path.kind === "project-patch-definition") {
+    return typeof path.patchId === "string" && path.patchId.length > 0;
+  }
+  if (path.kind === "package-patch-definition") {
+    return (
+      typeof path.packageId === "string" &&
+      path.packageId.length > 0 &&
+      typeof path.patchId === "string" &&
+      path.patchId.length > 0 &&
+      (path.version === undefined || typeof path.version === "string")
+    );
+  }
+  if (path.kind === "embedded-patch-instance") {
+    return (
+      Array.isArray(path.ownerPath) &&
+      path.ownerPath.every((entry) => typeof entry === "string") &&
+      typeof path.nodeId === "string" &&
+      path.nodeId.length > 0
+    );
+  }
+  if (path.kind === "help-working-copy") {
+    return (
+      typeof path.workingCopyId === "string" &&
+      path.workingCopyId.length > 0 &&
+      (path.sourcePackageId === undefined || typeof path.sourcePackageId === "string") &&
+      (path.sourcePatchId === undefined || typeof path.sourcePatchId === "string")
+    );
+  }
+  return false;
 }

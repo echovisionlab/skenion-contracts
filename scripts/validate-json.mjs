@@ -243,56 +243,6 @@ function validateProjectV01Semantics(file, project) {
   }
 }
 
-function requiresRuntimeNodeDefinition(kind) {
-  return kind !== "core.inlet" && kind !== "core.outlet";
-}
-
-function validateRuntimeProjectRequestSemantics(file, request) {
-  validateProjectV01Semantics(file, request);
-
-  duplicateCheck(
-    file,
-    request.nodes.map((definition) => `${definition.id}@${definition.version}`),
-    "runtime project node definition"
-  );
-
-  const definitionKeys = new Set();
-  const versionsById = new Map();
-  for (const definition of request.nodes) {
-    validateNodeDefinitionV01Semantics(file, definition);
-    definitionKeys.add(`${definition.id}@${definition.version}`);
-    const versions = versionsById.get(definition.id) ?? new Set();
-    versions.add(definition.version);
-    versionsById.set(definition.id, versions);
-  }
-
-  const validateGraphNodes = (graph, label) => {
-    for (const node of graph.nodes) {
-      if (!requiresRuntimeNodeDefinition(node.kind)) {
-        continue;
-      }
-      const requiredKey = `${node.kind}@${node.kindVersion}`;
-      if (definitionKeys.has(requiredKey)) {
-        continue;
-      }
-
-      const providedVersions = versionsById.get(node.kind);
-      if (providedVersions?.size > 0) {
-        fail(
-          file,
-          `node definition version mismatch: ${requiredKey} (${label} node ${node.id}; provided versions: ${[...providedVersions].sort().join(", ")})`
-        );
-      }
-      fail(file, `missing node definition: ${requiredKey} (${label} node ${node.id})`);
-    }
-  };
-
-  validateGraphNodes(request.graph, "root graph");
-  for (const patch of request.patchLibrary) {
-    validateGraphNodes(patch.graph, `patch ${patch.id}`);
-  }
-}
-
 function validatePackageManifestV01Semantics(file, manifest) {
   duplicateCheck(file, (manifest.provides.patches ?? []).map((provided) => provided.id), "provided patch id");
   duplicateCheck(file, (manifest.provides.nodes ?? []).map((provided) => provided.id), "provided node id");
@@ -1099,135 +1049,6 @@ function validateNodeDefinitionV01Semantics(file, definition) {
   }
 }
 
-function validateRuntimeSessionEventSemantics(file, event) {
-  const gap = event.replay?.gap;
-  if (gap && gap.expectedSequence >= gap.actualSequence) {
-    fail(file, "replay gap expectedSequence must be less than actualSequence");
-  }
-  if (event.sessionRevision !== event.snapshot?.sessionRevision) {
-    fail(file, "sessionRevision must match snapshot.sessionRevision");
-  }
-}
-
-function validateRuntimeCollaborationCausality(file, causal, label) {
-  const maxVector = Math.max(...Object.values(causal.vector));
-  if (causal.baseSequence < maxVector) {
-    fail(file, `${label} baseSequence must be greater than or equal to the causal vector maximum`);
-  }
-}
-
-function validateRuntimeCollaborationAuthSeparation(file, participantId, authSubject, label) {
-  if (authSubject?.subjectId && authSubject.subjectId === participantId) {
-    fail(file, `${label} participantId must not mirror auth subject id`);
-  }
-}
-
-function validateRuntimeCollaborationExpiry(file, updatedAt, expiresAt, label) {
-  if (expiresAt <= updatedAt) {
-    fail(file, `${label} expiresAt must be later than updatedAt`);
-  }
-}
-
-function validateRuntimeCollaborationOperationEnvelopeSemantics(file, operation) {
-  validateRuntimeCollaborationCausality(file, operation.causal, "operation causal");
-  validateRuntimeCollaborationAuthSeparation(file, operation.participantId, operation.authSubject, "operation");
-  if (!(operation.participantId in operation.causal.vector)) {
-    fail(file, "operation causal vector must include participantId");
-  }
-  if (operation.payload.kind === "changeSet") {
-    duplicateCheck(
-      file,
-      operation.payload.changes.map((change) => change.changeId),
-      "collaboration change id"
-    );
-  }
-  if (operation.payload.kind === "pasteGraphFragment") {
-    validateGraphFragmentV01Semantics(file, operation.payload.request.fragment);
-  }
-  if (
-    operation.payload.kind === "undoRedo" &&
-    operation.payload.scope.participantId !== operation.participantId
-  ) {
-    fail(file, "undoRedo scope participantId must match operation participantId");
-  }
-}
-
-function validateRuntimeCollaborationOperationBatchSemantics(file, batch) {
-  duplicateCheck(
-    file,
-    batch.operations.map((operation) => operation.idempotencyKey),
-    "collaboration idempotency key"
-  );
-  for (const operation of batch.operations) {
-    if (operation.sessionId !== batch.sessionId) {
-      fail(file, "collaboration batch operation sessionId must match batch sessionId");
-    }
-    validateRuntimeCollaborationOperationEnvelopeSemantics(file, operation);
-  }
-}
-
-function validateRuntimeCollaborationOperationResultSemantics(file, result) {
-  validateRuntimeCollaborationCausality(file, result.causal, "operation result causal");
-  if ((result.status === "accepted" || result.status === "rebased") && !result.ack) {
-    fail(file, "accepted or rebased collaboration result must include ack");
-  }
-  if (result.status === "accepted" && (result.nack || result.rebase)) {
-    fail(file, "accepted collaboration result must not include nack or rebase");
-  }
-  if ((result.status === "duplicate" || result.status === "rejected") && !result.nack) {
-    fail(file, "duplicate or rejected collaboration result must include nack");
-  }
-  if (result.status === "duplicate" && result.nack?.reason !== "duplicate-idempotency-key") {
-    fail(file, "duplicate collaboration result nack reason must be duplicate-idempotency-key");
-  }
-  if (result.status === "rebased" && !result.rebase) {
-    fail(file, "rebased collaboration result must include rebase metadata");
-  }
-  if (result.rebase) {
-    validateRuntimeCollaborationCausality(file, result.rebase.from, "rebase from causal");
-    validateRuntimeCollaborationCausality(file, result.rebase.to, "rebase to causal");
-  }
-}
-
-function validateRuntimeCollaborationOperationBatchResultSemantics(file, result) {
-  duplicateCheck(
-    file,
-    result.results.map((operationResult) => operationResult.idempotencyKey),
-    "collaboration batch result idempotency key"
-  );
-  for (const operationResult of result.results) {
-    if (operationResult.sessionId !== result.sessionId) {
-      fail(file, "collaboration batch result operation sessionId must match batch result sessionId");
-    }
-    validateRuntimeCollaborationOperationResultSemantics(file, operationResult);
-  }
-}
-
-function validateRuntimeCollaborationPresenceSemantics(file, presence) {
-  validateRuntimeCollaborationAuthSeparation(file, presence.participantId, presence.authSubject, "presence");
-  validateRuntimeCollaborationExpiry(file, presence.updatedAt, presence.expiresAt, "presence");
-}
-
-function validateRuntimeCollaborationSelectionSemantics(file, selection) {
-  validateRuntimeCollaborationExpiry(file, selection.updatedAt, selection.expiresAt, "selection");
-}
-
-function validateRuntimeCollaborationEventSemantics(file, event) {
-  validateRuntimeCollaborationCausality(file, event.causal, "collaboration event causal");
-  const expectedPayloadKindByEventKind = {
-    "operation-result": "operationResult",
-    presence: "presence",
-    selection: "selection"
-  };
-  if (event.payload.kind !== expectedPayloadKindByEventKind[event.kind]) {
-    fail(file, "collaboration event kind must match payload kind");
-  }
-  const gap = event.replay?.gap;
-  if (gap && gap.expectedSequence >= gap.actualSequence) {
-    fail(file, "collaboration event replay gap expectedSequence must be less than actualSequence");
-  }
-}
-
 function parseV0Semver(version) {
   const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(version);
   if (!match || Number(match[1]) !== 0) {
@@ -1294,47 +1115,11 @@ function validateCompatibilityMatrixSemantics(file, matrix) {
 }
 
 function selectValidator(file, document, validators) {
-  if (isRuntimeProjectRequestFixture(file)) {
-    return validators.runtimeProjectRequestV0;
-  }
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.1.0") {
     return validators.graphV01;
   }
   if (document.schema === "skenion.graph.fragment" && document.schemaVersion === "0.1.0") {
     return validators.graphFragmentV01;
-  }
-  if (document.schema === "skenion.runtime.operation" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeOperationV0;
-  }
-  if (document.schema === "skenion.runtime.session.info" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeSessionInfo;
-  }
-  if (document.schema === "skenion.runtime.session.event" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeSessionEvent;
-  }
-  if (document.schema === "skenion.runtime.paste-graph-fragment.response" && document.schemaVersion === "0.1.0") {
-    return validators.pasteGraphFragmentResponse;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperation;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperationBatch;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch-result" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperationBatchResult;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-result" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperationResult;
-  }
-  if (document.schema === "skenion.runtime.collaboration.presence" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationPresence;
-  }
-  if (document.schema === "skenion.runtime.collaboration.selection" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationSelection;
-  }
-  if (document.schema === "skenion.runtime.collaboration.event" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationEvent;
   }
   if (document.schema === "skenion.view-state" && document.schemaVersion === "0.1.0") {
     return validators.viewStateV01;
@@ -1393,37 +1178,6 @@ function validateDocument(file, document, validators) {
   }
   if (document.schema === "skenion.graph.fragment" && document.schemaVersion === "0.1.0") {
     validateGraphFragmentV01Semantics(file, document);
-  }
-  if (isRuntimeProjectRequestFixture(file)) {
-    validateRuntimeProjectRequestSemantics(file, document);
-    return;
-  }
-  if (document.schema === "skenion.runtime.operation" && document.schemaVersion === "0.1.0") {
-    validateGraphFragmentV01Semantics(file, document.request.fragment);
-  }
-  if (document.schema === "skenion.runtime.session.event" && document.schemaVersion === "0.1.0") {
-    validateRuntimeSessionEventSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationEnvelopeSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationBatchSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch-result" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationBatchResultSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-result" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationResultSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.presence" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationPresenceSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.selection" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationSelectionSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.event" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationEventSemantics(file, document);
   }
   if (document.schema === "skenion.project" && document.schemaVersion === "0.1.0") {
     validateProjectV01Semantics(file, document);
@@ -1663,10 +1417,6 @@ function normalizedPath(file) {
   return file.split(path.sep).join("/");
 }
 
-function isRuntimeProjectRequestFixture(file) {
-  return normalizedPath(file).startsWith("fixtures/runtime-project/v0/");
-}
-
 function isExplicitlyLoadedSchemaFile(file) {
   const normalized = normalizedPath(file);
   return [
@@ -1686,15 +1436,9 @@ for (const file of schemaFiles) {
   await readJson(file);
 }
 
-await readFile("openapi/runtime-http.v0.yaml", "utf8");
-
 const ajv = new Ajv2020({ allErrors: true });
 const graphV01Schema = await readJson("json-schema/graph/v0.1/graph.schema.json");
 const graphFragmentV01Schema = await readJson("json-schema/graph/v0.1/fragment.schema.json");
-const runtimeProjectRequestV0Schema = await readJson("json-schema/runtime/v0/project-request.schema.json");
-const runtimeOperationV0Schema = await readJson("json-schema/runtime/v0/operation.schema.json");
-const runtimeSessionV0Schema = await readJson("json-schema/runtime/v0/session.schema.json");
-const runtimeCollaborationV0Schema = await readJson("json-schema/runtime/v0/collaboration.schema.json");
 const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.schema.json");
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
@@ -1707,67 +1451,15 @@ const packageInstallPlanResponseV01Schema = await readJson("json-schema/package/
 const compatibilityMatrixV01Schema = await readJson("json-schema/compatibility-matrix/v0.1/compatibility-matrix.schema.json");
 ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
-ajv.addSchema(runtimeProjectRequestV0Schema);
-ajv.addSchema(runtimeOperationV0Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(projectV01Schema);
-ajv.addSchema(runtimeSessionV0Schema);
-ajv.addSchema(runtimeCollaborationV0Schema);
 ajv.addSchema(packageListingV01Schema);
 ajv.addSchema(packageInstallPlanRequestV01Schema);
 ajv.addSchema(compatibilityMatrixV01Schema);
 const validators = {
   graphV01: ajv.compile(graphV01Schema),
   graphFragmentV01: ajv.compile(graphFragmentV01Schema),
-  runtimeProjectRequestV0: ajv.compile(runtimeProjectRequestV0Schema),
-  runtimeOperationV0: ajv.compile(runtimeOperationV0Schema),
-  runtimeSessionInfo: ajv.compile(runtimeSessionV0Schema),
-  runtimeSessionEvent: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/session-event.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/session.schema.json#/$defs/runtimeSessionEvent"
-  }),
-  pasteGraphFragmentResponse: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-response.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
-  }),
-  runtimeCollaborationOperation: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationEnvelope"
-  }),
-  runtimeCollaborationOperationBatch: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatch"
-  }),
-  runtimeCollaborationOperationBatchResult: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch-result.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatchResult"
-  }),
-  runtimeCollaborationOperationResult: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-result.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationResult"
-  }),
-  runtimeCollaborationPresence: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-presence.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationPresenceEnvelope"
-  }),
-  runtimeCollaborationSelection: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-selection.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationSelectionEnvelope"
-  }),
-  runtimeCollaborationEvent: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-event.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationEventEnvelope"
-  }),
   viewStateV01: ajv.compile(viewStateV01Schema),
   projectV01: ajv.compile(projectV01Schema),
   nodeDefinitionV01: ajv.compile(nodeDefinitionV01Schema),
