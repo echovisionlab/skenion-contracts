@@ -4918,12 +4918,41 @@ mod tests {
                 default_port_spec: None,
             },
         ]);
+        let mut valid_default_port = graph.nodes[0].ports[0].clone();
+        valid_default_port.accepts = Some(vec!["control.number.float".to_owned()]);
+        graph.nodes[0].port_groups.as_mut().unwrap()[0].default_port_spec =
+            Some(valid_default_port);
+        let mut valid_default_without_accepts = graph.nodes[0].ports[0].clone();
+        valid_default_without_accepts.id = "out_dynamic".to_owned();
+        valid_default_without_accepts.accepts = None;
+        graph.nodes[0].port_groups.as_mut().unwrap()[1].default_port_spec =
+            Some(valid_default_without_accepts);
         let result = validate_graph_document_v01(&graph).expect("graph should validate");
         assert!(result.ok);
         assert!(result.diagnostics.is_empty());
 
         let serialized = serde_json::to_string(&graph).expect("graph should serialize");
         assert!(!serialized.contains("null"));
+
+        let mut invalid_default_port = graph;
+        invalid_default_port.nodes[0].port_groups.as_mut().unwrap()[0].port_type =
+            "number.float".to_owned();
+        let mut default_port = invalid_default_port.nodes[0].ports[0].clone();
+        default_port.direction = PortDirectionV01::Input;
+        default_port.port_type = "number.float".to_owned();
+        default_port.accepts = Some(vec![
+            "message.any".to_owned(),
+            "control.message.any".to_owned(),
+        ]);
+        invalid_default_port.nodes[0].port_groups.as_mut().unwrap()[0].default_port_spec =
+            Some(default_port);
+        let report = validate_graph_document_v01(&invalid_default_port)
+            .expect_err("legacy default port contract should fail");
+        let text = report.to_string();
+        assert!(text.contains("port group source.outputs uses legacy control port type"));
+        assert!(text.contains("default port uses legacy control port type number.float"));
+        assert!(text.contains("default port accepts legacy control port type message.any"));
+        assert!(text.contains("defaultPortSpec selector-aware input port requires"));
     }
 
     #[test]
@@ -4967,6 +4996,21 @@ mod tests {
                 .to_string()
                 .contains("duplicate-edge-id")
         );
+
+        let mut legacy_fragment_contracts = fragment.clone();
+        legacy_fragment_contracts.nodes[1].ports[0].port_type = "control.message.any".to_owned();
+        legacy_fragment_contracts.nodes[1].ports[0].accepts = Some(vec![
+            "message.any".to_owned(),
+            "control.number.float".to_owned(),
+        ]);
+        legacy_fragment_contracts.nodes[1].ports[0].message_selectors = None;
+        legacy_fragment_contracts.edges[0].resolved_type = Some("number.float".to_owned());
+        let legacy_fragment_report = validate_graph_fragment_v01(&legacy_fragment_contracts)
+            .expect_err("legacy fragment contracts should fail");
+        let legacy_fragment_text = legacy_fragment_report.to_string();
+        assert!(legacy_fragment_text.contains("accepts legacy control port type message.any"));
+        assert!(legacy_fragment_text.contains("requires messageSelectors"));
+        assert!(legacy_fragment_text.contains("edge edge_source_target uses legacy resolvedType"));
 
         let mut outside = fragment.clone();
         outside.edges[0].target.node_id = "outside".to_owned();
@@ -5986,18 +6030,82 @@ mod tests {
         assert!(report.to_string().contains("requires messageSelectors"));
 
         let mut invalid_set_trigger = graph.clone();
-        if let Some(policy) = &mut invalid_set_trigger.nodes[3].ports[0].message_selectors {
-            policy.accepted = vec!["set".to_owned()];
-            policy.silent = None;
-            policy.trigger = Some(vec!["set".to_owned()]);
-            policy.store = None;
-            policy.emit = None;
-        }
+        let policy = invalid_set_trigger.nodes[3].ports[0]
+            .message_selectors
+            .as_mut()
+            .expect("number box should declare selector policy");
+        policy.accepted = vec!["set".to_owned()];
+        policy.silent = None;
+        policy.trigger = Some(vec!["set".to_owned()]);
+        policy.store = None;
+        policy.emit = None;
         let report = validate_graph_document_v01(&invalid_set_trigger)
             .expect_err("set must not be trigger behavior");
         let text = report.to_string();
         assert!(text.contains("trigger must not include set"));
         assert!(text.contains("set must be silent or store behavior"));
+
+        let mut invalid_set_emit = graph.clone();
+        let policy = invalid_set_emit.nodes[3].ports[0]
+            .message_selectors
+            .as_mut()
+            .expect("number box should declare selector policy");
+        policy.accepted = vec!["set".to_owned()];
+        policy.silent = Some(vec!["set".to_owned()]);
+        policy.trigger = None;
+        policy.store = None;
+        policy.emit = Some(vec!["set".to_owned()]);
+        let report = validate_graph_document_v01(&invalid_set_emit).expect_err("set must not emit");
+        assert!(report.to_string().contains("emit must not include set"));
+
+        let mut valid_set_store = graph.clone();
+        let policy = valid_set_store.nodes[3].ports[0]
+            .message_selectors
+            .as_mut()
+            .expect("number box should declare selector policy");
+        policy.accepted = vec!["set".to_owned()];
+        policy.silent = None;
+        policy.trigger = None;
+        policy.store = Some(vec!["set".to_owned()]);
+        policy.emit = None;
+        validate_graph_document_v01(&valid_set_store)
+            .expect("set should be valid as store selector behavior");
+
+        let mut empty_selector_policy = graph.clone();
+        let policy = empty_selector_policy.nodes[3].ports[0]
+            .message_selectors
+            .as_mut()
+            .expect("number box should declare selector policy");
+        policy.accepted.clear();
+        policy.silent = None;
+        policy.trigger = None;
+        policy.store = None;
+        policy.emit = None;
+        let report = validate_graph_document_v01(&empty_selector_policy)
+            .expect_err("accepted selector set must not be empty");
+        assert!(
+            report
+                .to_string()
+                .contains("accepted must list at least one selector")
+        );
+
+        let mut unaccepted_trigger_selector = graph.clone();
+        let policy = unaccepted_trigger_selector.nodes[3].ports[0]
+            .message_selectors
+            .as_mut()
+            .expect("number box should declare selector policy");
+        policy.accepted = vec!["float".to_owned()];
+        policy.silent = None;
+        policy.trigger = Some(vec!["int".to_owned()]);
+        policy.store = None;
+        policy.emit = None;
+        let report = validate_graph_document_v01(&unaccepted_trigger_selector)
+            .expect_err("selector behavior must stay inside accepted selectors");
+        assert!(
+            report
+                .to_string()
+                .contains("messageSelectors.trigger selector int is not accepted")
+        );
 
         let mut without_bang_accept = graph.clone();
         without_bang_accept.nodes[3].ports[0].accepts = Some(vec![
@@ -6220,10 +6328,21 @@ mod tests {
         invalid.schema_version = "9.9.9".to_owned();
         invalid.permissions.push("network".to_owned());
         invalid.ports.push(invalid.ports[0].clone());
+        invalid.ports[0].accepts = Some(vec![
+            "message.any".to_owned(),
+            "control.number.float".to_owned(),
+        ]);
+        let mut selector_port = invalid.ports[0].clone();
+        selector_port.id = "selector".to_owned();
+        selector_port.direction = PortDirectionV01::Input;
+        selector_port.port_type = "control.message.any".to_owned();
+        selector_port.accepts = None;
+        selector_port.message_selectors = None;
+        invalid.ports.push(selector_port);
         invalid.port_groups = Some(vec![super::super::PortGroupSpecV01 {
             id: "bad".to_owned(),
             direction: PortDirectionV01::Input,
-            port_type: "control.number.float".to_owned(),
+            port_type: "number.float".to_owned(),
             min_ports: 2,
             label: None,
             rate: None,
@@ -6231,7 +6350,18 @@ mod tests {
             ordered: None,
             port_id_pattern: None,
             create_label: None,
-            default_port_spec: None,
+            default_port_spec: Some({
+                let mut port = invalid.ports[0].clone();
+                port.id = "default".to_owned();
+                port.direction = PortDirectionV01::Input;
+                port.port_type = "number.float".to_owned();
+                port.accepts = Some(vec![
+                    "message.any".to_owned(),
+                    "control.message.any".to_owned(),
+                ]);
+                port.message_selectors = None;
+                port
+            }),
         }]);
         let report = validate_node_definition_v01(&invalid).expect_err("node should fail");
         let text = report.to_string();
@@ -6239,6 +6369,12 @@ mod tests {
         assert!(text.contains("expected schemaVersion 0.1.0"));
         assert!(text.contains("unsupported permission"));
         assert!(text.contains("duplicate port id"));
+        assert!(text.contains("legacy accepted port type"));
+        assert!(text.contains("selector-aware input port requires messageSelectors"));
+        assert!(text.contains("legacy port group type"));
+        assert!(text.contains("legacy default port type"));
+        assert!(text.contains("legacy default accepted port type"));
+        assert!(text.contains("defaultPortSpec selector-aware input port requires"));
         assert!(text.contains("maxPorts"));
     }
 

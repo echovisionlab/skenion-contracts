@@ -1696,6 +1696,76 @@ fn validates_runtime_project_request_fixtures() {
             .to_string()
             .contains("node definition version mismatch: core.float@0.1.0")
     );
+
+    let mut invalid_project_metadata = valid.clone();
+    invalid_project_metadata.schema = "wrong.runtime-project".to_owned();
+    let invalid_project_report = validate_runtime_project_request_v01(&invalid_project_metadata)
+        .expect_err("invalid runtime project metadata should fail");
+    assert!(
+        invalid_project_report
+            .to_string()
+            .contains("expected schema skenion.project")
+    );
+
+    let mut boundary_node_request = valid.clone();
+    let mut boundary_node = boundary_node_request.graph.nodes[0].clone();
+    boundary_node.id = "runtime_boundary".to_owned();
+    boundary_node.kind = "core.inlet".to_owned();
+    boundary_node_request.graph.nodes.push(boundary_node);
+    validate_runtime_project_request_v01(&boundary_node_request)
+        .expect("runtime boundary nodes should not require node definitions");
+
+    let mut patch_missing_definition: RuntimeProjectRequestV01 =
+        serde_json::from_value(serde_json::json!({
+            "schema": valid.schema,
+            "schemaVersion": valid.schema_version,
+            "id": valid.id,
+            "revision": valid.revision,
+            "graph": valid.graph,
+            "viewState": valid.view_state,
+            "patchLibrary": [
+                {
+                    "id": "patch-missing-definition",
+                    "revision": "1",
+                    "graph": {
+                        "schema": "skenion.graph",
+                        "schemaVersion": "0.1.0",
+                        "id": "patch-graph",
+                        "revision": "1",
+                        "nodes": [
+                            {
+                                "id": "missing_patch_node",
+                                "kind": "core.patch-only",
+                                "kindVersion": "0.1.0",
+                                "params": {},
+                                "ports": []
+                            }
+                        ],
+                        "edges": []
+                    }
+                }
+            ],
+            "nodes": valid.nodes
+        }))
+        .expect("runtime project request with patch library should parse");
+    patch_missing_definition.nodes = valid.nodes.clone();
+    let patch_missing_report = validate_runtime_project_request_v01(&patch_missing_definition)
+        .expect_err("patch graph missing runtime node definition should fail");
+    assert!(
+        patch_missing_report
+            .to_string()
+            .contains("missing node definition: core.patch-only@0.1.0")
+    );
+
+    let mut invalid_node_definition = valid;
+    invalid_node_definition.nodes[0].schema = "wrong.node.definition".to_owned();
+    let invalid_node_report = validate_runtime_project_request_v01(&invalid_node_definition)
+        .expect_err("invalid runtime project node definition should fail");
+    assert!(
+        invalid_node_report
+            .to_string()
+            .contains("runtime project node core.float@0.1.0: expected schema")
+    );
 }
 
 fn project_document_fixture(relative: &str) -> ProjectDocumentV01 {
@@ -1904,6 +1974,25 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         "object binding binding-local-wrapper references missing project patch: missing-wrapper",
     );
 
+    let mut missing_patch_with_diagnostic = base_project.clone();
+    {
+        let binding = &mut missing_patch_with_diagnostic.object_bindings[1];
+        binding.status = ProjectObjectBindingStatusV01::Missing;
+        binding.diagnostics = vec![binding_diagnostic(
+            ProjectObjectBindingDiagnosticCodeV01::BindingTargetMissing,
+        )];
+        match binding.target.as_mut().expect("project patch target") {
+            ProjectObjectBindingTargetV01::ProjectPatch { patch_id, .. } => {
+                *patch_id = "missing-wrapper".to_owned();
+            }
+            ProjectObjectBindingTargetV01::PackageProvider { .. } => {
+                panic!("expected project patch binding")
+            }
+        }
+    }
+    validate_project_document_v01(&missing_patch_with_diagnostic)
+        .expect("missing project patch binding with diagnostic should remain valid");
+
     let mut resolved_stale_revision = base_project.clone();
     match resolved_stale_revision.object_bindings[1]
         .target
@@ -1940,6 +2029,25 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         &stale_revision_without_diagnostic,
         "object binding binding-local-wrapper project patch local_wrapper revision is stale without diagnostics",
     );
+
+    let mut stale_revision_with_diagnostic = base_project.clone();
+    {
+        let binding = &mut stale_revision_with_diagnostic.object_bindings[1];
+        binding.status = ProjectObjectBindingStatusV01::Stale;
+        binding.diagnostics = vec![binding_diagnostic(
+            ProjectObjectBindingDiagnosticCodeV01::BindingTargetStale,
+        )];
+        match binding.target.as_mut().expect("project patch target") {
+            ProjectObjectBindingTargetV01::ProjectPatch { revision, .. } => {
+                *revision = Some("2".to_owned());
+            }
+            ProjectObjectBindingTargetV01::PackageProvider { .. } => {
+                panic!("expected project patch binding")
+            }
+        }
+    }
+    validate_project_document_v01(&stale_revision_with_diagnostic)
+        .expect("stale project patch binding with diagnostic should remain valid");
 
     let mut invalid_provider_ids = base_project.clone();
     match invalid_provider_ids.object_bindings[0]

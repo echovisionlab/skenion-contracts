@@ -2341,6 +2341,95 @@ fn validates_public_object_text_parse_results() {
             .to_string()
             .contains("requires messageSelectors")
     );
+
+    let mut empty_selector_set = parse_object_text_v01("+ 1");
+    let policy = empty_selector_set.instance_ports[0]
+        .message_selectors
+        .as_mut()
+        .expect("numeric object text should declare selector policy");
+    policy.accepted.clear();
+    let empty_selector_error = validate_object_text_parse_result_v01(&empty_selector_set)
+        .expect_err("empty selector policy should fail");
+    assert!(
+        empty_selector_error
+            .to_string()
+            .contains("accepted must list at least one selector")
+    );
+
+    let mut unaccepted_trigger = parse_object_text_v01("+ 1");
+    let policy = unaccepted_trigger.instance_ports[0]
+        .message_selectors
+        .as_mut()
+        .expect("numeric object text should declare selector policy");
+    policy.accepted = vec!["float".to_owned()];
+    policy.trigger = Some(vec!["int".to_owned()]);
+    let unaccepted_trigger_error = validate_object_text_parse_result_v01(&unaccepted_trigger)
+        .expect_err("selector behavior outside accepted set should fail");
+    assert!(
+        unaccepted_trigger_error
+            .to_string()
+            .contains("messageSelectors.trigger selector int is not accepted")
+    );
+
+    let mut set_as_emit = parse_object_text_v01("+ 1");
+    let policy = set_as_emit.instance_ports[0]
+        .message_selectors
+        .as_mut()
+        .expect("numeric object text should declare selector policy");
+    policy.accepted = vec!["set".to_owned()];
+    policy.silent = Some(vec!["set".to_owned()]);
+    policy.trigger = None;
+    policy.store = None;
+    policy.emit = Some(vec!["set".to_owned()]);
+    let set_emit_error = validate_object_text_parse_result_v01(&set_as_emit)
+        .expect_err("set must not be emit behavior");
+    assert!(
+        set_emit_error
+            .to_string()
+            .contains("messageSelectors.emit must not include set")
+    );
+
+    let mut set_as_trigger = parse_object_text_v01("+ 1");
+    let policy = set_as_trigger.instance_ports[0]
+        .message_selectors
+        .as_mut()
+        .expect("numeric object text should declare selector policy");
+    policy.accepted = vec!["set".to_owned()];
+    policy.silent = None;
+    policy.trigger = Some(vec!["set".to_owned()]);
+    policy.store = None;
+    policy.emit = None;
+    let set_trigger_error = validate_object_text_parse_result_v01(&set_as_trigger)
+        .expect_err("set must not be trigger behavior");
+    let set_trigger_text = set_trigger_error.to_string();
+    assert!(set_trigger_text.contains("messageSelectors.trigger must not include set"));
+    assert!(set_trigger_text.contains("messageSelectors.set must be silent or store behavior"));
+
+    let mut set_as_silent = parse_object_text_v01("+ 1");
+    let policy = set_as_silent.instance_ports[0]
+        .message_selectors
+        .as_mut()
+        .expect("numeric object text should declare selector policy");
+    policy.accepted = vec!["set".to_owned()];
+    policy.silent = Some(vec!["set".to_owned()]);
+    policy.trigger = None;
+    policy.store = None;
+    policy.emit = None;
+    validate_object_text_parse_result_v01(&set_as_silent)
+        .expect("set should be valid as silent selector behavior");
+
+    let mut set_as_store = parse_object_text_v01("+ 1");
+    let policy = set_as_store.instance_ports[0]
+        .message_selectors
+        .as_mut()
+        .expect("numeric object text should declare selector policy");
+    policy.accepted = vec!["set".to_owned()];
+    policy.silent = None;
+    policy.trigger = None;
+    policy.store = Some(vec!["set".to_owned()]);
+    policy.emit = None;
+    validate_object_text_parse_result_v01(&set_as_store)
+        .expect("set should be valid as store selector behavior");
 }
 
 #[test]
@@ -2641,12 +2730,39 @@ fn validates_public_type_helpers() {
     let mut target = data_type(DataFlowV01::Signal, "number.float");
 
     assert_eq!(type_label_v01(&source), "signal<number.float>");
+    assert_eq!(
+        StringOrStringsV01::One("f32".to_owned()).values(),
+        vec!["f32"]
+    );
+    assert_eq!(
+        StringOrStringsV01::Many(vec!["f32".to_owned(), "i16".to_owned()]).values(),
+        vec!["f32", "i16"]
+    );
     target.format = Some(StringOrStringsV01::One("f32".to_owned()));
     assert!(!compatible_data_types_v01(&source, &target));
     source.format = Some(StringOrStringsV01::One("f32".to_owned()));
     assert!(compatible_data_types_v01(&source, &target));
     target.data_kind = "bool".to_owned();
     assert!(!compatible_data_types_v01(&source, &target));
+
+    let control_message_any = data_type(DataFlowV01::Control, "message.any");
+    for data_kind in [
+        "number.float",
+        "number.int",
+        "number.uint",
+        "bool",
+        "color",
+        "string",
+        "message.any",
+    ] {
+        assert!(
+            compatible_data_types_v01(
+                &data_type(DataFlowV01::Control, data_kind),
+                &control_message_any,
+            ),
+            "{data_kind} should be compatible with control message.any"
+        );
+    }
 }
 
 #[test]

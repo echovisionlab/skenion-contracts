@@ -958,6 +958,10 @@ mod tests {
             Some(&json!(1))
         );
         assert_eq!(
+            parse_object_text_v01("adc~").resolved_kind.as_deref(),
+            Some("audio.input")
+        );
+        assert_eq!(
             parse_object_text_v01("dac~").resolved_kind.as_deref(),
             Some("audio.output")
         );
