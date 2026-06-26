@@ -2,6 +2,7 @@
   "schema": "skenion.builtins.manifest",
   "schemaVersion": "0.1.0",
   "version": "0.1",
+  "scope": "fixture-reference",
   "nodes": [
     "core.comment",
     "core.panel",

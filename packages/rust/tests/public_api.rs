@@ -5,7 +5,7 @@ use skenion_contracts::{
     DataFlowV01, DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
     GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
     MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
-    ObjectTextParseResultV01, PackageCategoryV01, PackageDiscoveryResponseV01,
+    ObjectTextAtomV01, ObjectTextParseResultV01, PackageCategoryV01, PackageDiscoveryResponseV01,
     PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
     PackageInstallPlanDiagnosticCodeV01, PackageInstallPlanIntentV01, PackageInstallPlanRequestV01,
     PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01,
@@ -2280,26 +2280,41 @@ fn validates_public_object_text_parse_results() {
         r#"{
           "schema": "skenion.object-text.parse-result",
           "schemaVersion": "0.1.0",
-          "input": "[*~ 0.5]",
+          "input": "example.gain 0.5",
           "ok": true,
-          "classSymbol": "*~",
+          "classSymbol": "example.gain",
           "creationArgs": [{ "type": "float", "value": 0.5, "representation": "f32" }],
-          "resolvedKind": "audio.operator.mul",
+          "resolvedKind": "example.package.gain",
           "resolvedKindVersion": "0.1.0",
-          "params": { "right": 0.5 },
+          "params": { "gain": 0.5 },
           "instancePorts": [
-            { "id": "in", "direction": "input", "type": "signal.audio", "rate": "audio", "activation": "latched" },
-            { "id": "right", "direction": "input", "type": "control.number.float", "rate": "control", "activation": "latched", "defaultValue": 0.5 },
-            { "id": "out", "direction": "output", "type": "signal.audio", "rate": "audio" }
+            {
+              "id": "in",
+              "direction": "input",
+              "type": "control.message.any",
+              "rate": "control",
+              "activation": "trigger",
+              "messageSelectors": {
+                "accepted": ["bang", "set", "float"],
+                "silent": ["set"],
+                "store": ["set"],
+                "trigger": ["bang", "float"],
+                "emit": ["bang", "float"]
+              }
+            },
+            { "id": "out", "direction": "output", "type": "control.number.float", "rate": "control" }
           ],
-          "displayText": "*~ 0.5",
+          "displayText": "example.gain 0.5",
           "diagnostics": []
         }"#,
     )
     .expect("object text result should parse");
 
     validate_object_text_parse_result_v01(&result).expect("object text result should validate");
-    assert_eq!(result.resolved_kind.as_deref(), Some("audio.operator.mul"));
+    assert_eq!(
+        result.resolved_kind.as_deref(),
+        Some("example.package.gain")
+    );
 
     let mut wrong_schema = result.clone();
     wrong_schema.schema = "wrong.object-text".to_owned();
@@ -2307,20 +2322,26 @@ fn validates_public_object_text_parse_results() {
         .expect_err("schema mismatch should fail");
     assert!(schema_error.to_string().contains("wrong.object-text"));
 
-    let mut wrong_version = result;
+    let mut wrong_version = result.clone();
     wrong_version.schema_version = "9.9.9".to_owned();
     let version_error = validate_object_text_parse_result_v01(&wrong_version)
         .expect_err("schema version mismatch should fail");
     assert!(version_error.to_string().contains("9.9.9"));
 
     let parsed = parse_object_text_v01("[osc~ 440]");
-    assert_eq!(parsed.resolved_kind.as_deref(), Some("audio.osc"));
+    assert_eq!(parsed.class_symbol, "osc~");
+    assert_eq!(parsed.resolved_kind, None);
+    assert!(parsed.params.is_empty());
+    assert!(parsed.instance_ports.is_empty());
     assert_eq!(
-        parsed.params.get("frequency"),
-        Some(&serde_json::json!(440))
+        parsed.creation_args,
+        vec![ObjectTextAtomV01::Int {
+            value: 440,
+            representation: Some("i32".to_owned())
+        }]
     );
 
-    let mut missing_selectors = parse_object_text_v01("+ 1");
+    let mut missing_selectors = result.clone();
     missing_selectors.instance_ports[0].message_selectors = None;
     let missing_selectors_error = validate_object_text_parse_result_v01(&missing_selectors)
         .expect_err("control.message.any object text port without selectors should fail");
@@ -2330,7 +2351,7 @@ fn validates_public_object_text_parse_results() {
             .contains("requires messageSelectors")
     );
 
-    let mut accepting_message_any = parse_object_text_v01("+ 1");
+    let mut accepting_message_any = result.clone();
     accepting_message_any.instance_ports[0].port_type = "control.number.float".to_owned();
     accepting_message_any.instance_ports[0].accepts = Some(vec!["control.message.any".to_owned()]);
     accepting_message_any.instance_ports[0].message_selectors = None;
@@ -2342,11 +2363,11 @@ fn validates_public_object_text_parse_results() {
             .contains("requires messageSelectors")
     );
 
-    let mut empty_selector_set = parse_object_text_v01("+ 1");
+    let mut empty_selector_set = result.clone();
     let policy = empty_selector_set.instance_ports[0]
         .message_selectors
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare selector policy");
     policy.accepted.clear();
     let empty_selector_error = validate_object_text_parse_result_v01(&empty_selector_set)
         .expect_err("empty selector policy should fail");
@@ -2356,11 +2377,11 @@ fn validates_public_object_text_parse_results() {
             .contains("accepted must list at least one selector")
     );
 
-    let mut unaccepted_trigger = parse_object_text_v01("+ 1");
+    let mut unaccepted_trigger = result.clone();
     let policy = unaccepted_trigger.instance_ports[0]
         .message_selectors
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare selector policy");
     policy.accepted = vec!["float".to_owned()];
     policy.trigger = Some(vec!["int".to_owned()]);
     let unaccepted_trigger_error = validate_object_text_parse_result_v01(&unaccepted_trigger)
@@ -2371,11 +2392,11 @@ fn validates_public_object_text_parse_results() {
             .contains("messageSelectors.trigger selector int is not accepted")
     );
 
-    let mut set_as_emit = parse_object_text_v01("+ 1");
+    let mut set_as_emit = result.clone();
     let policy = set_as_emit.instance_ports[0]
         .message_selectors
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare selector policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
@@ -2389,11 +2410,11 @@ fn validates_public_object_text_parse_results() {
             .contains("messageSelectors.emit must not include set")
     );
 
-    let mut set_as_trigger = parse_object_text_v01("+ 1");
+    let mut set_as_trigger = result.clone();
     let policy = set_as_trigger.instance_ports[0]
         .message_selectors
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare selector policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = Some(vec!["set".to_owned()]);
@@ -2405,11 +2426,11 @@ fn validates_public_object_text_parse_results() {
     assert!(set_trigger_text.contains("messageSelectors.trigger must not include set"));
     assert!(set_trigger_text.contains("messageSelectors.set must be silent or store behavior"));
 
-    let mut set_as_silent = parse_object_text_v01("+ 1");
+    let mut set_as_silent = result.clone();
     let policy = set_as_silent.instance_ports[0]
         .message_selectors
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare selector policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
@@ -2418,11 +2439,11 @@ fn validates_public_object_text_parse_results() {
     validate_object_text_parse_result_v01(&set_as_silent)
         .expect("set should be valid as silent selector behavior");
 
-    let mut set_as_store = parse_object_text_v01("+ 1");
+    let mut set_as_store = result.clone();
     let policy = set_as_store.instance_ports[0]
         .message_selectors
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare selector policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = None;
@@ -2433,54 +2454,36 @@ fn validates_public_object_text_parse_results() {
 }
 
 #[test]
-fn parses_public_object_text_baseline_matrix() {
-    let supported = [
-        ("[+ 1]", Some("core.operator.add")),
-        ("[+ 1.]", Some("core.operator.add")),
-        ("[+]", Some("core.operator.add")),
-        ("[* 0.5]", Some("core.operator.mul")),
-        ("[/ 0.5]", Some("core.operator.div")),
-        ("[sqrt]", Some("core.operator.sqrt")),
-        ("[+~]", Some("audio.operator.add")),
-        ("[-~]", Some("audio.operator.sub")),
-        ("[*~ 0.5]", Some("audio.operator.mul")),
-        ("[/~ 0.5]", Some("audio.operator.div")),
-        ("[sqrt~]", Some("audio.operator.sqrt")),
-        ("[osc~ 440]", Some("audio.osc")),
-        ("[phasor~ 1]", Some("audio.phasor")),
-        ("[adc~]", Some("audio.input")),
-        ("[dac~]", Some("audio.output")),
-    ];
-
-    for (input, expected_kind) in supported {
+fn parses_public_object_text_lexical_matrix() {
+    for input in [
+        "[+ 1]",
+        "[+ 1.]",
+        "[+]",
+        "[* 0.5]",
+        "[/ 0.5]",
+        "[sqrt]",
+        "[+~]",
+        "[-~]",
+        "[*~ 0.5]",
+        "[/~ 0.5]",
+        "[sqrt~]",
+        "[osc~ 440]",
+        "[phasor~ 1]",
+        "[adc~]",
+        "[dac~]",
+        "[frobnicate]",
+        "[expr $f1]",
+    ] {
         let result = parse_object_text_v01(input);
         validate_object_text_parse_result_v01(&result).expect("parse result should validate");
         assert!(result.ok, "{input} should parse");
-        assert_eq!(result.resolved_kind.as_deref(), expected_kind);
+        assert_eq!(result.resolved_kind, None);
+        assert_eq!(result.resolved_kind_version, None);
+        assert!(result.params.is_empty());
+        assert!(result.instance_ports.is_empty());
     }
 
-    for input in [
-        "[+ 1",
-        "+ 1]",
-        "",
-        "[+ 1 2]",
-        "[+ true]",
-        "[+ false]",
-        "[+ 1.bad]",
-        "[+ 1e309]",
-        "[*~ 1 2]",
-        "[*~ beep]",
-        "[/~ false]",
-        "[sqrt~ 1]",
-        "[osc~ 1 2]",
-        "[osc~ false]",
-        "[phasor~ beep]",
-        "[adc~ 1]",
-        "[dac~ 1]",
-        "[sin~]",
-        "[expr $f1]",
-        "[frobnicate]",
-    ] {
+    for input in ["[+ 1", "+ 1]", ""] {
         let result = parse_object_text_v01(input);
         validate_object_text_parse_result_v01(&result).expect("failure result should validate");
         assert!(!result.ok, "{input} should fail without throwing");

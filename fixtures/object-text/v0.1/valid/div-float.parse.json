@@ -11,57 +11,10 @@
       "representation": "f32"
     }
   ],
-  "resolvedKind": "core.operator.div",
-  "resolvedKindVersion": "0.1.0",
-  "params": {
-    "right": 0.5
-  },
-  "instancePorts": [
-    {
-      "id": "in",
-      "direction": "input",
-      "type": "control.message.any",
-      "rate": "control",
-      "activation": "trigger",
-      "messageSelectors": {
-        "accepted": [
-          "bang",
-          "float",
-          "int",
-          "uint",
-          "bool"
-        ],
-        "trigger": [
-          "bang",
-          "float",
-          "int",
-          "uint",
-          "bool"
-        ],
-        "emit": [
-          "bang",
-          "float",
-          "int",
-          "uint",
-          "bool"
-        ]
-      }
-    },
-    {
-      "id": "right",
-      "direction": "input",
-      "type": "control.number.float",
-      "rate": "control",
-      "activation": "latched",
-      "defaultValue": 0.5
-    },
-    {
-      "id": "out",
-      "direction": "output",
-      "type": "control.number.float",
-      "rate": "control"
-    }
-  ],
+  "resolvedKind": null,
+  "resolvedKindVersion": null,
+  "params": {},
+  "instancePorts": [],
   "displayText": "/ 0.5",
   "diagnostics": []
 }

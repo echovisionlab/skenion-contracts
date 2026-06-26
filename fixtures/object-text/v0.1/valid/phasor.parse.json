@@ -11,27 +11,10 @@
       "representation": "i32"
     }
   ],
-  "resolvedKind": "audio.phasor",
-  "resolvedKindVersion": "0.1.0",
-  "params": {
-    "frequency": 1
-  },
-  "instancePorts": [
-    {
-      "id": "frequency",
-      "direction": "input",
-      "type": "control.number.float",
-      "rate": "control",
-      "activation": "latched",
-      "defaultValue": 1
-    },
-    {
-      "id": "out",
-      "direction": "output",
-      "type": "signal.audio",
-      "rate": "audio"
-    }
-  ],
+  "resolvedKind": null,
+  "resolvedKindVersion": null,
+  "params": {},
+  "instancePorts": [],
   "displayText": "phasor~ 1",
   "diagnostics": []
 }

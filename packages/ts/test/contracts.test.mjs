@@ -1138,26 +1138,52 @@ test("validates object text parse result fixtures", async () => {
   const addResult = validateObjectTextParseResult(add);
 
   assert.equal(addResult.ok, true);
-  assert.equal(add.resolvedKind, "core.operator.add");
-  assert.deepEqual(add.instancePorts.map((port) => port.id), ["in", "right", "out"]);
+  assert.equal(add.classSymbol, "+");
+  assert.equal(add.resolvedKind, null);
+  assert.deepEqual(add.params, {});
+  assert.deepEqual(add.instancePorts, []);
 
-  const scalarAudio = await readJson("fixtures/object-text/v0.1/valid/audio-mul-scalar.parse.json");
-  const scalarResult = validateObjectTextParseResult(scalarAudio);
+  const runtimeResolved = {
+    schema: "skenion.object-text.parse-result",
+    schemaVersion: "0.1.0",
+    input: "example.gain 0.5",
+    ok: true,
+    classSymbol: "example.gain",
+    creationArgs: [{ type: "float", value: 0.5, representation: "f32" }],
+    resolvedKind: "example.package.gain",
+    resolvedKindVersion: "0.1.0",
+    params: { gain: 0.5 },
+    instancePorts: [
+      {
+        id: "in",
+        direction: "input",
+        type: "control.message.any",
+        rate: "control",
+        activation: "trigger",
+        messageSelectors: {
+          accepted: ["bang", "set", "float"],
+          silent: ["set"],
+          store: ["set"],
+          trigger: ["bang", "float"],
+          emit: ["bang", "float"]
+        }
+      },
+      { id: "out", direction: "output", type: "control.number.float", rate: "control" }
+    ],
+    displayText: "example.gain 0.5",
+    diagnostics: []
+  };
+  const runtimeResolvedResult = validateObjectTextParseResult(runtimeResolved);
 
-  assert.equal(scalarResult.ok, true);
-  assert.equal(scalarAudio.resolvedKind, "audio.operator.mul");
-  assert.deepEqual(scalarAudio.instancePorts.map((port) => `${port.id}:${port.type}:${port.rate}`), [
-    "in:signal.audio:audio",
-    "right:control.number.float:control",
-    "out:signal.audio:audio"
-  ]);
+  assert.equal(runtimeResolvedResult.ok, true);
 
-  const unsupported = await readJson("fixtures/object-text/v0.1/valid/unsupported-vanilla-object.parse.json");
-  const unsupportedResult = validateObjectTextParseResult(unsupported);
+  const symbolic = await readJson("fixtures/object-text/v0.1/valid/deferred-class-symbol.parse.json");
+  const symbolicResult = validateObjectTextParseResult(symbolic);
 
-  assert.equal(unsupportedResult.ok, true);
-  assert.equal(unsupported.ok, false);
-  assert.equal(unsupported.diagnostics[0].code, "deferred-object");
+  assert.equal(symbolicResult.ok, true);
+  assert.equal(symbolic.ok, true);
+  assert.equal(symbolic.resolvedKind, null);
+  assert.deepEqual(symbolic.diagnostics, []);
 
   const invalid = await readJson("fixtures/object-text/v0.1/invalid/missing-class-symbol.parse.json");
   const invalidResult = validateObjectTextParseResult(invalid);
@@ -1187,38 +1213,31 @@ test("parses object text into golden parse results", async () => {
   assert.equal(raw.ok, true);
   assert.equal(raw.input, "+ 1");
   assert.equal(raw.displayText, "+ 1");
-  assert.equal(raw.resolvedKind, "core.operator.add");
+  assert.equal(raw.classSymbol, "+");
+  assert.deepEqual(raw.creationArgs, [{ type: "int", value: 1, representation: "i32" }]);
+  assert.equal(raw.resolvedKind, null);
+  assert.deepEqual(raw.params, {});
+  assert.deepEqual(raw.instancePorts, []);
 
-  assert.deepEqual(parseObjectTextV01("+").params, { right: 0 });
-  assert.equal(parseObjectTextV01("- 2").resolvedKind, "core.operator.sub");
-  assert.equal(parseObjectTextV01("pow 2").resolvedKind, "core.operator.pow");
-  assert.equal(parseObjectTextV01("min 2").resolvedKind, "core.operator.min");
-  assert.equal(parseObjectTextV01("max 2").resolvedKind, "core.operator.max");
-  assert.equal(parseObjectTextV01("sqrt").resolvedKind, "core.operator.sqrt");
-  assert.equal(parseObjectTextV01("-~ 0.25").resolvedKind, "audio.operator.sub");
-  assert.deepEqual(parseObjectTextV01("osc~").params, { frequency: 0 });
-  assert.deepEqual(parseObjectTextV01("phasor~").params, { frequency: 0 });
-  assert.equal(parseObjectTextV01("adc~").resolvedKind, "audio.input");
-  assert.equal(parseObjectTextV01("dac~").resolvedKind, "audio.output");
+  const bracketed = parseObjectTextV01("[osc~ 1e3]");
+  assert.equal(bracketed.ok, true);
+  assert.equal(bracketed.displayText, "osc~ 1e3");
+  assert.equal(bracketed.classSymbol, "osc~");
+  assert.deepEqual(bracketed.creationArgs, [{ type: "float", value: 1000, representation: "f32" }]);
+  assert.equal(bracketed.resolvedKind, null);
+
+  const runtimeOwned = parseObjectTextV01("frobnicate true");
+  assert.equal(runtimeOwned.ok, true);
+  assert.equal(runtimeOwned.classSymbol, "frobnicate");
+  assert.deepEqual(runtimeOwned.creationArgs, [{ type: "bool", value: true }]);
+  assert.deepEqual(runtimeOwned.diagnostics, []);
+
+  const nonFinite = parseObjectTextV01("+ 1e309");
+  assert.deepEqual(nonFinite.creationArgs, [{ type: "symbol", value: "1e309" }]);
 
   assert.equal(parseObjectTextV01("[+ 1").diagnostics[0].code, "invalid-syntax");
   assert.equal(parseObjectTextV01("+ 1]").diagnostics[0].code, "invalid-syntax");
   assert.equal(parseObjectTextV01("").diagnostics[0].code, "empty-object-text");
-  assert.equal(parseObjectTextV01("+ 1 2").diagnostics[0].code, "invalid-arg-count");
-  assert.equal(parseObjectTextV01("+ true").diagnostics[0].code, "invalid-arg-type");
-  assert.equal(parseObjectTextV01("+ false").diagnostics[0].code, "invalid-arg-type");
-  assert.equal(parseObjectTextV01("+ .").diagnostics[0].code, "invalid-arg-type");
-  assert.equal(parseObjectTextV01("sqrt 1").diagnostics[0].code, "invalid-arg-count");
-  assert.equal(parseObjectTextV01("*~ beep").diagnostics[0].code, "invalid-arg-type");
-  assert.equal(parseObjectTextV01("sqrt~ 1").diagnostics[0].code, "invalid-arg-count");
-  assert.equal(parseObjectTextV01("osc~ 1 2").diagnostics[0].code, "invalid-arg-count");
-  assert.equal(parseObjectTextV01("phasor~ beep").diagnostics[0].code, "invalid-arg-type");
-  assert.equal(parseObjectTextV01("square~").diagnostics[0].code, "deferred-object");
-  assert.equal(parseObjectTextV01("adc~ 1").diagnostics[0].code, "invalid-arg-count");
-  assert.equal(parseObjectTextV01("dac~ 1").diagnostics[0].code, "invalid-arg-count");
-  assert.equal(parseObjectTextV01("expr").diagnostics[0].code, "deferred-object");
-  assert.equal(parseObjectTextV01("expr~").diagnostics[0].code, "deferred-object");
-  assert.equal(parseObjectTextV01("fexpr~").diagnostics[0].code, "deferred-object");
 });
 
 test("validates control messages as selector and atoms", () => {

@@ -114,9 +114,10 @@ the Contracts package.
 
 The `@skenion/contracts` package does not export `builtins/v0.1` as a canonical
 public builtin object inventory. Checked-in builtin JSON remains local fixture
-and validation material for the contract shapes; consumers should discover
-first-party and package-provided object definitions from Runtime/package
-surfaces that use `NodeDefinitionManifestV01`.
+and validation material for the contract shapes; its manifest is explicitly
+scoped as `fixture-reference`. Consumers should discover first-party and
+package-provided object definitions from Runtime/package surfaces that use
+`NodeDefinitionManifestV01`.
 
 ## License And Credit
 

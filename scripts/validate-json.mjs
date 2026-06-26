@@ -1464,7 +1464,7 @@ function validateDocument(file, document, validators) {
   }
 }
 
-function validateBuiltinManifest(file, manifest) {
+function validateBuiltinFixtureManifest(file, manifest) {
   if (manifest.schema !== "skenion.builtins.manifest") {
     fail(file, "schema must be skenion.builtins.manifest");
   }
@@ -1474,6 +1474,9 @@ function validateBuiltinManifest(file, manifest) {
   if (manifest.version !== "0.1") {
     fail(file, "version must be 0.1");
   }
+  if (manifest.scope !== "fixture-reference") {
+    fail(file, "scope must be fixture-reference");
+  }
   if (!Array.isArray(manifest.nodes) || manifest.nodes.length === 0) {
     fail(file, "nodes must be a non-empty array");
   }
@@ -1482,13 +1485,13 @@ function validateBuiltinManifest(file, manifest) {
   }
 
   for (const node of manifest.nodes) {
-    requireString(file, node, "node id");
+    requireString(file, node, "fixture node id");
   }
   for (const type of manifest.canonicalTypes) {
     requireString(file, type, "canonical type");
   }
 
-  duplicateCheck(file, manifest.nodes, "builtin node id");
+  duplicateCheck(file, manifest.nodes, "fixture node id");
   duplicateCheck(file, manifest.canonicalTypes, "canonical type");
 
   for (const [type, representations] of Object.entries(manifest.representations ?? {})) {
@@ -1505,16 +1508,16 @@ function validateBuiltinManifest(file, manifest) {
   }
 }
 
-function validateBuiltinNodeDefinition(file, definition, id, manifest) {
+function validateBuiltinFixtureNodeDefinition(file, definition, id, manifest) {
   validateDocument(file, definition, validators);
   if (definition.id !== id) {
-    fail(file, `node definition id ${definition.id} does not match canonical id ${id}`);
+    fail(file, `node definition id ${definition.id} does not match fixture id ${id}`);
   }
   if (payloadIdentityNodeKind(definition.id)) {
     fail(file, `payload identity node definition id: ${definition.id}`);
   }
   if (!manifest.nodes.includes(definition.id)) {
-    fail(file, `node definition is not listed in builtins manifest: ${definition.id}`);
+    fail(file, `node definition is not listed in fixture manifest: ${definition.id}`);
   }
 
   const canonicalTypes = new Set(manifest.canonicalTypes);
@@ -1530,7 +1533,7 @@ function validateBuiltinNodeDefinition(file, definition, id, manifest) {
   }
 }
 
-function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
+function validateBuiltinFixtureHelp(file, help, id, manifest, nodeDefinitions) {
   if (help.schema !== "skenion.node.help") {
     fail(file, "schema must be skenion.node.help");
   }
@@ -1538,7 +1541,7 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
     fail(file, "schemaVersion must be 0.1.0");
   }
   if (help.id !== id) {
-    fail(file, `help id ${help.id} does not match canonical id ${id}`);
+    fail(file, `help id ${help.id} does not match fixture id ${id}`);
   }
   for (const key of ["summary", "description", "helpGraph"]) {
     requireString(file, help[key], key);
@@ -1551,7 +1554,7 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
   }
   duplicateCheck(file, help.tags, "help tag");
   if (!manifest.nodes.includes(help.id)) {
-    fail(file, `help is not listed in builtins manifest: ${help.id}`);
+    fail(file, `help is not listed in fixture manifest: ${help.id}`);
   }
   const expectedHelpGraph = `help/v0.1/nodes/${id}.help.graph.json`;
   if (help.helpGraph !== expectedHelpGraph) {
@@ -1562,7 +1565,7 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
   }
   for (const relatedNode of help.relatedNodes ?? []) {
     if (!manifest.nodes.includes(relatedNode)) {
-      fail(file, `related node is not listed in builtins manifest: ${relatedNode}`);
+      fail(file, `related node is not listed in fixture manifest: ${relatedNode}`);
     }
   }
 
@@ -1577,14 +1580,14 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
   }
 }
 
-function validateBuiltinHelpGraph(file, graph, id, manifest) {
+function validateBuiltinFixtureHelpGraph(file, graph, id, manifest) {
   validateDocument(file, graph, validators);
   if (graph.id !== `help-${id.replaceAll(".", "-")}`) {
     fail(file, `help graph id must be help-${id.replaceAll(".", "-")}`);
   }
-  const builtinKinds = new Set(manifest.nodes);
+  const fixtureKinds = new Set(manifest.nodes);
   for (const node of graph.nodes) {
-    if (!builtinKinds.has(node.kind)) {
+    if (!fixtureKinds.has(node.kind)) {
       fail(file, `help graph fixture node ${node.id} uses kind ${node.kind} outside the fixture manifest`);
     }
     if (node.kindVersion !== "0.1.0") {
@@ -1596,7 +1599,7 @@ function validateBuiltinHelpGraph(file, graph, id, manifest) {
 async function validateBuiltinsAndHelp() {
   const manifestFile = "builtins/v0.1/builtins.manifest.json";
   const manifest = await readJson(manifestFile);
-  validateBuiltinManifest(manifestFile, manifest);
+  validateBuiltinFixtureManifest(manifestFile, manifest);
 
   const nodeFiles = (await walk("builtins/v0.1/nodes"))
     .filter((file) => file.endsWith(".node.json"));
@@ -1608,26 +1611,26 @@ async function validateBuiltinsAndHelp() {
   const nodeIds = nodeFiles.map((file) => path.basename(file, ".node.json"));
   const helpIds = helpFiles.map((file) => path.basename(file, ".help.json"));
   const helpGraphIds = helpGraphFiles.map((file) => path.basename(file, ".help.graph.json"));
-  assertSameSet(manifestFile, nodeIds, manifest.nodes, "builtin node file ids");
-  assertSameSet(manifestFile, helpIds, manifest.nodes, "builtin help file ids");
-  assertSameSet(manifestFile, helpGraphIds, manifest.nodes, "builtin help graph file ids");
+  assertSameSet(manifestFile, nodeIds, manifest.nodes, "fixture node file ids");
+  assertSameSet(manifestFile, helpIds, manifest.nodes, "fixture help file ids");
+  assertSameSet(manifestFile, helpGraphIds, manifest.nodes, "fixture help graph file ids");
 
   const nodeDefinitions = new Map();
   for (const file of nodeFiles) {
     const id = path.basename(file, ".node.json");
     const definition = await readJson(file);
-    validateBuiltinNodeDefinition(file, definition, id, manifest);
+    validateBuiltinFixtureNodeDefinition(file, definition, id, manifest);
     nodeDefinitions.set(definition.id, definition);
   }
 
   for (const file of helpFiles) {
     const id = path.basename(file, ".help.json");
-    validateBuiltinHelp(file, await readJson(file), id, manifest, nodeDefinitions);
+    validateBuiltinFixtureHelp(file, await readJson(file), id, manifest, nodeDefinitions);
   }
 
   for (const file of helpGraphFiles) {
     const id = path.basename(file, ".help.graph.json");
-    validateBuiltinHelpGraph(file, await readJson(file), id, manifest);
+    validateBuiltinFixtureHelpGraph(file, await readJson(file), id, manifest);
   }
 
   return {
@@ -1805,5 +1808,5 @@ const builtinsSummary = await validateBuiltinsAndHelp();
 const docCount = await validatePublicDocs();
 
 console.log(
-  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinsSummary.nodeCount} builtin node definitions, ${builtinsSummary.helpCount} help files, ${builtinsSummary.helpGraphCount} help graphs, and ${docCount} public docs`
+  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinsSummary.nodeCount} builtin fixture node definitions, ${builtinsSummary.helpCount} fixture help files, ${builtinsSummary.helpGraphCount} fixture help graphs, and ${docCount} public docs`
 );

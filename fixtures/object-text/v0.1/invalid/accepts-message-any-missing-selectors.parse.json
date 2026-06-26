@@ -1,9 +1,9 @@
 {
   "schema": "skenion.object-text.parse-result",
   "schemaVersion": "0.1.0",
-  "input": "+ 1",
+  "input": "example.gain 1",
   "ok": true,
-  "classSymbol": "+",
+  "classSymbol": "example.gain",
   "creationArgs": [
     {
       "type": "int",
@@ -11,10 +11,10 @@
       "representation": "i32"
     }
   ],
-  "resolvedKind": "core.operator.add",
+  "resolvedKind": "example.package.gain",
   "resolvedKindVersion": "0.1.0",
   "params": {
-    "right": 1
+    "gain": 1
   },
   "instancePorts": [
     {
@@ -34,6 +34,6 @@
       "rate": "control"
     }
   ],
-  "displayText": "+ 1",
+  "displayText": "example.gain 1",
   "diagnostics": []
 }

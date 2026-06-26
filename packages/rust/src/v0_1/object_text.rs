@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value, json};
+use serde_json::{Map, Value};
 use thiserror::Error;
 
 use super::types::MessageSelectorPolicyV01;
@@ -254,9 +254,6 @@ fn success(
     display_text: &str,
     class_symbol: &str,
     creation_args: Vec<ObjectTextAtomV01>,
-    resolved_kind: &str,
-    params: Map<String, Value>,
-    instance_ports: Vec<ObjectTextPortV01>,
 ) -> ObjectTextParseResultV01 {
     ObjectTextParseResultV01 {
         schema: "skenion.object-text.parse-result".to_owned(),
@@ -265,10 +262,10 @@ fn success(
         ok: true,
         class_symbol: class_symbol.to_owned(),
         creation_args,
-        resolved_kind: Some(resolved_kind.to_owned()),
-        resolved_kind_version: Some("0.1.0".to_owned()),
-        params,
-        instance_ports,
+        resolved_kind: None,
+        resolved_kind_version: None,
+        params: Map::new(),
+        instance_ports: Vec::new(),
         display_text: display_text.to_owned(),
         diagnostics: Vec::new(),
     }
@@ -358,244 +355,6 @@ fn parse_atom(token: &str) -> ObjectTextAtomV01 {
     }
 }
 
-fn numeric_value(atom: &ObjectTextAtomV01) -> Option<f64> {
-    match atom {
-        ObjectTextAtomV01::Float { value, .. } => Some(*value),
-        ObjectTextAtomV01::Int { value, .. } => Some(*value as f64),
-        ObjectTextAtomV01::Uint { value, .. } => Some(*value as f64),
-        ObjectTextAtomV01::Bool { .. }
-        | ObjectTextAtomV01::Symbol { .. }
-        | ObjectTextAtomV01::String { .. } => None,
-    }
-}
-
-fn numeric_json(value: f64) -> Value {
-    if value.fract() == 0.0 {
-        json!(value as i64)
-    } else {
-        json!(value)
-    }
-}
-
-fn input_port(
-    id: &str,
-    port_type: &str,
-    rate: ObjectTextPortRateV01,
-    activation: ObjectTextPortActivationV01,
-) -> ObjectTextPortV01 {
-    ObjectTextPortV01 {
-        id: id.to_owned(),
-        direction: ObjectTextPortDirectionV01::Input,
-        port_type: port_type.to_owned(),
-        rate: Some(rate),
-        accepts: None,
-        activation: Some(activation),
-        default_value: None,
-        message_selectors: None,
-        description: None,
-    }
-}
-
-fn output_port(id: &str, port_type: &str, rate: ObjectTextPortRateV01) -> ObjectTextPortV01 {
-    ObjectTextPortV01 {
-        id: id.to_owned(),
-        direction: ObjectTextPortDirectionV01::Output,
-        port_type: port_type.to_owned(),
-        rate: Some(rate),
-        accepts: None,
-        activation: None,
-        default_value: None,
-        message_selectors: None,
-        description: None,
-    }
-}
-
-fn numeric_trigger_message_selectors() -> MessageSelectorPolicyV01 {
-    let selectors = ["bang", "float", "int", "uint", "bool"]
-        .into_iter()
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
-    MessageSelectorPolicyV01 {
-        accepted: selectors.clone(),
-        silent: None,
-        trigger: Some(selectors.clone()),
-        store: None,
-        emit: Some(selectors),
-    }
-}
-
-fn control_ports(default_value: f64) -> Vec<ObjectTextPortV01> {
-    let mut right = input_port(
-        "right",
-        "control.number.float",
-        ObjectTextPortRateV01::Control,
-        ObjectTextPortActivationV01::Latched,
-    );
-    right.default_value = Some(numeric_json(default_value));
-    let mut hot = input_port(
-        "in",
-        "control.message.any",
-        ObjectTextPortRateV01::Control,
-        ObjectTextPortActivationV01::Trigger,
-    );
-    hot.message_selectors = Some(numeric_trigger_message_selectors());
-    vec![
-        hot,
-        right,
-        output_port(
-            "out",
-            "control.number.float",
-            ObjectTextPortRateV01::Control,
-        ),
-    ]
-}
-
-fn control_sqrt_ports() -> Vec<ObjectTextPortV01> {
-    let mut hot = input_port(
-        "in",
-        "control.message.any",
-        ObjectTextPortRateV01::Control,
-        ObjectTextPortActivationV01::Trigger,
-    );
-    hot.message_selectors = Some(numeric_trigger_message_selectors());
-    vec![
-        hot,
-        output_port(
-            "out",
-            "control.number.float",
-            ObjectTextPortRateV01::Control,
-        ),
-    ]
-}
-
-fn audio_binary_ports() -> Vec<ObjectTextPortV01> {
-    vec![
-        input_port(
-            "left",
-            "signal.audio",
-            ObjectTextPortRateV01::Audio,
-            ObjectTextPortActivationV01::Latched,
-        ),
-        input_port(
-            "right",
-            "signal.audio",
-            ObjectTextPortRateV01::Audio,
-            ObjectTextPortActivationV01::Latched,
-        ),
-        output_port("out", "signal.audio", ObjectTextPortRateV01::Audio),
-    ]
-}
-
-fn audio_scalar_ports(default_value: f64) -> Vec<ObjectTextPortV01> {
-    let mut right = input_port(
-        "right",
-        "control.number.float",
-        ObjectTextPortRateV01::Control,
-        ObjectTextPortActivationV01::Latched,
-    );
-    right.default_value = Some(numeric_json(default_value));
-    vec![
-        input_port(
-            "in",
-            "signal.audio",
-            ObjectTextPortRateV01::Audio,
-            ObjectTextPortActivationV01::Latched,
-        ),
-        right,
-        output_port("out", "signal.audio", ObjectTextPortRateV01::Audio),
-    ]
-}
-
-fn audio_unary_ports() -> Vec<ObjectTextPortV01> {
-    vec![
-        input_port(
-            "in",
-            "signal.audio",
-            ObjectTextPortRateV01::Audio,
-            ObjectTextPortActivationV01::Latched,
-        ),
-        output_port("out", "signal.audio", ObjectTextPortRateV01::Audio),
-    ]
-}
-
-fn oscillator_ports(default_value: f64) -> Vec<ObjectTextPortV01> {
-    let mut frequency = input_port(
-        "frequency",
-        "control.number.float",
-        ObjectTextPortRateV01::Control,
-        ObjectTextPortActivationV01::Latched,
-    );
-    frequency.default_value = Some(numeric_json(default_value));
-    vec![
-        frequency,
-        output_port("out", "signal.audio", ObjectTextPortRateV01::Audio),
-    ]
-}
-
-fn insert_param(params: &mut Map<String, Value>, key: &str, value: f64) {
-    params.insert(key.to_owned(), numeric_json(value));
-}
-
-fn control_kind(class_symbol: &str) -> Option<&'static str> {
-    match class_symbol {
-        "+" => Some("core.operator.add"),
-        "-" => Some("core.operator.sub"),
-        "*" => Some("core.operator.mul"),
-        "/" => Some("core.operator.div"),
-        "pow" => Some("core.operator.pow"),
-        "min" => Some("core.operator.min"),
-        "max" => Some("core.operator.max"),
-        _ => None,
-    }
-}
-
-fn audio_kind(class_symbol: &str) -> Option<&'static str> {
-    match class_symbol {
-        "+~" => Some("audio.operator.add"),
-        "-~" => Some("audio.operator.sub"),
-        "*~" => Some("audio.operator.mul"),
-        "/~" => Some("audio.operator.div"),
-        _ => None,
-    }
-}
-
-fn deferred_message(class_symbol: &str) -> Option<&'static str> {
-    match class_symbol {
-        "sin~" => Some("sin~ is deferred; use osc~, expr~ sin($v1), or a future skenion extension"),
-        "square~" => Some(
-            "square~ is deferred; use phasor~ plus comparison/expression logic, or a future skenion extension",
-        ),
-        "expr" => Some("expr is deferred until the expression layer contract is implemented"),
-        "expr~" => Some("expr~ is deferred until the expression layer contract is implemented"),
-        "fexpr~" => Some("fexpr~ is deferred until the expression layer contract is implemented"),
-        _ => None,
-    }
-}
-
-fn audio_output_ports() -> Vec<ObjectTextPortV01> {
-    vec![
-        input_port(
-            "left",
-            "signal.audio",
-            ObjectTextPortRateV01::Audio,
-            ObjectTextPortActivationV01::Latched,
-        ),
-        input_port(
-            "right",
-            "signal.audio",
-            ObjectTextPortRateV01::Audio,
-            ObjectTextPortActivationV01::Latched,
-        ),
-    ]
-}
-
-fn audio_input_ports() -> Vec<ObjectTextPortV01> {
-    vec![
-        output_port("left", "signal.audio", ObjectTextPortRateV01::Audio),
-        output_port("right", "signal.audio", ObjectTextPortRateV01::Audio),
-    ]
-}
-
 pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
     let display_text = match normalize_input(input) {
         Ok(display_text) => display_text,
@@ -624,347 +383,48 @@ pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
     let creation_args: Vec<ObjectTextAtomV01> =
         arg_tokens.iter().map(|token| parse_atom(token)).collect();
 
-    if let Some(message) = deferred_message(class_symbol) {
-        return failure(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            "deferred-object",
-            message,
-        );
-    }
-
-    if let Some(kind) = control_kind(class_symbol) {
-        if creation_args.len() > 1 {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-count",
-                format!("{class_symbol} accepts at most one creation argument"),
-            );
-        }
-        let right = if let Some(arg) = creation_args.first() {
-            if let Some(value) = numeric_value(arg) {
-                value
-            } else {
-                return failure(
-                    input,
-                    &display_text,
-                    class_symbol,
-                    creation_args,
-                    "invalid-arg-type",
-                    format!("{class_symbol} creation argument must be numeric"),
-                );
-            }
-        } else {
-            0.0
-        };
-        let mut params = Map::new();
-        insert_param(&mut params, "right", right);
-        return success(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            kind,
-            params,
-            control_ports(right),
-        );
-    }
-
-    if *class_symbol == "sqrt" {
-        if !creation_args.is_empty() {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-count",
-                "sqrt accepts no creation arguments",
-            );
-        }
-        return success(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            "core.operator.sqrt",
-            Map::new(),
-            control_sqrt_ports(),
-        );
-    }
-
-    if let Some(kind) = audio_kind(class_symbol) {
-        if creation_args.len() > 1 {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-count",
-                format!(
-                    "{class_symbol} accepts at most one creation argument in the first DSP baseline"
-                ),
-            );
-        }
-        if creation_args.is_empty() {
-            return success(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                kind,
-                Map::new(),
-                audio_binary_ports(),
-            );
-        }
-        let right = if let Some(value) = numeric_value(&creation_args[0]) {
-            value
-        } else {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-type",
-                format!("{class_symbol} creation argument must be numeric"),
-            );
-        };
-        let mut params = Map::new();
-        insert_param(&mut params, "right", right);
-        return success(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            kind,
-            params,
-            audio_scalar_ports(right),
-        );
-    }
-
-    if *class_symbol == "sqrt~" {
-        if !creation_args.is_empty() {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-count",
-                "sqrt~ accepts no creation arguments",
-            );
-        }
-        return success(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            "audio.operator.sqrt",
-            Map::new(),
-            audio_unary_ports(),
-        );
-    }
-
-    let oscillator_kind = match *class_symbol {
-        "osc~" => Some("audio.osc"),
-        "phasor~" => Some("audio.phasor"),
-        _ => None,
-    };
-    if let Some(kind) = oscillator_kind {
-        if creation_args.len() > 1 {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-count",
-                format!("{class_symbol} accepts at most one creation argument"),
-            );
-        }
-        let frequency = if let Some(arg) = creation_args.first() {
-            if let Some(value) = numeric_value(arg) {
-                value
-            } else {
-                return failure(
-                    input,
-                    &display_text,
-                    class_symbol,
-                    creation_args,
-                    "invalid-arg-type",
-                    format!("{class_symbol} frequency argument must be numeric"),
-                );
-            }
-        } else {
-            0.0
-        };
-        let mut params = Map::new();
-        insert_param(&mut params, "frequency", frequency);
-        return success(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            kind,
-            params,
-            oscillator_ports(frequency),
-        );
-    }
-
-    if *class_symbol == "dac~" {
-        if !creation_args.is_empty() {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-count",
-                "dac~ accepts no creation arguments in the first audio backend contract",
-            );
-        }
-        return success(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            "audio.output",
-            Map::new(),
-            audio_output_ports(),
-        );
-    }
-
-    if *class_symbol == "adc~" {
-        if !creation_args.is_empty() {
-            return failure(
-                input,
-                &display_text,
-                class_symbol,
-                creation_args,
-                "invalid-arg-count",
-                "adc~ accepts no creation arguments in the first audio endpoint contract",
-            );
-        }
-        return success(
-            input,
-            &display_text,
-            class_symbol,
-            creation_args,
-            "audio.input",
-            Map::new(),
-            audio_input_ports(),
-        );
-    }
-
-    failure(
-        input,
-        &display_text,
-        class_symbol,
-        creation_args,
-        "unsupported-class",
-        format!("unsupported object class: {class_symbol}"),
-    )
+    success(input, &display_text, class_symbol, creation_args)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     fn code(input: &str) -> String {
         parse_object_text_v01(input).diagnostics[0].code.clone()
     }
 
     #[test]
-    fn parses_raw_and_operator_variants() {
+    fn parses_lexical_object_text_without_resolving_runtime_kinds() {
+        let raw = parse_object_text_v01("+ 1");
+        assert!(raw.ok);
+        assert_eq!(raw.class_symbol, "+");
+        assert_eq!(raw.display_text, "+ 1");
         assert_eq!(
-            parse_object_text_v01("+ 1").resolved_kind.as_deref(),
-            Some("core.operator.add")
+            raw.creation_args,
+            vec![ObjectTextAtomV01::Int {
+                value: 1,
+                representation: Some("i32".to_owned())
+            }]
         );
+        assert_eq!(raw.resolved_kind, None);
+        assert_eq!(raw.resolved_kind_version, None);
+        assert!(raw.params.is_empty());
+        assert!(raw.instance_ports.is_empty());
+
+        let bracketed = parse_object_text_v01("[osc~ 1e3]");
+        assert!(bracketed.ok);
+        assert_eq!(bracketed.class_symbol, "osc~");
+        assert_eq!(bracketed.display_text, "osc~ 1e3");
         assert_eq!(
-            parse_object_text_v01("[+ 1]").resolved_kind.as_deref(),
-            Some("core.operator.add")
+            bracketed.creation_args,
+            vec![ObjectTextAtomV01::Float {
+                value: 1000.0,
+                representation: Some("f32".to_owned())
+            }]
         );
-        assert_eq!(
-            parse_object_text_v01("+").params.get("right"),
-            Some(&json!(0))
-        );
-        assert_eq!(
-            parse_object_text_v01("- 2").resolved_kind.as_deref(),
-            Some("core.operator.sub")
-        );
-        assert_eq!(
-            parse_object_text_v01("* 0.5").resolved_kind.as_deref(),
-            Some("core.operator.mul")
-        );
-        assert_eq!(
-            parse_object_text_v01("/ 0.5").resolved_kind.as_deref(),
-            Some("core.operator.div")
-        );
-        assert_eq!(
-            parse_object_text_v01("+ 1e3").params.get("right"),
-            Some(&json!(1000))
-        );
-        assert_eq!(
-            parse_object_text_v01("pow 2").resolved_kind.as_deref(),
-            Some("core.operator.pow")
-        );
-        assert_eq!(
-            parse_object_text_v01("min 2").resolved_kind.as_deref(),
-            Some("core.operator.min")
-        );
-        assert_eq!(
-            parse_object_text_v01("max 2").resolved_kind.as_deref(),
-            Some("core.operator.max")
-        );
-        assert_eq!(
-            parse_object_text_v01("sqrt").resolved_kind.as_deref(),
-            Some("core.operator.sqrt")
-        );
-        assert_eq!(
-            parse_object_text_v01("-~ 0.25").resolved_kind.as_deref(),
-            Some("audio.operator.sub")
-        );
-        assert_eq!(
-            parse_object_text_v01("+~").resolved_kind.as_deref(),
-            Some("audio.operator.add")
-        );
-        assert_eq!(
-            parse_object_text_v01("*~ 0.5").resolved_kind.as_deref(),
-            Some("audio.operator.mul")
-        );
-        assert_eq!(
-            parse_object_text_v01("/~ 0.5").resolved_kind.as_deref(),
-            Some("audio.operator.div")
-        );
-        assert_eq!(
-            parse_object_text_v01("sqrt~").resolved_kind.as_deref(),
-            Some("audio.operator.sqrt")
-        );
-        assert_eq!(
-            parse_object_text_v01("osc~").params.get("frequency"),
-            Some(&json!(0))
-        );
-        assert_eq!(
-            parse_object_text_v01("osc~ 440").params.get("frequency"),
-            Some(&json!(440))
-        );
-        assert_eq!(
-            parse_object_text_v01("phasor~").params.get("frequency"),
-            Some(&json!(0))
-        );
-        assert_eq!(
-            parse_object_text_v01("phasor~ 1").params.get("frequency"),
-            Some(&json!(1))
-        );
-        assert_eq!(
-            parse_object_text_v01("adc~").resolved_kind.as_deref(),
-            Some("audio.input")
-        );
-        assert_eq!(
-            parse_object_text_v01("dac~").resolved_kind.as_deref(),
-            Some("audio.output")
-        );
+        assert_eq!(bracketed.resolved_kind, None);
     }
 
     #[test]
@@ -972,48 +432,19 @@ mod tests {
         assert_eq!(code("[+ 1"), "invalid-syntax");
         assert_eq!(code("+ 1]"), "invalid-syntax");
         assert_eq!(code(""), "empty-object-text");
-        assert_eq!(code("+ 1 2"), "invalid-arg-count");
-        assert_eq!(code("+ true"), "invalid-arg-type");
-        assert_eq!(code("+ false"), "invalid-arg-type");
-        assert_eq!(code("+ 1.bad"), "invalid-arg-type");
-        assert_eq!(code("+ 1e309"), "invalid-arg-type");
-        assert_eq!(code("*~ 1 2"), "invalid-arg-count");
-        assert_eq!(code("sqrt 1"), "invalid-arg-count");
-        assert_eq!(code("*~ beep"), "invalid-arg-type");
-        assert_eq!(code("/~ false"), "invalid-arg-type");
-        assert_eq!(code("sqrt~ 1"), "invalid-arg-count");
-        assert_eq!(code("osc~ 1 2"), "invalid-arg-count");
-        assert_eq!(code("osc~ false"), "invalid-arg-type");
-        assert_eq!(code("phasor~ beep"), "invalid-arg-type");
-        assert_eq!(code("dac~ 1"), "invalid-arg-count");
-        assert_eq!(code("frobnicate"), "unsupported-class");
     }
 
     #[test]
-    fn reports_deferred_objects_explicitly() {
-        assert_eq!(code("sin~"), "deferred-object");
-        assert_eq!(code("square~"), "deferred-object");
-        assert_eq!(code("expr"), "deferred-object");
-        assert_eq!(code("expr~"), "deferred-object");
-        assert_eq!(code("fexpr~"), "deferred-object");
-        assert_eq!(code("adc~ 1"), "invalid-arg-count");
-    }
-
-    #[test]
-    fn recognizes_uint_as_numeric_for_contract_completeness() {
-        assert_eq!(
-            numeric_value(&ObjectTextAtomV01::Uint {
-                value: 7,
-                representation: Some("u32".to_owned())
-            }),
-            Some(7.0)
-        );
-        assert_eq!(
-            numeric_value(&ObjectTextAtomV01::String {
-                value: "not-number".to_owned()
-            }),
-            None
-        );
+    fn leaves_runtime_resolution_diagnostics_to_runtime() {
+        for input in ["sin~", "square~", "expr $f1", "frobnicate", "adc~ 1"] {
+            let result = parse_object_text_v01(input);
+            assert!(result.ok, "{input} should be a lexical parse");
+            assert!(
+                result.diagnostics.is_empty(),
+                "{input} should not resolve in Contracts"
+            );
+            assert_eq!(result.resolved_kind, None);
+        }
     }
 
     #[test]

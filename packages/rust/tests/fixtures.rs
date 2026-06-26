@@ -2142,17 +2142,6 @@ fn parses_object_text_parse_result_fixtures() {
         "[osc~ 440]",
         "[phasor~]",
         "[phasor~ 1]",
-    ] {
-        let result = parse_object_text_v01(input);
-        validate_object_text_parse_result_v01(&result)
-            .unwrap_or_else(|error| panic!("{input} success should validate: {error}"));
-        assert!(result.ok, "{input} should parse");
-    }
-
-    for input in [
-        "[+ 1",
-        "+ 1]",
-        "",
         "[+ true]",
         "[+ false]",
         "[+ +]",
@@ -2175,6 +2164,16 @@ fn parses_object_text_parse_result_fixtures() {
         "[dac~ 1]",
         "[frobnicate]",
     ] {
+        let result = parse_object_text_v01(input);
+        validate_object_text_parse_result_v01(&result)
+            .unwrap_or_else(|error| panic!("{input} success should validate: {error}"));
+        assert!(result.ok, "{input} should parse");
+        assert_eq!(result.resolved_kind, None);
+        assert!(result.params.is_empty());
+        assert!(result.instance_ports.is_empty());
+    }
+
+    for input in ["[+ 1", "+ 1]", ""] {
         let result = parse_object_text_v01(input);
         validate_object_text_parse_result_v01(&result)
             .unwrap_or_else(|error| panic!("{input} failure should validate: {error}"));

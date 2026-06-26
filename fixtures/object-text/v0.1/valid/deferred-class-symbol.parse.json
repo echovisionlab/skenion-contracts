@@ -2,7 +2,7 @@
   "schema": "skenion.object-text.parse-result",
   "schemaVersion": "0.1.0",
   "input": "[sin~]",
-  "ok": false,
+  "ok": true,
   "classSymbol": "sin~",
   "creationArgs": [],
   "resolvedKind": null,
@@ -10,11 +10,5 @@
   "params": {},
   "instancePorts": [],
   "displayText": "sin~",
-  "diagnostics": [
-    {
-      "severity": "error",
-      "code": "deferred-object",
-      "message": "sin~ is deferred; use osc~, expr~ sin($v1), or a future skenion extension"
-    }
-  ]
+  "diagnostics": []
 }
