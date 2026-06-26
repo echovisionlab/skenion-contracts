@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.50.0](https://github.com/skenion/skenion-contracts/compare/v0.49.0...v0.50.0) (2026-06-26)
+
+
+### Features
+
+* **contracts:** expose local integration evidence ([a5f9728](https://github.com/skenion/skenion-contracts/commit/a5f972830940c3ffce46ac8b4262b2346953703c))
+
 ## [0.49.0](https://github.com/skenion/skenion-contracts/compare/v0.48.0...v0.49.0) (2026-06-25)
 
 
