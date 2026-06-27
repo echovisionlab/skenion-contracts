@@ -1,0 +1,59 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.float",
+  "summary": "Stores and emits a floating-point control payload.",
+  "description": "Use Float when a patch needs a generic numeric control payload. Representation such as f32 or f8 is selected separately from the value.core.float64 port type.",
+  "docsPath": "docs/nodes/object.core.float.md",
+  "helpGraph": "help/v0.1/nodes/object.core.float.help.graph.json",
+  "tags": [
+    "value",
+    "control",
+    "number"
+  ],
+  "runtimeBehavior": "in is the hot value.core.message inlet: typed payloads update and emit, bang emits the stored payload, and set ... updates silently. cold updates silently.",
+  "relatedNodes": [
+    "object.core.render.fullscreen-shader"
+  ],
+  "ports": [
+    {
+      "id": "in",
+      "description": "Hot inlet: typed payloads update and emit; bang emits the stored payload; set ... updates silently."
+    },
+    {
+      "id": "cold",
+      "description": "Cold inlet: compatible payloads update the stored payload without emitting."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current payload."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default numeric value."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional typed channel name updated whenever this object emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional typed channel name used to receive routed updates."
+    },
+    {
+      "id": "widget",
+      "description": "Optional display widget. Use slider for a compact runtime slider object."
+    },
+    {
+      "id": "representation",
+      "description": "Numeric storage/transport representation such as f32, f16, or f8.e4m3."
+    }
+  ],
+  "example": {
+    "title": "Drive a shader uniform",
+    "description": "Connect value to a fullscreen shader numeric input, then send runtime in/set/bang events while the preview runs.",
+    "graph": "help/v0.1/nodes/object.core.float.help.graph.json"
+  }
+}

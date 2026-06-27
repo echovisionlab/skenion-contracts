@@ -16,7 +16,7 @@
           "rate": "event"
         }
       ],
-      "kind": "core.bang"
+      "kind": "object.core.bang"
     },
     {
       "id": "button_b",
@@ -30,7 +30,7 @@
           "rate": "event"
         }
       ],
-      "kind": "core.bang"
+      "kind": "object.core.bang"
     },
     {
       "id": "event_log",
@@ -47,7 +47,7 @@
           "triggerMode": "trigger"
         }
       ],
-      "kind": "core.message"
+      "kind": "object.core.message"
     }
   ],
   "edges": [

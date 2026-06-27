@@ -24,15 +24,15 @@ payload-named object identity.
 
 ## Message And Comment
 
-`core.message` is a Max/Pd-like message box. Click or `bang` on `in` emits its
+`object.core.message` is a Max/Pd-like message box. Click or `bang` on `in` emits its
 saved payload. `set <message>` on `in` updates runtime message state silently.
 Inspector text edits remain saved graph mutations.
 
-`core.comment` documents the patch as a text annotation. It receives
+`object.core.comment` documents the patch as a text annotation. It receives
 `value.core.message` on `in`; `set <text>` updates runtime display text
 silently. It has no output. Inspector text edits remain saved graph mutations.
 
-`core.panel` groups controls visually. It receives `value.core.message` on
+`object.core.panel` groups controls visually. It receives `value.core.message` on
 `in`; `set <hex>` updates runtime panel color silently. It has no output.
 Inspector color edits remain saved graph mutations.
 

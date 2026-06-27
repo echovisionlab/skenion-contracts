@@ -1,0 +1,86 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.bang",
+  "version": "0.1.0",
+  "displayName": "Bang",
+  "category": "Events",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": "value.core.message",
+      "required": false,
+      "accepts": [
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool",
+        "value.core.string",
+        "value.core.color",
+        "value.core.bang"
+      ],
+      "triggerMode": "trigger",
+      "messageKeys": {
+        "accepted": [
+          "bang",
+          "set",
+          "float",
+          "int",
+          "uint",
+          "bool",
+          "string",
+          "color",
+          "identifier",
+          "list",
+          "anything"
+        ],
+        "silent": [
+          "set"
+        ],
+        "trigger": [
+          "bang",
+          "float",
+          "int",
+          "uint",
+          "bool",
+          "string",
+          "color",
+          "identifier",
+          "list",
+          "anything"
+        ],
+        "emit": [
+          "bang",
+          "float",
+          "int",
+          "uint",
+          "bool",
+          "string",
+          "color",
+          "identifier",
+          "list",
+          "anything"
+        ]
+      }
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Bang",
+      "type": "value.core.bang"
+    }
+  ],
+  "execution": {
+    "model": "event"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [],
+  "surface": {
+    "palette": "direct"
+  }
+}

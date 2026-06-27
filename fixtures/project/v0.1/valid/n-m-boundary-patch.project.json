@@ -33,7 +33,7 @@
         "nodes": [
           {
             "id": "left_in",
-            "kind": "core.inlet",
+            "kind": "object.core.inlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "left",
@@ -51,7 +51,7 @@
           },
           {
             "id": "right_in",
-            "kind": "core.inlet",
+            "kind": "object.core.inlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "right",
@@ -69,7 +69,7 @@
           },
           {
             "id": "sum_out",
-            "kind": "core.outlet",
+            "kind": "object.core.outlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "sum",
@@ -89,7 +89,7 @@
           },
           {
             "id": "difference_out",
-            "kind": "core.outlet",
+            "kind": "object.core.outlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "difference",

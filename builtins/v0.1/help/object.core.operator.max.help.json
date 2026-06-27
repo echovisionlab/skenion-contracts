@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.operator.max",
+  "summary": "Pd-style max control operator.",
+  "description": "Maximum is a Pd-style control-rate operator with a hot in inlet, sticky right operand, and value output.",
+  "helpGraph": "help/v0.1/nodes/object.core.operator.max.help.graph.json",
+  "tags": [
+    "control",
+    "operator",
+    "pd"
+  ],
+  "runtimeBehavior": "Creation arguments initialize right. Hot numeric input computes and emits; bang re-emits; right updates silently."
+}

@@ -33,7 +33,7 @@
         "nodes": [
           {
             "id": "value_in",
-            "kind": "core.inlet",
+            "kind": "object.core.inlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "value",
@@ -73,7 +73,7 @@
           },
           {
             "id": "result_out",
-            "kind": "core.outlet",
+            "kind": "object.core.outlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "result",

@@ -1,0 +1,86 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-audio-resample",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "input",
+      "kind": "object.core.audio.input",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "input-44100"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "output",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    },
+    {
+      "id": "resample",
+      "kind": "object.core.audio.resample",
+      "kindVersion": "0.1.0",
+      "params": {
+        "quality": "placeholder"
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "kind": "object.core.audio.output",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "output-48000"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "input",
+        "portId": "left"
+      },
+      "target": {
+        "nodeId": "resample",
+        "portId": "in"
+      }
+    },
+    {
+      "id": "edge-2",
+      "source": {
+        "nodeId": "resample",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "output",
+        "portId": "left"
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "osc_a",
-      "kind": "audio.oscillator",
+      "kind": "object.core.audio.oscillator",
       "kindVersion": "0.1.0",
       "params": {
         "frequency": 220
@@ -22,7 +22,7 @@
     },
     {
       "id": "osc_b",
-      "kind": "audio.oscillator",
+      "kind": "object.core.audio.oscillator",
       "kindVersion": "0.1.0",
       "params": {
         "frequency": 440
@@ -38,7 +38,7 @@
     },
     {
       "id": "mixer",
-      "kind": "audio.mixer",
+      "kind": "object.core.audio.mixer",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [

@@ -33,7 +33,7 @@
         "nodes": [
           {
             "id": "frequency_in",
-            "kind": "core.inlet",
+            "kind": "object.core.inlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "frequency",

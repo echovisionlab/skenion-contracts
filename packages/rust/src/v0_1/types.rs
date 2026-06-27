@@ -1680,13 +1680,13 @@ fn derive_boundary_ports(
 pub fn derive_patch_contract_v01(patch: &PatchDefinitionV01) -> PatchContractV01 {
     let mut ports = Vec::new();
     for node in &patch.graph.nodes {
-        if node.kind == "core.inlet" {
+        if node.kind == "object.core.inlet" {
             ports.extend(derive_boundary_ports(
                 node,
                 PortDirectionV01::Output,
                 PortDirectionV01::Input,
             ));
-        } else if node.kind == "core.outlet" {
+        } else if node.kind == "object.core.outlet" {
             ports.extend(derive_boundary_ports(
                 node,
                 PortDirectionV01::Input,

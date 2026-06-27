@@ -1,0 +1,50 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.color",
+  "summary": "Stores and emits a color control payload.",
+  "description": "Use Color for color controls. Component values are normalized floats in graph and runtime payloads.",
+  "helpGraph": "help/v0.1/nodes/object.core.color.help.graph.json",
+  "tags": [
+    "value",
+    "control",
+    "color"
+  ],
+  "runtimeBehavior": "in is the hot value.core.message inlet: color payloads update and emit, bang emits the stored color payload, and set ... updates silently. cold updates silently.",
+  "relatedNodes": [
+    "object.core.render.fullscreen-shader"
+  ],
+  "ports": [
+    {
+      "id": "in",
+      "description": "Hot inlet: color payloads update and emit; bang emits the stored color payload; set ... updates silently."
+    },
+    {
+      "id": "cold",
+      "description": "Cold inlet: compatible color payloads update without emitting."
+    },
+    {
+      "id": "value",
+      "description": "Outputs the current color/rgba32f."
+    }
+  ],
+  "params": [
+    {
+      "id": "value",
+      "description": "Saved default RGBA color/rgba32f."
+    },
+    {
+      "id": "sendName",
+      "description": "Optional typed channel name updated whenever this object emits."
+    },
+    {
+      "id": "receiveName",
+      "description": "Optional typed channel name used to receive routed updates."
+    }
+  ],
+  "example": {
+    "title": "Drive shader tint",
+    "description": "Connect color to an annotation-generated shader tint uniform.",
+    "graph": "help/v0.1/nodes/object.core.color.help.graph.json"
+  }
+}

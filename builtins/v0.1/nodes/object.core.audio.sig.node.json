@@ -1,0 +1,45 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.audio.sig",
+  "version": "0.1.0",
+  "displayName": "Control to Signal",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": "value.core.float64",
+      "required": false,
+      "accepts": [
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool"
+      ],
+      "triggerMode": "latched"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Signal",
+      "type": "value.core.float32",
+      "rate": "audio"
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "pd.audio.v0.1"
+  ],
+  "surface": {
+    "palette": "direct"
+  }
+}

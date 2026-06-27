@@ -205,7 +205,7 @@ pub fn plan_audio_clock_bridge_v01(
         diagnostics: vec![AudioClockBridgeDiagnosticV01 {
             severity: AudioClockBridgeDiagnosticSeverityV01::Error,
             code: "audio-clock-domain-crossing-requires-bridge".to_owned(),
-            message: "audio signal crosses independent clock domains without audio.clock-bridge or audio.resample".to_owned(),
+            message: "audio signal crosses independent clock domains without object.core.audio.clock-bridge or object.core.audio.resample".to_owned(),
         }],
     }
 }

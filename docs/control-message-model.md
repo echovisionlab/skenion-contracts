@@ -53,8 +53,8 @@ Objects own their message handlers:
 
 `value.core.message` is the control-domain message-capable port type. It is
 not a string value. Any scalar control payload can be lifted into this message
-domain when connected to an object inlet such as `core.bang.in` or
-`core.message.in`.
+domain when connected to an object inlet such as `object.core.bang.in` or
+`object.core.message.in`.
 
 `bang` and `set` are message keys, not visual inlet names. A node should
 not expose a dedicated `bang` inlet just to receive the `bang` key.

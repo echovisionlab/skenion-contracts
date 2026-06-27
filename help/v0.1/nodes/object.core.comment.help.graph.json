@@ -1,0 +1,65 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-comment",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "object.core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "Comments annotate a patch. Send set <text> to in to update runtime display text."
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": "value.core.message",
+          "required": false,
+          "messageKeys": {
+            "accepted": [
+              "set"
+            ],
+            "silent": [
+              "set"
+            ],
+            "store": [
+              "set"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "note_2",
+      "kind": "object.core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "Use comments near important control or render decisions."
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": "value.core.message",
+          "required": false,
+          "messageKeys": {
+            "accepted": [
+              "set"
+            ],
+            "silent": [
+              "set"
+            ],
+            "store": [
+              "set"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "edges": []
+}

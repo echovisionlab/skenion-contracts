@@ -1,0 +1,66 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-clock-midi-clock",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "midi_clock_1",
+      "kind": "object.core.clock.midi-clock",
+      "kindVersion": "0.1.0",
+      "params": {
+        "sourceId": "midi-clock-1",
+        "timeSignatureNumerator": 4,
+        "timeSignatureDenominator": 4
+      },
+      "ports": [
+        {
+          "id": "state",
+          "direction": "output",
+          "label": "State",
+          "type": "clock.state"
+        },
+        {
+          "id": "tick",
+          "direction": "output",
+          "label": "Tick",
+          "type": "value.core.bang"
+        },
+        {
+          "id": "running",
+          "direction": "output",
+          "label": "Running",
+          "type": "value.core.bool"
+        }
+      ]
+    },
+    {
+      "id": "display_1",
+      "kind": "object.core.clock.position-display",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "clock",
+          "direction": "input",
+          "label": "Clock",
+          "type": "clock.state",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "midi_clock_1",
+        "portId": "state"
+      },
+      "target": {
+        "nodeId": "display_1",
+        "portId": "clock"
+      }
+    }
+  ]
+}

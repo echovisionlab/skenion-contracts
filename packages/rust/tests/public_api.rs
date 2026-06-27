@@ -299,7 +299,7 @@ fn parses_public_graph_fragment_paste_request_payload() {
             "nodes": [
               {
                 "id": "source",
-                "kind": "core.float",
+                "kind": "object.core.float",
                 "kindVersion": "0.1.0",
                 "params": {},
                 "ports": [
@@ -391,19 +391,19 @@ fn parses_extension_manifest_contract_surface() {
           "kind": "core-package",
           "provides": {
             "help": [
-              { "nodeId": "core.float", "markdownPath": "help/float.md" }
+              { "nodeId": "object.core.float", "markdownPath": "help/float.md" }
             ]
           },
           "permissions": [],
           "tests": [
-            { "id": "float-baseline", "kind": "node", "target": "core.float", "fixturePath": "tests/float.input.json" }
+            { "id": "float-baseline", "kind": "node", "target": "object.core.float", "fixturePath": "tests/float.input.json" }
           ]
         }"#,
     )
     .expect("extension manifest should parse");
 
     assert_eq!(manifest.kind, ExtensionKindV01::CorePackage);
-    assert_eq!(manifest.provides.help[0].node_id, "core.float");
+    assert_eq!(manifest.provides.help[0].node_id, "object.core.float");
     assert_eq!(manifest.tests[0].id, "float-baseline");
 }
 
@@ -1783,7 +1783,7 @@ fn plans_public_audio_clock_bridge_requirements() {
     let source = AudioClockDomainV01 {
         id: "input-device".to_owned(),
         authority: AudioClockDomainAuthorityV01::DriverReported,
-        source: "audio.input".to_owned(),
+        source: "object.core.audio.input".to_owned(),
         sample_rate: Some(48_000),
         drift_compensated: None,
         shared_with: None,
@@ -1791,7 +1791,7 @@ fn plans_public_audio_clock_bridge_requirements() {
     let same = AudioClockDomainV01 {
         id: "input-device".to_owned(),
         authority: AudioClockDomainAuthorityV01::DriverReported,
-        source: "audio.output".to_owned(),
+        source: "object.core.audio.output".to_owned(),
         sample_rate: Some(48_000),
         drift_compensated: None,
         shared_with: None,
@@ -1799,7 +1799,7 @@ fn plans_public_audio_clock_bridge_requirements() {
     let independent = AudioClockDomainV01 {
         id: "output-device".to_owned(),
         authority: AudioClockDomainAuthorityV01::DriverReported,
-        source: "audio.output".to_owned(),
+        source: "object.core.audio.output".to_owned(),
         sample_rate: Some(48_000),
         drift_compensated: None,
         shared_with: None,
@@ -2106,7 +2106,7 @@ fn validates_public_v01_graph_and_node_contracts() {
           "nodes": [
             {
               "id": "clear",
-              "kind": "render.clear-color",
+              "kind": "object.core.render.clear-color",
               "kindVersion": "0.1.0",
               "params": { "color": [0, 0, 0, 1] },
               "ports": [
@@ -2115,7 +2115,7 @@ fn validates_public_v01_graph_and_node_contracts() {
             },
             {
               "id": "output",
-              "kind": "render.output",
+              "kind": "object.core.render.output",
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
@@ -2143,7 +2143,7 @@ fn validates_public_v01_graph_and_node_contracts() {
         r#"{
           "schema": "skenion.node.definition",
           "schemaVersion": "0.1.0",
-          "id": "render.output",
+          "id": "object.core.render.output",
           "version": "0.1.0",
           "displayName": "Render Output",
           "category": "Render",
@@ -2153,7 +2153,7 @@ fn validates_public_v01_graph_and_node_contracts() {
           "execution": { "model": "gpu_pass", "clock": "frame" },
           "state": { "persistent": false },
           "permissions": [],
-          "capabilities": ["render.output.v0.1"]
+          "capabilities": ["object.core.render.output.v0.1"]
         }"#,
     )
     .expect("v0.1 node should parse");
@@ -2227,7 +2227,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                 "nodes": [
                   {
                     "id": "fallback_input",
-                    "kind": "core.inlet",
+                    "kind": "object.core.inlet",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
@@ -2236,7 +2236,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                   },
                   {
                     "id": "multi_input",
-                    "kind": "core.inlet",
+                    "kind": "object.core.inlet",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
@@ -2246,7 +2246,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                   },
                   {
                     "id": "fallback_output",
-                    "kind": "core.outlet",
+                    "kind": "object.core.outlet",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
@@ -2302,7 +2302,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
             "nodes": [
                 {
                     "id": "source",
-                    "kind": "core.float",
+                    "kind": "object.core.float",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
@@ -2311,7 +2311,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                 },
                 {
                     "id": "target",
-                    "kind": "render.output",
+                    "kind": "object.core.render.output",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
@@ -2348,7 +2348,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                     "nodes": [
                         {
                             "id": "inlet_a",
-                            "kind": "core.inlet",
+                            "kind": "object.core.inlet",
                             "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
@@ -2357,7 +2357,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                         },
                         {
                             "id": "inlet_b",
-                            "kind": "core.inlet",
+                            "kind": "object.core.inlet",
                             "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
@@ -2366,7 +2366,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                         },
                         {
                             "id": "sink",
-                            "kind": "render.output",
+                            "kind": "object.core.render.output",
                             "kindVersion": "0.1.0",
                             "params": {},
                             "ports": [

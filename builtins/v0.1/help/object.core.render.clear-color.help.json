@@ -1,0 +1,36 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.render.clear-color",
+  "summary": "Produces a GPU texture cleared to one color.",
+  "description": "Clear Color is the first simple render producer. It is useful for validating preview lifecycle and object.core.render.output selection before adding shader code.",
+  "helpGraph": "help/v0.1/nodes/object.core.render.clear-color.help.graph.json",
+  "tags": [
+    "render",
+    "gpu",
+    "output"
+  ],
+  "runtimeBehavior": "On each preview frame, produces a value.core.tensor resource cleared to params.color/rgba32f.",
+  "relatedNodes": [
+    "object.core.render.output",
+    "object.core.render.fullscreen-shader",
+    "object.core.color"
+  ],
+  "ports": [
+    {
+      "id": "out",
+      "description": "Outputs the rendered GPU texture resource."
+    }
+  ],
+  "params": [
+    {
+      "id": "color",
+      "description": "Saved RGBA clear color/rgba32f."
+    }
+  ],
+  "example": {
+    "title": "Select a render output",
+    "description": "Connect Clear Color.out to Render Output.in to make it the preview scene source.",
+    "graph": "help/v0.1/nodes/object.core.render.clear-color.help.graph.json"
+  }
+}

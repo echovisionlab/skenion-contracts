@@ -1,0 +1,40 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.audio.resample",
+  "version": "0.1.0",
+  "displayName": "Audio Resample",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": "value.core.float32",
+      "required": false,
+      "rate": "audio"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Out",
+      "type": "value.core.float32",
+      "rate": "audio"
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "object.core.audio.resample.v0.1",
+    "validation-only.v0.1"
+  ],
+  "surface": {
+    "palette": "direct"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.float",
+  "version": "0.1.0",
+  "displayName": "Float",
+  "category": "Typed Controls",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": "value.core.message",
+      "required": false,
+      "accepts": [
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool",
+        "value.core.bang"
+      ],
+      "triggerMode": "trigger",
+      "messageKeys": {
+        "accepted": ["bang", "set", "float", "int", "uint", "bool"],
+        "silent": ["set"],
+        "trigger": ["bang", "float", "int", "uint", "bool"],
+        "store": ["set", "float", "int", "uint", "bool"],
+        "emit": ["bang", "float", "int", "uint", "bool"]
+      },
+      "latch": true
+    },
+    {
+      "id": "cold",
+      "direction": "input",
+      "label": "Cold",
+      "type": "value.core.float64",
+      "required": false,
+      "accepts": [
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool"
+      ],
+      "triggerMode": "passive",
+      "latch": true
+    },
+    {
+      "id": "value",
+      "direction": "output",
+      "label": "Value",
+      "type": "value.core.float64"
+    }
+  ],
+  "execution": {
+    "model": "control"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [],
+  "surface": {
+    "palette": "direct"
+  }
+}

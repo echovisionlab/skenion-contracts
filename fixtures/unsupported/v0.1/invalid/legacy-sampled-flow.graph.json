@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "osc",
-      "kind": "audio.osc",
+      "kind": "object.core.audio.osc",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [

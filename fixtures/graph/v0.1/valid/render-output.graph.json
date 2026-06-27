@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "clear_color",
-      "kind": "render.clear-color",
+      "kind": "object.core.render.clear-color",
       "kindVersion": "0.1.0",
       "params": {
         "color": [
@@ -27,7 +27,7 @@
     },
     {
       "id": "output",
-      "kind": "render.output",
+      "kind": "object.core.render.output",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [

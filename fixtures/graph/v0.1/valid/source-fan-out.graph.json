@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "float_1",
-      "kind": "core.float",
+      "kind": "object.core.float",
       "kindVersion": "0.1.0",
       "params": {
         "value": 0.5

@@ -1298,19 +1298,19 @@ test("plans audio clock-domain bridge requirements", () => {
   const source = {
     id: "input-device",
     authority: "driver-reported",
-    source: "audio.input",
+    source: "object.core.audio.input",
     sampleRate: 48_000
   };
   const same = {
     id: "input-device",
     authority: "driver-reported",
-    source: "audio.output",
+    source: "object.core.audio.output",
     sampleRate: 48_000
   };
   const independent = {
     id: "output-device",
     authority: "driver-reported",
-    source: "audio.output",
+    source: "object.core.audio.output",
     sampleRate: 48_000
   };
 
@@ -2263,7 +2263,7 @@ test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", a
       nodes: [
         {
           id: "single_boundary",
-          kind: "core.inlet",
+          kind: "object.core.inlet",
           kindVersion: "0.1.0",
           params: {},
           ports: [
@@ -2272,7 +2272,7 @@ test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", a
         },
         {
           id: "multi_boundary",
-          kind: "core.outlet",
+          kind: "object.core.outlet",
           kindVersion: "0.1.0",
           params: {},
           ports: [
@@ -2332,7 +2332,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
     nodes: [
       {
         id: "button",
-        kind: "core.bang",
+        kind: "object.core.bang",
         kindVersion: "0.1.0",
         params: {},
         ports: [
@@ -2341,7 +2341,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
       },
       {
         id: "int_source",
-        kind: "core.int",
+        kind: "object.core.int",
         kindVersion: "0.1.0",
         params: {},
         ports: [
@@ -2359,7 +2359,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
       },
       {
         id: "number_box",
-        kind: "core.float",
+        kind: "object.core.float",
         kindVersion: "0.1.0",
         params: {},
         ports: [
@@ -2690,7 +2690,7 @@ test("v0.1 rejects schema and node-definition semantic failures", async () => {
   assert.equal(duplicatePortResult.ok, false);
   assert.match(duplicatePortResult.errors.join("\n"), /duplicate port id/);
 
-  for (const payloadId of ["core.bool", "bool", "string"]) {
+  for (const payloadId of ["object.core.bool", "bool", "string"]) {
     const payloadIdentityNode = await readJson("fixtures/node/v0.1/valid/render-clear-color.node.json");
     payloadIdentityNode.id = payloadId;
     const payloadIdentityNodeResult = validateNodeDefinitionV01(payloadIdentityNode);

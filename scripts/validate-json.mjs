@@ -86,12 +86,12 @@ function derivedPatchBoundaryPortIds(patch) {
   const portIds = [];
 
   for (const node of patch.graph.nodes) {
-    if (node.kind === "core.inlet") {
+    if (node.kind === "object.core.inlet") {
       const ports = node.ports.filter((port) => port.direction === "output");
       for (const port of ports) {
         portIds.push(boundaryPortId(node, port, ports.length));
       }
-    } else if (node.kind === "core.outlet") {
+    } else if (node.kind === "object.core.outlet") {
       const ports = node.ports.filter((port) => port.direction === "input");
       for (const port of ports) {
         portIds.push(boundaryPortId(node, port, ports.length));
@@ -661,7 +661,7 @@ const invalidValueTypeIds = new Set([
   "value.core.int",
   "value.core.uint",
   "value.core.number",
-  "value.core.object",
+  "value.object.core",
   "value.core.frame",
   "value.core.symbol",
   "value.media.asset",
@@ -731,8 +731,8 @@ function payloadIdentityNodeKind(kind) {
     "payload",
     "bool",
     "string",
-    "core.bool",
-    "core.string",
+    "object.core.bool",
+    "object.core.string",
     "value.core.message",
     "value.core.bang",
     "value.core.string",

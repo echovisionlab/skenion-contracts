@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "a",
-      "kind": "core.operator.add",
+      "kind": "object.core.operator.add",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
@@ -47,7 +47,7 @@
     },
     {
       "id": "b",
-      "kind": "core.operator.add",
+      "kind": "object.core.operator.add",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [

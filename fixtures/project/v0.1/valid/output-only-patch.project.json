@@ -33,7 +33,7 @@
         "nodes": [
           {
             "id": "amplitude_out",
-            "kind": "core.outlet",
+            "kind": "object.core.outlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "amplitude",

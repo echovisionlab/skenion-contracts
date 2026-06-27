@@ -41,7 +41,7 @@ export function planAudioClockBridgeV01(
       {
         severity: "error",
         code: "audio-clock-domain-crossing-requires-bridge",
-        message: "audio signal crosses independent clock domains without audio.clock-bridge or audio.resample"
+        message: "audio signal crosses independent clock domains without object.core.audio.clock-bridge or object.core.audio.resample"
       }
     ]
   };

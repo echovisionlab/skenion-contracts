@@ -9,24 +9,24 @@ shapes, not the concrete object inventory.
 
 Runtime-owned behavior-named control object examples include:
 
-- `core.bang` for trigger behavior. It emits `value.core.bang`; `value.core.bang` is not
+- `object.core.bang` for trigger behavior. It emits `value.core.bang`; `value.core.bang` is not
   an object identity.
-- `core.message` for saved message-box behavior. It emits a `MessageValue`
+- `object.core.message` for saved message-box behavior. It emits a `MessageValue`
   key plus typed atoms.
 
 Runtime-owned numeric/color stored-payload object examples include:
 
-- `core.float` for `value.core.float64` payloads
-- `core.int` for `value.core.int64` payloads
-- `core.uint` for `value.core.uint64` payloads
-- `core.color` for `value.core.color` payloads
+- `object.core.float` for `value.core.float64` payloads
+- `object.core.int` for `value.core.int64` payloads
+- `object.core.uint` for `value.core.uint64` payloads
+- `object.core.color` for `value.core.color` payloads
 
 Bool and string are payload/atom semantics, not canonical object identities.
 `value.core.bool`, `value.core.string`, and the `bool`, `string`, and `symbol`
-keys may be accepted by behavior-named objects such as `core.message`,
-`core.bang`, or future widget objects. A toggle, checkbox, label, or text UI
-must use a behavior-named object contract rather than `core.bool` or
-`core.string`.
+keys may be accepted by behavior-named objects such as `object.core.message`,
+`object.core.bang`, or future widget objects. A toggle, checkbox, label, or text UI
+must use a behavior-named object contract rather than `object.core.bool` or
+`object.core.string`.
 
 The numeric/color stored-payload objects have the same control surface:
 
@@ -76,11 +76,11 @@ definition says otherwise.
 
 ## Comments And Messages
 
-`core.comment` is a persisted graph annotation and runtime text object. It has
+`object.core.comment` is a persisted graph annotation and runtime text object. It has
 one hot `in` inlet for `value.core.message`. `set <text>` updates the runtime
 display text silently. Inspector text edits remain saved graph mutations.
 
-`core.message` is the first simple message-box form. It stores message box text
+`object.core.message` is the first simple message-box form. It stores message box text
 in graph params and emits a `MessageValue` key plus typed atoms when
 banged or clicked. `set ...` on `in` updates the runtime message text silently.
 `pack`/`unpack`, toggle widgets, text widgets, and richer message transforms are

@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "a",
-      "kind": "core.float",
+      "kind": "object.core.float",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
@@ -19,7 +19,7 @@
     },
     {
       "id": "b",
-      "kind": "core.float",
+      "kind": "object.core.float",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
@@ -42,7 +42,7 @@
           "maxConnections": 2
         }
       ],
-      "kind": "core.operator.add"
+      "kind": "object.core.operator.add"
     }
   ],
   "edges": [

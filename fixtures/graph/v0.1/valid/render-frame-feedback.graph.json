@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "feedback_pass",
-      "kind": "render.feedback-composite",
+      "kind": "object.core.render.feedback-composite",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
@@ -26,7 +26,7 @@
     },
     {
       "id": "output",
-      "kind": "render.output",
+      "kind": "object.core.render.output",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [

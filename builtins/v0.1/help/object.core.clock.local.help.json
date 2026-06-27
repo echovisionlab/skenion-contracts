@@ -1,0 +1,58 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.clock.local",
+  "summary": "Graph-visible local musical clock.",
+  "description": "Local Clock is a patch object for musical timing. It is not the runtime's hidden master clock and it does not drive audio callbacks. It emits clock.state plus tick, phase, and tempo projections that other graph nodes can consume.",
+  "helpGraph": "help/v0.1/nodes/object.core.clock.local.help.graph.json",
+  "tags": [
+    "clock",
+    "transport",
+    "timing"
+  ],
+  "runtimeBehavior": "Runs as graph-visible musical transport state. Audio DSP still runs from object.core.audio.output's device sample clock.",
+  "relatedNodes": [
+    "object.core.clock.position-display"
+  ],
+  "ports": [
+    {
+      "id": "sync",
+      "description": "Optional clock.state input used by future follow/sync policies."
+    },
+    {
+      "id": "reset",
+      "description": "Optional value.core.bang input that resets local phase/position."
+    },
+    {
+      "id": "state",
+      "description": "Outputs clock.state with source capability and authority metadata."
+    },
+    {
+      "id": "tick",
+      "description": "Outputs value.core.bang for discrete musical ticks."
+    },
+    {
+      "id": "phase",
+      "description": "Outputs normalized value.core.float64 phase in the current cycle."
+    },
+    {
+      "id": "tempo",
+      "description": "Outputs tempo as value.core.float64 in BPM."
+    }
+  ],
+  "params": [
+    {
+      "id": "tempoBpm",
+      "description": "Initial local tempo in BPM."
+    },
+    {
+      "id": "running",
+      "description": "Initial transport running state."
+    }
+  ],
+  "example": {
+    "title": "Display local clock position",
+    "description": "Connect state to object.core.clock.position-display to inspect available bar, beat, phase, time, and authority fields.",
+    "graph": "help/v0.1/nodes/object.core.clock.local.help.graph.json"
+  }
+}

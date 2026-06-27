@@ -1,0 +1,39 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.audio.cos",
+  "version": "0.1.0",
+  "displayName": "Cosine",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "phase",
+      "direction": "input",
+      "label": "Phase",
+      "type": "value.core.float32",
+      "required": false,
+      "rate": "audio"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "label": "Signal",
+      "type": "value.core.float32",
+      "rate": "audio"
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "pd.audio.v0.1"
+  ],
+  "surface": {
+    "palette": "direct"
+  }
+}

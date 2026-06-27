@@ -11,9 +11,9 @@ The graph schema is unchanged. Render node behavior is described by
 discover the concrete definitions from Runtime/package surfaces, not from
 `@skenion/contracts`.
 
-## `render.clear-color`
+## `object.core.render.clear-color`
 
-`render.clear-color` is the first built-in render node convention.
+`object.core.render.clear-color` is the first built-in render node convention.
 
 Example definition shape:
 
@@ -21,7 +21,7 @@ Example definition shape:
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.clear-color",
+  "id": "object.core.render.clear-color",
   "version": "0.1.0",
   "displayName": "Clear Color",
   "category": "Render",
@@ -42,7 +42,7 @@ Example definition shape:
   },
   "permissions": [],
   "capabilities": [
-    "render.output.clear-color"
+    "object.core.render.output.clear-color"
   ]
 }
 ```
@@ -66,13 +66,13 @@ Rules:
 - The color space is intentionally simple for v0.1; do not add color
   management fields to the graph schema for this node.
 
-`render.clear-color` is a frame-clocked GPU pass that produces a
+`object.core.render.clear-color` is a frame-clocked GPU pass that produces a
 `value.core.tensor` output. Starting in v0.13, preview output should be
-selected by wiring `render.clear-color:out` into `render.output:in`.
+selected by wiring `object.core.render.clear-color:out` into `object.core.render.output:in`.
 
-## `core.color`
+## `object.core.color`
 
-`core.color` is a value source convention used by render nodes that accept
+`object.core.color` is a value source convention used by render nodes that accept
 `value.core.color` controls.
 
 Graph node params:
@@ -92,9 +92,9 @@ Rules:
 - Runtimes may clamp out-of-range values.
 - Missing or invalid values should fall back to `[1.0, 1.0, 1.0, 1.0]`.
 
-## `render.fullscreen-shader`
+## `object.core.render.fullscreen-shader`
 
-`render.fullscreen-shader` is a built-in fullscreen shader pass convention. The
+`object.core.render.fullscreen-shader` is a built-in fullscreen shader pass convention. The
 node identity names the render pass concept, not a specific shader language.
 The current built-in shader path only supports WGSL through `params.language`.
 Uniform inputs are graph instance ports generated from source annotations, not
@@ -106,7 +106,7 @@ Example definition shape:
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.fullscreen-shader",
+  "id": "object.core.render.fullscreen-shader",
   "version": "0.1.0",
   "displayName": "Fullscreen Shader",
   "category": "Render",
@@ -127,7 +127,7 @@ Example definition shape:
   },
   "permissions": [],
   "capabilities": [
-    "render.output.fullscreen-shader"
+    "object.core.render.output.fullscreen-shader"
   ]
 }
 ```
@@ -165,9 +165,9 @@ Rules:
 - Shader compile or render errors should be surfaced through preview telemetry
   and Runtime diagnostics.
 
-`render.fullscreen-shader` is a frame-clocked GPU pass that produces a
+`object.core.render.fullscreen-shader` is a frame-clocked GPU pass that produces a
 `value.core.tensor` output. Starting in v0.13, preview output should be
-selected by wiring `render.fullscreen-shader:out` into `render.output:in`.
+selected by wiring `object.core.render.fullscreen-shader:out` into `object.core.render.output:in`.
 
 ### Dynamic Interface Sync
 
@@ -239,9 +239,9 @@ The ABI is still intentionally small. Do not add GLSL, texture inputs, video,
 audio, MIDI, asset-backed shader source, or multi-pass render graph semantics
 to this node convention yet.
 
-## `render.output`
+## `object.core.render.output`
 
-`render.output` is the explicit final preview output key. It lets Studio
+`object.core.render.output` is the explicit final preview output key. It lets Studio
 and Runtime agree on which render node feeds the local preview surface instead
 of relying on first-matching render node scans.
 
@@ -251,7 +251,7 @@ Node definition:
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.output",
+  "id": "object.core.render.output",
   "version": "0.1.0",
   "displayName": "Render Output",
   "category": "Render",
@@ -273,18 +273,18 @@ Node definition:
   },
   "permissions": [],
   "capabilities": [
-    "render.output.surface"
+    "object.core.render.output.surface"
   ]
 }
 ```
 
 Rules:
 
-- `render.output` selects the final local preview surface source.
-- `render.output:in` accepts `value.core.tensor` render outputs.
-- v0.13 supports one effective output. If multiple `render.output` nodes exist,
+- `object.core.render.output` selects the final local preview surface source.
+- `object.core.render.output:in` accepts `value.core.tensor` render outputs.
+- v0.13 supports one effective output. If multiple `object.core.render.output` nodes exist,
   runtimes should select deterministically and report a diagnostic.
-- If no `render.output` node exists, runtimes must report that no active render
+- If no `object.core.render.output` node exists, runtimes must report that no active render
   output is available. They must not select an older render node shape as a
   fallback.
 

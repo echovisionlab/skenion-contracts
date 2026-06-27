@@ -309,14 +309,13 @@ fn value_format_errors_v01(value_format: &ValueFormatV01, label: &str) -> Vec<Va
         )));
     }
 
-    if let Some(format) = value_format.format.as_deref() {
-        if let Some(expected_formats) = expected_formats_for_first_party_value_type(value_type_id) {
-            if !expected_formats.contains(&format) {
-                errors.push(ValidationErrorV01::new(format!(
-                    "{label}.format {format} is not valid for {value_type_id}"
-                )));
-            }
-        }
+    if let Some(format) = value_format.format.as_deref()
+        && let Some(expected_formats) = expected_formats_for_first_party_value_type(value_type_id)
+        && !expected_formats.contains(&format)
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.format {format} is not valid for {value_type_id}"
+        )));
     }
 
     validate_shape_v01(
@@ -751,7 +750,7 @@ fn is_invalid_value_type(port_type: &str) -> bool {
             | "value.core.int"
             | "value.core.uint"
             | "value.core.number"
-            | "value.core.object"
+            | "value.object.core"
             | "value.core.frame"
             | "value.core.symbol"
             | "value.media.asset"
@@ -792,8 +791,8 @@ fn is_payload_identity_node_kind(kind: &str) -> bool {
             | "payload"
             | "bool"
             | "string"
-            | "core.bool"
-            | "core.string"
+            | "object.core.bool"
+            | "object.core.string"
             | "value.core.message"
             | "value.core.bang"
             | "value.core.string"
@@ -3620,7 +3619,7 @@ mod tests {
               "nodes": [
                 {
                   "id": "source",
-                  "kind": "core.float",
+                  "kind": "object.core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
@@ -3629,7 +3628,7 @@ mod tests {
                 },
                 {
                   "id": "target",
-                  "kind": "core.float",
+                  "kind": "object.core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
@@ -3900,6 +3899,15 @@ mod tests {
                 .contains("duplicate-edge-id")
         );
 
+        let mut payload_identity_node = fragment.clone();
+        payload_identity_node.nodes[0].kind = "value.core.float32".to_owned();
+        assert!(
+            validate_graph_fragment_v01(&payload_identity_node)
+                .expect_err("payload identity node should fail")
+                .to_string()
+                .contains("payload-node-kind")
+        );
+
         let mut invalid_fragment_contracts = fragment.clone();
         invalid_fragment_contracts.nodes[1].ports[0].port_type = "value.core.message".to_owned();
         invalid_fragment_contracts.nodes[1].ports[0].accepts = Some(vec![
@@ -3973,6 +3981,148 @@ mod tests {
                 .expect_err("incompatible edge should fail")
                 .to_string()
                 .contains("incompatible-type")
+        );
+    }
+
+    #[test]
+    fn validates_value_transfer_semantic_error_branches() {
+        for (payload, expected) in [
+            (
+                json!({ "valueTypeId": "" }),
+                "valueFormat.valueTypeId must be a non-empty string",
+            ),
+            (
+                json!({ "valueTypeId": "not-value" }),
+                "valueFormat.valueTypeId is not a valid value type id",
+            ),
+            (
+                json!({ "valueTypeId": "value" }),
+                "valueFormat.valueTypeId is not a valid value type id",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.vector", "format": "f32", "shape": [2, 0] }),
+                "valueFormat.shape[1] must be a positive integer",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.vector", "format": "i32" }),
+                "valueFormat.shape is required for value.core.vector",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.matrix", "shape": [2, 2] }),
+                "valueFormat.format is required for value.core.matrix",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "format": "i32" }),
+                "valueFormat.format i32 is not valid for value.core.float32",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "byteLength": 0 }),
+                "valueFormat.byteLength must be a positive integer",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "channels": 0 }),
+                "valueFormat.channels must be a positive integer",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "sampleRate": 0 }),
+                "valueFormat.sampleRate must be greater than zero",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.bang", "shape": [1] }),
+                "valueFormat.shape is not allowed for value.core.bang",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.bang", "byteLength": 1 }),
+                "valueFormat.byteLength is not allowed for value.core.bang",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.bang", "resourceKind": "file" }),
+                "valueFormat.resourceKind is not allowed for value.core.bang",
+            ),
+        ] {
+            let value_format: ValueFormatV01 =
+                serde_json::from_value(payload).expect("value format should parse");
+            let report = validate_value_format_v01(&value_format)
+                .expect_err("invalid value format should fail");
+            assert!(
+                report.to_string().contains(expected),
+                "expected {expected}, got {report}"
+            );
+        }
+
+        let invalid_binding: EndpointBindingValueFormatV01 = serde_json::from_value(json!({
+            "bindingId": "",
+            "bindingEpoch": 1,
+            "formatRevision": 1,
+            "valueFormat": { "valueTypeId": "value.core.float32", "format": "f32" },
+            "source": { "nodeId": "", "portId": "out" },
+            "target": { "nodeId": "target", "portId": "" },
+            "delivery": { "policy": "nonsense", "maxInFlight": 0 }
+        }))
+        .expect("invalid binding should parse");
+        let binding_report = validate_endpoint_binding_value_format_v01(&invalid_binding)
+            .expect_err("invalid binding should fail");
+        let binding_text = binding_report.to_string();
+        assert!(binding_text.contains("bindingFormat.bindingId must be a non-empty string"));
+        assert!(binding_text.contains("bindingFormat.source must contain non-empty"));
+        assert!(binding_text.contains("bindingFormat.target must contain non-empty"));
+        assert!(binding_text.contains("bindingFormat.delivery contains an invalid policy"));
+
+        let invalid_occurrence: ValueOccurrenceHeaderV01 = serde_json::from_value(json!({
+            "bindingId": "",
+            "bindingEpoch": 0,
+            "formatRevision": 0,
+            "sequence": 1,
+            "payloadKind": "empty",
+            "byteLength": 0,
+            "byteOffset": 4,
+            "actualShape": [1],
+            "duration": -1
+        }))
+        .expect("invalid occurrence should parse");
+        let occurrence_report = validate_value_occurrence_header_v01(&invalid_occurrence)
+            .expect_err("invalid occurrence should fail");
+        let occurrence_text = occurrence_report.to_string();
+        assert!(occurrence_text.contains("occurrenceHeader.bindingId must be a non-empty string"));
+        assert!(
+            occurrence_text.contains("occurrenceHeader.bindingEpoch must be a positive integer")
+        );
+        assert!(
+            occurrence_text.contains("occurrenceHeader.formatRevision must be a positive integer")
+        );
+        assert!(occurrence_text.contains("occurrenceHeader.byteLength must be a positive integer"));
+        assert!(occurrence_text.contains("occurrenceHeader.duration must be greater than"));
+        assert!(
+            occurrence_text.contains("occurrenceHeader.byteLength is not allowed when payloadKind")
+        );
+        assert!(
+            occurrence_text.contains("occurrenceHeader.byteOffset is not allowed when payloadKind")
+        );
+        assert!(
+            occurrence_text
+                .contains("occurrenceHeader.actualShape is not allowed when payloadKind")
+        );
+
+        let invalid_timestamp = ValueOccurrenceHeaderV01 {
+            binding_id: "edge_1".to_owned(),
+            binding_epoch: 1,
+            format_revision: 1,
+            sequence: 1,
+            clock: None,
+            timestamp: Some(f64::NAN),
+            payload_kind: ValuePayloadKindV01::Json,
+            byte_length: None,
+            byte_offset: None,
+            actual_shape: None,
+            flags: None,
+            dropped_before: None,
+            duration: None,
+        };
+        assert!(
+            validate_value_occurrence_header_v01(&invalid_timestamp)
+                .expect_err("invalid timestamp should fail")
+                .to_string()
+                .contains("occurrenceHeader.timestamp must be a finite number")
         );
     }
 
@@ -4081,7 +4231,7 @@ mod tests {
                     "nodes": [
                       {
                         "id": "left_in",
-                        "kind": "core.inlet",
+                        "kind": "object.core.inlet",
                         "kindVersion": "0.1.0",
                         "params": {},
                         "ports": [
@@ -4090,7 +4240,7 @@ mod tests {
                       },
                       {
                         "id": "right_out",
-                        "kind": "core.outlet",
+                        "kind": "object.core.outlet",
                         "kindVersion": "0.1.0",
                         "params": {},
                         "ports": [
@@ -4139,7 +4289,7 @@ mod tests {
                     "nodes": [
                       {
                         "id": "inlet_a",
-                        "kind": "core.inlet",
+                        "kind": "object.core.inlet",
                         "kindVersion": "0.1.0",
                         "params": { "portId": "same" },
                         "ports": [
@@ -4148,7 +4298,7 @@ mod tests {
                       },
                       {
                         "id": "inlet_b",
-                        "kind": "core.inlet",
+                        "kind": "object.core.inlet",
                         "kindVersion": "0.1.0",
                         "params": { "portId": "same" },
                         "ports": [
@@ -4316,7 +4466,7 @@ mod tests {
 
         graph.nodes.push(GraphNodeV01 {
             id: "source_two".to_owned(),
-            kind: "core.float".to_owned(),
+            kind: "object.core.float".to_owned(),
             kind_version: "0.1.0".to_owned(),
             object_text: None,
             binding_ref: None,
@@ -4406,7 +4556,7 @@ mod tests {
               "nodes": [
                 {
                   "id": "button",
-                  "kind": "core.bang",
+                  "kind": "object.core.bang",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
@@ -4415,7 +4565,7 @@ mod tests {
                 },
                 {
                   "id": "int_source",
-                  "kind": "core.int",
+                  "kind": "object.core.int",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
@@ -4433,7 +4583,7 @@ mod tests {
                 },
                 {
                   "id": "number_box",
-                  "kind": "core.float",
+                  "kind": "object.core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
@@ -4813,7 +4963,7 @@ mod tests {
             r#"{
               "schema": "skenion.node.definition",
               "schemaVersion": "0.1.0",
-              "id": "render.clear-color",
+              "id": "object.core.render.clear-color",
               "version": "0.1.0",
               "displayName": "Clear Color",
               "category": "Render",
@@ -4831,7 +4981,7 @@ mod tests {
         let mut invalid = valid;
         invalid.schema = "wrong".to_owned();
         invalid.schema_version = "9.9.9".to_owned();
-        invalid.id = "core.string".to_owned();
+        invalid.id = "object.core.string".to_owned();
         invalid.permissions.push("network".to_owned());
         invalid.ports.push(invalid.ports[0].clone());
         invalid.ports[0].accepts = Some(vec![
@@ -4845,30 +4995,45 @@ mod tests {
         key_port.accepts = None;
         key_port.message_keys = None;
         invalid.ports.push(key_port);
-        invalid.port_groups = Some(vec![super::super::PortGroupSpecV01 {
-            id: "bad".to_owned(),
-            direction: PortDirectionV01::Input,
-            port_type: "number.float".to_owned(),
-            min_ports: 2,
-            label: None,
-            rate: None,
-            max_ports: Some(1),
-            ordered: None,
-            port_id_pattern: None,
-            create_label: None,
-            default_port_spec: Some({
-                let mut port = invalid.ports[0].clone();
-                port.id = "default".to_owned();
-                port.direction = PortDirectionV01::Input;
-                port.port_type = "number.float".to_owned();
-                port.accepts = Some(vec![
-                    "message.any".to_owned(),
-                    "value.core.message".to_owned(),
-                ]);
-                port.message_keys = None;
-                port
-            }),
-        }]);
+        invalid.port_groups = Some(vec![
+            super::super::PortGroupSpecV01 {
+                id: "bad".to_owned(),
+                direction: PortDirectionV01::Input,
+                port_type: "number.float".to_owned(),
+                min_ports: 2,
+                label: None,
+                rate: None,
+                max_ports: Some(1),
+                ordered: None,
+                port_id_pattern: None,
+                create_label: None,
+                default_port_spec: Some({
+                    let mut port = invalid.ports[0].clone();
+                    port.id = "default".to_owned();
+                    port.direction = PortDirectionV01::Input;
+                    port.port_type = "number.float".to_owned();
+                    port.accepts = Some(vec![
+                        "message.any".to_owned(),
+                        "value.core.message".to_owned(),
+                    ]);
+                    port.message_keys = None;
+                    port
+                }),
+            },
+            super::super::PortGroupSpecV01 {
+                id: "without-default".to_owned(),
+                direction: PortDirectionV01::Output,
+                port_type: "value.core.tensor".to_owned(),
+                min_ports: 0,
+                label: None,
+                rate: None,
+                max_ports: None,
+                ordered: None,
+                port_id_pattern: None,
+                create_label: None,
+                default_port_spec: None,
+            },
+        ]);
         let report = validate_node_definition_v01(&invalid).expect_err("node should fail");
         let text = report.to_string();
         assert!(text.contains("expected schema skenion.node.definition"));

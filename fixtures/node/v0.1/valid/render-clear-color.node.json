@@ -1,7 +1,7 @@
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.clear-color",
+  "id": "object.core.render.clear-color",
   "version": "0.1.0",
   "displayName": "Clear Color",
   "category": "Render",

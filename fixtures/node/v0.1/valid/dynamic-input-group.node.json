@@ -1,7 +1,7 @@
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "audio.mixer",
+  "id": "object.core.audio.mixer",
   "version": "0.1.0",
   "displayName": "Audio Mixer",
   "category": "Audio",
