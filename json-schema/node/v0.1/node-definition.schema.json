@@ -136,8 +136,8 @@
         "triggerMode": {
           "enum": ["passive", "trigger", "latched"]
         },
-        "messageSelectors": {
-          "$ref": "#/$defs/messageSelectors"
+        "messageKeys": {
+          "$ref": "#/$defs/messageKeys"
         },
         "defaultValue": true,
         "latch": {
@@ -160,29 +160,29 @@
       },
       "additionalProperties": false
     },
-    "messageSelectors": {
+    "messageKeys": {
       "type": "object",
       "required": ["accepted"],
       "properties": {
         "accepted": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "silent": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "trigger": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "store": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "emit": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         }
       },
       "additionalProperties": false
     },
-    "messageSelectorList": {
+    "messageKeyList": {
       "type": "array",
       "items": {
         "type": "string",

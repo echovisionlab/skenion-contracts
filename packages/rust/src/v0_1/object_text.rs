@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use thiserror::Error;
 
-use super::types::MessageSelectorPolicyV01;
+use super::types::MessageKeyPolicyV01;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type")]
@@ -28,8 +28,8 @@ pub enum ObjectTextAtomV01 {
     },
     #[serde(rename = "bool")]
     Bool { value: bool },
-    #[serde(rename = "symbol")]
-    Symbol { value: String },
+    #[serde(rename = "identifier")]
+    Identifier { value: String },
     #[serde(rename = "string")]
     String { value: String },
 }
@@ -78,7 +78,7 @@ pub struct ObjectTextPortV01 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_value: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub message_selectors: Option<MessageSelectorPolicyV01>,
+    pub message_keys: Option<MessageKeyPolicyV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
@@ -107,7 +107,7 @@ pub struct ObjectTextParseResultV01 {
     pub schema_version: String,
     pub input: String,
     pub ok: bool,
-    pub class_symbol: String,
+    pub class_name: String,
     pub creation_args: Vec<ObjectTextAtomV01>,
     pub resolved_kind: Option<String>,
     pub resolved_kind_version: Option<String>,
@@ -147,22 +147,20 @@ pub fn validate_object_text_parse_result_v01(
     Ok(())
 }
 
-fn is_selector_aware_object_text_input_port(port: &ObjectTextPortV01) -> bool {
+fn is_key_aware_object_text_input_port(port: &ObjectTextPortV01) -> bool {
     port.direction == ObjectTextPortDirectionV01::Input
-        && (port.port_type == "control.message.any"
-            || port.accepts.as_ref().is_some_and(|accepted| {
-                accepted.iter().any(|value| value == "control.message.any")
-            }))
+        && (port.port_type == "value.core.message"
+            || port
+                .accepts
+                .as_ref()
+                .is_some_and(|accepted| accepted.iter().any(|value| value == "value.core.message")))
 }
 
-fn object_text_message_selector_policy_errors(
-    port: &ObjectTextPortV01,
-    label: &str,
-) -> Vec<String> {
-    let Some(policy) = &port.message_selectors else {
-        return if is_selector_aware_object_text_input_port(port) {
+fn object_text_message_key_policy_errors(port: &ObjectTextPortV01, label: &str) -> Vec<String> {
+    let Some(policy) = &port.message_keys else {
+        return if is_key_aware_object_text_input_port(port) {
             vec![format!(
-                "{label} selector-aware input port requires messageSelectors"
+                "{label} message-key-aware input port requires messageKeys"
             )]
         } else {
             Vec::new()
@@ -172,19 +170,19 @@ fn object_text_message_selector_policy_errors(
     let mut errors = Vec::new();
     if policy.accepted.is_empty() {
         errors.push(format!(
-            "{label} messageSelectors.accepted must list at least one selector"
+            "{label} messageKeys.accepted must list at least one key"
         ));
     }
-    for (field, selectors) in [
+    for (field, keys) in [
         ("silent", &policy.silent),
         ("trigger", &policy.trigger),
         ("store", &policy.store),
         ("emit", &policy.emit),
     ] {
-        for selector in selectors.iter().flat_map(|values| values.iter()) {
-            if !policy.accepted.contains(selector) {
+        for key in keys.iter().flat_map(|values| values.iter()) {
+            if !policy.accepted.contains(key) {
                 errors.push(format!(
-                    "{label} messageSelectors.{field} selector {selector} is not accepted"
+                    "{label} messageKeys.{field} key {key} is not accepted"
                 ));
             }
         }
@@ -192,33 +190,29 @@ fn object_text_message_selector_policy_errors(
     if policy
         .trigger
         .as_ref()
-        .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+        .is_some_and(|keys| keys.iter().any(|key| key == "set"))
     {
-        errors.push(format!(
-            "{label} messageSelectors.trigger must not include set"
-        ));
+        errors.push(format!("{label} messageKeys.trigger must not include set"));
     }
     if policy
         .emit
         .as_ref()
-        .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+        .is_some_and(|keys| keys.iter().any(|key| key == "set"))
     {
-        errors.push(format!(
-            "{label} messageSelectors.emit must not include set"
-        ));
+        errors.push(format!("{label} messageKeys.emit must not include set"));
     }
-    if policy.accepted.iter().any(|selector| selector == "set")
+    if policy.accepted.iter().any(|key| key == "set")
         && !policy
             .silent
             .as_ref()
-            .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+            .is_some_and(|keys| keys.iter().any(|key| key == "set"))
         && !policy
             .store
             .as_ref()
-            .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+            .is_some_and(|keys| keys.iter().any(|key| key == "set"))
     {
         errors.push(format!(
-            "{label} messageSelectors.set must be silent or store behavior"
+            "{label} messageKeys.set must be silent or store behavior"
         ));
     }
 
@@ -230,12 +224,9 @@ fn object_text_parse_result_semantic_errors(result: &ObjectTextParseResultV01) -
         .instance_ports
         .iter()
         .flat_map(|port| {
-            object_text_message_selector_policy_errors(
+            object_text_message_key_policy_errors(
                 port,
-                &format!(
-                    "objectText instancePort {}.{}",
-                    result.class_symbol, port.id
-                ),
+                &format!("objectText instancePort {}.{}", result.class_name, port.id),
             )
         })
         .collect()
@@ -252,7 +243,7 @@ fn diagnostic(code: &str, message: impl Into<String>) -> ObjectTextDiagnosticV01
 fn success(
     input: &str,
     display_text: &str,
-    class_symbol: &str,
+    class_name: &str,
     creation_args: Vec<ObjectTextAtomV01>,
 ) -> ObjectTextParseResultV01 {
     ObjectTextParseResultV01 {
@@ -260,7 +251,7 @@ fn success(
         schema_version: "0.1.0".to_owned(),
         input: input.to_owned(),
         ok: true,
-        class_symbol: class_symbol.to_owned(),
+        class_name: class_name.to_owned(),
         creation_args,
         resolved_kind: None,
         resolved_kind_version: None,
@@ -274,7 +265,7 @@ fn success(
 fn failure(
     input: &str,
     display_text: &str,
-    class_symbol: &str,
+    class_name: &str,
     creation_args: Vec<ObjectTextAtomV01>,
     code: &str,
     message: impl Into<String>,
@@ -284,7 +275,7 @@ fn failure(
         schema_version: "0.1.0".to_owned(),
         input: input.to_owned(),
         ok: false,
-        class_symbol: class_symbol.to_owned(),
+        class_name: class_name.to_owned(),
         creation_args,
         resolved_kind: None,
         resolved_kind_version: None,
@@ -350,7 +341,7 @@ fn parse_atom(token: &str) -> ObjectTextAtomV01 {
         };
     }
 
-    ObjectTextAtomV01::Symbol {
+    ObjectTextAtomV01::Identifier {
         value: token.to_owned(),
     }
 }
@@ -370,20 +361,20 @@ pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
         }
     };
     let tokens = tokenize(&display_text);
-    let Some((class_symbol, arg_tokens)) = tokens.split_first() else {
+    let Some((class_name, arg_tokens)) = tokens.split_first() else {
         return failure(
             input,
             "<empty>",
             "<empty>",
             Vec::new(),
             "empty-object-text",
-            "object text must contain a class symbol",
+            "object text must contain a class name",
         );
     };
     let creation_args: Vec<ObjectTextAtomV01> =
         arg_tokens.iter().map(|token| parse_atom(token)).collect();
 
-    success(input, &display_text, class_symbol, creation_args)
+    success(input, &display_text, class_name, creation_args)
 }
 
 #[cfg(test)]
@@ -399,7 +390,7 @@ mod tests {
     fn parses_lexical_object_text_without_resolving_runtime_kinds() {
         let raw = parse_object_text_v01("+ 1");
         assert!(raw.ok);
-        assert_eq!(raw.class_symbol, "+");
+        assert_eq!(raw.class_name, "+");
         assert_eq!(raw.display_text, "+ 1");
         assert_eq!(
             raw.creation_args,
@@ -415,7 +406,7 @@ mod tests {
 
         let bracketed = parse_object_text_v01("[osc~ 1e3]");
         assert!(bracketed.ok);
-        assert_eq!(bracketed.class_symbol, "osc~");
+        assert_eq!(bracketed.class_name, "osc~");
         assert_eq!(bracketed.display_text, "osc~ 1e3");
         assert_eq!(
             bracketed.creation_args,
@@ -448,16 +439,16 @@ mod tests {
     }
 
     #[test]
-    fn parses_atom_numeric_and_symbol_edges() {
+    fn parses_atom_numeric_and_identifier_edges() {
         assert_eq!(
             parse_atom("+"),
-            ObjectTextAtomV01::Symbol {
+            ObjectTextAtomV01::Identifier {
                 value: "+".to_owned()
             }
         );
         assert_eq!(
             parse_atom("xyz"),
-            ObjectTextAtomV01::Symbol {
+            ObjectTextAtomV01::Identifier {
                 value: "xyz".to_owned()
             }
         );
@@ -481,11 +472,11 @@ mod tests {
             json!({ "type": "bool", "value": false })
         );
         assert_eq!(
-            serde_json::to_value(ObjectTextAtomV01::Symbol {
+            serde_json::to_value(ObjectTextAtomV01::Identifier {
                 value: "symbolic".to_owned()
             })
             .unwrap(),
-            json!({ "type": "symbol", "value": "symbolic" })
+            json!({ "type": "identifier", "value": "symbolic" })
         );
 
         let rates = [

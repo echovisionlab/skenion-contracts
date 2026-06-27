@@ -10,18 +10,18 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": "control.number.float",
+      "type": "value.core.float64",
       "required": false,
       "accepts": [
-        "control.number.float",
-        "control.number.int",
-        "control.number.uint",
-        "control.bool",
-        "event.bang",
-        "control.message.any"
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool",
+        "value.core.bang",
+        "value.core.message"
       ],
       "triggerMode": "trigger",
-      "messageSelectors": {
+      "messageKeys": {
         "accepted": [
           "bang",
           "float",
@@ -49,7 +49,7 @@
       "id": "out",
       "direction": "output",
       "label": "Value",
-      "type": "control.number.float"
+      "type": "value.core.float64"
     }
   ],
   "execution": {

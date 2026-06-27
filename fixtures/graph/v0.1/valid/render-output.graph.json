@@ -20,7 +20,7 @@
         {
           "id": "out",
           "direction": "output",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         }
       ]
@@ -34,7 +34,7 @@
         {
           "id": "in",
           "direction": "input",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render",
           "required": true
         }
@@ -52,7 +52,7 @@
         "nodeId": "output",
         "portId": "in"
       },
-      "resolvedType": "render.frame"
+      "resolvedType": "value.core.tensor"
     }
   ]
 }

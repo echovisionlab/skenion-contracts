@@ -39,7 +39,7 @@
               {
                 "id": "out",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "First value input."
               }
@@ -56,7 +56,7 @@
               {
                 "id": "out",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Second value input with a duplicate boundary id."
               }

@@ -10,17 +10,17 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": "control.message.any",
+      "type": "value.core.message",
       "required": false,
       "accepts": [
-        "control.number.float",
-        "control.number.int",
-        "control.number.uint",
-        "control.bool",
-        "event.bang"
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool",
+        "value.core.bang"
       ],
       "triggerMode": "trigger",
-      "messageSelectors": {
+      "messageKeys": {
         "accepted": ["bang", "set", "float", "int", "uint", "bool"],
         "silent": ["set"],
         "trigger": ["bang", "float", "int", "uint", "bool"],
@@ -33,13 +33,13 @@
       "id": "cold",
       "direction": "input",
       "label": "Cold",
-      "type": "control.number.float",
+      "type": "value.core.float64",
       "required": false,
       "accepts": [
-        "control.number.float",
-        "control.number.int",
-        "control.number.uint",
-        "control.bool"
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool"
       ],
       "triggerMode": "passive",
       "latch": true
@@ -48,7 +48,7 @@
       "id": "value",
       "direction": "output",
       "label": "Value",
-      "type": "control.number.float"
+      "type": "value.core.float64"
     }
   ],
   "execution": {

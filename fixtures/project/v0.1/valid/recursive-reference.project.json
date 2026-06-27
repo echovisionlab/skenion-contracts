@@ -43,7 +43,7 @@
               {
                 "id": "out",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Value entering this recursive patch."
               }
@@ -60,13 +60,13 @@
               {
                 "id": "value",
                 "direction": "input",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control"
               },
               {
                 "id": "result",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control"
               }
             ]
@@ -83,7 +83,7 @@
               {
                 "id": "in",
                 "direction": "input",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Result leaving this recursive patch."
               }
@@ -101,7 +101,7 @@
               "nodeId": "self_call",
               "portId": "value"
             },
-            "resolvedType": "control.number.float"
+            "resolvedType": "value.core.float64"
           },
           {
             "id": "edge_self_result",
@@ -113,7 +113,7 @@
               "nodeId": "result_out",
               "portId": "in"
             },
-            "resolvedType": "control.number.float"
+            "resolvedType": "value.core.float64"
           }
         ]
       }

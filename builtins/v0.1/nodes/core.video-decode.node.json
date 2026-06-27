@@ -10,14 +10,14 @@
       "id": "asset",
       "direction": "input",
       "label": "Asset",
-      "type": "asset.video",
+      "type": "value.core.string",
       "required": true
     },
     {
       "id": "frames",
       "direction": "output",
       "label": "Frames",
-      "type": "video.frame"
+      "type": "value.core.tensor"
     }
   ],
   "execution": {

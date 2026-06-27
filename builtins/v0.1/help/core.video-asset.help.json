@@ -10,7 +10,7 @@
     "resource",
     "video"
   ],
-  "runtimeBehavior": "Provides an asset.video resource reference for async media loading.",
+  "runtimeBehavior": "Provides an value.core.string resource reference for async media loading.",
   "relatedNodes": [
     "core.video-decode",
     "core.gpu-upload"
@@ -18,7 +18,7 @@
   "ports": [
     {
       "id": "asset",
-      "description": "Outputs the asset.video resource reference."
+      "description": "Outputs the value.core.string resource reference."
     }
   ],
   "params": [

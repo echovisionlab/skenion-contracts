@@ -14,16 +14,16 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
           "accepts": [
-            "control.number.float",
-            "control.number.int",
-            "control.number.uint",
-            "control.bool",
-            "event.bang"
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.bang"
           ],
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "bang",
               "set",
@@ -55,7 +55,7 @@
           "id": "out",
           "direction": "output",
           "label": "Bang",
-          "type": "event.bang"
+          "type": "value.core.bang"
         }
       ]
     },
@@ -73,16 +73,16 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
           "accepts": [
-            "control.number.float",
-            "control.number.int",
-            "control.number.uint",
-            "control.bool",
-            "event.bang"
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.bang"
           ],
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "bang",
               "set",
@@ -121,14 +121,14 @@
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": "control.number.float",
+          "type": "value.core.float64",
           "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Value",
-          "type": "control.number.float"
+          "type": "value.core.float64"
         }
       ]
     }

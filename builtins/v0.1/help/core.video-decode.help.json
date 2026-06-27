@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "id": "core.video-decode",
   "summary": "Decodes a video asset resource into a frame stream.",
-  "description": "Video Decode is the explicit adapter between asset.video and video.frame.",
+  "description": "Video Decode is the explicit adapter between value.core.string and value.core.tensor.",
   "helpGraph": "help/v0.1/nodes/core.video-decode.help.graph.json",
   "tags": [
     "converter",

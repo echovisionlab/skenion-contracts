@@ -14,7 +14,7 @@ function diagnostic(code: string, message: string): ObjectTextDiagnosticV01 {
 function result(
   input: string,
   displayText: string,
-  classSymbol: string,
+  className: string,
   creationArgs: ObjectTextAtomV01[],
   partial: Pick<ObjectTextParseResultV01, "ok" | "diagnostics">
 ): ObjectTextParseResultV01 {
@@ -23,7 +23,7 @@ function result(
     schemaVersion: SCHEMA_VERSION,
     input,
     ok: partial.ok,
-    classSymbol,
+    className,
     creationArgs,
     resolvedKind: null,
     resolvedKindVersion: null,
@@ -37,12 +37,12 @@ function result(
 function failure(
   input: string,
   displayText: string,
-  classSymbol: string,
+  className: string,
   creationArgs: ObjectTextAtomV01[],
   code: string,
   message: string
 ): ObjectTextParseResultV01 {
-  return result(input, displayText, classSymbol, creationArgs, {
+  return result(input, displayText, className, creationArgs, {
     ok: false,
     diagnostics: [diagnostic(code, message)]
   });
@@ -78,7 +78,7 @@ function parseAtom(token: string): ObjectTextAtomV01 {
   if (token === "true" || token === "false") {
     return { type: "bool", value: token === "true" };
   }
-  return { type: "symbol", value: token };
+  return { type: "identifier", value: token };
 }
 
 export function parseObjectTextV01(input: string): ObjectTextParseResultV01 {
@@ -90,12 +90,12 @@ export function parseObjectTextV01(input: string): ObjectTextParseResultV01 {
   const displayText = normalized.displayText;
   const tokens = tokenize(displayText);
   if (tokens.length === 0) {
-    return failure(input, "<empty>", "<empty>", [], "empty-object-text", "object text must contain a class symbol");
+    return failure(input, "<empty>", "<empty>", [], "empty-object-text", "object text must contain a class name");
   }
 
-  const [classSymbol, ...argTokens] = tokens;
+  const [className, ...argTokens] = tokens;
   const creationArgs = argTokens.map(parseAtom);
-  return result(input, displayText, classSymbol, creationArgs, {
+  return result(input, displayText, className, creationArgs, {
     ok: true,
     diagnostics: []
   });

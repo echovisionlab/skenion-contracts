@@ -10,15 +10,17 @@
       "id": "left",
       "direction": "input",
       "label": "Left",
-      "type": "signal.audio",
-      "required": false
+      "type": "value.core.float32",
+      "required": false,
+      "rate": "audio"
     },
     {
       "id": "right",
       "direction": "input",
       "label": "Right",
-      "type": "signal.audio",
-      "required": false
+      "type": "value.core.float32",
+      "required": false,
+      "rate": "audio"
     }
   ],
   "execution": {

@@ -25,7 +25,7 @@ v0.1 uses one canonical type model:
 
 ```json
 {
-  "type": "control.number.float",
+  "type": "value.core.float64",
   "rate": "control",
   "description": "Radius in px"
 }
@@ -34,8 +34,8 @@ v0.1 uses one canonical type model:
 Do not add a separate `domain` field to graph schema. In the design notes,
 domain names such as audio, video, gpu, clock, and message are explanatory
 categories. In the graph/node port contract, those concepts are expressed
-through canonical port type strings such as `control.number.float`,
-`event.bang`, `signal.audio`, and `gpu.texture2d`.
+through canonical port type strings such as `value.core.float64`,
+`value.core.bang`, audio-rate `value.core.float32`, and `value.core.tensor`.
 
 ## Flow
 
@@ -62,29 +62,28 @@ Initial core port types:
 
 | Port type | Typical flow | Meaning |
 | --- | --- | --- |
-| `event.bang` | `event` | Momentary trigger event. |
-| `control.bool` | `control`, `signal`, `event` | Boolean payload. |
-| `control.number.float` | `control`, `signal` | Floating-point number; storage/transport precision is a representation. |
-| `control.number.int` | `control`, `signal` | Signed integer; width is a representation. |
-| `control.number.uint` | `control`, `signal` | Unsigned integer; width is a representation. |
-| `vec2`, `vec3`, `vec4` | `control`, `signal` | Numeric vectors. |
-| `control.color` | `control`, `signal` | Color payload; channel count and encoding are representations. |
-| `control.string` | `control`, `event` | UTF-8 string. |
-| `enum` | `control`, `event` | One of a declared `values` set. |
-| `matrix.f32` | `control`, `signal`, `stream` | Numeric matrix. |
-| `audio.buffer` | `stream` | Audio block data. |
-| `video.frame` | `stream` | Decoded video frame data. |
-| `gpu.texture2d` | `resource` | GPU texture resource. |
-| `asset.video` | `resource` | Content-addressed video asset. |
-| `asset.image` | `resource` | Content-addressed image asset. |
-| `asset.audio` | `resource` | Content-addressed audio asset. |
+| `value.core.bang` | `event` | Momentary trigger event. |
+| `value.core.bool` | `control`, `signal`, `event` | Boolean payload. |
+| `value.core.float32` | `signal` | Floating-point audio/control signal when the endpoint declares a signal or audio rate. |
+| `value.core.float64` | `control`, `signal` | Floating-point number; storage/transport precision is a representation. |
+| `value.core.int64` | `control`, `signal` | Signed integer; width is a representation. |
+| `value.core.uint64` | `control`, `signal` | Unsigned integer; width is a representation. |
+| `value.core.color` | `control`, `signal` | Color payload; channel count and encoding are representations. |
+| `value.core.string` | `control`, `event` | UTF-8 string. |
+| `value.core.vector` | `control`, `signal`, `stream` | One-dimensional dense numeric array with explicit element format and length metadata. |
+| `value.core.matrix` | `control`, `signal`, `stream` | Two-dimensional dense numeric array. Audio blocks use this with `[frames, channels]`, sample rate, channel, shape, and format metadata. |
+| `value.core.tensor` | `stream` | N-dimensional dense numeric array. Raster images and video frames use this with `[height, width, channels]`, format, color-space, and alpha metadata. |
+| `value.core.tensor` | `resource` | GPU texture resource. |
+| `value.core.string` | `resource` | Content-addressed video asset. |
+| `value.core.string` | `resource` | Content-addressed image asset. |
+| `value.core.string` | `resource` | Content-addressed audio asset. |
 | `clock.beat` | `event`, `signal` | Musical clock payload. |
 | `clock.timecode` | `event`, `signal` | Absolute timecode payload. |
 | `message.midi` | `event`, `stream` | MIDI message payload. |
 | `message.osc` | `event`, `stream` | OSC message payload. |
 
 GPU is not a flow. A GPU texture is `flow: "resource"` with
-`dataKind: "gpu.texture2d"`.
+`dataKind: "value.core.tensor"`.
 
 ## Constraints
 
@@ -115,7 +114,7 @@ Graph v0.1 uses explicit directioned ports:
   "id": "radius",
   "direction": "input",
   "label": "Radius",
-  "type": "control.number.float",
+  "type": "value.core.float64",
   "description": "Radius in px",
   "required": false,
   "defaultValue": 10,
@@ -132,17 +131,17 @@ Outputs do not declare activation.
 
 ## Bang Is Not Boolean
 
-`bang` is the `ControlMessage` selector and the pure trigger edge type
-`event.bang`, not a boolean or stored control value.
+`bang` is the `MessageValue` key and the pure trigger edge type
+`value.core.bang`, not a boolean or stored control value.
 
 Examples:
 
-- button press: `event.bang`
-- toggle state: `control.bool`
+- button press: `value.core.bang`
+- toggle state: `value.core.bool`
 - edge detection: explicit `logic.rising_edge`
 - bang to boolean state: explicit `logic.toggle`
 
-Implicit conversion between `control.bool` and `event.bang` is not allowed.
+Implicit conversion between `value.core.bool` and `value.core.bang` is not allowed.
 
 ## Conversion Policy
 
@@ -156,11 +155,11 @@ Direct edges are valid only when:
 
 All domain crossing is represented by explicit converter nodes. Examples:
 
-- `asset.video` to `video.frame`: `media.video_decode`
-- `video.frame` to `gpu.texture2d`: `gpu.texture_upload`
-- `control.bool` to `event.bang`: `logic.rising_edge`
-- `audio.buffer` to `control.number.float`: `audio.rms`
-- `gpu.texture2d` format changes: `gpu.extract_channel` or another GPU node
+- `value.core.string` to `value.core.tensor`: `media.video_decode`
+- `value.core.tensor` to `value.core.tensor`: `gpu.texture_upload`
+- `value.core.bool` to `value.core.bang`: `logic.rising_edge`
+- `value.core.matrix` to `value.core.float64`: `audio.rms`
+- `value.core.tensor` format changes: `gpu.extract_channel` or another GPU node
 
 The editor may offer to insert converter nodes, but the saved graph must contain
 those nodes explicitly.

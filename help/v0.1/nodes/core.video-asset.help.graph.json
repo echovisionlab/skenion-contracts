@@ -25,7 +25,7 @@
           "id": "asset",
           "direction": "output",
           "label": "Asset",
-          "type": "asset.video"
+          "type": "value.core.string"
         }
       ]
     },
@@ -39,7 +39,7 @@
           "id": "asset",
           "direction": "input",
           "label": "Asset",
-          "type": "asset.video"
+          "type": "value.core.string"
         }
       ]
     }

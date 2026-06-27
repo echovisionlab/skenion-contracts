@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[frobnicate]",
   "ok": true,
-  "classSymbol": "frobnicate",
+  "className": "frobnicate",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,

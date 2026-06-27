@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[+ 1]",
   "ok": true,
-  "classSymbol": "+",
+  "className": "+",
   "creationArgs": [
     {
       "type": "int",

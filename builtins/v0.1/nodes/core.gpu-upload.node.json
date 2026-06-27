@@ -10,14 +10,14 @@
       "id": "frames",
       "direction": "input",
       "label": "Frames",
-      "type": "video.frame",
+      "type": "value.core.tensor",
       "required": true
     },
     {
       "id": "texture",
       "direction": "output",
       "label": "Texture",
-      "type": "gpu.texture2d"
+      "type": "value.core.tensor"
     }
   ],
   "execution": {

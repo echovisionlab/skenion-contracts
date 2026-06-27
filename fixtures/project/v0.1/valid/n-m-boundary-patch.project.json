@@ -43,7 +43,7 @@
               {
                 "id": "out",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Left input value."
               }
@@ -61,7 +61,7 @@
               {
                 "id": "out",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Right input value."
               }
@@ -79,7 +79,7 @@
               {
                 "id": "in",
                 "direction": "input",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "mergePolicy": "latest",
                 "maxConnections": null,
@@ -99,7 +99,7 @@
               {
                 "id": "in",
                 "direction": "input",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Difference output."
               }
@@ -117,7 +117,7 @@
               "nodeId": "sum_out",
               "portId": "in"
             },
-            "resolvedType": "control.number.float",
+            "resolvedType": "value.core.float64",
             "order": 0
           },
           {
@@ -130,7 +130,7 @@
               "nodeId": "sum_out",
               "portId": "in"
             },
-            "resolvedType": "control.number.float",
+            "resolvedType": "value.core.float64",
             "order": 1
           },
           {
@@ -143,7 +143,7 @@
               "nodeId": "difference_out",
               "portId": "in"
             },
-            "resolvedType": "control.number.float"
+            "resolvedType": "value.core.float64"
           }
         ]
       },

@@ -14,11 +14,11 @@ const UNIFORM_MARKER = "@skenion.uniform";
 const PORT_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const RESERVED_UNIFORM_IDS = new Set(["out", "in", "set", "bang", "value"]);
 const SUPPORTED_TYPES = new Set<ShaderUniformDataKindV01>([
-  "number.float",
-  "number.int",
-  "number.uint",
-  "bool",
-  "color"
+  "value.core.float32",
+  "value.core.int32",
+  "value.core.uint32",
+  "value.core.bool",
+  "value.core.color"
 ]);
 
 export function analyzeShaderInterfaceV01(
@@ -139,7 +139,7 @@ export function shaderInterfaceToPortsV01(shaderInterface: ShaderInterfaceV01): 
       label: "Out",
       type: {
         flow: "resource",
-        dataKind: "gpu.texture2d",
+        dataKind: "value.core.tensor",
         format: "rgba8unorm",
         colorSpace: "srgb"
       }
@@ -188,13 +188,13 @@ function isSupportedType(value: string): value is ShaderUniformDataKindV01 {
 
 function dataTypeFor(dataKind: ShaderUniformDataKindV01, attributes: Map<string, string>): DataTypeV01 {
   const type: DataTypeV01 = { flow: "control", dataKind };
-  if (dataKind === "number.float") {
+  if (dataKind === "value.core.float32") {
     type.format = "f32";
-  } else if (dataKind === "number.int") {
+  } else if (dataKind === "value.core.int32") {
     type.format = "i32";
-  } else if (dataKind === "number.uint") {
+  } else if (dataKind === "value.core.uint32") {
     type.format = "u32";
-  } else if (dataKind === "color") {
+  } else if (dataKind === "value.core.color") {
     type.format = "rgba32f";
     type.colorSpace = "linear";
   }
@@ -287,32 +287,32 @@ function parseDefault(
   dataKind: ShaderUniformDataKindV01,
   value: string
 ): { ok: true; value: unknown } | { ok: false; message: string } {
-  if (dataKind === "number.float") {
+  if (dataKind === "value.core.float32") {
     const parsed = Number(value);
     return Number.isFinite(parsed)
       ? { ok: true, value: parsed }
-      : { ok: false, message: `invalid number.float default: ${value}` };
+      : { ok: false, message: `invalid value.core.float32 default: ${value}` };
   }
-  if (dataKind === "number.int") {
+  if (dataKind === "value.core.int32") {
     const parsed = Number(value);
     return Number.isInteger(parsed)
       ? { ok: true, value: parsed }
-      : { ok: false, message: `invalid number.int default: ${value}` };
+      : { ok: false, message: `invalid value.core.int32 default: ${value}` };
   }
-  if (dataKind === "number.uint") {
+  if (dataKind === "value.core.uint32") {
     const parsed = Number(value);
     return Number.isInteger(parsed) && parsed >= 0
       ? { ok: true, value: parsed }
-      : { ok: false, message: `invalid number.uint default: ${value}` };
+      : { ok: false, message: `invalid value.core.uint32 default: ${value}` };
   }
-  if (dataKind === "bool") {
+  if (dataKind === "value.core.bool") {
     if (value === "true") {
       return { ok: true, value: true };
     }
     if (value === "false") {
       return { ok: true, value: false };
     }
-    return { ok: false, message: `invalid boolean default: ${value}` };
+    return { ok: false, message: `invalid value.core.bool default: ${value}` };
   }
 
   try {

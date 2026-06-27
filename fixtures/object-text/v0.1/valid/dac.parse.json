@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[dac~]",
   "ok": true,
-  "classSymbol": "dac~",
+  "className": "dac~",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,

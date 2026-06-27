@@ -16,9 +16,9 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "set"
             ],
@@ -44,9 +44,9 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "set"
             ],

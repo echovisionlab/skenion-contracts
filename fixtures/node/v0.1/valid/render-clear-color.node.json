@@ -9,7 +9,7 @@
     {
       "id": "out",
       "direction": "output",
-      "type": "render.frame",
+      "type": "value.core.tensor",
       "rate": "render",
       "description": "Frame produced by clearing the preview target."
     }
@@ -23,6 +23,6 @@
   },
   "permissions": [],
   "capabilities": [
-    "render.frame.v0.1"
+    "value.core.tensor.v0.1"
   ]
 }

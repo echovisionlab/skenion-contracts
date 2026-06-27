@@ -11,12 +11,12 @@ For design intent, see the skenion Docs
 
 ## Parse Result
 
-A parser result records original input text, class symbol, creation arguments,
+A parser result records original input text, class name, creation arguments,
 the resolved implementation kind when a Runtime/package resolver supplies one,
 params, specialized instance ports, display text, and diagnostics.
 
 Contracts exports a pure lexical helper for this shape. The helper normalizes
-optional brackets, tokenizes the class symbol and creation arguments, and leaves
+optional brackets, tokenizes the class name and creation arguments, and leaves
 `resolvedKind`, `resolvedKindVersion`, `params`, and `instancePorts` empty.
 Concrete object availability, alias mapping, argument arity/type checks, and
 implementation-port specialization belong to Runtime/package registries.

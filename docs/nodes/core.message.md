@@ -1,7 +1,7 @@
 # core.message
 
 `core.message` is a Max/Pd-like message box. It stores message text and emits a
-control message: selector plus typed atoms. It is not a string value node.
+control message: key plus typed atoms. It is not a string value node.
 
 Input:
 
@@ -12,7 +12,7 @@ Input:
 Output:
 
 - `out`: the emitted message payload. v0.1 stores message box text as the
-  graph param and Runtime parses it into a selector plus atoms.
+  graph param and Runtime parses it into a key plus atoms.
 
 Params:
 

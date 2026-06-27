@@ -17,9 +17,9 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "bang",
               "set",
@@ -58,14 +58,14 @@
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": "control.number.float",
+          "type": "value.core.float64",
           "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Value",
-          "type": "control.number.float"
+          "type": "value.core.float64"
         }
       ]
     },
@@ -88,9 +88,9 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "bang",
               "set",
@@ -117,14 +117,14 @@
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": "control.color",
+          "type": "value.core.color",
           "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Color",
-          "type": "control.color"
+          "type": "value.core.color"
         }
       ]
     },
@@ -134,26 +134,26 @@
       "kindVersion": "0.1.0",
       "params": {
         "language": "wgsl",
-        "source": "// @skenion.uniform speed number.float default=0.35\n// @skenion.uniform tint color default=[0.2,0.6,1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint * skenion_uniforms.speed; }"
+        "source": "// @skenion.uniform speed value.core.float32 default=0.35\n// @skenion.uniform tint value.core.color default=[0.2,0.6,1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint * skenion_uniforms.speed; }"
       },
       "ports": [
         {
           "id": "speed",
           "direction": "input",
           "label": "Speed",
-          "type": "control.number.float"
+          "type": "value.core.float64"
         },
         {
           "id": "tint",
           "direction": "input",
           "label": "Tint",
-          "type": "control.color"
+          "type": "value.core.color"
         },
         {
           "id": "out",
           "direction": "output",
           "label": "Out",
-          "type": "gpu.texture2d"
+          "type": "value.core.tensor"
         }
       ]
     },
@@ -167,7 +167,7 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "gpu.texture2d"
+          "type": "value.core.tensor"
         }
       ]
     }

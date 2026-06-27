@@ -10,14 +10,14 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": "control.message.any",
+      "type": "value.core.message",
       "required": false,
       "accepts": [
-        "control.color",
-        "event.bang"
+        "value.core.color",
+        "value.core.bang"
       ],
       "triggerMode": "trigger",
-      "messageSelectors": {
+      "messageKeys": {
         "accepted": ["bang", "set", "color"],
         "silent": ["set"],
         "trigger": ["bang", "color"],
@@ -30,10 +30,10 @@
       "id": "cold",
       "direction": "input",
       "label": "Cold",
-      "type": "control.color",
+      "type": "value.core.color",
       "required": false,
       "accepts": [
-        "control.color"
+        "value.core.color"
       ],
       "triggerMode": "passive",
       "latch": true
@@ -42,7 +42,7 @@
       "id": "value",
       "direction": "output",
       "label": "Color",
-      "type": "control.color"
+      "type": "value.core.color"
     }
   ],
   "execution": {

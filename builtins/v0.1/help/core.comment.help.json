@@ -16,7 +16,7 @@
   "ports": [
     {
       "id": "in",
-      "description": "Accepts control.message.any. A set message updates runtime comment text without output."
+      "description": "Accepts value.core.message. A set message updates runtime comment text without output."
     }
   ],
   "params": [

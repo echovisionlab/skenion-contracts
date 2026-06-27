@@ -32,9 +32,9 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "bang",
               "set",
@@ -61,14 +61,14 @@
           "id": "cold",
           "direction": "input",
           "label": "Cold",
-          "type": "control.color",
+          "type": "value.core.color",
           "required": false
         },
         {
           "id": "value",
           "direction": "output",
           "label": "Color",
-          "type": "control.color"
+          "type": "value.core.color"
         }
       ]
     },
@@ -85,13 +85,13 @@
           "id": "tint",
           "direction": "input",
           "label": "Tint",
-          "type": "control.color"
+          "type": "value.core.color"
         },
         {
           "id": "out",
           "direction": "output",
           "label": "Out",
-          "type": "gpu.texture2d"
+          "type": "value.core.tensor"
         }
       ]
     },
@@ -105,7 +105,7 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "gpu.texture2d"
+          "type": "value.core.tensor"
         }
       ]
     }

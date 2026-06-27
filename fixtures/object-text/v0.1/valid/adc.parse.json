@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "adc~",
   "ok": true,
-  "classSymbol": "adc~",
+  "className": "adc~",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,

@@ -180,8 +180,8 @@ export const graphV01Schema = {
             "latched"
           ]
         },
-        "messageSelectors": {
-          "$ref": "#/$defs/messageSelectors"
+        "messageKeys": {
+          "$ref": "#/$defs/messageKeys"
         },
         "defaultValue": true,
         "latch": {
@@ -204,31 +204,31 @@ export const graphV01Schema = {
       },
       "additionalProperties": false
     },
-    "messageSelectors": {
+    "messageKeys": {
       "type": "object",
       "required": [
         "accepted"
       ],
       "properties": {
         "accepted": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "silent": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "trigger": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "store": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "emit": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         }
       },
       "additionalProperties": false
     },
-    "messageSelectorList": {
+    "messageKeyList": {
       "type": "array",
       "items": {
         "type": "string",
@@ -1603,8 +1603,8 @@ export const nodeDefinitionV01Schema = {
             "latched"
           ]
         },
-        "messageSelectors": {
-          "$ref": "#/$defs/messageSelectors"
+        "messageKeys": {
+          "$ref": "#/$defs/messageKeys"
         },
         "defaultValue": true,
         "latch": {
@@ -1627,31 +1627,31 @@ export const nodeDefinitionV01Schema = {
       },
       "additionalProperties": false
     },
-    "messageSelectors": {
+    "messageKeys": {
       "type": "object",
       "required": [
         "accepted"
       ],
       "properties": {
         "accepted": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "silent": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "trigger": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "store": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "emit": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         }
       },
       "additionalProperties": false
     },
-    "messageSelectorList": {
+    "messageKeyList": {
       "type": "array",
       "items": {
         "type": "string",
@@ -1857,11 +1857,11 @@ export const shaderInterfaceV01Schema = {
         },
         "dataKind": {
           "enum": [
-            "number.float",
-            "number.int",
-            "number.uint",
-            "bool",
-            "color"
+            "value.core.float32",
+            "value.core.int32",
+            "value.core.uint32",
+            "value.core.bool",
+            "value.core.color"
           ]
         },
         "format": {
@@ -1961,17 +1961,17 @@ export const shaderDiagnosticV01Schema = {
   "additionalProperties": false
 } as const;
 
-export const controlMessageV01Schema = {
+export const messageValueV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://skenion.dev/schemas/control/v0.1/control-message.schema.json",
-  "title": "skenion Control Message v0.1",
+  "$id": "https://skenion.dev/schemas/message/v0.1/message-value.schema.json",
+  "title": "skenion Message Value v0.1",
   "type": "object",
   "required": [
-    "selector",
+    "key",
     "atoms"
   ],
   "properties": {
-    "selector": {
+    "key": {
       "type": "string",
       "minLength": 1,
       "pattern": "^[A-Za-z_][A-Za-z0-9_.:-]*$"
@@ -2006,6 +2006,8 @@ export const controlMessageV01Schema = {
                 "f16",
                 "f8.e4m3",
                 "f8.e5m2",
+                "ufloat64",
+                "ufloat32",
                 "ufloat16",
                 "ufloat8"
               ]
@@ -2161,7 +2163,7 @@ export const objectTextParseResultV01Schema = {
     "schemaVersion",
     "input",
     "ok",
-    "classSymbol",
+    "className",
     "creationArgs",
     "resolvedKind",
     "resolvedKindVersion",
@@ -2184,7 +2186,7 @@ export const objectTextParseResultV01Schema = {
     "ok": {
       "type": "boolean"
     },
-    "classSymbol": {
+    "className": {
       "type": "string",
       "minLength": 1
     },
@@ -2244,7 +2246,7 @@ export const objectTextParseResultV01Schema = {
             "int",
             "uint",
             "bool",
-            "symbol",
+            "identifier",
             "string"
           ]
         },
@@ -2312,8 +2314,8 @@ export const objectTextParseResultV01Schema = {
           ]
         },
         "defaultValue": true,
-        "messageSelectors": {
-          "$ref": "#/$defs/messageSelectors"
+        "messageKeys": {
+          "$ref": "#/$defs/messageKeys"
         },
         "description": {
           "type": "string"
@@ -2330,31 +2332,31 @@ export const objectTextParseResultV01Schema = {
       "minItems": 1,
       "uniqueItems": true
     },
-    "messageSelectors": {
+    "messageKeys": {
       "type": "object",
       "required": [
         "accepted"
       ],
       "properties": {
         "accepted": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "silent": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "trigger": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "store": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "emit": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         }
       },
       "additionalProperties": false
     },
-    "messageSelectorList": {
+    "messageKeyList": {
       "type": "array",
       "items": {
         "type": "string",

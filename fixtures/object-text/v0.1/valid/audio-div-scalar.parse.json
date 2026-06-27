@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[/~ 0.5]",
   "ok": true,
-  "classSymbol": "/~",
+  "className": "/~",
   "creationArgs": [
     {
       "type": "float",

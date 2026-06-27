@@ -6,53 +6,53 @@
   "nodes": [
     {
       "id": "float_payload",
-      "kind": "control.number.float",
+      "kind": "value.core.float64",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "value",
           "direction": "output",
-          "type": "control.number.float"
+          "type": "value.core.float64"
         }
       ]
     },
     {
       "id": "video_payload",
-      "kind": "asset.video",
+      "kind": "value.core.string",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "asset",
           "direction": "output",
-          "type": "asset.video"
+          "type": "value.core.string"
         }
       ]
     },
     {
       "id": "bool_payload",
-      "kind": "control.bool",
+      "kind": "value.core.bool",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "value",
           "direction": "output",
-          "type": "control.bool"
+          "type": "value.core.bool"
         }
       ]
     },
     {
       "id": "string_payload",
-      "kind": "control.string",
+      "kind": "value.core.string",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "value",
           "direction": "output",
-          "type": "control.string"
+          "type": "value.core.string"
         }
       ]
     }

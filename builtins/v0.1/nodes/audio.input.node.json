@@ -10,13 +10,15 @@
       "id": "left",
       "direction": "output",
       "label": "Left",
-      "type": "signal.audio"
+      "type": "value.core.float32",
+      "rate": "audio"
     },
     {
       "id": "right",
       "direction": "output",
       "label": "Right",
-      "type": "signal.audio"
+      "type": "value.core.float32",
+      "rate": "audio"
     }
   ],
   "execution": {

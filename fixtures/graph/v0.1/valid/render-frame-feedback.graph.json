@@ -13,13 +13,13 @@
         {
           "id": "previous",
           "direction": "input",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         },
         {
           "id": "out",
           "direction": "output",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         }
       ]
@@ -33,7 +33,7 @@
         {
           "id": "in",
           "direction": "input",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         }
       ]
@@ -50,7 +50,7 @@
         "nodeId": "feedback_pass",
         "portId": "previous"
       },
-      "resolvedType": "render.frame",
+      "resolvedType": "value.core.tensor",
       "feedback": {
         "enabled": true,
         "boundary": "render-frame",
@@ -68,7 +68,7 @@
         "nodeId": "output",
         "portId": "in"
       },
-      "resolvedType": "render.frame"
+      "resolvedType": "value.core.tensor"
     }
   ]
 }

@@ -8,7 +8,8 @@
       "label": "Speed",
       "type": {
         "flow": "control",
-        "dataKind": "number.float",
+        "dataKind": "value.core.float32",
+        "format": "f32",
         "range": {
           "min": 0,
           "max": 2,
@@ -23,7 +24,7 @@
       "label": "Enabled",
       "type": {
         "flow": "control",
-        "dataKind": "bool"
+        "dataKind": "value.core.bool"
       },
       "default": true,
       "required": false
@@ -33,7 +34,8 @@
       "label": "Iterations",
       "type": {
         "flow": "control",
-        "dataKind": "number.int"
+        "dataKind": "value.core.int32",
+        "format": "i32"
       },
       "default": 8,
       "required": false
@@ -43,7 +45,9 @@
       "label": "Tint",
       "type": {
         "flow": "control",
-        "dataKind": "color"
+        "dataKind": "value.core.color",
+        "format": "rgba32f",
+        "colorSpace": "linear"
       },
       "default": [
         1,

@@ -30,7 +30,7 @@ Example definition shape:
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": "gpu.texture2d"
+      "type": "value.core.tensor"
     }
   ],
   "execution": {
@@ -55,7 +55,7 @@ Graph node params:
 }
 ```
 
-`color` is `[r, g, b, a]`.
+`value.core.color` is `[r, g, b, a]`.
 
 Rules:
 
@@ -67,13 +67,13 @@ Rules:
   management fields to the graph schema for this node.
 
 `render.clear-color` is a frame-clocked GPU pass that produces a
-`gpu.texture2d` output. Starting in v0.13, preview output should be
+`value.core.tensor` output. Starting in v0.13, preview output should be
 selected by wiring `render.clear-color:out` into `render.output:in`.
 
 ## `core.color`
 
 `core.color` is a value source convention used by render nodes that accept
-`control.color` controls.
+`value.core.color` controls.
 
 Graph node params:
 
@@ -115,7 +115,7 @@ Example definition shape:
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": "gpu.texture2d"
+      "type": "value.core.tensor"
     }
   ],
   "execution": {
@@ -150,8 +150,8 @@ Rules:
   fullscreen triangle vertex entry point.
 - Uniform input ports are declared by line comments:
   `// @skenion.uniform <id> <dataKind> [attributes...]`.
-- Supported uniform data kinds are `number.float`, `number.int`,
-  `number.uint`, `bool`, and `color`.
+- Supported uniform data kinds are `value.core.float32`, `value.core.int32`,
+  `value.core.uint32`, `value.core.bool`, and `value.core.color`.
 - Uniform ids are port ids and WGSL field names. They are not types.
 - Reserved ids `out`, `in`, `set`, `bang`, and `value` are invalid.
 - `default`, `min`, `max`, `step`, and quoted `label` attributes may be used
@@ -166,7 +166,7 @@ Rules:
   and Runtime diagnostics.
 
 `render.fullscreen-shader` is a frame-clocked GPU pass that produces a
-`gpu.texture2d` output. Starting in v0.13, preview output should be
+`value.core.tensor` output. Starting in v0.13, preview output should be
 selected by wiring `render.fullscreen-shader:out` into `render.output:in`.
 
 ### Dynamic Interface Sync
@@ -179,10 +179,10 @@ active graph mutation surface with invalid edges removed.
 Example:
 
 ```wgsl
-// @skenion.uniform speed number.float default=0.5 min=0 max=2 step=0.01 label="Speed"
-// @skenion.uniform enabled bool default=true label="Enabled"
-// @skenion.uniform iterations number.int default=8 min=1 max=32 step=1 label="Iterations"
-// @skenion.uniform tint color default=[1,0.2,0.1,1] label="Tint"
+// @skenion.uniform speed value.core.float32 default=0.5 min=0 max=2 step=0.01 label="Speed"
+// @skenion.uniform enabled value.core.bool default=true label="Enabled"
+// @skenion.uniform iterations value.core.int32 default=8 min=1 max=32 step=1 label="Iterations"
+// @skenion.uniform tint value.core.color default=[1,0.2,0.1,1] label="Tint"
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
   var pulse = 0.5;
@@ -196,11 +196,11 @@ fn fs_main() -> @location(0) vec4<f32> {
 Generated graph instance ports:
 
 ```text
-speed      control.number.float
-enabled    control.bool
-iterations control.number.int
-tint       control.color
-out        gpu.texture2d
+speed      value.core.float64
+enabled    value.core.bool
+iterations value.core.int64
+tint       value.core.color
+out        value.core.tensor
 ```
 
 ### WGSL ABI
@@ -230,10 +230,10 @@ fn sk_bool(value: u32) -> bool {
 
 Generated scalar layout rules:
 
-- `number.float`: `f32`, alignment 4, size 4.
-- `number.int`: `i32`, alignment 4, size 4.
-- `bool`: stored as `u32`; use `sk_bool`.
-- `color`: `vec4<f32>`, alignment 16, size 16.
+- `value.core.float32`: `f32`, alignment 4, size 4.
+- `value.core.int32`: `i32`, alignment 4, size 4.
+- `value.core.bool`: stored as `u32`; use `sk_bool`.
+- `value.core.color`: `vec4<f32>`, alignment 16, size 16.
 
 The ABI is still intentionally small. Do not add GLSL, texture inputs, video,
 audio, MIDI, asset-backed shader source, or multi-pass render graph semantics
@@ -241,7 +241,7 @@ to this node convention yet.
 
 ## `render.output`
 
-`render.output` is the explicit final preview output selector. It lets Studio
+`render.output` is the explicit final preview output key. It lets Studio
 and Runtime agree on which render node feeds the local preview surface instead
 of relying on first-matching render node scans.
 
@@ -260,7 +260,7 @@ Node definition:
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": "gpu.texture2d",
+      "type": "value.core.tensor",
       "required": true
     }
   ],
@@ -281,7 +281,7 @@ Node definition:
 Rules:
 
 - `render.output` selects the final local preview surface source.
-- `render.output:in` accepts `gpu.texture2d` render outputs.
+- `render.output:in` accepts `value.core.tensor` render outputs.
 - v0.13 supports one effective output. If multiple `render.output` nodes exist,
   runtimes should select deterministically and report a diagnostic.
 - If no `render.output` node exists, runtimes must report that no active render

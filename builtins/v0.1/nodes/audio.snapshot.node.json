@@ -10,20 +10,21 @@
       "id": "signal",
       "direction": "input",
       "label": "Signal",
-      "type": "signal.audio",
-      "required": false
+      "type": "value.core.float32",
+      "required": false,
+      "rate": "audio"
     },
     {
       "id": "trigger",
       "direction": "input",
       "label": "Trigger",
-      "type": "control.message.any",
+      "type": "value.core.message",
       "required": false,
       "accepts": [
-        "event.bang"
+        "value.core.bang"
       ],
       "triggerMode": "trigger",
-      "messageSelectors": {
+      "messageKeys": {
         "accepted": [
           "bang"
         ],
@@ -36,7 +37,7 @@
       "id": "sample",
       "direction": "output",
       "label": "Sample",
-      "type": "control.number.float"
+      "type": "value.core.float64"
     }
   ],
   "execution": {

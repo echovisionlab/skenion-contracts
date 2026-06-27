@@ -18,7 +18,7 @@
   "ports": [
     {
       "id": "in",
-      "description": "Accepts control.message.any. A set #00ff00 message updates the panel CSS color text without output."
+      "description": "Accepts value.core.message. A set #00ff00 message updates the panel CSS color text without output."
     }
   ],
   "params": [

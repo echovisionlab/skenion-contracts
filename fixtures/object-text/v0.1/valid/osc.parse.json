@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[osc~ 440]",
   "ok": true,
-  "classSymbol": "osc~",
+  "className": "osc~",
   "creationArgs": [
     {
       "type": "int",

@@ -22,20 +22,33 @@ export interface DataTypeV01 {
   values?: Array<string | number | boolean>;
 }
 
-export type SemanticDataKindV01 =
-  | "number.float"
-  | "number.int"
-  | "number.uint"
-  | "bool"
-  | "string"
-  | "message.any"
-  | "event.bang"
-  | "clock.state"
-  | "asset.video"
-  | "video.frame"
-  | "signal.audio"
-  | "gpu.texture2d"
-  | "color";
+export type ValueTypeIdV01 =
+  | "value.core.bang"
+  | "value.core.bool"
+  | "value.core.uint8"
+  | "value.core.uint16"
+  | "value.core.uint32"
+  | "value.core.uint64"
+  | "value.core.int8"
+  | "value.core.int16"
+  | "value.core.int32"
+  | "value.core.int64"
+  | "value.core.float8"
+  | "value.core.float16"
+  | "value.core.float32"
+  | "value.core.float64"
+  | "value.core.ufloat8"
+  | "value.core.ufloat16"
+  | "value.core.ufloat32"
+  | "value.core.ufloat64"
+  | "value.core.string"
+  | "value.core.message"
+  | "value.core.color"
+  | "value.core.vector"
+  | "value.core.matrix"
+  | "value.core.tensor";
+
+export type SemanticDataKindV01 = ValueTypeIdV01;
 
 export type FloatRepresentationV01 =
   | "f64"
@@ -43,6 +56,8 @@ export type FloatRepresentationV01 =
   | "f16"
   | "f8.e4m3"
   | "f8.e5m2"
+  | "ufloat64"
+  | "ufloat32"
   | "ufloat16"
   | "ufloat8";
 
@@ -668,7 +683,7 @@ export interface AudioResamplerPlanV01 {
 
 export interface RepresentationSpecV01 {
   id: RepresentationV01;
-  semanticDataKind: "number.float" | "number.int" | "number.uint" | "color";
+  semanticDataKind: ValueTypeIdV01;
   bitsPerComponent: number;
   signed?: boolean;
   integer?: boolean;
@@ -742,7 +757,7 @@ export type CycleValidationV01 =
   | "ambiguous-algebraic-loop"
   | "invalid-cycle";
 
-export interface MessageSelectorPolicyV01 {
+export interface MessageKeyPolicyV01 {
   accepted: string[];
   silent?: string[];
   trigger?: string[];
@@ -762,7 +777,7 @@ export interface PortSpecV01 {
   mergePolicy?: MergePolicyV01;
   fanOutPolicy?: FanOutPolicyV01;
   triggerMode?: TriggerModeV01;
-  messageSelectors?: MessageSelectorPolicyV01;
+  messageKeys?: MessageKeyPolicyV01;
   defaultValue?: unknown;
   latch?: boolean;
   required?: boolean;
@@ -1169,7 +1184,12 @@ export interface NodeDefinitionManifestV01 {
 }
 
 export type ShaderLanguageV01 = "wgsl";
-export type ShaderUniformDataKindV01 = "number.float" | "number.int" | "number.uint" | "bool" | "color";
+export type ShaderUniformDataKindV01 =
+  | "value.core.float32"
+  | "value.core.int32"
+  | "value.core.uint32"
+  | "value.core.bool"
+  | "value.core.color";
 
 export interface ShaderUniformV01 {
   id: string;
@@ -1225,7 +1245,7 @@ export interface ShaderInterfaceAnalysisV01 {
   diagnostics: ShaderInterfaceDiagnosticV01[];
 }
 
-export type ControlAtomV01 =
+export type MessageAtomV01 =
   | { type: "float"; representation: FloatRepresentationV01; value: number }
   | { type: "int"; representation: IntRepresentationV01; value: number }
   | { type: "uint"; representation: UintRepresentationV01; value: number }
@@ -1238,9 +1258,9 @@ export type ControlAtomV01 =
       value: [number, number, number, number];
     };
 
-export interface ControlMessageV01 {
-  selector: string;
-  atoms: ControlAtomV01[];
+export interface MessageValueV01 {
+  key: string;
+  atoms: MessageAtomV01[];
 }
 
 export type ObjectTextAtomV01 =
@@ -1248,7 +1268,7 @@ export type ObjectTextAtomV01 =
   | { type: "int"; value: number; representation?: string }
   | { type: "uint"; value: number; representation?: string }
   | { type: "bool"; value: boolean }
-  | { type: "symbol"; value: string }
+  | { type: "identifier"; value: string }
   | { type: "string"; value: string };
 
 export interface ObjectTextPortV01 {
@@ -1259,7 +1279,7 @@ export interface ObjectTextPortV01 {
   accepts?: string[];
   activation?: "trigger" | "latched" | "passive";
   defaultValue?: unknown;
-  messageSelectors?: MessageSelectorPolicyV01;
+  messageKeys?: MessageKeyPolicyV01;
   description?: string;
 }
 
@@ -1274,7 +1294,7 @@ export interface ObjectTextParseResultV01 {
   schemaVersion: "0.1.0";
   input: string;
   ok: boolean;
-  classSymbol: string;
+  className: string;
   creationArgs: ObjectTextAtomV01[];
   resolvedKind: string | null;
   resolvedKindVersion: string | null;

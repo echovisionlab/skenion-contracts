@@ -8,7 +8,7 @@
     "schemaVersion",
     "input",
     "ok",
-    "classSymbol",
+    "className",
     "creationArgs",
     "resolvedKind",
     "resolvedKindVersion",
@@ -31,7 +31,7 @@
     "ok": {
       "type": "boolean"
     },
-    "classSymbol": {
+    "className": {
       "type": "string",
       "minLength": 1
     },
@@ -77,7 +77,7 @@
       "required": ["type", "value"],
       "properties": {
         "type": {
-          "enum": ["float", "int", "uint", "bool", "symbol", "string"]
+          "enum": ["float", "int", "uint", "bool", "identifier", "string"]
         },
         "value": {
           "anyOf": [
@@ -124,8 +124,8 @@
           "enum": ["trigger", "latched", "passive"]
         },
         "defaultValue": true,
-        "messageSelectors": {
-          "$ref": "#/$defs/messageSelectors"
+        "messageKeys": {
+          "$ref": "#/$defs/messageKeys"
         },
         "description": {
           "type": "string"
@@ -142,29 +142,29 @@
       "minItems": 1,
       "uniqueItems": true
     },
-    "messageSelectors": {
+    "messageKeys": {
       "type": "object",
       "required": ["accepted"],
       "properties": {
         "accepted": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "silent": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "trigger": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "store": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         },
         "emit": {
-          "$ref": "#/$defs/messageSelectorList"
+          "$ref": "#/$defs/messageKeyList"
         }
       },
       "additionalProperties": false
     },
-    "messageSelectorList": {
+    "messageKeyList": {
       "type": "array",
       "items": {
         "type": "string",

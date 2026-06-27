@@ -164,7 +164,7 @@ pub enum CycleValidationV01 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct MessageSelectorPolicyV01 {
+pub struct MessageKeyPolicyV01 {
     pub accepted: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub silent: Option<Vec<String>>,
@@ -205,7 +205,7 @@ pub struct PortSpecV01 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger_mode: Option<TriggerModeV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub message_selectors: Option<MessageSelectorPolicyV01>,
+    pub message_keys: Option<MessageKeyPolicyV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_value: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]

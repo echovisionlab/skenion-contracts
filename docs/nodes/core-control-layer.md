@@ -10,15 +10,15 @@ Runtime-owned behavior-named control objects may include trigger and message
 box objects. Runtime-owned numeric/color stored-payload objects may share this
 surface:
 
-- `in`: hot `control.message.any` inlet; typed controls update and emit,
+- `in`: hot `value.core.message` inlet; typed controls update and emit,
   `bang` emits the stored payload, and `set ...` updates silently
 - `cold`: cold inlet; compatible typed control payloads update silently
 - `value`: output the current stored payload. The port id is payload/state
   naming, not a value-object contract.
 
-Bool and string are payload/atom semantics. `control.bool`, `control.string`,
-and the `bool`, `string`, and `symbol` selectors can be carried by
-`ControlMessage` and handled by behavior-named objects. A toggle, checkbox,
+Bool and string are payload/atom semantics. `value.core.bool`, `value.core.string`,
+and the `bool`, `string`, and `symbol` keys can be carried by
+`MessageValue` and handled by behavior-named objects. A toggle, checkbox,
 label, or text UI must be introduced as a behavior-named object rather than a
 payload-named object identity.
 
@@ -29,10 +29,10 @@ saved payload. `set <message>` on `in` updates runtime message state silently.
 Inspector text edits remain saved graph mutations.
 
 `core.comment` documents the patch as a text annotation. It receives
-`control.message.any` on `in`; `set <text>` updates runtime display text
+`value.core.message` on `in`; `set <text>` updates runtime display text
 silently. It has no output. Inspector text edits remain saved graph mutations.
 
-`core.panel` groups controls visually. It receives `control.message.any` on
+`core.panel` groups controls visually. It receives `value.core.message` on
 `in`; `set <hex>` updates runtime panel color silently. It has no output.
 Inspector color edits remain saved graph mutations.
 

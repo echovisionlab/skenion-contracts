@@ -14,7 +14,7 @@ import {
   derivePatchContractsV01,
   deriveV0CompatibilityLine,
   deriveV0CompatibilityRange,
-  controlMessageV01Schema,
+  messageValueV01Schema,
   extensionManifestV01Schema,
   graphFragmentV01Schema,
   graphV01Schema,
@@ -42,7 +42,7 @@ import {
   createInitialMidiClockSnapshotV01,
   midiClockSnapshotToClockStateV01,
   parseMidiClockMessageV01,
-  validateControlMessage,
+  validateMessageValue,
   validateExtensionManifestV01,
   validateObjectTextParseResult,
   validateGraphDocument,
@@ -119,7 +119,7 @@ test("exports active schema contracts", () => {
   assert.equal(CONTRACTS_COMPATIBILITY_LINE, deriveV0CompatibilityLine(CONTRACTS_PACKAGE_VERSION));
   assert.equal(CONTRACTS_COMPATIBILITY_RANGE, deriveV0CompatibilityRange(CONTRACTS_PACKAGE_VERSION));
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
-  assert.equal(controlMessageV01Schema.properties.selector.type, "string");
+  assert.equal(messageValueV01Schema.properties.key.type, "string");
   assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
     "interface-analysis",
     "source-sync",
@@ -152,49 +152,49 @@ test("exports active schema contracts", () => {
   }
 });
 
-test("node definition schema validates message selector policy shape", () => {
+test("node definition schema validates message key policy shape", () => {
   const definition = {
     schema: "skenion.node.definition",
     schemaVersion: "0.1.0",
-    id: "test.message-selector-policy",
+    id: "test.message-key-policy",
     version: "0.1.0",
-    displayName: "Message Selector Policy Fixture",
+    displayName: "Message Key Policy Fixture",
     category: "Test",
     ports: [
       {
         id: "in",
         direction: "input",
-        type: "control.message.any",
+        type: "value.core.message",
         accepts: [
-          "control.number.float",
-          "control.number.int",
-          "control.number.uint",
-          "control.bool",
-          "control.string",
-          "control.color",
-          "event.bang"
+          "value.core.float64",
+          "value.core.int64",
+          "value.core.uint64",
+          "value.core.bool",
+          "value.core.string",
+          "value.core.color",
+          "value.core.bang"
         ],
         triggerMode: "trigger",
         latch: true,
-        messageSelectors: {
-          accepted: ["bang", "set", "float", "int", "uint", "bool", "symbol", "list", "anything"],
+        messageKeys: {
+          accepted: ["bang", "set", "float", "int", "uint", "bool", "identifier", "list", "anything"],
           silent: ["set"],
           store: ["set"],
           emit: ["bang"],
-          trigger: ["bang", "float", "int", "uint", "bool", "symbol", "list", "anything"]
+          trigger: ["bang", "float", "int", "uint", "bool", "identifier", "list", "anything"]
         }
       },
       {
         id: "cold",
         direction: "input",
-        type: "control.number.float",
+        type: "value.core.float64",
         triggerMode: "passive",
         latch: true
       },
       {
         id: "out",
         direction: "output",
-        type: "control.number.float"
+        type: "value.core.float64"
       }
     ],
     execution: { model: "control" },
@@ -205,17 +205,17 @@ test("node definition schema validates message selector policy shape", () => {
 
   assert.equal(validateNodeDefinitionV01(definition).ok, true);
 
-  const missingSelectors = structuredClone(definition);
-  delete missingSelectors.ports[0].messageSelectors;
-  const missingSelectorsResult = validateNodeDefinitionV01(missingSelectors);
-  assert.equal(missingSelectorsResult.ok, false);
-  assert.match(missingSelectorsResult.errors.join("\n"), /requires messageSelectors/);
+  const missingKeys = structuredClone(definition);
+  delete missingKeys.ports[0].messageKeys;
+  const missingKeysResult = validateNodeDefinitionV01(missingKeys);
+  assert.equal(missingKeysResult.ok, false);
+  assert.match(missingKeysResult.errors.join("\n"), /requires messageKeys/);
 
   const unacceptedTrigger = structuredClone(definition);
-  unacceptedTrigger.ports[0].messageSelectors.trigger.push("unknown");
+  unacceptedTrigger.ports[0].messageKeys.trigger.push("unknown");
   const unacceptedTriggerResult = validateNodeDefinitionV01(unacceptedTrigger);
   assert.equal(unacceptedTriggerResult.ok, false);
-  assert.match(unacceptedTriggerResult.errors.join("\n"), /selector unknown is not accepted/);
+  assert.match(unacceptedTriggerResult.errors.join("\n"), /key unknown is not accepted/);
 });
 
 test("derives v0 compatibility lines and ranges", () => {
@@ -769,7 +769,7 @@ test("validates object text parse result fixtures", async () => {
   const addResult = validateObjectTextParseResult(add);
 
   assert.equal(addResult.ok, true);
-  assert.equal(add.classSymbol, "+");
+  assert.equal(add.className, "+");
   assert.equal(add.resolvedKind, null);
   assert.deepEqual(add.params, {});
   assert.deepEqual(add.instancePorts, []);
@@ -779,7 +779,7 @@ test("validates object text parse result fixtures", async () => {
     schemaVersion: "0.1.0",
     input: "example.gain 0.5",
     ok: true,
-    classSymbol: "example.gain",
+    className: "example.gain",
     creationArgs: [{ type: "float", value: 0.5, representation: "f32" }],
     resolvedKind: "example.package.gain",
     resolvedKindVersion: "0.1.0",
@@ -788,10 +788,10 @@ test("validates object text parse result fixtures", async () => {
       {
         id: "in",
         direction: "input",
-        type: "control.message.any",
+        type: "value.core.message",
         rate: "control",
         activation: "trigger",
-        messageSelectors: {
+        messageKeys: {
           accepted: ["bang", "set", "float"],
           silent: ["set"],
           store: ["set"],
@@ -799,7 +799,7 @@ test("validates object text parse result fixtures", async () => {
           emit: ["bang", "float"]
         }
       },
-      { id: "out", direction: "output", type: "control.number.float", rate: "control" }
+      { id: "out", direction: "output", type: "value.core.float64", rate: "control" }
     ],
     displayText: "example.gain 0.5",
     diagnostics: []
@@ -820,17 +820,17 @@ test("validates object text parse result fixtures", async () => {
   const invalidResult = validateObjectTextParseResult(invalid);
 
   assert.equal(invalidResult.ok, false);
-  assert.match(invalidResult.errors.join("\n"), /classSymbol/);
+  assert.match(invalidResult.errors.join("\n"), /className/);
 
   for (const fixture of [
-    "fixtures/object-text/v0.1/invalid/message-any-missing-selectors.parse.json",
-    "fixtures/object-text/v0.1/invalid/accepts-message-any-missing-selectors.parse.json"
+    "fixtures/object-text/v0.1/invalid/message-value-missing-keys.parse.json",
+    "fixtures/object-text/v0.1/invalid/accepts-message-value-missing-keys.parse.json"
   ]) {
-    const missingSelectors = await readJson(fixture);
-    const result = validateObjectTextParseResult(missingSelectors);
+    const missingKeys = await readJson(fixture);
+    const result = validateObjectTextParseResult(missingKeys);
 
     assert.equal(result.ok, false, fixture);
-    assert.match(result.errors.join("\n"), /requires messageSelectors/, fixture);
+    assert.match(result.errors.join("\n"), /requires messageKeys/, fixture);
   }
 });
 
@@ -844,7 +844,7 @@ test("parses object text into golden parse results", async () => {
   assert.equal(raw.ok, true);
   assert.equal(raw.input, "+ 1");
   assert.equal(raw.displayText, "+ 1");
-  assert.equal(raw.classSymbol, "+");
+  assert.equal(raw.className, "+");
   assert.deepEqual(raw.creationArgs, [{ type: "int", value: 1, representation: "i32" }]);
   assert.equal(raw.resolvedKind, null);
   assert.deepEqual(raw.params, {});
@@ -853,30 +853,30 @@ test("parses object text into golden parse results", async () => {
   const bracketed = parseObjectTextV01("[osc~ 1e3]");
   assert.equal(bracketed.ok, true);
   assert.equal(bracketed.displayText, "osc~ 1e3");
-  assert.equal(bracketed.classSymbol, "osc~");
+  assert.equal(bracketed.className, "osc~");
   assert.deepEqual(bracketed.creationArgs, [{ type: "float", value: 1000, representation: "f32" }]);
   assert.equal(bracketed.resolvedKind, null);
 
   const runtimeOwned = parseObjectTextV01("frobnicate true");
   assert.equal(runtimeOwned.ok, true);
-  assert.equal(runtimeOwned.classSymbol, "frobnicate");
+  assert.equal(runtimeOwned.className, "frobnicate");
   assert.deepEqual(runtimeOwned.creationArgs, [{ type: "bool", value: true }]);
   assert.deepEqual(runtimeOwned.diagnostics, []);
 
   const nonFinite = parseObjectTextV01("+ 1e309");
-  assert.deepEqual(nonFinite.creationArgs, [{ type: "symbol", value: "1e309" }]);
+  assert.deepEqual(nonFinite.creationArgs, [{ type: "identifier", value: "1e309" }]);
 
   assert.equal(parseObjectTextV01("[+ 1").diagnostics[0].code, "invalid-syntax");
   assert.equal(parseObjectTextV01("+ 1]").diagnostics[0].code, "invalid-syntax");
   assert.equal(parseObjectTextV01("").diagnostics[0].code, "empty-object-text");
 });
 
-test("validates control messages as selector and atoms", () => {
-  const bang = validateControlMessage({ selector: "bang", atoms: [] });
+test("validates control messages as key and atoms", () => {
+  const bang = validateMessageValue({ key: "bang", atoms: [] });
   assert.equal(bang.ok, true);
 
-  const set = validateControlMessage({
-    selector: "set",
+  const set = validateMessageValue({
+    key: "set",
     atoms: [
       { type: "f32", value: 0.75 },
       { type: "float", representation: "f32", value: 0.75 },
@@ -889,8 +889,8 @@ test("validates control messages as selector and atoms", () => {
   assert.equal(set.ok, false);
   assert.match(set.errors.join("\n"), /must be equal to constant/);
 
-  const canonicalSet = validateControlMessage({
-    selector: "set",
+  const canonicalSet = validateMessageValue({
+    key: "set",
     atoms: [
       { type: "float", representation: "f32", value: 0.75 },
       { type: "int", representation: "i32", value: 3 },
@@ -901,9 +901,9 @@ test("validates control messages as selector and atoms", () => {
   });
   assert.equal(canonicalSet.ok, true);
 
-  const invalidLegacyBang = validateControlMessage({ type: "bang" });
+  const invalidLegacyBang = validateMessageValue({ type: "bang" });
   assert.equal(invalidLegacyBang.ok, false);
-  assert.match(invalidLegacyBang.errors.join("\n"), /must have required property 'selector'/);
+  assert.match(invalidLegacyBang.errors.join("\n"), /must have required property 'key'/);
 });
 
 test("default graph project view and node validators are strict v0.1", async () => {
@@ -1118,8 +1118,13 @@ test("plans audio clock-domain bridge requirements", () => {
 
 test("plans implicit numeric and color representation conversions", () => {
   assert.equal(representationRegistryV01.some((representation) => representation.id === "f8.e4m3"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "f8.e5m2"), true);
   assert.equal(representationRegistryV01.some((representation) => representation.id === "ufloat8"), true);
   assert.equal(representationRegistryV01.some((representation) => representation.id === "ufloat16"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "ufloat32"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "ufloat64"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "i16"), true);
+  assert.equal(representationRegistryV01.some((representation) => representation.id === "u8"), true);
   assert.equal(representationRegistryV01.some((representation) => representation.id === "rgba8unorm"), true);
 
   const knownRepresentations = new Set(representationRegistryV01.map((representation) => representation.id));
@@ -1136,60 +1141,61 @@ test("plans implicit numeric and color representation conversions", () => {
   };
 
   const semanticConversions = [
-    ["float -> float", controlType("number.float", "f32"), controlType("number.float", "f16"), "numeric-cast"],
-    ["float -> int", controlType("number.float", "f32"), controlType("number.int", "i32"), "float-to-integer"],
-    ["float -> uint", controlType("number.float", "f32"), controlType("number.uint", "u32"), "float-to-integer"],
-    ["int -> int", controlType("number.int", "i32"), controlType("number.int", "i8"), "numeric-cast"],
-    ["int -> uint", controlType("number.int", "i32"), controlType("number.uint", "u32"), "integer-signedness"],
-    ["int -> float", controlType("number.int", "i32"), controlType("number.float", "f32"), "integer-to-float"],
-    ["uint -> uint", controlType("number.uint", "u32"), controlType("number.uint", "u8"), "numeric-cast"],
-    ["uint -> int", controlType("number.uint", "u32"), controlType("number.int", "i32"), "integer-signedness"],
-    ["uint -> float", controlType("number.uint", "u32"), controlType("number.float", "f32"), "integer-to-float"],
-    ["ufloat -> float", controlType("number.float", "ufloat8"), controlType("number.float", "f32"), "numeric-cast"],
-    ["ufloat -> int", controlType("number.float", "ufloat16"), controlType("number.int", "i32"), "float-to-integer"],
-    ["ufloat -> uint", controlType("number.float", "ufloat8"), controlType("number.uint", "u32"), "float-to-integer"],
-    ["color -> color", controlType("color", "rgba32f"), controlType("color", "rgba8unorm"), "color-cast"]
+    ["float32 -> float16", controlType("value.core.float32", "f32"), controlType("value.core.float16", "f16"), "numeric-cast"],
+    ["float32 -> int32", controlType("value.core.float32", "f32"), controlType("value.core.int32", "i32"), "float-to-integer"],
+    ["float32 -> uint32", controlType("value.core.float32", "f32"), controlType("value.core.uint32", "u32"), "float-to-integer"],
+    ["int32 -> int8", controlType("value.core.int32", "i32"), controlType("value.core.int8", "i8"), "numeric-cast"],
+    ["int32 -> uint32", controlType("value.core.int32", "i32"), controlType("value.core.uint32", "u32"), "integer-signedness"],
+    ["int32 -> float32", controlType("value.core.int32", "i32"), controlType("value.core.float32", "f32"), "integer-to-float"],
+    ["uint32 -> uint8", controlType("value.core.uint32", "u32"), controlType("value.core.uint8", "u8"), "numeric-cast"],
+    ["uint32 -> int32", controlType("value.core.uint32", "u32"), controlType("value.core.int32", "i32"), "integer-signedness"],
+    ["uint32 -> float32", controlType("value.core.uint32", "u32"), controlType("value.core.float32", "f32"), "integer-to-float"],
+    ["ufloat8 -> float32", controlType("value.core.ufloat8", "ufloat8"), controlType("value.core.float32", "f32"), "numeric-cast"],
+    ["ufloat16 -> int32", controlType("value.core.ufloat16", "ufloat16"), controlType("value.core.int32", "i32"), "float-to-integer"],
+    ["ufloat8 -> uint32", controlType("value.core.ufloat8", "ufloat8"), controlType("value.core.uint32", "u32"), "float-to-integer"],
+    ["color -> color", controlType("value.core.color", "rgba32f"), controlType("value.core.color", "rgba8unorm"), "color-cast"]
   ];
   for (const [label, source, target, expectedPolicy] of semanticConversions) {
     assertImplicitConversion(label, source, target, expectedPolicy);
   }
 
   const representationConversions = [
-    ["f32 -> f8", controlType("number.float", "f32"), controlType("number.float", "f8.e4m3"), "numeric-cast"],
-    ["f8 -> f16", controlType("number.float", "f8.e4m3"), controlType("number.float", "f16"), "numeric-cast"],
-    ["ufloat8 -> uint", controlType("number.float", "ufloat8"), controlType("number.uint", "u8"), "float-to-integer"],
-    ["ufloat16 -> int", controlType("number.float", "ufloat16"), controlType("number.int", "i16"), "float-to-integer"],
-    ["float -> uint", controlType("number.float", "f32"), controlType("number.uint", "u8"), "float-to-integer"],
-    ["int -> float", controlType("number.int", "i32"), controlType("number.float", "f16"), "integer-to-float"],
-    ["uint -> int", controlType("number.uint", "u32"), controlType("number.int", "i8"), "integer-signedness"],
-    ["i32 -> i8", controlType("number.int", "i32"), controlType("number.int", "i8"), "numeric-cast"],
-    ["u32 -> u8", controlType("number.uint", "u32"), controlType("number.uint", "u8"), "numeric-cast"],
-    ["rgba32f -> rgba8unorm", controlType("color", "rgba32f"), controlType("color", "rgba8unorm"), "color-cast"],
-    ["rgb -> rgba", controlType("color", "rgb8unorm"), controlType("color", "rgba8unorm"), "color-cast"],
-    ["rgba -> rgb", controlType("color", "rgba8unorm"), controlType("color", "rgb8unorm"), "color-cast"]
+    ["f32 -> f8", controlType("value.core.float32", "f32"), controlType("value.core.float8", "f8.e4m3"), "numeric-cast"],
+    ["f8 e5m2 -> f16", controlType("value.core.float8", "f8.e5m2"), controlType("value.core.float16", "f16"), "numeric-cast"],
+    ["f8 e4m3 -> f8 e5m2", controlType("value.core.float8", "f8.e4m3"), controlType("value.core.float8", "f8.e5m2"), "numeric-cast"],
+    ["ufloat8 -> uint8", controlType("value.core.ufloat8", "ufloat8"), controlType("value.core.uint8", "u8"), "float-to-integer"],
+    ["ufloat16 -> int16", controlType("value.core.ufloat16", "ufloat16"), controlType("value.core.int16", "i16"), "float-to-integer"],
+    ["float32 -> uint8", controlType("value.core.float32", "f32"), controlType("value.core.uint8", "u8"), "float-to-integer"],
+    ["int32 -> float16", controlType("value.core.int32", "i32"), controlType("value.core.float16", "f16"), "integer-to-float"],
+    ["uint32 -> int8", controlType("value.core.uint32", "u32"), controlType("value.core.int8", "i8"), "integer-signedness"],
+    ["i32 -> i8", controlType("value.core.int32", "i32"), controlType("value.core.int8", "i8"), "numeric-cast"],
+    ["u32 -> u8", controlType("value.core.uint32", "u32"), controlType("value.core.uint8", "u8"), "numeric-cast"],
+    ["rgba32f -> rgba8unorm", controlType("value.core.color", "rgba32f"), controlType("value.core.color", "rgba8unorm"), "color-cast"],
+    ["rgb -> rgba", controlType("value.core.color", "rgb8unorm"), controlType("value.core.color", "rgba8unorm"), "color-cast"],
+    ["rgba -> rgb", controlType("value.core.color", "rgba8unorm"), controlType("value.core.color", "rgb8unorm"), "color-cast"]
   ];
   for (const [label, source, target, expectedPolicy] of representationConversions) {
     assertImplicitConversion(label, source, target, expectedPolicy);
   }
 
   const floatToByte = planConversion(
-    { flow: "control", dataKind: "number.float", format: "f32" },
-    { flow: "control", dataKind: "number.uint", format: "u8" }
+    { flow: "control", dataKind: "value.core.float32", format: "f32" },
+    { flow: "control", dataKind: "value.core.uint8", format: "u8" }
   );
   assert.equal(floatToByte.lossy, true);
   assert.equal(floatToByte.steps[0].clamp, "saturating");
   assert.equal(floatToByte.steps[0].trunc, "toward-zero");
 
   const messageSink = planConversion(
-    { flow: "control", dataKind: "string" },
-    { flow: "event", dataKind: "message.any" }
+    { flow: "control", dataKind: "value.core.string" },
+    { flow: "event", dataKind: "value.core.message" }
   );
   assert.equal(messageSink.ok, false);
 
-  for (const dataKind of ["number.float", "number.int", "number.uint", "bool", "color", "string"]) {
+  for (const dataKind of ["value.core.float32", "value.core.int32", "value.core.uint32", "value.core.bool", "value.core.color", "value.core.string"]) {
     const controlToEventMessage = planConversion(
       { flow: "control", dataKind },
-      { flow: "event", dataKind: "message.any" }
+      { flow: "event", dataKind: "value.core.message" }
     );
     assert.equal(
       controlToEventMessage.ok,
@@ -1199,56 +1205,56 @@ test("plans implicit numeric and color representation conversions", () => {
   }
 
   const panelMessageSink = planConversion(
-    { flow: "control", dataKind: "string" },
-    { flow: "control", dataKind: "message.any" }
+    { flow: "control", dataKind: "value.core.string" },
+    { flow: "control", dataKind: "value.core.message" }
   );
   assert.equal(panelMessageSink.ok, true);
 
   const bangToAnyMessage = planConversion(
-    { flow: "event", dataKind: "event.bang" },
-    { flow: "event", dataKind: "message.any" }
+    { flow: "event", dataKind: "value.core.bang" },
+    { flow: "event", dataKind: "value.core.message" }
   );
   assert.equal(bangToAnyMessage.ok, true);
 
   const anyMessageToAnyMessage = planConversion(
-    { flow: "control", dataKind: "message.any" },
-    { flow: "control", dataKind: "message.any" }
+    { flow: "control", dataKind: "value.core.message" },
+    { flow: "control", dataKind: "value.core.message" }
   );
   assert.equal(anyMessageToAnyMessage.ok, true);
 
   const resourceToMessage = planConversion(
-    { flow: "resource", dataKind: "gpu.texture2d" },
-    { flow: "event", dataKind: "message.any" }
+    { flow: "resource", dataKind: "value.core.tensor" },
+    { flow: "event", dataKind: "value.core.message" }
   );
   assert.equal(resourceToMessage.ok, false);
 
-  const eventToControlMessage = planConversion(
-    { flow: "event", dataKind: "event.bang" },
-    { flow: "control", dataKind: "message.any" }
+  const eventToMessageValue = planConversion(
+    { flow: "event", dataKind: "value.core.bang" },
+    { flow: "control", dataKind: "value.core.message" }
   );
-  assert.equal(eventToControlMessage.ok, true);
+  assert.equal(eventToMessageValue.ok, true);
 
   const invalidMessageAnyFlow = planConversion(
-    { flow: "control", dataKind: "string" },
-    { flow: "resource", dataKind: "message.any" }
+    { flow: "control", dataKind: "value.core.string" },
+    { flow: "resource", dataKind: "value.core.message" }
   );
   assert.equal(invalidMessageAnyFlow.ok, false);
 
-  assert.equal(representationForDataType({ flow: "control", dataKind: "number.float", format: ["f16", "f32"] }), "f16");
-  assert.equal(representationForDataType({ flow: "control", dataKind: "number.uint" }), "u32");
-  assert.equal(representationForDataType({ flow: "control", dataKind: "string" }), undefined);
+  assert.equal(representationForDataType({ flow: "control", dataKind: "value.core.float16", format: ["f16", "f32"] }), "f16");
+  assert.equal(representationForDataType({ flow: "control", dataKind: "value.core.uint32" }), "u32");
+  assert.equal(representationForDataType({ flow: "control", dataKind: "value.core.string" }), undefined);
 
   const intNarrow = planConversion(
-    { flow: "control", dataKind: "number.int", format: "i32" },
-    { flow: "control", dataKind: "number.int", format: "i8" }
+    { flow: "control", dataKind: "value.core.int32", format: "i32" },
+    { flow: "control", dataKind: "value.core.int8", format: "i8" }
   );
   assert.equal(intNarrow.ok, true);
   assert.equal(intNarrow.lossy, true);
   assert.equal(intNarrow.steps[0].policy, "numeric-cast");
 
   const colorToUnorm = planConversion(
-    { flow: "control", dataKind: "color", format: "rgba32f" },
-    { flow: "control", dataKind: "color", format: "rgba8unorm" }
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" },
+    { flow: "control", dataKind: "value.core.color", format: "rgba8unorm" }
   );
   assert.equal(colorToUnorm.ok, true);
   assert.equal(colorToUnorm.lossy, true);
@@ -1256,95 +1262,95 @@ test("plans implicit numeric and color representation conversions", () => {
   assert.equal(colorToUnorm.steps[0].clamp, "unit");
 
   const intToFloat = planConversion(
-    { flow: "control", dataKind: "number.int", format: "i32" },
-    { flow: "control", dataKind: "number.float", format: "f32" }
+    { flow: "control", dataKind: "value.core.int32", format: "i32" },
+    { flow: "control", dataKind: "value.core.float32", format: "f32" }
   );
   assert.equal(intToFloat.ok, true);
   assert.equal(intToFloat.steps[0].policy, "integer-to-float");
 
   const uintToInt = planConversion(
-    { flow: "control", dataKind: "number.uint", format: "u32" },
-    { flow: "control", dataKind: "number.int", format: "i16" }
+    { flow: "control", dataKind: "value.core.uint32", format: "u32" },
+    { flow: "control", dataKind: "value.core.int16", format: "i16" }
   );
   assert.equal(uintToInt.ok, true);
   assert.equal(uintToInt.steps[0].policy, "integer-signedness");
 
   const colorIdentity = planConversion(
-    { flow: "control", dataKind: "color", format: "rgba32f" },
-    { flow: "control", dataKind: "color", format: "rgba32f" }
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" },
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" }
   );
   assert.equal(colorIdentity.ok, true);
   assert.equal(colorIdentity.lossy, false);
   assert.equal(colorIdentity.diagnostics.length, 0);
 
   const incompatible = planConversion(
-    { flow: "control", dataKind: "bool" },
-    { flow: "event", dataKind: "event.bang" }
+    { flow: "control", dataKind: "value.core.bool" },
+    { flow: "event", dataKind: "value.core.bang" }
   );
   assert.equal(incompatible.ok, false);
 
   const sameFlowIncompatible = planConversion(
-    { flow: "control", dataKind: "bool" },
-    { flow: "control", dataKind: "color", format: "rgba32f" }
+    { flow: "control", dataKind: "value.core.bool" },
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" }
   );
   assert.equal(sameFlowIncompatible.ok, false);
 
   const numericToBoolean = planConversion(
-    { flow: "control", dataKind: "number.float", format: "f32" },
-    { flow: "control", dataKind: "bool" }
+    { flow: "control", dataKind: "value.core.float32", format: "f32" },
+    { flow: "control", dataKind: "value.core.bool" }
   );
   assert.equal(numericToBoolean.ok, false);
 
   const booleanToNumeric = planConversion(
-    { flow: "control", dataKind: "bool" },
-    { flow: "control", dataKind: "number.float", format: "f32" }
+    { flow: "control", dataKind: "value.core.bool" },
+    { flow: "control", dataKind: "value.core.float32", format: "f32" }
   );
   assert.equal(booleanToNumeric.ok, false);
 
   const unknownRepresentation = planConversion(
-    { flow: "control", dataKind: "number.float", format: "float.custom" },
-    { flow: "control", dataKind: "number.float", format: "float.other" }
+    { flow: "control", dataKind: "value.core.float32", format: "float.custom" },
+    { flow: "control", dataKind: "value.core.float32", format: "float.other" }
   );
   assert.equal(unknownRepresentation.ok, false);
 
   assert.equal(planConversion(
-    { flow: "control", dataKind: "number.float", format: "f32" },
-    { flow: "control", dataKind: "number.float", format: "float.other" }
+    { flow: "control", dataKind: "value.core.float32", format: "f32" },
+    { flow: "control", dataKind: "value.core.float32", format: "float.other" }
   ).ok, false);
   assert.equal(planConversion(
-    { flow: "control", dataKind: "number.float", format: "float.custom" },
-    { flow: "control", dataKind: "number.float", format: "f32" }
+    { flow: "control", dataKind: "value.core.float32", format: "float.custom" },
+    { flow: "control", dataKind: "value.core.float32", format: "f32" }
   ).ok, false);
   assert.equal(planConversion(
-    { flow: "control", dataKind: "number.float", format: "i32" },
-    { flow: "control", dataKind: "number.float", format: "f32" }
+    { flow: "control", dataKind: "value.core.float32", format: "i32" },
+    { flow: "control", dataKind: "value.core.float32", format: "f32" }
   ).ok, false);
   assert.equal(planConversion(
-    { flow: "control", dataKind: "color", format: "f32" },
-    { flow: "control", dataKind: "color", format: "rgba32f" }
+    { flow: "control", dataKind: "value.core.color", format: "f32" },
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" }
   ).ok, false);
   assert.equal(planConversion(
-    { flow: "control", dataKind: "color", format: "color.custom" },
-    { flow: "control", dataKind: "color", format: "rgba32f" }
+    { flow: "control", dataKind: "value.core.color", format: "color.custom" },
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" }
   ).ok, false);
   assert.equal(planConversion(
-    { flow: "control", dataKind: "color", format: "rgba32f" },
-    { flow: "control", dataKind: "color", format: "color.custom" }
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" },
+    { flow: "control", dataKind: "value.core.color", format: "color.custom" }
   ).ok, false);
   assert.equal(planConversion(
-    { flow: "control", dataKind: "color", format: "rgba32f" },
-    { flow: "control", dataKind: "color", format: "f32" }
+    { flow: "control", dataKind: "value.core.color", format: "rgba32f" },
+    { flow: "control", dataKind: "value.core.color", format: "f32" }
   ).ok, false);
 });
 
 test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
   const source = [
-    "// @skenion.uniform speed number.float default=0.5 min=0 max=2 step=0.01 label=\"Speed Amount\"",
-    "// @skenion.uniform enabled bool default=true",
-    "// @skenion.uniform disabled bool default=false",
-    "// @skenion.uniform iterations number.int default=8",
-    "// @skenion.uniform seed number.uint default=4",
-    "// @skenion.uniform tint color default=[1,0.2,0.1,1]",
+    "// @skenion.uniform speed value.core.float32 default=0.5 min=0 max=2 step=0.01 label=\"Speed Amount\"",
+    "// @skenion.uniform enabled value.core.bool default=true",
+    "// @skenion.uniform disabled value.core.bool default=false",
+    "// @skenion.uniform iterations value.core.int32 default=8",
+    "// @skenion.uniform seed value.core.uint32 default=4",
+    "// @skenion.uniform tint value.core.color default=[1,0.2,0.1,1]",
     "fn fs_main() -> @location(0) vec4<f32> { return vec4<f32>(1.0); }"
   ].join("\n");
 
@@ -1356,12 +1362,12 @@ test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
   assert.deepEqual(
     result.shaderInterface.uniforms.map((uniform) => [uniform.id, uniform.type.dataKind, uniform.default]),
     [
-      ["speed", "number.float", 0.5],
-      ["enabled", "bool", true],
-      ["disabled", "bool", false],
-      ["iterations", "number.int", 8],
-      ["seed", "number.uint", 4],
-      ["tint", "color", [1, 0.2, 0.1, 1]]
+      ["speed", "value.core.float32", 0.5],
+      ["enabled", "value.core.bool", true],
+      ["disabled", "value.core.bool", false],
+      ["iterations", "value.core.int32", 8],
+      ["seed", "value.core.uint32", 4],
+      ["tint", "value.core.color", [1, 0.2, 0.1, 1]]
     ]
   );
   assert.equal(result.shaderInterface.uniforms[0].label, "Speed Amount");
@@ -1375,25 +1381,25 @@ test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
   assert.deepEqual(ports.map((port) => port.id), ["speed", "enabled", "disabled", "iterations", "seed", "tint", "out"]);
   assert.equal(ports[0].activation, "latched");
   assert.equal(ports[6].direction, "output");
-  assert.equal(ports[6].type.dataKind, "gpu.texture2d");
+  assert.equal(ports[6].type.dataKind, "value.core.tensor");
 });
 
 test("reports shader uniform annotation diagnostics", () => {
   const source = [
     "// @skenion.uniform",
     "const note = \"@skenion.uniform\";",
-    "// @skenion.uniform 1bad number.float default=nope min=nope step=-1",
-    "// @skenion.uniform out number.float",
+    "// @skenion.uniform 1bad value.core.float32 default=nope min=nope step=-1",
+    "// @skenion.uniform out value.core.float32",
     "// @skenion.uniform speed vec3 default=0",
-    "// @skenion.uniform speed number.float default=0.2",
-    "// @skenion.uniform badFloat number.float default=nope",
-    "// @skenion.uniform flag bool default=maybe",
-    "// @skenion.uniform count number.int default=1.5",
-    "// @skenion.uniform badSeed number.uint default=-1",
-    "// @skenion.uniform color color default=nope",
-    "// @skenion.uniform color2 color default=[1,2,3]",
-    "// @skenion.uniform ranged number.float min=nope max=Infinity step=-1",
-    "// @skenion.uniform plain number.float label=Plain"
+    "// @skenion.uniform speed value.core.float32 default=0.2",
+    "// @skenion.uniform badFloat value.core.float32 default=nope",
+    "// @skenion.uniform flag value.core.bool default=maybe",
+    "// @skenion.uniform count value.core.int32 default=1.5",
+    "// @skenion.uniform badSeed value.core.uint32 default=-1",
+    "// @skenion.uniform color value.core.color default=nope",
+    "// @skenion.uniform color2 value.core.color default=[1,2,3]",
+    "// @skenion.uniform ranged value.core.float32 min=nope max=Infinity step=-1",
+    "// @skenion.uniform plain value.core.float32 label=Plain"
   ].join("\n");
 
   const result = analyzeShaderInterfaceV01(source, { language: "glsl" });
@@ -1425,7 +1431,7 @@ test("reports shader uniform annotation diagnostics", () => {
   );
   assert.equal(result.diagnostics[1]?.line, 1);
   assert.equal(result.diagnostics[1]?.column, 4);
-  assert.equal(result.diagnostics.find((diagnostic) => diagnostic.code === "invalid-default")?.column, 43);
+  assert.equal(result.diagnostics.find((diagnostic) => diagnostic.code === "invalid-default")?.column, 49);
   assert.equal(result.shaderInterface.uniforms.at(-1)?.label, "Plain");
 });
 
@@ -1503,7 +1509,7 @@ test("exports and validates v0.1 graph fragment contracts", async () => {
   assert.match(validateGraphFragmentV01(duplicateNode).errors.join("\n"), /duplicate-node-id/);
 
   const payloadKind = structuredClone(fragment);
-  payloadKind.nodes[0].kind = "event.bang";
+  payloadKind.nodes[0].kind = "value.core.bang";
   assert.match(validateGraphFragmentV01(payloadKind).errors.join("\n"), /payload-node-kind/);
 
   const duplicatePort = structuredClone(fragment);
@@ -1531,22 +1537,22 @@ test("exports and validates v0.1 graph fragment contracts", async () => {
   assert.match(validateGraphFragmentV01(badTargetDirection).errors.join("\n"), /invalid-target-direction/);
 
   const incompatible = structuredClone(fragment);
-  incompatible.nodes[1].ports[0].type = "control.string";
+  incompatible.nodes[1].ports[0].type = "value.core.string";
   assert.match(validateGraphFragmentV01(incompatible).errors.join("\n"), /incompatible-type/);
 
   const acceptsList = structuredClone(fragment);
-  acceptsList.nodes[1].ports[0].type = "control.number.int";
-  acceptsList.nodes[1].ports[0].accepts = ["control.number.float"];
+  acceptsList.nodes[1].ports[0].type = "value.core.int64";
+  acceptsList.nodes[1].ports[0].accepts = ["value.core.float64"];
   assert.equal(validateGraphFragmentV01(acceptsList).ok, true);
 
-  const missingSelectorPolicy = structuredClone(fragment);
-  missingSelectorPolicy.nodes[1].ports[0].type = "control.message.any";
-  const missingSelectorPolicyResult = validateGraphFragmentV01(missingSelectorPolicy);
-  assert.equal(missingSelectorPolicyResult.ok, false);
-  assert.match(missingSelectorPolicyResult.errors.join("\n"), /requires messageSelectors/);
+  const missingKeyPolicy = structuredClone(fragment);
+  missingKeyPolicy.nodes[1].ports[0].type = "value.core.message";
+  const missingKeyPolicyResult = validateGraphFragmentV01(missingKeyPolicy);
+  assert.equal(missingKeyPolicyResult.ok, false);
+  assert.match(missingKeyPolicyResult.errors.join("\n"), /requires messageKeys/);
 
-  const messageAny = structuredClone(missingSelectorPolicy);
-  messageAny.nodes[1].ports[0].messageSelectors = {
+  const messageAny = structuredClone(missingKeyPolicy);
+  messageAny.nodes[1].ports[0].messageKeys = {
     accepted: ["float"],
     trigger: ["float"],
     emit: ["float"]
@@ -1555,36 +1561,36 @@ test("exports and validates v0.1 graph fragment contracts", async () => {
 
   const legacyPort = structuredClone(fragment);
   legacyPort.nodes[0].ports[0].type = "number.float";
-  assert.match(validateGraphFragmentV01(legacyPort).errors.join("\n"), /legacy-port-type/);
+  assert.match(validateGraphFragmentV01(legacyPort).errors.join("\n"), /invalid-value-type/);
 
   const legacyAccepts = structuredClone(fragment);
   legacyAccepts.nodes[1].ports[0].accepts = ["message.any"];
-  assert.match(validateGraphFragmentV01(legacyAccepts).errors.join("\n"), /legacy-port-type/);
+  assert.match(validateGraphFragmentV01(legacyAccepts).errors.join("\n"), /invalid-value-type/);
 
   const legacyResolvedType = structuredClone(fragment);
   legacyResolvedType.edges[0].resolvedType = "boolean";
-  assert.match(validateGraphFragmentV01(legacyResolvedType).errors.join("\n"), /legacy-port-type/);
+  assert.match(validateGraphFragmentV01(legacyResolvedType).errors.join("\n"), /invalid-value-type/);
 
-  const invalidSelectors = structuredClone(fragment);
-  invalidSelectors.nodes[1].ports[0].messageSelectors = {
+  const invalidKeys = structuredClone(fragment);
+  invalidKeys.nodes[1].ports[0].messageKeys = {
     accepted: [],
     trigger: ["bang"]
   };
-  const invalidSelectorsResult = validateGraphFragmentV01(invalidSelectors);
-  assert.equal(invalidSelectorsResult.ok, false);
-  assert.match(invalidSelectorsResult.errors.join("\n"), /messageSelectors\/accepted|messageSelectors\.accepted/);
+  const invalidKeysResult = validateGraphFragmentV01(invalidKeys);
+  assert.equal(invalidKeysResult.ok, false);
+  assert.match(invalidKeysResult.errors.join("\n"), /messageKeys\/accepted|messageKeys\.accepted/);
 
-  const invalidTriggerSelector = structuredClone(fragment);
-  invalidTriggerSelector.nodes[1].ports[0].messageSelectors = {
+  const invalidTriggerKey = structuredClone(fragment);
+  invalidTriggerKey.nodes[1].ports[0].messageKeys = {
     accepted: ["float"],
     trigger: ["bang"]
   };
-  const invalidTriggerSelectorResult = validateGraphFragmentV01(invalidTriggerSelector);
-  assert.equal(invalidTriggerSelectorResult.ok, false);
-  assert.match(invalidTriggerSelectorResult.errors.join("\n"), /selector bang is not accepted/);
+  const invalidTriggerKeyResult = validateGraphFragmentV01(invalidTriggerKey);
+  assert.equal(invalidTriggerKeyResult.ok, false);
+  assert.match(invalidTriggerKeyResult.errors.join("\n"), /key bang is not accepted/);
 
   const invalidSetTrigger = structuredClone(messageAny);
-  invalidSetTrigger.nodes[1].ports[0].messageSelectors = {
+  invalidSetTrigger.nodes[1].ports[0].messageKeys = {
     accepted: ["set"],
     trigger: ["set"]
   };
@@ -1594,14 +1600,14 @@ test("exports and validates v0.1 graph fragment contracts", async () => {
   assert.match(invalidSetTriggerResult.errors.join("\n"), /set must be silent or store behavior/);
 
   const storeOnlySet = structuredClone(messageAny);
-  storeOnlySet.nodes[1].ports[0].messageSelectors = {
+  storeOnlySet.nodes[1].ports[0].messageKeys = {
     accepted: ["set"],
     store: ["set"]
   };
   assert.equal(validateGraphFragmentV01(storeOnlySet).ok, true);
 
   const invalidSetEmit = structuredClone(messageAny);
-  invalidSetEmit.nodes[1].ports[0].messageSelectors = {
+  invalidSetEmit.nodes[1].ports[0].messageKeys = {
     accepted: ["set"],
     silent: ["set"],
     emit: ["set"]
@@ -2044,7 +2050,7 @@ test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", a
           kindVersion: "0.1.0",
           params: {},
           ports: [
-            { id: "out", direction: "output", type: "control.number.float", rate: "control" }
+            { id: "out", direction: "output", type: "value.core.float64", rate: "control" }
           ]
         },
         {
@@ -2053,8 +2059,8 @@ test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", a
           kindVersion: "0.1.0",
           params: {},
           ports: [
-            { id: "left", direction: "input", type: "control.number.float", rate: "control" },
-            { id: "right", direction: "input", type: "control.number.float", rate: "control" }
+            { id: "left", direction: "input", type: "value.core.float64", rate: "control" },
+            { id: "right", direction: "input", type: "value.core.float64", rate: "control" }
           ]
         }
       ],
@@ -2097,7 +2103,7 @@ test("v0.1 validates fan-out, fan-in, accepts, and feedback fixtures", async () 
   delete feedbackGraph.edges[0].feedback;
   const invalidCycle = analyzeGraphDocumentV01(feedbackGraph);
   assert.equal(invalidCycle.ok, false);
-  assert.equal(invalidCycle.cycles[0].classification, "invalid-cycle");
+  assert.equal(invalidCycle.cycles[0].classification, "ambiguous-algebraic-loop");
 });
 
 test("v0.1 control ports declare numeric accepts and bang trigger behavior separately", () => {
@@ -2113,7 +2119,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
         kindVersion: "0.1.0",
         params: {},
         ports: [
-          { id: "out", direction: "output", type: "event.bang", rate: "event" }
+          { id: "out", direction: "output", type: "value.core.bang", rate: "event" }
         ]
       },
       {
@@ -2122,7 +2128,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
         kindVersion: "0.1.0",
         params: {},
         ports: [
-          { id: "value", direction: "output", type: "control.number.int", rate: "control" }
+          { id: "value", direction: "output", type: "value.core.int64", rate: "control" }
         ]
       },
       {
@@ -2131,7 +2137,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
         kindVersion: "0.1.0",
         params: {},
         ports: [
-          { id: "value", direction: "output", type: "control.bool", rate: "control" }
+          { id: "value", direction: "output", type: "value.core.bool", rate: "control" }
         ]
       },
       {
@@ -2143,18 +2149,18 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
           {
             id: "in",
             direction: "input",
-            type: "control.message.any",
+            type: "value.core.message",
             rate: "control",
             accepts: [
-              "control.number.float",
-              "control.number.int",
-              "control.bool",
-              "event.bang"
+              "value.core.float64",
+              "value.core.int64",
+              "value.core.bool",
+              "value.core.bang"
             ],
             maxConnections: 3,
             mergePolicy: "ordered-events",
             triggerMode: "trigger",
-            messageSelectors: {
+            messageKeys: {
               accepted: ["bang", "set", "float", "int", "bool"],
               silent: ["set"],
               trigger: ["bang", "float", "int", "bool"],
@@ -2189,15 +2195,15 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
 
   const withoutBangAccept = structuredClone(graph);
   withoutBangAccept.nodes[3].ports[0].accepts = [
-    "control.number.float",
-    "control.number.int",
-    "control.bool"
+    "value.core.float64",
+    "value.core.int64",
+    "value.core.bool"
   ];
-  assert.match(validateGraphDocumentV01(withoutBangAccept).errors.join("\n"), /incompatible-type/);
+  assert.equal(validateGraphDocumentV01(withoutBangAccept).ok, true);
 });
 
 test("v0.1 rejects legacy control port aliases on current graph and node contracts", () => {
-  const legacyTypes = [
+  const invalidTypes = [
     "value.number",
     "value<number.float>",
     "number.float",
@@ -2205,15 +2211,22 @@ test("v0.1 rejects legacy control port aliases on current graph and node contrac
     "number.uint",
     "boolean",
     "message.any",
+    "value.core.symbol",
+    "value.media.asset",
+    "value.media.audio-sample",
+    "value.media.audio-frame",
+    "value.media.audio-buffer",
+    "value.media.image",
+    "value.media.matrix",
     "color",
     "string"
   ];
 
-  for (const legacyType of legacyTypes) {
+  for (const invalidType of invalidTypes) {
     const graph = {
       schema: "skenion.graph",
       schemaVersion: "0.1.0",
-      id: `legacy-${legacyType.replaceAll(/[^A-Za-z0-9]+/g, "-")}`,
+      id: `legacy-${invalidType.replaceAll(/[^A-Za-z0-9]+/g, "-")}`,
       revision: "1",
       nodes: [
         {
@@ -2221,56 +2234,56 @@ test("v0.1 rejects legacy control port aliases on current graph and node contrac
           kind: "test.source",
           kindVersion: "0.1.0",
           params: {},
-          ports: [{ id: "out", direction: "output", type: legacyType }]
+          ports: [{ id: "out", direction: "output", type: invalidType }]
         },
         {
           id: "target",
           kind: "test.target",
           kindVersion: "0.1.0",
           params: {},
-          ports: [{ id: "in", direction: "input", type: "control.message.any" }]
+          ports: [{ id: "in", direction: "input", type: "value.core.message" }]
         }
       ],
       edges: [{ id: "edge", source: { nodeId: "source", portId: "out" }, target: { nodeId: "target", portId: "in" } }]
     };
     const graphResult = validateGraphDocumentV01(graph);
-    assert.equal(graphResult.ok, false, legacyType);
-    assert.match(graphResult.errors.join("\n"), /legacy-port-type/, legacyType);
+    assert.equal(graphResult.ok, false, invalidType);
+    assert.match(graphResult.errors.join("\n"), /invalid-value-type/, invalidType);
 
-    graph.nodes[0].ports[0].type = "control.number.float";
-    graph.nodes[1].ports[0].accepts = [legacyType];
+    graph.nodes[0].ports[0].type = "value.core.float64";
+    graph.nodes[1].ports[0].accepts = [invalidType];
     const acceptsResult = validateGraphDocumentV01(graph);
-    assert.equal(acceptsResult.ok, false, legacyType);
-    assert.match(acceptsResult.errors.join("\n"), /legacy-port-type/, legacyType);
+    assert.equal(acceptsResult.ok, false, invalidType);
+    assert.match(acceptsResult.errors.join("\n"), /invalid-value-type/, invalidType);
 
-    graph.nodes[1].ports[0].accepts = ["control.number.float"];
-    graph.edges[0].resolvedType = legacyType;
+    graph.nodes[1].ports[0].accepts = ["value.core.float64"];
+    graph.edges[0].resolvedType = invalidType;
     const resolvedTypeResult = validateGraphDocumentV01(graph);
-    assert.equal(resolvedTypeResult.ok, false, legacyType);
-    assert.match(resolvedTypeResult.errors.join("\n"), /legacy-port-type/, legacyType);
+    assert.equal(resolvedTypeResult.ok, false, invalidType);
+    assert.match(resolvedTypeResult.errors.join("\n"), /invalid-value-type/, invalidType);
 
     const node = {
       schema: "skenion.node.definition",
       schemaVersion: "0.1.0",
-      id: `legacy.${legacyType.replaceAll(/[^A-Za-z0-9]+/g, "-")}`,
+      id: `legacy.${invalidType.replaceAll(/[^A-Za-z0-9]+/g, "-")}`,
       version: "0.1.0",
       displayName: "Legacy",
       category: "Test",
-      ports: [{ id: "in", direction: "input", type: legacyType }],
+      ports: [{ id: "in", direction: "input", type: invalidType }],
       execution: { model: "control" },
       state: { persistent: false },
       permissions: [],
       capabilities: []
     };
     const nodeResult = validateNodeDefinitionV01(node);
-    assert.equal(nodeResult.ok, false, legacyType);
-    assert.match(nodeResult.errors.join("\n"), /legacy port type/, legacyType);
+    assert.equal(nodeResult.ok, false, invalidType);
+    assert.match(nodeResult.errors.join("\n"), /invalid value type/, invalidType);
 
-    node.ports[0].type = "control.message.any";
-    node.ports[0].accepts = [legacyType];
+    node.ports[0].type = "value.core.message";
+    node.ports[0].accepts = [invalidType];
     const nodeAcceptsResult = validateNodeDefinitionV01(node);
-    assert.equal(nodeAcceptsResult.ok, false, legacyType);
-    assert.match(nodeAcceptsResult.errors.join("\n"), /legacy accepted port type/, legacyType);
+    assert.equal(nodeAcceptsResult.ok, false, invalidType);
+    assert.match(nodeAcceptsResult.errors.join("\n"), /invalid accepted value type/, invalidType);
   }
 });
 
@@ -2301,7 +2314,7 @@ test("v0.1 rejects invalid direction fan-in and algebraic-loop fixtures", async 
   const controlLoop = await readJson("fixtures/graph/v0.1/invalid/ambiguous-value-algebraic-loop.graph.json");
   for (const node of controlLoop.nodes) {
     for (const port of node.ports) {
-      port.type = "control.number";
+      port.type = "value.core.float64";
     }
   }
   const controlLoopResult = validateGraphDocumentV01(controlLoop);
@@ -2322,7 +2335,7 @@ test("v0.1 rejects invalid direction fan-in and algebraic-loop fixtures", async 
   missingTargetPortCycle.nodes[0].ports.push({
     id: "out",
     direction: "output",
-    type: "control.number.float"
+    type: "value.core.float64"
   });
   missingTargetPortCycle.edges.push({
     id: "edge_missing_target_cycle",
@@ -2338,8 +2351,8 @@ test("v0.1 reports detailed semantic diagnostics", async () => {
   const graph = await readJson("fixtures/graph/v0.1/valid/source-fan-out.graph.json");
   graph.nodes[0].ports[0].fanOutPolicy = "forbid";
   graph.nodes[1].ports[0].required = true;
-  graph.nodes[2].ports[0].type = "render.frame";
-  graph.nodes[2].ports[0].accepts = ["gpu.texture2d", "string"];
+  graph.nodes[2].ports[0].type = "value.core.tensor";
+  graph.nodes[2].ports[0].accepts = ["value.core.tensor", "string"];
   graph.edges[1].source.portId = "missing";
   graph.edges.push({
     ...graph.edges[0],
@@ -2366,7 +2379,7 @@ test("v0.1 reports detailed semantic diagnostics", async () => {
   graph.nodes[1].ports.push({
     ...graph.nodes[1].ports[0]
   });
-  graph.nodes[1].ports[0].messageSelectors = {
+  graph.nodes[1].ports[0].messageKeys = {
     trigger: ["bang"]
   };
   graph.nodes[0].portGroups = [
@@ -2380,7 +2393,7 @@ test("v0.1 reports detailed semantic diagnostics", async () => {
         direction: "input",
         type: "message.any",
         accepts: ["color"],
-        messageSelectors: {
+        messageKeys: {
           accepted: ["bang"],
           trigger: ["set"]
         }
@@ -2399,13 +2412,13 @@ test("v0.1 reports detailed semantic diagnostics", async () => {
   assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-edge/);
   assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /incompatible-type/);
   assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /fan-out-forbidden/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /legacy-port-type/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /message-selector-policy/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /invalid-value-type/);
+  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /message-key-policy/);
 
   const acceptingGraph = await readJson("fixtures/graph/v0.1/valid/render-output.graph.json");
-  acceptingGraph.nodes[1].ports[0].accepts = ["gpu.texture2d"];
-  acceptingGraph.nodes[0].ports[0].type = "gpu.texture2d";
-  acceptingGraph.edges[0].resolvedType = "gpu.texture2d";
+  acceptingGraph.nodes[1].ports[0].accepts = ["value.core.tensor"];
+  acceptingGraph.nodes[0].ports[0].type = "value.core.tensor";
+  acceptingGraph.edges[0].resolvedType = "value.core.tensor";
   assert.equal(validateGraphDocumentV01(acceptingGraph).ok, true);
 
   const unlimitedGraph = await readJson("fixtures/graph/v0.1/invalid/render-input-fan-in-default.graph.json");
@@ -2417,7 +2430,7 @@ test("v0.1 reports detailed semantic diagnostics", async () => {
   requiredGraph.nodes[0].ports.push({
     id: "in",
     direction: "input",
-    type: "control.number.float",
+    type: "value.core.float64",
     required: true
   });
   const requiredResult = validateGraphDocumentV01(requiredGraph);
@@ -2440,7 +2453,7 @@ test("v0.1 rejects schema and node-definition semantic failures", async () => {
     {
       id: "bad",
       direction: "input",
-      type: "control.number.float",
+      type: "value.core.float64",
       minPorts: 2,
       maxPorts: 1
     }
@@ -2478,7 +2491,7 @@ test("v0.1 rejects schema and node-definition semantic failures", async () => {
     {
       id: "optional_controls",
       direction: "input",
-      type: "control.number.float",
+      type: "value.core.float64",
       minPorts: 0
     }
   ];
@@ -2487,7 +2500,7 @@ test("v0.1 rejects schema and node-definition semantic failures", async () => {
   badNodeGroup.portGroups[0].type = "number.float";
   badNodeGroup.portGroups[0].defaultPortSpec.type = "message.any";
   badNodeGroup.portGroups[0].defaultPortSpec.accepts = ["string"];
-  badNodeGroup.portGroups[0].defaultPortSpec.messageSelectors = {
+  badNodeGroup.portGroups[0].defaultPortSpec.messageKeys = {
     accepted: ["bang"],
     trigger: ["set"]
   };
@@ -2496,8 +2509,8 @@ test("v0.1 rejects schema and node-definition semantic failures", async () => {
   const badNodeGroupResult = validateNodeDefinitionV01(badNodeGroup);
   assert.equal(badNodeGroupResult.ok, false);
   assert.match(badNodeGroupResult.errors.join("\n"), /maxPorts/);
-  assert.match(badNodeGroupResult.errors.join("\n"), /legacy port group type/);
-  assert.match(badNodeGroupResult.errors.join("\n"), /legacy default port type/);
-  assert.match(badNodeGroupResult.errors.join("\n"), /legacy default accepted port type/);
-  assert.match(badNodeGroupResult.errors.join("\n"), /selector set is not accepted/);
+  assert.match(badNodeGroupResult.errors.join("\n"), /invalid port group type/);
+  assert.match(badNodeGroupResult.errors.join("\n"), /invalid default value type/);
+  assert.match(badNodeGroupResult.errors.join("\n"), /invalid default accepted value type/);
+  assert.match(badNodeGroupResult.errors.join("\n"), /key set is not accepted/);
 });

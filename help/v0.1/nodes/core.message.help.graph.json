@@ -22,18 +22,18 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
           "accepts": [
-            "control.number.float",
-            "control.number.int",
-            "control.number.uint",
-            "control.bool",
-            "control.string",
-            "control.color",
-            "event.bang"
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.string",
+            "value.core.color",
+            "value.core.bang"
           ],
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "bang",
               "float",
@@ -42,7 +42,7 @@
               "bool",
               "string",
               "color",
-              "symbol",
+              "identifier",
               "list",
               "anything"
             ],
@@ -54,7 +54,7 @@
               "bool",
               "string",
               "color",
-              "symbol",
+              "identifier",
               "list",
               "anything"
             ],
@@ -66,7 +66,7 @@
               "bool",
               "string",
               "color",
-              "symbol",
+              "identifier",
               "list",
               "anything"
             ]
@@ -76,7 +76,7 @@
           "id": "out",
           "direction": "output",
           "label": "Bang",
-          "type": "event.bang"
+          "type": "value.core.bang"
         }
       ],
       "kind": "core.bang"
@@ -93,18 +93,18 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "control.message.any",
+          "type": "value.core.message",
           "required": false,
           "accepts": [
-            "control.number.float",
-            "control.number.int",
-            "control.number.uint",
-            "control.bool",
-            "control.string",
-            "control.color",
-            "event.bang"
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.string",
+            "value.core.color",
+            "value.core.bang"
           ],
-          "messageSelectors": {
+          "messageKeys": {
             "accepted": [
               "bang",
               "set",
@@ -114,7 +114,7 @@
               "bool",
               "string",
               "color",
-              "symbol",
+              "identifier",
               "list",
               "anything"
             ],
@@ -129,7 +129,7 @@
               "bool",
               "string",
               "color",
-              "symbol",
+              "identifier",
               "list",
               "anything"
             ],
@@ -144,7 +144,7 @@
               "bool",
               "string",
               "color",
-              "symbol",
+              "identifier",
               "list",
               "anything"
             ]
@@ -154,7 +154,7 @@
           "id": "out",
           "direction": "output",
           "label": "Message",
-          "type": "control.message.any"
+          "type": "value.core.message"
         }
       ]
     }

@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[phasor~ 1]",
   "ok": true,
-  "classSymbol": "phasor~",
+  "className": "phasor~",
   "creationArgs": [
     {
       "type": "int",

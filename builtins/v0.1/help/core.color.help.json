@@ -10,7 +10,7 @@
     "control",
     "color"
   ],
-  "runtimeBehavior": "in is the hot control.message.any inlet: color payloads update and emit, bang emits the stored color payload, and set ... updates silently. cold updates silently.",
+  "runtimeBehavior": "in is the hot value.core.message inlet: color payloads update and emit, bang emits the stored color payload, and set ... updates silently. cold updates silently.",
   "relatedNodes": [
     "render.fullscreen-shader"
   ],

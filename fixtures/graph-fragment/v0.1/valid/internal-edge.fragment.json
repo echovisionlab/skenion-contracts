@@ -14,7 +14,7 @@
         {
           "id": "out",
           "direction": "output",
-          "type": "control.number.float",
+          "type": "value.core.float64",
           "rate": "control"
         }
       ]
@@ -28,7 +28,7 @@
         {
           "id": "in",
           "direction": "input",
-          "type": "control.number.float",
+          "type": "value.core.float64",
           "rate": "control"
         }
       ]
@@ -45,7 +45,7 @@
         "nodeId": "sink",
         "portId": "in"
       },
-      "resolvedType": "control.number.float"
+      "resolvedType": "value.core.float64"
     }
   ],
   "view": {

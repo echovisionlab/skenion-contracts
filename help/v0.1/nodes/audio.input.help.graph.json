@@ -13,12 +13,14 @@
         {
           "id": "left",
           "direction": "output",
-          "type": "signal.audio"
+          "type": "value.core.float32",
+          "rate": "audio"
         },
         {
           "id": "right",
           "direction": "output",
-          "type": "signal.audio"
+          "type": "value.core.float32",
+          "rate": "audio"
         }
       ]
     },
@@ -33,12 +35,14 @@
         {
           "id": "left",
           "direction": "input",
-          "type": "signal.audio"
+          "type": "value.core.float32",
+          "rate": "audio"
         },
         {
           "id": "right",
           "direction": "input",
-          "type": "signal.audio"
+          "type": "value.core.float32",
+          "rate": "audio"
         }
       ]
     }

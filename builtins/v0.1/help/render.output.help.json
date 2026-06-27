@@ -10,7 +10,7 @@
     "output",
     "preview"
   ],
-  "runtimeBehavior": "Consumes one gpu.texture2d resource and marks it as the session preview/render output.",
+  "runtimeBehavior": "Consumes one value.core.tensor resource and marks it as the session preview/render output.",
   "relatedNodes": [
     "render.clear-color",
     "render.fullscreen-shader"

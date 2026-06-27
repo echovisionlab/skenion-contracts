@@ -23,7 +23,7 @@
     },
     {
       "id": "tick",
-      "description": "Outputs event.bang for each MIDI Timing Clock tick."
+      "description": "Outputs value.core.bang for each MIDI Timing Clock tick."
     },
     {
       "id": "running",

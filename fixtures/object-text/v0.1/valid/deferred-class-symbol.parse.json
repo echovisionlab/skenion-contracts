@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[sin~]",
   "ok": true,
-  "classSymbol": "sin~",
+  "className": "sin~",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,

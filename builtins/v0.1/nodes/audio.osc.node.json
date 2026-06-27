@@ -10,14 +10,15 @@
       "id": "frequency",
       "direction": "input",
       "label": "Frequency",
-      "type": "control.number.float",
+      "type": "value.core.float64",
       "required": false
     },
     {
       "id": "out",
       "direction": "output",
       "label": "Signal",
-      "type": "signal.audio"
+      "type": "value.core.float32",
+      "rate": "audio"
     }
   ],
   "execution": {

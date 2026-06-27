@@ -16,13 +16,13 @@
       "id": "tick",
       "direction": "output",
       "label": "Tick",
-      "type": "event.bang"
+      "type": "value.core.bang"
     },
     {
       "id": "running",
       "direction": "output",
       "label": "Running",
-      "type": "control.bool"
+      "type": "value.core.bool"
     }
   ],
   "execution": {

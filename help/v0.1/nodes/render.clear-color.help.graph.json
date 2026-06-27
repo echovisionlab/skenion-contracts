@@ -21,7 +21,7 @@
           "id": "out",
           "direction": "output",
           "label": "Out",
-          "type": "gpu.texture2d"
+          "type": "value.core.tensor"
         }
       ]
     },
@@ -35,7 +35,7 @@
           "id": "in",
           "direction": "input",
           "label": "In",
-          "type": "gpu.texture2d"
+          "type": "value.core.tensor"
         }
       ]
     }

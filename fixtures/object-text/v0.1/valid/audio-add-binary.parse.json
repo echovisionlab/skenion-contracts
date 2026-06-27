@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[+~]",
   "ok": true,
-  "classSymbol": "+~",
+  "className": "+~",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,

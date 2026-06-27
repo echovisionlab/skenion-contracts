@@ -10,7 +10,7 @@
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": "gpu.texture2d"
+      "type": "value.core.tensor"
     }
   ],
   "execution": {

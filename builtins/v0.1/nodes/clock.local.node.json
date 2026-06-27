@@ -17,7 +17,7 @@
       "id": "reset",
       "direction": "input",
       "label": "Reset",
-      "type": "event.bang",
+      "type": "value.core.bang",
       "required": false
     },
     {
@@ -30,19 +30,19 @@
       "id": "tick",
       "direction": "output",
       "label": "Tick",
-      "type": "event.bang"
+      "type": "value.core.bang"
     },
     {
       "id": "phase",
       "direction": "output",
       "label": "Phase",
-      "type": "control.number.float"
+      "type": "value.core.float64"
     },
     {
       "id": "tempo",
       "direction": "output",
       "label": "Tempo",
-      "type": "control.number.float"
+      "type": "value.core.float64"
     }
   ],
   "execution": {

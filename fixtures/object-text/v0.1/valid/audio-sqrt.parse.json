@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "[sqrt~]",
   "ok": true,
-  "classSymbol": "sqrt~",
+  "className": "sqrt~",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,

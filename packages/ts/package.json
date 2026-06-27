@@ -60,7 +60,7 @@
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
-    "./control/v0.1/message-schema": {
+    "./message/v0.1/value-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },

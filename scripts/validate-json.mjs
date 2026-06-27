@@ -610,35 +610,118 @@ function edgeEnabled(edge) {
   return edge.enabled !== false;
 }
 
-function v01ControlMessagePortType(type) {
+function v01MessageValuePortType(type) {
   return [
-    "control.message.any",
-    "control.number.float",
-    "control.number.int",
-    "control.number.uint",
-    "control.bool",
-    "control.color",
-    "control.string"
+    "value.core.message",
+    "value.core.float64",
+    "value.core.int64",
+    "value.core.uint64",
+    "value.core.bool",
+    "value.core.color",
+    "value.core.string"
   ].includes(type);
 }
 
 function portTypeAccepts(source, target) {
-  if (target.type === "control.message.any" && v01ControlMessagePortType(source.type)) {
+  if (target.type === "value.core.message" && v01MessageValuePortType(source.type)) {
     return true;
   }
   return source.type === target.type || target.accepts?.includes(source.type) === true;
 }
 
-function legacyControlPortType(type) {
-  return [
+const firstPartyValueTypeIds = new Set([
+  "value.core.bang",
+  "value.core.bool",
+  "value.core.uint8",
+  "value.core.uint16",
+  "value.core.uint32",
+  "value.core.uint64",
+  "value.core.int8",
+  "value.core.int16",
+  "value.core.int32",
+  "value.core.int64",
+  "value.core.float8",
+  "value.core.float16",
+  "value.core.float32",
+  "value.core.float64",
+  "value.core.ufloat8",
+  "value.core.ufloat16",
+  "value.core.ufloat32",
+  "value.core.ufloat64",
+  "value.core.string",
+  "value.core.message",
+  "value.core.color",
+  "value.core.vector",
+  "value.core.matrix",
+  "value.core.tensor"
+]);
+
+const invalidValueTypeIds = new Set([
+  "value.core.float",
+  "value.core.int",
+  "value.core.uint",
+  "value.core.number",
+  "value.core.object",
+  "value.core.frame",
+  "value.core.symbol",
+  "value.media.asset",
+  "value.media.stream",
+  "value.media.video-stream",
+  "value.media.audio-stream",
+  "value.media.audio-sample",
+  "value.media.audio-frame",
+  "value.media.audio-buffer",
+  "value.media.image",
+  "value.media.matrix",
+  "value.media.render-frame",
+  "value.media.video-frame"
+]);
+
+function invalidPortValueType(type) {
+  if ([
     "message.any",
     "number.float",
     "number.int",
     "number.uint",
     "boolean",
     "color",
-    "string"
-  ].includes(type) || String(type).startsWith("value.") || String(type).startsWith("value<");
+    "string",
+    "control.number",
+    "control.message",
+    "control.message.any",
+    "event.bang",
+    "asset.video",
+    "asset.image",
+    "asset.audio",
+    "gpu.texture2d",
+    "video.frame",
+    "render.frame",
+    "stream.video.frame",
+    "signal.audio"
+  ].includes(type)) {
+    return true;
+  }
+  if (
+    String(type).startsWith("control.") ||
+    String(type).startsWith("event.") ||
+    String(type).startsWith("stream.") ||
+    String(type).startsWith("payload.") ||
+    String(type).startsWith("data.") ||
+    String(type).startsWith("selector.") ||
+    String(type).startsWith("value<")
+  ) {
+    return true;
+  }
+  if (invalidValueTypeIds.has(type)) {
+    return true;
+  }
+  if (
+    (String(type).startsWith("value.core.") || String(type).startsWith("value.media.")) &&
+    !firstPartyValueTypeIds.has(type)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function payloadIdentityNodeKind(kind) {
@@ -650,12 +733,12 @@ function payloadIdentityNodeKind(kind) {
     "string",
     "core.bool",
     "core.string",
-    "control.message.any",
-    "event.bang",
-    "asset.video",
-    "asset.image",
-    "asset.audio",
-    "gpu.texture2d"
+    "value.core.message",
+    "value.core.bang",
+    "value.core.string",
+    "value.core.string",
+    "value.core.string",
+    "value.core.tensor"
   ].includes(kind) ||
     String(kind).startsWith("value.") ||
     String(kind).startsWith("data.") ||
@@ -663,50 +746,50 @@ function payloadIdentityNodeKind(kind) {
     String(kind).startsWith("control.");
 }
 
-function selectorAwareInputPort(port) {
+function messageKeyAwareInputPort(port) {
   return port.direction === "input" && (
-    port.type === "control.message.any" ||
-    port.accepts?.includes("control.message.any") === true
+    port.type === "value.core.message" ||
+    port.accepts?.includes("value.core.message") === true
   );
 }
 
-function validateMessageSelectorPolicy(file, port, label) {
-  if (!port.messageSelectors) {
-    if (selectorAwareInputPort(port)) {
-      fail(file, `${label} selector-aware input port requires messageSelectors`);
+function validateMessageKeyPolicy(file, port, label) {
+  if (!port.messageKeys) {
+    if (messageKeyAwareInputPort(port)) {
+      fail(file, `${label} message-key-aware input port requires messageKeys`);
     }
     return;
   }
-  const accepted = port.messageSelectors.accepted ?? [];
+  const accepted = port.messageKeys.accepted ?? [];
   if (accepted.length === 0) {
-    fail(file, `${label} messageSelectors.accepted must list at least one selector`);
+    fail(file, `${label} messageKeys.accepted must list at least one key`);
   }
   const acceptedSet = new Set(accepted);
   for (const field of ["silent", "trigger", "store", "emit"]) {
-    for (const selector of port.messageSelectors[field] ?? []) {
-      if (!acceptedSet.has(selector)) {
-        fail(file, `${label} messageSelectors.${field} selector ${selector} is not accepted`);
+    for (const key of port.messageKeys[field] ?? []) {
+      if (!acceptedSet.has(key)) {
+        fail(file, `${label} messageKeys.${field} key ${key} is not accepted`);
       }
     }
   }
-  if (port.messageSelectors.trigger?.includes("set")) {
-    fail(file, `${label} messageSelectors.trigger must not include set`);
+  if (port.messageKeys.trigger?.includes("set")) {
+    fail(file, `${label} messageKeys.trigger must not include set`);
   }
-  if (port.messageSelectors.emit?.includes("set")) {
-    fail(file, `${label} messageSelectors.emit must not include set`);
+  if (port.messageKeys.emit?.includes("set")) {
+    fail(file, `${label} messageKeys.emit must not include set`);
   }
   if (
     acceptedSet.has("set") &&
-    !port.messageSelectors.silent?.includes("set") &&
-    !port.messageSelectors.store?.includes("set")
+    !port.messageKeys.silent?.includes("set") &&
+    !port.messageKeys.store?.includes("set")
   ) {
-    fail(file, `${label} messageSelectors.set must be silent or store behavior`);
+    fail(file, `${label} messageKeys.set must be silent or store behavior`);
   }
 }
 
 function validateObjectTextParseResultSemantics(file, result) {
   for (const port of result.instancePorts ?? []) {
-    validateMessageSelectorPolicy(file, port, `objectText instancePort ${result.classSymbol}.${port.id}`);
+    validateMessageKeyPolicy(file, port, `objectText instancePort ${result.className}.${port.id}`);
   }
 }
 
@@ -724,19 +807,16 @@ function mergePolicy(port) {
   return port.mergePolicy ?? "forbid";
 }
 
-function typeFamily(type) {
-  return type.split(".")[0] ?? type;
+function immediateValueCyclePortType(type) {
+  return String(type).startsWith("value.core.");
 }
 
-function controlCyclePortType(type) {
-  return type === "event.bang" || v01ControlMessagePortType(type) || typeFamily(type) === "control";
-}
-
-function controlCycleTypes(edges, ports) {
+function immediateValueCycleTypes(edges, ports) {
   return edges.every((edge) => {
     const source = ports.get(portSpecKey(edge.source.nodeId, edge.source.portId));
     const target = ports.get(portSpecKey(edge.target.nodeId, edge.target.portId));
-    return controlCyclePortType(source?.type ?? "") && controlCyclePortType(target?.type ?? "");
+    return immediateValueCyclePortType(source?.type ?? "") &&
+      immediateValueCyclePortType(target?.type ?? "");
   });
 }
 
@@ -820,34 +900,34 @@ function validateGraphV01Semantics(file, graph) {
       `port id on ${node.id}`
     );
     for (const group of node.portGroups ?? []) {
-      if (legacyControlPortType(group.type)) {
-        fail(file, `port group ${node.id}.${group.id} uses legacy control port type ${group.type}`);
+      if (invalidPortValueType(group.type)) {
+        fail(file, `port group ${node.id}.${group.id} uses invalid value type ${group.type}`);
       }
-      if (legacyControlPortType(group.defaultPortSpec?.type ?? "")) {
-        fail(file, `port group ${node.id}.${group.id} default port uses legacy control port type ${group.defaultPortSpec.type}`);
+      if (invalidPortValueType(group.defaultPortSpec?.type ?? "")) {
+        fail(file, `port group ${node.id}.${group.id} default port uses invalid value type ${group.defaultPortSpec.type}`);
       }
       for (const acceptedType of group.defaultPortSpec?.accepts ?? []) {
-        if (legacyControlPortType(acceptedType)) {
-          fail(file, `port group ${node.id}.${group.id} default port accepts legacy control port type ${acceptedType}`);
+        if (invalidPortValueType(acceptedType)) {
+          fail(file, `port group ${node.id}.${group.id} default port accepts invalid value type ${acceptedType}`);
         }
       }
       if (group.defaultPortSpec) {
-        validateMessageSelectorPolicy(file, group.defaultPortSpec, `port group ${node.id}.${group.id} defaultPortSpec`);
+        validateMessageKeyPolicy(file, group.defaultPortSpec, `port group ${node.id}.${group.id} defaultPortSpec`);
       }
       if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
         fail(file, `port group ${node.id}.${group.id} maxPorts is less than minPorts`);
       }
     }
     for (const port of node.ports) {
-      if (legacyControlPortType(port.type)) {
-        fail(file, `port ${node.id}.${port.id} uses legacy control port type ${port.type}`);
+      if (invalidPortValueType(port.type)) {
+        fail(file, `port ${node.id}.${port.id} uses invalid value type ${port.type}`);
       }
       for (const acceptedType of port.accepts ?? []) {
-        if (legacyControlPortType(acceptedType)) {
-          fail(file, `port ${node.id}.${port.id} accepts legacy control port type ${acceptedType}`);
+        if (invalidPortValueType(acceptedType)) {
+          fail(file, `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`);
         }
       }
-      validateMessageSelectorPolicy(file, port, `port ${node.id}.${port.id}`);
+      validateMessageKeyPolicy(file, port, `port ${node.id}.${port.id}`);
       const key = portSpecKey(node.id, port.id);
       ports.set(key, port);
       incoming.set(key, []);
@@ -872,8 +952,8 @@ function validateGraphV01Semantics(file, graph) {
     const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
     const source = ports.get(sourceKey);
     const target = ports.get(targetKey);
-    if (legacyControlPortType(edge.resolvedType ?? "")) {
-      fail(file, `edge ${edge.id} uses legacy resolvedType ${edge.resolvedType}`);
+    if (invalidPortValueType(edge.resolvedType ?? "")) {
+      fail(file, `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`);
     }
     if (!source) {
       fail(file, `edge ${edge.id} references missing source port ${sourceKey}`);
@@ -927,8 +1007,8 @@ function validateGraphV01Semantics(file, graph) {
       continue;
     }
     const feedback = cycleEdges.find((edge) => edge.feedback?.enabled === true);
-    if (!feedback && controlCycleTypes(cycleEdges, ports)) {
-      fail(file, "ambiguous-algebraic-loop: control cycle requires explicit latch, delay, or feedback policy");
+    if (!feedback && immediateValueCycleTypes(cycleEdges, ports)) {
+      fail(file, "ambiguous-algebraic-loop: immediate value cycle requires explicit latch, delay, or feedback policy");
     }
     if (!feedback) {
       fail(file, "invalid-cycle: cycle requires explicit feedback policy");
@@ -955,15 +1035,15 @@ function validateGraphFragmentV01Semantics(file, fragment) {
       `port id on ${node.id}`
     );
     for (const port of node.ports) {
-      if (legacyControlPortType(port.type)) {
-        fail(file, `port ${node.id}.${port.id} uses legacy control port type ${port.type}`);
+      if (invalidPortValueType(port.type)) {
+        fail(file, `port ${node.id}.${port.id} uses invalid value type ${port.type}`);
       }
       for (const acceptedType of port.accepts ?? []) {
-        if (legacyControlPortType(acceptedType)) {
-          fail(file, `port ${node.id}.${port.id} accepts legacy control port type ${acceptedType}`);
+        if (invalidPortValueType(acceptedType)) {
+          fail(file, `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`);
         }
       }
-      validateMessageSelectorPolicy(file, port, `port ${node.id}.${port.id}`);
+      validateMessageKeyPolicy(file, port, `port ${node.id}.${port.id}`);
       ports.set(portSpecKey(node.id, port.id), port);
     }
   }
@@ -982,8 +1062,8 @@ function validateGraphFragmentV01Semantics(file, fragment) {
     const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
     const source = ports.get(sourceKey);
     const target = ports.get(targetKey);
-    if (legacyControlPortType(edge.resolvedType ?? "")) {
-      fail(file, `edge ${edge.id} uses legacy resolvedType ${edge.resolvedType}`);
+    if (invalidPortValueType(edge.resolvedType ?? "")) {
+      fail(file, `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`);
     }
     if (!source) {
       fail(file, `edge ${edge.id} references missing source port ${sourceKey}`);
@@ -1011,19 +1091,19 @@ function validateNodeDefinitionV01Semantics(file, definition) {
   );
 
   for (const group of definition.portGroups ?? []) {
-    if (legacyControlPortType(group.type)) {
-      fail(file, `legacy port group type on ${definition.id}.${group.id}: ${group.type}`);
+    if (invalidPortValueType(group.type)) {
+      fail(file, `invalid port group type on ${definition.id}.${group.id}: ${group.type}`);
     }
-    if (legacyControlPortType(group.defaultPortSpec?.type ?? "")) {
-      fail(file, `legacy default port type on ${definition.id}.${group.id}: ${group.defaultPortSpec.type}`);
+    if (invalidPortValueType(group.defaultPortSpec?.type ?? "")) {
+      fail(file, `invalid default value type on ${definition.id}.${group.id}: ${group.defaultPortSpec.type}`);
     }
     for (const acceptedType of group.defaultPortSpec?.accepts ?? []) {
-      if (legacyControlPortType(acceptedType)) {
-        fail(file, `legacy default accepted port type on ${definition.id}.${group.id}: ${acceptedType}`);
+      if (invalidPortValueType(acceptedType)) {
+        fail(file, `invalid default accepted value type on ${definition.id}.${group.id}: ${acceptedType}`);
       }
     }
     if (group.defaultPortSpec) {
-      validateMessageSelectorPolicy(file, group.defaultPortSpec, `port group ${definition.id}.${group.id} defaultPortSpec`);
+      validateMessageKeyPolicy(file, group.defaultPortSpec, `port group ${definition.id}.${group.id} defaultPortSpec`);
     }
     if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
       fail(file, `port group ${definition.id}.${group.id} maxPorts is less than minPorts`);
@@ -1031,15 +1111,15 @@ function validateNodeDefinitionV01Semantics(file, definition) {
   }
 
   for (const port of definition.ports) {
-    if (legacyControlPortType(port.type)) {
-      fail(file, `legacy port type on ${definition.id}.${port.id}: ${port.type}`);
+    if (invalidPortValueType(port.type)) {
+      fail(file, `invalid value type on ${definition.id}.${port.id}: ${port.type}`);
     }
     for (const acceptedType of port.accepts ?? []) {
-      if (legacyControlPortType(acceptedType)) {
-        fail(file, `legacy accepted port type on ${definition.id}.${port.id}: ${acceptedType}`);
+      if (invalidPortValueType(acceptedType)) {
+        fail(file, `invalid accepted value type on ${definition.id}.${port.id}: ${acceptedType}`);
       }
     }
-    validateMessageSelectorPolicy(file, port, `port ${definition.id}.${port.id}`);
+    validateMessageKeyPolicy(file, port, `port ${definition.id}.${port.id}`);
   }
 
   for (const permission of definition.permissions) {

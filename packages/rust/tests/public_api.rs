@@ -45,7 +45,7 @@ fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
 
 #[test]
 fn serializes_optional_contract_fields_as_absent() {
-    let mut number = data_type(DataFlowV01::Control, "number.float");
+    let mut number = data_type(DataFlowV01::Control, "value.core.float32");
     number.range = Some(NumberRangeV01 {
         min: Some(0.0),
         max: None,
@@ -57,7 +57,7 @@ fn serializes_optional_contract_fields_as_absent() {
         serialized_type,
         serde_json::json!({
             "flow": "control",
-            "dataKind": "number.float",
+            "dataKind": "value.core.float32",
             "range": { "min": 0.0 }
         })
     );
@@ -75,7 +75,7 @@ fn serializes_optional_contract_fields_as_absent() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": "control.number.float" }
+                { "id": "out", "direction": "output", "type": "value.core.float64" }
               ]
             }
           ],
@@ -86,7 +86,7 @@ fn serializes_optional_contract_fields_as_absent() {
     let serialized_graph = serde_json::to_string(&graph).expect("graph should serialize");
 
     assert!(!serialized_graph.contains("null"));
-    assert!(serialized_graph.contains(r#""type":"control.number.float""#));
+    assert!(serialized_graph.contains(r#""type":"value.core.float64""#));
     assert!(validate_graph_document_v01(&graph).is_ok());
 }
 
@@ -175,7 +175,7 @@ fn parses_public_graph_fragment_paste_request_payload() {
                 "kindVersion": "0.1.0",
                 "params": {},
                 "ports": [
-                  { "id": "out", "direction": "output", "type": "control.number.float" }
+                  { "id": "out", "direction": "output", "type": "value.core.float64" }
                 ]
               }
             ],
@@ -213,7 +213,7 @@ fn reports_public_validation_errors() {
           "displayName": "Bad",
           "category": "Script",
           "ports": [
-            { "id": "out", "direction": "output", "type": "event.bang" }
+            { "id": "out", "direction": "output", "type": "value.core.bang" }
           ],
           "execution": { "model": "script_control" },
           "state": { "persistent": false },
@@ -236,8 +236,8 @@ fn reports_public_validation_errors() {
           "displayName": "Duplicate Port",
           "category": "Core",
           "ports": [
-            { "id": "value", "direction": "input", "type": "control.number.float" },
-            { "id": "value", "direction": "output", "type": "control.number.float" }
+            { "id": "value", "direction": "input", "type": "value.core.float64" },
+            { "id": "value", "direction": "output", "type": "value.core.float64" }
           ],
           "execution": { "model": "control" },
           "state": { "persistent": false },
@@ -1438,7 +1438,7 @@ fn validates_public_object_text_parse_results() {
           "schemaVersion": "0.1.0",
           "input": "example.gain 0.5",
           "ok": true,
-          "classSymbol": "example.gain",
+          "className": "example.gain",
           "creationArgs": [{ "type": "float", "value": 0.5, "representation": "f32" }],
           "resolvedKind": "example.package.gain",
           "resolvedKindVersion": "0.1.0",
@@ -1447,10 +1447,10 @@ fn validates_public_object_text_parse_results() {
             {
               "id": "in",
               "direction": "input",
-              "type": "control.message.any",
+              "type": "value.core.message",
               "rate": "control",
               "activation": "trigger",
-              "messageSelectors": {
+              "messageKeys": {
                 "accepted": ["bang", "set", "float"],
                 "silent": ["set"],
                 "store": ["set"],
@@ -1458,7 +1458,7 @@ fn validates_public_object_text_parse_results() {
                 "emit": ["bang", "float"]
               }
             },
-            { "id": "out", "direction": "output", "type": "control.number.float", "rate": "control" }
+            { "id": "out", "direction": "output", "type": "value.core.float64", "rate": "control" }
           ],
           "displayText": "example.gain 0.5",
           "diagnostics": []
@@ -1485,7 +1485,7 @@ fn validates_public_object_text_parse_results() {
     assert!(version_error.to_string().contains("9.9.9"));
 
     let parsed = parse_object_text_v01("[osc~ 440]");
-    assert_eq!(parsed.class_symbol, "osc~");
+    assert_eq!(parsed.class_name, "osc~");
     assert_eq!(parsed.resolved_kind, None);
     assert!(parsed.params.is_empty());
     assert!(parsed.instance_ports.is_empty());
@@ -1497,62 +1497,62 @@ fn validates_public_object_text_parse_results() {
         }]
     );
 
-    let mut missing_selectors = result.clone();
-    missing_selectors.instance_ports[0].message_selectors = None;
-    let missing_selectors_error = validate_object_text_parse_result_v01(&missing_selectors)
-        .expect_err("control.message.any object text port without selectors should fail");
+    let mut missing_keys = result.clone();
+    missing_keys.instance_ports[0].message_keys = None;
+    let missing_keys_error = validate_object_text_parse_result_v01(&missing_keys)
+        .expect_err("value.core.message object text port without keys should fail");
     assert!(
-        missing_selectors_error
+        missing_keys_error
             .to_string()
-            .contains("requires messageSelectors")
+            .contains("requires messageKeys")
     );
 
     let mut accepting_message_any = result.clone();
-    accepting_message_any.instance_ports[0].port_type = "control.number.float".to_owned();
-    accepting_message_any.instance_ports[0].accepts = Some(vec!["control.message.any".to_owned()]);
-    accepting_message_any.instance_ports[0].message_selectors = None;
+    accepting_message_any.instance_ports[0].port_type = "value.core.float64".to_owned();
+    accepting_message_any.instance_ports[0].accepts = Some(vec!["value.core.message".to_owned()]);
+    accepting_message_any.instance_ports[0].message_keys = None;
     let accepting_message_any_error = validate_object_text_parse_result_v01(&accepting_message_any)
-        .expect_err("object text port accepting control.message.any without selectors should fail");
+        .expect_err("object text port accepting value.core.message without keys should fail");
     assert!(
         accepting_message_any_error
             .to_string()
-            .contains("requires messageSelectors")
+            .contains("requires messageKeys")
     );
 
-    let mut empty_selector_set = result.clone();
-    let policy = empty_selector_set.instance_ports[0]
-        .message_selectors
+    let mut empty_key_set = result.clone();
+    let policy = empty_key_set.instance_ports[0]
+        .message_keys
         .as_mut()
-        .expect("resolved object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted.clear();
-    let empty_selector_error = validate_object_text_parse_result_v01(&empty_selector_set)
-        .expect_err("empty selector policy should fail");
+    let empty_key_error = validate_object_text_parse_result_v01(&empty_key_set)
+        .expect_err("empty key policy should fail");
     assert!(
-        empty_selector_error
+        empty_key_error
             .to_string()
-            .contains("accepted must list at least one selector")
+            .contains("accepted must list at least one key")
     );
 
     let mut unaccepted_trigger = result.clone();
     let policy = unaccepted_trigger.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("resolved object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["float".to_owned()];
     policy.trigger = Some(vec!["int".to_owned()]);
     let unaccepted_trigger_error = validate_object_text_parse_result_v01(&unaccepted_trigger)
-        .expect_err("selector behavior outside accepted set should fail");
+        .expect_err("key behavior outside accepted set should fail");
     assert!(
         unaccepted_trigger_error
             .to_string()
-            .contains("messageSelectors.trigger selector int is not accepted")
+            .contains("messageKeys.trigger key int is not accepted")
     );
 
     let mut set_as_emit = result.clone();
     let policy = set_as_emit.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("resolved object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
@@ -1563,14 +1563,14 @@ fn validates_public_object_text_parse_results() {
     assert!(
         set_emit_error
             .to_string()
-            .contains("messageSelectors.emit must not include set")
+            .contains("messageKeys.emit must not include set")
     );
 
     let mut set_as_trigger = result.clone();
     let policy = set_as_trigger.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("resolved object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = Some(vec!["set".to_owned()]);
@@ -1579,34 +1579,34 @@ fn validates_public_object_text_parse_results() {
     let set_trigger_error = validate_object_text_parse_result_v01(&set_as_trigger)
         .expect_err("set must not be trigger behavior");
     let set_trigger_text = set_trigger_error.to_string();
-    assert!(set_trigger_text.contains("messageSelectors.trigger must not include set"));
-    assert!(set_trigger_text.contains("messageSelectors.set must be silent or store behavior"));
+    assert!(set_trigger_text.contains("messageKeys.trigger must not include set"));
+    assert!(set_trigger_text.contains("messageKeys.set must be silent or store behavior"));
 
     let mut set_as_silent = result.clone();
     let policy = set_as_silent.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("resolved object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
     policy.store = None;
     policy.emit = None;
     validate_object_text_parse_result_v01(&set_as_silent)
-        .expect("set should be valid as silent selector behavior");
+        .expect("set should be valid as silent key behavior");
 
     let mut set_as_store = result.clone();
     let policy = set_as_store.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("resolved object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = None;
     policy.store = Some(vec!["set".to_owned()]);
     policy.emit = None;
     validate_object_text_parse_result_v01(&set_as_store)
-        .expect("set should be valid as store selector behavior");
+        .expect("set should be valid as store key behavior");
 }
 
 #[test]
@@ -1885,10 +1885,10 @@ fn parses_public_midi_clock_messages_into_clock_state() {
 
 #[test]
 fn validates_public_type_helpers() {
-    let mut source = data_type(DataFlowV01::Signal, "number.float");
-    let mut target = data_type(DataFlowV01::Signal, "number.float");
+    let mut source = data_type(DataFlowV01::Signal, "value.core.float32");
+    let mut target = data_type(DataFlowV01::Signal, "value.core.float32");
 
-    assert_eq!(type_label_v01(&source), "signal<number.float>");
+    assert_eq!(type_label_v01(&source), "signal<value.core.float32>");
     assert_eq!(
         StringOrStringsV01::One("f32".to_owned()).values(),
         vec!["f32"]
@@ -1901,25 +1901,25 @@ fn validates_public_type_helpers() {
     assert!(!compatible_data_types_v01(&source, &target));
     source.format = Some(StringOrStringsV01::One("f32".to_owned()));
     assert!(compatible_data_types_v01(&source, &target));
-    target.data_kind = "bool".to_owned();
+    target.data_kind = "value.core.bool".to_owned();
     assert!(!compatible_data_types_v01(&source, &target));
 
-    let control_message_any = data_type(DataFlowV01::Control, "message.any");
+    let message_value_any = data_type(DataFlowV01::Control, "value.core.message");
     for data_kind in [
-        "number.float",
-        "number.int",
-        "number.uint",
-        "bool",
-        "color",
-        "string",
-        "message.any",
+        "value.core.float32",
+        "value.core.int32",
+        "value.core.uint32",
+        "value.core.bool",
+        "value.core.color",
+        "value.core.string",
+        "value.core.message",
     ] {
         assert!(
             compatible_data_types_v01(
                 &data_type(DataFlowV01::Control, data_kind),
-                &control_message_any,
+                &message_value_any,
             ),
-            "{data_kind} should be compatible with control message.any"
+            "{data_kind} should be compatible with control value.core.message"
         );
     }
 }
@@ -1939,7 +1939,7 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": "control.number.float" }
+                { "id": "out", "direction": "output", "type": "value.core.float64" }
               ]
             },
             {
@@ -1948,7 +1948,7 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "in", "direction": "input", "type": "event.bang" }
+                { "id": "in", "direction": "input", "type": "value.core.bang" }
               ]
             }
           ],
@@ -1982,7 +1982,7 @@ fn validates_public_v01_graph_and_node_contracts() {
               "kindVersion": "0.1.0",
               "params": { "color": [0, 0, 0, 1] },
               "ports": [
-                { "id": "out", "direction": "output", "type": "render.frame", "rate": "render" }
+                { "id": "out", "direction": "output", "type": "value.core.tensor", "rate": "render" }
               ]
             },
             {
@@ -1991,7 +1991,7 @@ fn validates_public_v01_graph_and_node_contracts() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "in", "direction": "input", "type": "render.frame", "rate": "render", "required": true }
+                { "id": "in", "direction": "input", "type": "value.core.tensor", "rate": "render", "required": true }
               ]
             }
           ],
@@ -2000,7 +2000,7 @@ fn validates_public_v01_graph_and_node_contracts() {
               "id": "edge_clear_output",
               "source": { "nodeId": "clear", "portId": "out" },
               "target": { "nodeId": "output", "portId": "in" },
-              "resolvedType": "render.frame"
+              "resolvedType": "value.core.tensor"
             }
           ]
         }"#,
@@ -2020,7 +2020,7 @@ fn validates_public_v01_graph_and_node_contracts() {
           "displayName": "Render Output",
           "category": "Render",
           "ports": [
-            { "id": "in", "direction": "input", "type": "render.frame", "rate": "render", "required": true }
+            { "id": "in", "direction": "input", "type": "value.core.tensor", "rate": "render", "required": true }
           ],
           "execution": { "model": "gpu_pass", "clock": "frame" },
           "state": { "persistent": false },
@@ -2103,7 +2103,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "out", "direction": "output", "type": "control.number.float" }
+                      { "id": "out", "direction": "output", "type": "value.core.float64" }
                     ]
                   },
                   {
@@ -2112,8 +2112,8 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "first", "direction": "output", "type": "control.number.float" },
-                      { "id": "second", "direction": "output", "type": "control.number.float" }
+                      { "id": "first", "direction": "output", "type": "value.core.float64" },
+                      { "id": "second", "direction": "output", "type": "value.core.float64" }
                     ]
                   },
                   {
@@ -2122,7 +2122,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "in", "direction": "input", "type": "control.number.float" }
+                      { "id": "in", "direction": "input", "type": "value.core.float64" }
                     ]
                   }
                 ],
@@ -2178,7 +2178,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                        { "id": "out", "direction": "output", "type": "control.number.float" }
+                        { "id": "out", "direction": "output", "type": "value.core.float64" }
                     ]
                 },
                 {
@@ -2187,7 +2187,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                        { "id": "in", "direction": "input", "type": "render.frame" }
+                        { "id": "in", "direction": "input", "type": "value.core.tensor" }
                     ]
                 }
             ],
@@ -2224,7 +2224,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                             "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
-                                { "id": "out", "direction": "output", "type": "control.number.float" }
+                                { "id": "out", "direction": "output", "type": "value.core.float64" }
                             ]
                         },
                         {
@@ -2233,7 +2233,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                             "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
-                                { "id": "out", "direction": "output", "type": "control.number.float" }
+                                { "id": "out", "direction": "output", "type": "value.core.float64" }
                             ]
                         },
                         {
@@ -2242,7 +2242,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                             "kindVersion": "0.1.0",
                             "params": {},
                             "ports": [
-                                { "id": "in", "direction": "input", "type": "render.frame" }
+                                { "id": "in", "direction": "input", "type": "value.core.tensor" }
                             ]
                         }
                     ],

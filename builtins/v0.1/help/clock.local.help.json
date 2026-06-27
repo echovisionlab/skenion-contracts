@@ -21,7 +21,7 @@
     },
     {
       "id": "reset",
-      "description": "Optional event.bang input that resets local phase/position."
+      "description": "Optional value.core.bang input that resets local phase/position."
     },
     {
       "id": "state",
@@ -29,15 +29,15 @@
     },
     {
       "id": "tick",
-      "description": "Outputs event.bang for discrete musical ticks."
+      "description": "Outputs value.core.bang for discrete musical ticks."
     },
     {
       "id": "phase",
-      "description": "Outputs normalized control.number.float phase in the current cycle."
+      "description": "Outputs normalized value.core.float64 phase in the current cycle."
     },
     {
       "id": "tempo",
-      "description": "Outputs tempo as control.number.float in BPM."
+      "description": "Outputs tempo as value.core.float64 in BPM."
     }
   ],
   "params": [

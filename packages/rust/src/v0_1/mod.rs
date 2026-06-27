@@ -1,7 +1,7 @@
 mod audio_clock;
 mod clock;
 mod compatibility_matrix;
-mod control_message;
+mod message_value;
 mod object_text;
 mod shader_interface;
 mod types;
@@ -24,7 +24,7 @@ pub use clock::{
     parse_midi_clock_message_v01,
 };
 pub use compatibility_matrix::*;
-pub use control_message::{ControlAtomV01, ControlMessageV01};
+pub use message_value::{MessageAtomV01, MessageValueV01};
 pub use object_text::{
     ObjectTextAtomV01, ObjectTextDiagnosticSeverityV01, ObjectTextDiagnosticV01,
     ObjectTextParseResultV01, ObjectTextPortActivationV01, ObjectTextPortDirectionV01,
@@ -53,9 +53,9 @@ pub use types::{
     GraphValidationResultV01, IdConflictPolicy, InterfaceDiagnosticCardinalityReasonV01,
     InterfaceDiagnosticCardinalityV01, InterfaceDiagnosticDetailV01,
     InterfaceDiagnosticMissingEndpointV01, InterfaceIncidentEdgePolicyV01,
-    InterfaceRecoveryActionIdV01, MergePolicyV01, MessageSelectorPolicyV01,
-    NodeDefinitionManifestV01, NodeExecutionV01, NodeStateV01, NodeSurfaceV01, NumberRangeV01,
-    PackageCategoryV01, PackageChecksumAlgorithmV01, PackageChecksumRefV01, PackageChecksumV01,
+    InterfaceRecoveryActionIdV01, MergePolicyV01, MessageKeyPolicyV01, NodeDefinitionManifestV01,
+    NodeExecutionV01, NodeStateV01, NodeSurfaceV01, NumberRangeV01, PackageCategoryV01,
+    PackageChecksumAlgorithmV01, PackageChecksumRefV01, PackageChecksumV01,
     PackageContractsSupportV01, PackageDiagnosticSeverityV01, PackageDiagnosticV01,
     PackageDiscoveryResponseV01, PackageEvidenceKindV01, PackageEvidenceRefV01,
     PackageInstallPlanActionKindV01, PackageInstallPlanActionV01, PackageInstallPlanCandidateV01,

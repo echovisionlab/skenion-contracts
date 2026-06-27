@@ -1,6 +1,6 @@
 export {
   compatibilityMatrixV01Schema,
-  controlMessageV01Schema,
+  messageValueV01Schema,
   extensionManifestV01Schema,
   graphFragmentV01Schema,
   graphV01Schema,
@@ -53,8 +53,8 @@ export type {
   CompatibilityMatrixSdkComponentV01,
   CompatibilityMatrixStudioComponentV01,
   CompatibilityMatrixV01,
-  ControlAtomV01,
-  ControlMessageV01,
+  MessageAtomV01,
+  MessageValueV01,
   ConversionDiagnosticV01,
   ConversionPlanV01,
   ConversionStepV01,
@@ -211,6 +211,7 @@ export type {
   ValidationFailure,
   ValidationResult,
   ValidationSuccess,
+  ValueTypeIdV01,
   ViewStateV01
 } from "./types.js";
 export { SKENION_PACKAGE_MANIFEST_FILE_NAME } from "./types.js";
@@ -261,7 +262,7 @@ export {
   validateGraphFragmentV01,
   validateGraphDocument,
   validateGraphDocumentV01,
-  validateControlMessage,
+  validateMessageValue,
   validateObjectTextParseResult,
   validateNodeDefinition,
   validateNodeDefinitionV01,

@@ -40,11 +40,11 @@ External sources do not provide equivalent data:
 `clock.local` publishes:
 
 - `sync: clock.state`
-- `reset: event.bang`
+- `reset: value.core.bang`
 - `state: clock.state`
-- `tick: event.bang`
-- `phase: control.number.float`
-- `tempo: control.number.float`
+- `tick: value.core.bang`
+- `phase: value.core.float64`
+- `tempo: value.core.float64`
 
 `clock.position-display` publishes:
 

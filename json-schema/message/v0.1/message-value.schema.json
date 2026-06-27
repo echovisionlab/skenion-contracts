@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://skenion.dev/schemas/control/v0.1/control-message.schema.json",
-  "title": "skenion Control Message v0.1",
+  "$id": "https://skenion.dev/schemas/message/v0.1/message-value.schema.json",
+  "title": "skenion Message Value v0.1",
   "type": "object",
-  "required": ["selector", "atoms"],
+  "required": ["key", "atoms"],
   "properties": {
-    "selector": {
+    "key": {
       "type": "string",
       "minLength": 1,
       "pattern": "^[A-Za-z_][A-Za-z0-9_.:-]*$"
@@ -30,7 +30,7 @@
               "const": "float"
             },
             "representation": {
-              "enum": ["f64", "f32", "f16", "f8.e4m3", "f8.e5m2", "ufloat16", "ufloat8"]
+              "enum": ["f64", "f32", "f16", "f8.e4m3", "f8.e5m2", "ufloat64", "ufloat32", "ufloat16", "ufloat8"]
             },
             "value": {
               "type": "number"

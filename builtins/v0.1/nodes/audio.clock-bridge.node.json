@@ -10,14 +10,16 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": "signal.audio",
-      "required": false
+      "type": "value.core.float32",
+      "required": false,
+      "rate": "audio"
     },
     {
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": "signal.audio"
+      "type": "value.core.float32",
+      "rate": "audio"
     }
   ],
   "execution": {

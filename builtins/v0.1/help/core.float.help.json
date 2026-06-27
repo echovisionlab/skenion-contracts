@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "id": "core.float",
   "summary": "Stores and emits a floating-point control payload.",
-  "description": "Use Float when a patch needs a generic numeric control payload. Representation such as f32 or f8 is selected separately from the control.number.float port type.",
+  "description": "Use Float when a patch needs a generic numeric control payload. Representation such as f32 or f8 is selected separately from the value.core.float64 port type.",
   "docsPath": "docs/nodes/core.float.md",
   "helpGraph": "help/v0.1/nodes/core.float.help.graph.json",
   "tags": [
@@ -11,7 +11,7 @@
     "control",
     "number"
   ],
-  "runtimeBehavior": "in is the hot control.message.any inlet: typed payloads update and emit, bang emits the stored payload, and set ... updates silently. cold updates silently.",
+  "runtimeBehavior": "in is the hot value.core.message inlet: typed payloads update and emit, bang emits the stored payload, and set ... updates silently. cold updates silently.",
   "relatedNodes": [
     "render.fullscreen-shader"
   ],

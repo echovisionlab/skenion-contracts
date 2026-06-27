@@ -16,7 +16,7 @@
           "id": "asset",
           "direction": "output",
           "label": "Asset",
-          "type": "asset.video"
+          "type": "value.core.string"
         }
       ]
     },
@@ -30,13 +30,13 @@
           "id": "asset",
           "direction": "input",
           "label": "Asset",
-          "type": "asset.video"
+          "type": "value.core.string"
         },
         {
           "id": "frames",
           "direction": "output",
           "label": "Frames",
-          "type": "video.frame"
+          "type": "value.core.tensor"
         }
       ]
     },
@@ -50,7 +50,7 @@
           "id": "frames",
           "direction": "input",
           "label": "Frames",
-          "type": "video.frame"
+          "type": "value.core.tensor"
         }
       ]
     }

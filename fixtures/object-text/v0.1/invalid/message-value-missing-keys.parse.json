@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "input": "example.gain 1",
   "ok": true,
-  "classSymbol": "example.gain",
+  "className": "example.gain",
   "creationArgs": [
     {
       "type": "int",
@@ -20,17 +20,14 @@
     {
       "id": "in",
       "direction": "input",
-      "type": "control.number.float",
+      "type": "value.core.message",
       "rate": "control",
-      "accepts": [
-        "control.message.any"
-      ],
       "activation": "trigger"
     },
     {
       "id": "out",
       "direction": "output",
-      "type": "control.number.float",
+      "type": "value.core.float64",
       "rate": "control"
     }
   ],

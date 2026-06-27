@@ -10,7 +10,7 @@
       "id": "asset",
       "direction": "output",
       "label": "Asset",
-      "type": "asset.video"
+      "type": "value.core.string"
     }
   ],
   "execution": {

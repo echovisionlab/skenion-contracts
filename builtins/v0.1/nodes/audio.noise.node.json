@@ -10,9 +10,9 @@
       "id": "seed",
       "direction": "input",
       "label": "Seed",
-      "type": "control.message.any",
+      "type": "value.core.message",
       "required": false,
-      "messageSelectors": {
+      "messageKeys": {
         "accepted": [
           "set",
           "float",
@@ -34,7 +34,8 @@
       "id": "out",
       "direction": "output",
       "label": "Signal",
-      "type": "signal.audio"
+      "type": "value.core.float32",
+      "rate": "audio"
     }
   ],
   "execution": {

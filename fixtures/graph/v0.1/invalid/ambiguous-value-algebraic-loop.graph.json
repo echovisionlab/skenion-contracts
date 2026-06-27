@@ -13,8 +13,8 @@
         {
           "id": "in",
           "direction": "input",
-          "type": "control.message.any",
-          "messageSelectors": {
+          "type": "value.core.message",
+          "messageKeys": {
             "accepted": [
               "bang",
               "float",
@@ -41,7 +41,7 @@
         {
           "id": "out",
           "direction": "output",
-          "type": "control.message.any"
+          "type": "value.core.message"
         }
       ]
     },
@@ -54,12 +54,12 @@
         {
           "id": "in",
           "direction": "input",
-          "type": "control.number.float"
+          "type": "value.core.float64"
         },
         {
           "id": "out",
           "direction": "output",
-          "type": "control.number.float"
+          "type": "value.core.float64"
         }
       ]
     }

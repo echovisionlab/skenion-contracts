@@ -10,13 +10,13 @@
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": "control.number.float",
+      "type": "value.core.float64",
       "required": false,
       "accepts": [
-        "control.number.float",
-        "control.number.int",
-        "control.number.uint",
-        "control.bool"
+        "value.core.float64",
+        "value.core.int64",
+        "value.core.uint64",
+        "value.core.bool"
       ],
       "triggerMode": "latched"
     },
@@ -24,7 +24,8 @@
       "id": "out",
       "direction": "output",
       "label": "Signal",
-      "type": "signal.audio"
+      "type": "value.core.float32",
+      "rate": "audio"
     }
   ],
   "execution": {

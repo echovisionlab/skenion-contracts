@@ -20,13 +20,13 @@
     },
     {
       "id": "out",
-      "description": "Outputs the saved selector plus typed atoms as a message payload."
+      "description": "Outputs the saved key plus typed atoms as a message payload."
     }
   ],
   "params": [
     {
       "id": "value",
-      "description": "Saved message box text parsed into selector plus atoms at runtime."
+      "description": "Saved message box text parsed into key plus atoms at runtime."
     },
     {
       "id": "sendName",
