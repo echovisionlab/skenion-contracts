@@ -86,6 +86,90 @@ export type ColorRepresentationV01 =
 
 export type RepresentationV01 = NumericRepresentationV01 | ColorRepresentationV01;
 
+export type ValueLayoutV01 =
+  | "scalar"
+  | "interleaved"
+  | "planar"
+  | "row-major"
+  | "column-major"
+  | "strided"
+  | "opaque";
+
+export type ValuePayloadKindV01 = "empty" | "json" | "bytes" | "resource-handle";
+export type ValueResourceKindV01 =
+  | "cpu-buffer"
+  | "gpu-buffer"
+  | "gpu-texture"
+  | "runtime-handle";
+export type ValueClockV01 =
+  | "logical"
+  | "host-time"
+  | "audio-sample-frame"
+  | "render-frame"
+  | "video-pts";
+export type ValueContinuityFlagV01 =
+  | "discontinuity"
+  | "keyframe"
+  | "dropped-before"
+  | "end-of-stream";
+
+export interface ValueEndpointRefV01 {
+  nodeId: string;
+  portId: string;
+}
+
+export interface ValueFormatV01 {
+  valueTypeId: SemanticDataKindV01 | string;
+  format?: RepresentationV01 | string;
+  shape?: number[];
+  dynamicShape?: boolean;
+  layout?: ValueLayoutV01 | string;
+  strides?: number[];
+  byteLength?: number;
+  sampleRate?: number;
+  channels?: number;
+  channelLayout?: string;
+  colorSpace?: string;
+  colorRange?: string;
+  transfer?: string;
+  primaries?: string;
+  alphaPolicy?: string;
+  resourceKind?: ValueResourceKindV01 | string;
+}
+
+export interface EndpointBindingDeliveryPolicyV01 {
+  policy?: "ordered" | "latest" | "ring" | "drop";
+  maxInFlight?: number;
+  keyframes?: boolean;
+}
+
+export interface EndpointBindingValueFormatV01 {
+  bindingId: string;
+  bindingEpoch: number;
+  formatRevision: number;
+  formatDigest?: string;
+  valueFormat: ValueFormatV01;
+  source?: ValueEndpointRefV01;
+  target?: ValueEndpointRefV01;
+  delivery?: EndpointBindingDeliveryPolicyV01;
+}
+
+export interface ValueOccurrenceHeaderV01 {
+  bindingId: string;
+  bindingEpoch: number;
+  formatRevision: number;
+  sequence: number;
+  clock?: ValueClockV01 | string;
+  timestamp?: number;
+  payloadKind: ValuePayloadKindV01;
+  byteLength?: number;
+  byteOffset?: number;
+  actualShape?: number[];
+  flags?: ValueContinuityFlagV01[];
+  droppedBefore?: number;
+  duration?: number;
+}
+
 export type AudioEndpointDirectionV01 = "input" | "output";
 export type AudioClockDomainAuthorityV01 =
   | "authoritative"

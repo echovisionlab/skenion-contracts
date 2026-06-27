@@ -5,20 +5,20 @@ use std::{
 };
 
 use super::types::{
-    CycleValidationV01, DataFlowV01, DataTypeV01, EdgeSpecV01, ExtensionKindV01,
-    ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01, GraphDocumentV01,
-    GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
-    GraphFragmentValidationResultV01, GraphValidationDiagnosticV01, GraphValidationResultV01,
-    MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01, PackageDiagnosticSeverityV01,
-    PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
-    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
-    PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01,
-    PackageListingArtifactKindV01, PackageListingTargetSupportKindV01, PackageListingV01,
-    PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
-    PatchDefinitionV01, PortDirectionV01, PortSpecV01, ProjectDocumentV01,
-    ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
-    ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, ViewStateV01,
-    derive_patch_contract_v01,
+    CycleValidationV01, DataFlowV01, DataTypeV01, EdgeSpecV01, EndpointBindingValueFormatV01,
+    ExtensionKindV01, ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01,
+    GraphDocumentV01, GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01,
+    GraphFragmentV01, GraphFragmentValidationResultV01, GraphValidationDiagnosticV01,
+    GraphValidationResultV01, MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01,
+    PackageDiagnosticSeverityV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
+    PackageInstallPlanCheckStatusV01, PackageInstallPlanIntentV01, PackageInstallPlanRequestV01,
+    PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01,
+    PackageInstallPlanTargetV01, PackageListingArtifactKindV01, PackageListingTargetSupportKindV01,
+    PackageListingV01, PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01,
+    PasteGraphFragmentRequest, PatchDefinitionV01, PortDirectionV01, PortSpecV01,
+    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
+    ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01,
+    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, derive_patch_contract_v01,
 };
 use super::version::{
     derive_v0_compatibility_line, derive_v0_compatibility_range, satisfies_v0_compatibility_range,
@@ -206,6 +206,341 @@ fn is_relative_path_v01(value: &str) -> bool {
 
 fn is_sha256_hex_v01(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn validate_shape_v01(errors: &mut Vec<ValidationErrorV01>, label: &str, shape: Option<&[u64]>) {
+    let Some(shape) = shape else {
+        return;
+    };
+    if shape.is_empty() {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label} must be a non-empty array of positive integers"
+        )));
+        return;
+    }
+    for (index, dimension) in shape.iter().enumerate() {
+        if *dimension == 0 {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}[{index}] must be a positive integer"
+            )));
+        }
+    }
+}
+
+fn is_value_type_id_v01(value: &str) -> bool {
+    if is_first_party_value_type(value) {
+        return true;
+    }
+    if value.starts_with("value.core.") || value.starts_with("value.media.") {
+        return false;
+    }
+
+    let mut parts = value.split('.');
+    if parts.next() != Some("value") {
+        return false;
+    }
+    let Some(namespace) = parts.next() else {
+        return false;
+    };
+    is_lower_digit_hyphen_segment(namespace)
+        && parts.clone().next().is_some()
+        && parts.all(is_lower_digit_hyphen_segment)
+}
+
+fn expected_formats_for_first_party_value_type(
+    value_type_id: &str,
+) -> Option<&'static [&'static str]> {
+    match value_type_id {
+        "value.core.float8" => Some(&["f8.e4m3", "f8.e5m2"]),
+        "value.core.float16" => Some(&["f16"]),
+        "value.core.float32" => Some(&["f32"]),
+        "value.core.float64" => Some(&["f64"]),
+        "value.core.ufloat8" => Some(&["ufloat8"]),
+        "value.core.ufloat16" => Some(&["ufloat16"]),
+        "value.core.ufloat32" => Some(&["ufloat32"]),
+        "value.core.ufloat64" => Some(&["ufloat64"]),
+        "value.core.int8" => Some(&["i8"]),
+        "value.core.int16" => Some(&["i16"]),
+        "value.core.int32" => Some(&["i32"]),
+        "value.core.int64" => Some(&["i64"]),
+        "value.core.uint8" => Some(&["u8"]),
+        "value.core.uint16" => Some(&["u16"]),
+        "value.core.uint32" => Some(&["u32"]),
+        "value.core.uint64" => Some(&["u64"]),
+        "value.core.color" => Some(&["rgba32f", "rgba16f", "rgba8unorm", "rgb8unorm"]),
+        "value.core.vector" | "value.core.matrix" | "value.core.tensor" => Some(&[
+            "f64",
+            "f32",
+            "f16",
+            "f8.e4m3",
+            "f8.e5m2",
+            "ufloat64",
+            "ufloat32",
+            "ufloat16",
+            "ufloat8",
+            "i64",
+            "i32",
+            "i16",
+            "i8",
+            "u64",
+            "u32",
+            "u16",
+            "u8",
+            "rgba32f",
+            "rgba16f",
+            "rgba8unorm",
+            "rgb8unorm",
+        ]),
+        _ => None,
+    }
+}
+
+fn value_format_errors_v01(value_format: &ValueFormatV01, label: &str) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+    let value_type_id = value_format.value_type_id.as_str();
+
+    if value_type_id.is_empty() {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.valueTypeId must be a non-empty string"
+        )));
+    } else if !is_value_type_id_v01(value_type_id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.valueTypeId is not a valid value type id: {value_type_id}"
+        )));
+    }
+
+    if let Some(format) = value_format.format.as_deref() {
+        if let Some(expected_formats) = expected_formats_for_first_party_value_type(value_type_id) {
+            if !expected_formats.contains(&format) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label}.format {format} is not valid for {value_type_id}"
+                )));
+            }
+        }
+    }
+
+    validate_shape_v01(
+        &mut errors,
+        &format!("{label}.shape"),
+        value_format.shape.as_deref(),
+    );
+    validate_shape_v01(
+        &mut errors,
+        &format!("{label}.strides"),
+        value_format.strides.as_deref(),
+    );
+
+    if matches!(
+        value_type_id,
+        "value.core.vector" | "value.core.matrix" | "value.core.tensor"
+    ) {
+        if value_format.shape.is_none() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.shape is required for {value_type_id}"
+            )));
+        }
+        if value_format.format.is_none() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.format is required for {value_type_id}"
+            )));
+        }
+    }
+
+    if value_format.byte_length == Some(0) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.byteLength must be a positive integer"
+        )));
+    }
+    if value_format.channels == Some(0) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.channels must be a positive integer"
+        )));
+    }
+    if value_format
+        .sample_rate
+        .is_some_and(|sample_rate| !sample_rate.is_finite() || sample_rate <= 0.0)
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.sampleRate must be greater than zero"
+        )));
+    }
+
+    if value_type_id == "value.core.bang" {
+        if value_format.format.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.format is not allowed for value.core.bang"
+            )));
+        }
+        if value_format.shape.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.shape is not allowed for value.core.bang"
+            )));
+        }
+        if value_format.byte_length.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.byteLength is not allowed for value.core.bang"
+            )));
+        }
+        if value_format.resource_kind.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.resourceKind is not allowed for value.core.bang"
+            )));
+        }
+    }
+
+    errors
+}
+
+pub fn validate_value_format_v01(
+    value_format: &ValueFormatV01,
+) -> Result<&ValueFormatV01, ValidationReportV01> {
+    let errors = value_format_errors_v01(value_format, "valueFormat");
+    if errors.is_empty() {
+        Ok(value_format)
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_endpoint_binding_value_format_v01(
+    binding_format: &EndpointBindingValueFormatV01,
+) -> Result<&EndpointBindingValueFormatV01, ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if binding_format.binding_id.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.bindingId must be a non-empty string",
+        ));
+    }
+    if binding_format.binding_epoch == 0 {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.bindingEpoch must be a positive integer",
+        ));
+    }
+    if binding_format.format_revision == 0 {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.formatRevision must be a positive integer",
+        ));
+    }
+    if binding_format
+        .format_digest
+        .as_deref()
+        .is_some_and(|digest| !is_sha256_hex_v01(digest))
+    {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.formatDigest must be a 64-character sha256 hex string",
+        ));
+    }
+    errors.extend(value_format_errors_v01(
+        &binding_format.value_format,
+        "bindingFormat.valueFormat",
+    ));
+    if binding_format
+        .source
+        .as_ref()
+        .is_some_and(|source| source.node_id.is_empty() || source.port_id.is_empty())
+    {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.source must contain non-empty nodeId and portId",
+        ));
+    }
+    if binding_format
+        .target
+        .as_ref()
+        .is_some_and(|target| target.node_id.is_empty() || target.port_id.is_empty())
+    {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.target must contain non-empty nodeId and portId",
+        ));
+    }
+    if binding_format.delivery.as_ref().is_some_and(|delivery| {
+        delivery
+            .policy
+            .as_deref()
+            .is_some_and(|policy| !matches!(policy, "ordered" | "latest" | "ring" | "drop"))
+            || delivery.max_in_flight == Some(0)
+    }) {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.delivery contains an invalid policy or maxInFlight",
+        ));
+    }
+
+    if errors.is_empty() {
+        Ok(binding_format)
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_value_occurrence_header_v01(
+    header: &ValueOccurrenceHeaderV01,
+) -> Result<&ValueOccurrenceHeaderV01, ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if header.binding_id.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.bindingId must be a non-empty string",
+        ));
+    }
+    if header.binding_epoch == 0 {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.bindingEpoch must be a positive integer",
+        ));
+    }
+    if header.format_revision == 0 {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.formatRevision must be a positive integer",
+        ));
+    }
+    if header
+        .timestamp
+        .is_some_and(|timestamp| !timestamp.is_finite())
+    {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.timestamp must be a finite number",
+        ));
+    }
+    if header.byte_length == Some(0) {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.byteLength must be a positive integer",
+        ));
+    }
+    validate_shape_v01(
+        &mut errors,
+        "occurrenceHeader.actualShape",
+        header.actual_shape.as_deref(),
+    );
+    if header
+        .duration
+        .is_some_and(|duration| !duration.is_finite() || duration < 0.0)
+    {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.duration must be greater than or equal to zero",
+        ));
+    }
+    if header.payload_kind == ValuePayloadKindV01::Empty {
+        if header.byte_length.is_some() {
+            errors.push(ValidationErrorV01::new(
+                "occurrenceHeader.byteLength is not allowed when payloadKind is empty",
+            ));
+        }
+        if header.byte_offset.is_some() {
+            errors.push(ValidationErrorV01::new(
+                "occurrenceHeader.byteOffset is not allowed when payloadKind is empty",
+            ));
+        }
+        if header.actual_shape.is_some() {
+            errors.push(ValidationErrorV01::new(
+                "occurrenceHeader.actualShape is not allowed when payloadKind is empty",
+            ));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(header)
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
 }
 
 fn validate_package_checksum_v01(

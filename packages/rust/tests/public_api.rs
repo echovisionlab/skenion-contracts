@@ -2,28 +2,31 @@ use skenion_contracts::{
     AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01, AudioClockDomainV01,
     CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
     ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, CompatibilityMatrixV01,
-    DataFlowV01, DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
-    GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
-    MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
-    ObjectTextAtomV01, ObjectTextParseResultV01, PackageCategoryV01, PackageDiscoveryResponseV01,
-    PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
-    PackageInstallPlanDiagnosticCodeV01, PackageInstallPlanIntentV01, PackageInstallPlanRequestV01,
-    PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01,
-    PackageListingArtifactKindV01, PackageListingDiagnosticCodeV01,
-    PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
-    PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest, ProjectDocumentV01,
-    ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01,
+    DataFlowV01, DataTypeV01, EndpointBindingValueFormatV01, ExtensionKindV01,
+    ExtensionManifestV01, GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01,
+    GraphFragmentV01, MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01,
+    NodeDefinitionManifestV01, NumberRangeV01, ObjectTextAtomV01, ObjectTextParseResultV01,
+    PackageCategoryV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
+    PackageInstallPlanCheckStatusV01, PackageInstallPlanDiagnosticCodeV01,
+    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
+    PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageListingArtifactKindV01,
+    PackageListingDiagnosticCodeV01, PackageListingTargetSupportKindV01, PackageListingV01,
+    PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
+    ProjectDocumentV01, ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    StringOrStringsV01, ValueFormatV01, ValueOccurrenceHeaderV01, ValuePayloadKindV01,
     analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
     compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
     derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
     midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
     plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
-    validate_compatibility_matrix_v01, validate_extension_manifest_v01,
-    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
-    validate_object_text_parse_result_v01, validate_package_discovery_response_v01,
-    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
-    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
+    validate_compatibility_matrix_v01, validate_endpoint_binding_value_format_v01,
+    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
+    validate_node_definition_v01, validate_object_text_parse_result_v01,
+    validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
+    validate_package_install_plan_response_v01, validate_package_listing_v01,
+    validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_project_document_v01,
+    validate_value_format_v01, validate_value_occurrence_header_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -155,6 +158,131 @@ fn parses_public_compatibility_matrix_contract() {
     artifact_surface["verification"] = serde_json::json!({ "expected-checksums": {} });
     serde_json::from_value::<CompatibilityMatrixV01>(artifact_surface)
         .expect_err("release artifact verifier fields should not parse");
+}
+
+#[test]
+fn validates_public_value_format_and_occurrence_primitives() {
+    let tensor_format: ValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "valueTypeId": "value.core.tensor",
+        "format": "rgba8unorm",
+        "shape": [1080, 1920, 4],
+        "layout": "row-major",
+        "colorSpace": "srgb",
+        "alphaPolicy": "premultiplied"
+    }))
+    .expect("tensor value format should parse");
+    validate_value_format_v01(&tensor_format).expect("tensor value format should validate");
+
+    let custom_format: ValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "valueTypeId": "value.mike32.selector",
+        "format": "mike32.selector.v1"
+    }))
+    .expect("custom value format should parse");
+    validate_value_format_v01(&custom_format)
+        .expect("custom provider value format should validate");
+
+    for invalid in [
+        serde_json::json!({ "valueTypeId": "value.media.video-frame", "format": "rgba8unorm", "shape": [1, 1, 4] }),
+        serde_json::json!({ "valueTypeId": "value.core.tensor", "format": "rgba8unorm", "shape": [] }),
+        serde_json::json!({ "valueTypeId": "value.core.float32", "format": "i32" }),
+        serde_json::json!({ "valueTypeId": "value.core.bang", "format": "f32" }),
+    ] {
+        let invalid: ValueFormatV01 =
+            serde_json::from_value(invalid).expect("invalid semantic value format should parse");
+        validate_value_format_v01(&invalid)
+            .expect_err("invalid semantic value format should fail validation");
+    }
+
+    let digest = "a".repeat(64);
+    let binding: EndpointBindingValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "bindingId": "edge_1",
+        "bindingEpoch": 1,
+        "formatRevision": 2,
+        "formatDigest": digest,
+        "valueFormat": {
+            "valueTypeId": "value.core.matrix",
+            "format": "f32",
+            "shape": [128, 2],
+            "sampleRate": 48000,
+            "channels": 2,
+            "layout": "interleaved"
+        },
+        "source": { "nodeId": "source_1", "portId": "out" },
+        "target": { "nodeId": "target_1", "portId": "in" },
+        "delivery": { "policy": "ordered", "maxInFlight": 2 }
+    }))
+    .expect("binding value format should parse");
+    validate_endpoint_binding_value_format_v01(&binding)
+        .expect("binding value format should validate");
+
+    let stale_binding: EndpointBindingValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "bindingId": "edge_1",
+        "bindingEpoch": 0,
+        "formatRevision": 0,
+        "formatDigest": "not-sha",
+        "valueFormat": { "valueTypeId": "value.core.float32", "format": "f32" }
+    }))
+    .expect("stale binding should parse");
+    let stale_report = validate_endpoint_binding_value_format_v01(&stale_binding)
+        .expect_err("stale binding should fail semantic validation");
+    assert!(
+        stale_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("bindingEpoch"))
+    );
+    assert!(
+        stale_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("formatRevision"))
+    );
+
+    let occurrence: ValueOccurrenceHeaderV01 = serde_json::from_value(serde_json::json!({
+        "bindingId": "edge_1",
+        "bindingEpoch": 1,
+        "formatRevision": 2,
+        "sequence": 0,
+        "clock": "render-frame",
+        "timestamp": 12,
+        "payloadKind": "bytes",
+        "byteLength": 4096,
+        "byteOffset": 0,
+        "actualShape": [32, 32, 4],
+        "flags": ["keyframe"]
+    }))
+    .expect("occurrence header should parse");
+    validate_value_occurrence_header_v01(&occurrence).expect("occurrence header should validate");
+
+    let invalid_occurrence = ValueOccurrenceHeaderV01 {
+        binding_id: "edge_1".to_owned(),
+        binding_epoch: 1,
+        format_revision: 0,
+        sequence: 0,
+        clock: None,
+        timestamp: None,
+        payload_kind: ValuePayloadKindV01::Empty,
+        byte_length: Some(1),
+        byte_offset: None,
+        actual_shape: None,
+        flags: None,
+        dropped_before: None,
+        duration: None,
+    };
+    let occurrence_report = validate_value_occurrence_header_v01(&invalid_occurrence)
+        .expect_err("invalid occurrence should fail");
+    assert!(
+        occurrence_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("formatRevision"))
+    );
+    assert!(
+        occurrence_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("byteLength is not allowed"))
+    );
 }
 
 #[test]

@@ -49,6 +49,7 @@ import {
   validateGraphDocumentV01,
   validateGraphFragmentV01,
   validatePackageDiscoveryResponseV01,
+  validateEndpointBindingValueFormatV01,
   validatePackageInstallPlanRequestV01,
   validatePackageInstallPlanResponseV01,
   validatePackageListingV01,
@@ -60,6 +61,8 @@ import {
   validatePasteGraphFragmentRequest,
   validateProjectDocument,
   validateProjectDocumentV01,
+  validateValueFormatV01,
+  validateValueOccurrenceHeaderV01,
   validateCompatibilityMatrixV01,
   validateViewState,
   validateViewStateV01,
@@ -904,6 +907,220 @@ test("validates control messages as key and atoms", () => {
   const invalidLegacyBang = validateMessageValue({ type: "bang" });
   assert.equal(invalidLegacyBang.ok, false);
   assert.match(invalidLegacyBang.errors.join("\n"), /must have required property 'key'/);
+});
+
+test("validates value format and occurrence primitives", () => {
+  for (const [valueTypeId, format] of [
+    ["value.core.float8", "f8.e4m3"],
+    ["value.core.float8", "f8.e5m2"],
+    ["value.core.float16", "f16"],
+    ["value.core.float32", "f32"],
+    ["value.core.float64", "f64"],
+    ["value.core.ufloat8", "ufloat8"],
+    ["value.core.ufloat16", "ufloat16"],
+    ["value.core.ufloat32", "ufloat32"],
+    ["value.core.ufloat64", "ufloat64"],
+    ["value.core.int8", "i8"],
+    ["value.core.int16", "i16"],
+    ["value.core.int32", "i32"],
+    ["value.core.int64", "i64"],
+    ["value.core.uint8", "u8"],
+    ["value.core.uint16", "u16"],
+    ["value.core.uint32", "u32"],
+    ["value.core.uint64", "u64"],
+    ["value.core.color", "rgba32f"],
+    ["value.core.vector", "f32"]
+  ]) {
+    const shape = valueTypeId === "value.core.vector" ? { shape: [4] } : {};
+    assert.equal(validateValueFormatV01({ valueTypeId, format, ...shape }).ok, true, valueTypeId);
+  }
+
+  const tensorFormat = validateValueFormatV01({
+    valueTypeId: "value.core.tensor",
+    format: "rgba8unorm",
+    shape: [1080, 1920, 4],
+    layout: "row-major",
+    colorSpace: "srgb",
+    alphaPolicy: "premultiplied"
+  });
+  assert.equal(tensorFormat.ok, true);
+
+  const customFormat = validateValueFormatV01({
+    valueTypeId: "value.mike32.selector",
+    format: "mike32.selector.v1"
+  });
+  assert.equal(customFormat.ok, true);
+
+  for (const invalidFormat of [
+    null,
+    [],
+    { unknown: true },
+    { valueTypeId: "value.core.nope" },
+    { valueTypeId: "wrong.namespace" },
+    { valueTypeId: "value.core.float32", format: 1 },
+    { valueTypeId: "value.media.video-frame", format: "rgba8unorm", shape: [1, 1, 4] },
+    { valueTypeId: "value.core.tensor", format: "rgba8unorm", shape: [] },
+    { valueTypeId: "value.core.tensor", shape: [1, 1, 4] },
+    { valueTypeId: "value.core.matrix", format: "f32" },
+    { valueTypeId: "value.core.matrix", format: "f32", shape: [2, 2], strides: [0] },
+    { valueTypeId: "value.core.float32", format: "i32" },
+    { valueTypeId: "value.core.float32", format: "f32", byteLength: 0 },
+    { valueTypeId: "value.core.float32", format: "f32", channels: 0 },
+    { valueTypeId: "value.core.float32", format: "f32", sampleRate: "bad" },
+    { valueTypeId: "value.core.float32", format: "f32", sampleRate: 0 },
+    { valueTypeId: "value.core.float32", format: "f32", dynamicShape: "yes" },
+    { valueTypeId: "value.core.float32", format: "f32", layout: 1 },
+    { valueTypeId: "value.core.float32", format: "f32", channelLayout: 1 },
+    { valueTypeId: "value.core.float32", format: "f32", colorSpace: 1 },
+    { valueTypeId: "value.core.float32", format: "f32", colorRange: 1 },
+    { valueTypeId: "value.core.float32", format: "f32", transfer: 1 },
+    { valueTypeId: "value.core.float32", format: "f32", primaries: 1 },
+    { valueTypeId: "value.core.float32", format: "f32", alphaPolicy: 1 },
+    { valueTypeId: "value.core.float32", format: "f32", resourceKind: 1 },
+    { valueTypeId: "value.core.bang", format: "f32" },
+    { valueTypeId: "value.core.bang", shape: [1] },
+    { valueTypeId: "value.core.bang", byteLength: 1 },
+    { valueTypeId: "value.core.bang", resourceKind: "runtime-handle" }
+  ]) {
+    const result = validateValueFormatV01(invalidFormat);
+    assert.equal(result.ok, false, JSON.stringify(invalidFormat));
+  }
+
+  const binding = validateEndpointBindingValueFormatV01({
+    bindingId: "edge_1",
+    bindingEpoch: 1,
+    formatRevision: 2,
+    formatDigest: "a".repeat(64),
+    valueFormat: {
+      valueTypeId: "value.core.matrix",
+      format: "f32",
+      shape: [128, 2],
+      sampleRate: 48000,
+      channels: 2,
+      layout: "interleaved"
+    },
+    source: { nodeId: "source_1", portId: "out" },
+    target: { nodeId: "target_1", portId: "in" },
+    delivery: { policy: "ordered", maxInFlight: 2 }
+  });
+  assert.equal(binding.ok, true);
+
+  const staleBinding = validateEndpointBindingValueFormatV01({
+    bindingId: "edge_1",
+    bindingEpoch: 0,
+    formatRevision: 0,
+    formatDigest: "not-sha",
+    valueFormat: { valueTypeId: "value.core.float32", format: "f32" }
+  });
+  assert.equal(staleBinding.ok, false);
+  assert.match(staleBinding.errors.join("\n"), /bindingEpoch/);
+  assert.match(staleBinding.errors.join("\n"), /formatRevision/);
+  assert.match(staleBinding.errors.join("\n"), /formatDigest/);
+
+  for (const invalidBinding of [
+    null,
+    [],
+    { extra: true },
+    {
+      bindingId: "",
+      valueFormat: { valueTypeId: "value.core.float32", format: "f32" }
+    },
+    {
+      bindingId: "edge_1",
+      bindingEpoch: "1",
+      formatRevision: "1",
+      valueFormat: { valueTypeId: "value.core.float32", format: "f32" },
+      source: "not-object",
+      target: { nodeId: "", portId: "" },
+      delivery: "not-object"
+    },
+    {
+      bindingId: "edge_1",
+      bindingEpoch: 1,
+      formatRevision: 1,
+      valueFormat: { valueTypeId: "value.core.float32", format: "f32" },
+      source: { nodeId: "", portId: "", extra: true },
+      delivery: { policy: "bad", maxInFlight: 0, keyframes: "yes", extra: true }
+    }
+  ]) {
+    assert.equal(validateEndpointBindingValueFormatV01(invalidBinding).ok, false, JSON.stringify(invalidBinding));
+  }
+
+  const occurrence = validateValueOccurrenceHeaderV01({
+    bindingId: "edge_1",
+    bindingEpoch: 1,
+    formatRevision: 2,
+    sequence: 0,
+    clock: "render-frame",
+    timestamp: 12,
+    payloadKind: "bytes",
+    byteLength: 4096,
+    byteOffset: 0,
+    actualShape: [32, 32, 4],
+    flags: ["keyframe"]
+  });
+  assert.equal(occurrence.ok, true);
+
+  const invalidOccurrence = validateValueOccurrenceHeaderV01({
+    bindingId: "edge_1",
+    bindingEpoch: 1,
+    formatRevision: 0,
+    sequence: 0,
+    payloadKind: "empty",
+    byteLength: 1
+  });
+  assert.equal(invalidOccurrence.ok, false);
+  assert.match(invalidOccurrence.errors.join("\n"), /formatRevision/);
+  assert.match(invalidOccurrence.errors.join("\n"), /byteLength is not allowed/);
+
+  for (const invalidHeader of [
+    null,
+    [],
+    { extra: true },
+    { bindingId: "", payloadKind: "bad" },
+    {
+      bindingId: "edge_1",
+      bindingEpoch: "1",
+      formatRevision: "1",
+      sequence: "0",
+      payloadKind: "bytes",
+      clock: 1,
+      timestamp: "now",
+      byteLength: 0,
+      byteOffset: -1,
+      actualShape: [0],
+      flags: "keyframe",
+      droppedBefore: -1,
+      duration: "bad"
+    },
+    {
+      bindingId: "edge_1",
+      bindingEpoch: 1,
+      formatRevision: 1,
+      sequence: 0,
+      payloadKind: "bytes",
+      flags: ["bad"],
+      duration: -1
+    },
+    {
+      bindingId: "edge_1",
+      bindingEpoch: 1,
+      formatRevision: 1,
+      sequence: 0,
+      payloadKind: "empty",
+      byteOffset: 0
+    },
+    {
+      bindingId: "edge_1",
+      bindingEpoch: 1,
+      formatRevision: 1,
+      sequence: 0,
+      payloadKind: "empty",
+      actualShape: [1]
+    }
+  ]) {
+    assert.equal(validateValueOccurrenceHeaderV01(invalidHeader).ok, false, JSON.stringify(invalidHeader));
+  }
 });
 
 test("default graph project view and node validators are strict v0.1", async () => {

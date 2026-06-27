@@ -35,6 +35,7 @@ import type {
   GraphFragmentV01,
   GraphValidationDiagnosticV01,
   GraphValidationResultV01,
+  EndpointBindingValueFormatV01,
   NodeDefinitionManifestV01,
   ObjectTextParseResultV01,
   PackageDiscoveryResponseV01,
@@ -49,6 +50,8 @@ import type {
   PortSpecV01,
   ProjectDocumentV01,
   ProjectPackageLockEntryV01,
+  ValueFormatV01,
+  ValueOccurrenceHeaderV01,
   ShaderInterfaceV01,
   ValidationResult,
   ViewStateV01
@@ -758,6 +761,409 @@ const invalidValueTypeIds = new Set([
   "value.media.render-frame",
   "value.media.video-frame"
 ]);
+
+const valueTypeIdPattern = /^value\.[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/;
+const sha256Pattern = /^[a-fA-F0-9]{64}$/;
+const firstPartyRepresentations = new Set([
+  "f64",
+  "f32",
+  "f16",
+  "f8.e4m3",
+  "f8.e5m2",
+  "ufloat64",
+  "ufloat32",
+  "ufloat16",
+  "ufloat8",
+  "i64",
+  "i32",
+  "i16",
+  "i8",
+  "u64",
+  "u32",
+  "u16",
+  "u8",
+  "rgba32f",
+  "rgba16f",
+  "rgba8unorm",
+  "rgb8unorm"
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowedKeys: Set<string>, label: string): string[] {
+  return Object.keys(value)
+    .filter((key) => !allowedKeys.has(key))
+    .map((key) => `${label}.${key} is not allowed`);
+}
+
+function validateOptionalPositiveInteger(
+  errors: string[],
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (value[key] !== undefined && !isPositiveInteger(value[key])) {
+    errors.push(`${label}.${key} must be a positive integer`);
+  }
+}
+
+function validateOptionalNonNegativeInteger(
+  errors: string[],
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (value[key] !== undefined && !isNonNegativeInteger(value[key])) {
+    errors.push(`${label}.${key} must be a non-negative integer`);
+  }
+}
+
+function validateOptionalFiniteNumber(
+  errors: string[],
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (value[key] !== undefined && !isFiniteNumber(value[key])) {
+    errors.push(`${label}.${key} must be a finite number`);
+  }
+}
+
+function validateShapeArray(errors: string[], value: unknown, label: string): void {
+  if (!Array.isArray(value) || value.length === 0) {
+    errors.push(`${label} must be a non-empty array of positive integers`);
+    return;
+  }
+  for (const [index, dimension] of value.entries()) {
+    if (!isPositiveInteger(dimension)) {
+      errors.push(`${label}[${index}] must be a positive integer`);
+    }
+  }
+}
+
+function validateEndpointRef(errors: string[], value: unknown, label: string): void {
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  errors.push(...hasOnlyKeys(value, new Set(["nodeId", "portId"]), label));
+  if (typeof value.nodeId !== "string" || value.nodeId.length === 0) {
+    errors.push(`${label}.nodeId must be a non-empty string`);
+  }
+  if (typeof value.portId !== "string" || value.portId.length === 0) {
+    errors.push(`${label}.portId must be a non-empty string`);
+  }
+}
+
+function isValidValueTypeId(value: string): boolean {
+  if (invalidValueTypeIds.has(value)) {
+    return false;
+  }
+  if (firstPartyValueTypeIds.has(value)) {
+    return true;
+  }
+  if (value.startsWith("value.core.") || value.startsWith("value.media.")) {
+    return false;
+  }
+  return valueTypeIdPattern.test(value);
+}
+
+function expectedFormatForFirstPartyValueType(valueTypeId: string): Set<string> | null {
+  if (valueTypeId === "value.core.float8") {
+    return new Set(["f8.e4m3", "f8.e5m2"]);
+  }
+  if (valueTypeId === "value.core.float16") {
+    return new Set(["f16"]);
+  }
+  if (valueTypeId === "value.core.float32") {
+    return new Set(["f32"]);
+  }
+  if (valueTypeId === "value.core.float64") {
+    return new Set(["f64"]);
+  }
+  if (valueTypeId === "value.core.ufloat8") {
+    return new Set(["ufloat8"]);
+  }
+  if (valueTypeId === "value.core.ufloat16") {
+    return new Set(["ufloat16"]);
+  }
+  if (valueTypeId === "value.core.ufloat32") {
+    return new Set(["ufloat32"]);
+  }
+  if (valueTypeId === "value.core.ufloat64") {
+    return new Set(["ufloat64"]);
+  }
+  if (valueTypeId === "value.core.int8") {
+    return new Set(["i8"]);
+  }
+  if (valueTypeId === "value.core.int16") {
+    return new Set(["i16"]);
+  }
+  if (valueTypeId === "value.core.int32") {
+    return new Set(["i32"]);
+  }
+  if (valueTypeId === "value.core.int64") {
+    return new Set(["i64"]);
+  }
+  if (valueTypeId === "value.core.uint8") {
+    return new Set(["u8"]);
+  }
+  if (valueTypeId === "value.core.uint16") {
+    return new Set(["u16"]);
+  }
+  if (valueTypeId === "value.core.uint32") {
+    return new Set(["u32"]);
+  }
+  if (valueTypeId === "value.core.uint64") {
+    return new Set(["u64"]);
+  }
+  if (valueTypeId === "value.core.color") {
+    return new Set(["rgba32f", "rgba16f", "rgba8unorm", "rgb8unorm"]);
+  }
+  if (["value.core.vector", "value.core.matrix", "value.core.tensor"].includes(valueTypeId)) {
+    return firstPartyRepresentations;
+  }
+  return null;
+}
+
+function validateValueFormatErrors(valueFormat: unknown, label = "valueFormat"): string[] {
+  if (!isRecord(valueFormat)) {
+    return [`${label} must be an object`];
+  }
+
+  const allowedKeys = new Set([
+    "valueTypeId",
+    "format",
+    "shape",
+    "dynamicShape",
+    "layout",
+    "strides",
+    "byteLength",
+    "sampleRate",
+    "channels",
+    "channelLayout",
+    "colorSpace",
+    "colorRange",
+    "transfer",
+    "primaries",
+    "alphaPolicy",
+    "resourceKind"
+  ]);
+  const errors = hasOnlyKeys(valueFormat, allowedKeys, label);
+  const valueTypeId = valueFormat.valueTypeId;
+
+  if (typeof valueTypeId !== "string" || valueTypeId.length === 0) {
+    errors.push(`${label}.valueTypeId must be a non-empty string`);
+  } else if (!isValidValueTypeId(valueTypeId)) {
+    errors.push(`${label}.valueTypeId is not a valid value type id: ${valueTypeId}`);
+  }
+
+  if (valueFormat.format !== undefined && typeof valueFormat.format !== "string") {
+    errors.push(`${label}.format must be a string`);
+  }
+  if (typeof valueTypeId === "string" && typeof valueFormat.format === "string") {
+    const expectedFormats = expectedFormatForFirstPartyValueType(valueTypeId);
+    if (expectedFormats && !expectedFormats.has(valueFormat.format)) {
+      errors.push(`${label}.format ${valueFormat.format} is not valid for ${valueTypeId}`);
+    }
+  }
+
+  if (valueFormat.shape !== undefined) {
+    validateShapeArray(errors, valueFormat.shape, `${label}.shape`);
+  }
+  if (["value.core.vector", "value.core.matrix", "value.core.tensor"].includes(String(valueTypeId))) {
+    if (valueFormat.shape === undefined) {
+      errors.push(`${label}.shape is required for ${valueTypeId}`);
+    }
+    if (valueFormat.format === undefined) {
+      errors.push(`${label}.format is required for ${valueTypeId}`);
+    }
+  }
+  if (valueFormat.strides !== undefined) {
+    validateShapeArray(errors, valueFormat.strides, `${label}.strides`);
+  }
+  validateOptionalPositiveInteger(errors, valueFormat, "byteLength", label);
+  validateOptionalPositiveInteger(errors, valueFormat, "channels", label);
+  validateOptionalFiniteNumber(errors, valueFormat, "sampleRate", label);
+  if (valueFormat.sampleRate !== undefined && isFiniteNumber(valueFormat.sampleRate) && valueFormat.sampleRate <= 0) {
+    errors.push(`${label}.sampleRate must be greater than zero`);
+  }
+  if (valueFormat.dynamicShape !== undefined && typeof valueFormat.dynamicShape !== "boolean") {
+    errors.push(`${label}.dynamicShape must be a boolean`);
+  }
+
+  for (const key of ["layout", "channelLayout", "colorSpace", "colorRange", "transfer", "primaries", "alphaPolicy", "resourceKind"]) {
+    if (valueFormat[key] !== undefined && typeof valueFormat[key] !== "string") {
+      errors.push(`${label}.${key} must be a string`);
+    }
+  }
+
+  if (valueTypeId === "value.core.bang") {
+    for (const key of Object.keys(valueFormat)) {
+      if (key !== "valueTypeId") {
+        errors.push(`${label}.${key} is not allowed for value.core.bang`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function validateEndpointBindingValueFormatErrors(
+  bindingFormat: unknown,
+  label = "bindingFormat"
+): string[] {
+  if (!isRecord(bindingFormat)) {
+    return [`${label} must be an object`];
+  }
+
+  const allowedKeys = new Set([
+    "bindingId",
+    "bindingEpoch",
+    "formatRevision",
+    "formatDigest",
+    "valueFormat",
+    "source",
+    "target",
+    "delivery"
+  ]);
+  const errors = hasOnlyKeys(bindingFormat, allowedKeys, label);
+
+  if (typeof bindingFormat.bindingId !== "string" || bindingFormat.bindingId.length === 0) {
+    errors.push(`${label}.bindingId must be a non-empty string`);
+  }
+  validateOptionalPositiveInteger(errors, bindingFormat, "bindingEpoch", label);
+  if (bindingFormat.bindingEpoch === undefined) {
+    errors.push(`${label}.bindingEpoch is required`);
+  }
+  validateOptionalPositiveInteger(errors, bindingFormat, "formatRevision", label);
+  if (bindingFormat.formatRevision === undefined) {
+    errors.push(`${label}.formatRevision is required`);
+  }
+  if (bindingFormat.formatDigest !== undefined) {
+    if (typeof bindingFormat.formatDigest !== "string" || !sha256Pattern.test(bindingFormat.formatDigest)) {
+      errors.push(`${label}.formatDigest must be a 64-character sha256 hex string`);
+    }
+  }
+  errors.push(...validateValueFormatErrors(bindingFormat.valueFormat, `${label}.valueFormat`));
+  if (bindingFormat.source !== undefined) {
+    validateEndpointRef(errors, bindingFormat.source, `${label}.source`);
+  }
+  if (bindingFormat.target !== undefined) {
+    validateEndpointRef(errors, bindingFormat.target, `${label}.target`);
+  }
+  if (bindingFormat.delivery !== undefined) {
+    if (!isRecord(bindingFormat.delivery)) {
+      errors.push(`${label}.delivery must be an object`);
+    } else {
+      const delivery = bindingFormat.delivery;
+      errors.push(...hasOnlyKeys(delivery, new Set(["policy", "maxInFlight", "keyframes"]), `${label}.delivery`));
+      if (delivery.policy !== undefined && !["ordered", "latest", "ring", "drop"].includes(String(delivery.policy))) {
+        errors.push(`${label}.delivery.policy is invalid`);
+      }
+      validateOptionalPositiveInteger(errors, delivery, "maxInFlight", `${label}.delivery`);
+      if (delivery.keyframes !== undefined && typeof delivery.keyframes !== "boolean") {
+        errors.push(`${label}.delivery.keyframes must be a boolean`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function validateValueOccurrenceHeaderErrors(
+  header: unknown,
+  label = "occurrenceHeader"
+): string[] {
+  if (!isRecord(header)) {
+    return [`${label} must be an object`];
+  }
+
+  const allowedKeys = new Set([
+    "bindingId",
+    "bindingEpoch",
+    "formatRevision",
+    "sequence",
+    "clock",
+    "timestamp",
+    "payloadKind",
+    "byteLength",
+    "byteOffset",
+    "actualShape",
+    "flags",
+    "droppedBefore",
+    "duration"
+  ]);
+  const errors = hasOnlyKeys(header, allowedKeys, label);
+
+  if (typeof header.bindingId !== "string" || header.bindingId.length === 0) {
+    errors.push(`${label}.bindingId must be a non-empty string`);
+  }
+  validateOptionalPositiveInteger(errors, header, "bindingEpoch", label);
+  if (header.bindingEpoch === undefined) {
+    errors.push(`${label}.bindingEpoch is required`);
+  }
+  validateOptionalPositiveInteger(errors, header, "formatRevision", label);
+  if (header.formatRevision === undefined) {
+    errors.push(`${label}.formatRevision is required`);
+  }
+  validateOptionalNonNegativeInteger(errors, header, "sequence", label);
+  if (header.sequence === undefined) {
+    errors.push(`${label}.sequence is required`);
+  }
+  if (typeof header.payloadKind !== "string" || !["empty", "json", "bytes", "resource-handle"].includes(header.payloadKind)) {
+    errors.push(`${label}.payloadKind is invalid`);
+  }
+  if (header.clock !== undefined && typeof header.clock !== "string") {
+    errors.push(`${label}.clock must be a string`);
+  }
+  validateOptionalFiniteNumber(errors, header, "timestamp", label);
+  validateOptionalPositiveInteger(errors, header, "byteLength", label);
+  validateOptionalNonNegativeInteger(errors, header, "byteOffset", label);
+  if (header.actualShape !== undefined) {
+    validateShapeArray(errors, header.actualShape, `${label}.actualShape`);
+  }
+  if (header.flags !== undefined) {
+    if (!Array.isArray(header.flags)) {
+      errors.push(`${label}.flags must be an array`);
+    } else {
+      for (const [index, flag] of header.flags.entries()) {
+        if (!["discontinuity", "keyframe", "dropped-before", "end-of-stream"].includes(String(flag))) {
+          errors.push(`${label}.flags[${index}] is invalid`);
+        }
+      }
+    }
+  }
+  validateOptionalNonNegativeInteger(errors, header, "droppedBefore", label);
+  validateOptionalFiniteNumber(errors, header, "duration", label);
+  if (header.duration !== undefined && isFiniteNumber(header.duration) && header.duration < 0) {
+    errors.push(`${label}.duration must be greater than or equal to zero`);
+  }
+
+  if (header.payloadKind === "empty") {
+    for (const key of ["byteLength", "byteOffset", "actualShape"]) {
+      if (header[key] !== undefined) {
+        errors.push(`${label}.${key} is not allowed when payloadKind is empty`);
+      }
+    }
+  }
+
+  return errors;
+}
 
 function invalidPortValueType(type: string): boolean {
   if ([
@@ -1496,6 +1902,37 @@ export function validateMessageValue(document: unknown): ValidationResult<Messag
   return { ok: true, value: document as MessageValueV01 };
 }
 
+export function validateValueFormatV01(document: unknown): ValidationResult<ValueFormatV01> {
+  const errors = validateValueFormatErrors(document);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: document as ValueFormatV01 };
+}
+
+export function validateEndpointBindingValueFormatV01(
+  document: unknown
+): ValidationResult<EndpointBindingValueFormatV01> {
+  const errors = validateEndpointBindingValueFormatErrors(document);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: document as EndpointBindingValueFormatV01 };
+}
+
+export function validateValueOccurrenceHeaderV01(
+  document: unknown
+): ValidationResult<ValueOccurrenceHeaderV01> {
+  const errors = validateValueOccurrenceHeaderErrors(document);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: document as ValueOccurrenceHeaderV01 };
+}
+
 export function validateObjectTextParseResult(
   document: unknown
 ): ValidationResult<ObjectTextParseResultV01> {
@@ -1964,10 +2401,6 @@ export function validatePasteGraphFragmentRequest(
   }
 
   return { ok: true, value: document as unknown as PasteGraphFragmentRequest };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isGraphTargetPath(path: unknown): boolean {

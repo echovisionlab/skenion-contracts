@@ -74,6 +74,157 @@ pub struct DataTypeV01 {
     pub values: Option<Vec<Value>>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ValueLayoutV01 {
+    Scalar,
+    Interleaved,
+    Planar,
+    RowMajor,
+    ColumnMajor,
+    Strided,
+    Opaque,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ValuePayloadKindV01 {
+    Empty,
+    Json,
+    Bytes,
+    ResourceHandle,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ValueResourceKindV01 {
+    CpuBuffer,
+    GpuBuffer,
+    GpuTexture,
+    RuntimeHandle,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ValueClockV01 {
+    Logical,
+    HostTime,
+    AudioSampleFrame,
+    RenderFrame,
+    VideoPts,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ValueContinuityFlagV01 {
+    Discontinuity,
+    Keyframe,
+    DroppedBefore,
+    EndOfStream,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ValueEndpointRefV01 {
+    pub node_id: String,
+    pub port_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ValueFormatV01 {
+    pub value_type_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shape: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dynamic_shape: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub layout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strides: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub byte_length: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sample_rate: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub channels: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub channel_layout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color_space: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color_range: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transfer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub primaries: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alpha_policy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_kind: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct EndpointBindingDeliveryPolicyV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub policy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_in_flight: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keyframes: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct EndpointBindingValueFormatV01 {
+    pub binding_id: String,
+    pub binding_epoch: u64,
+    pub format_revision: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_digest: Option<String>,
+    pub value_format: ValueFormatV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<ValueEndpointRefV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<ValueEndpointRefV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delivery: Option<EndpointBindingDeliveryPolicyV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ValueOccurrenceHeaderV01 {
+    pub binding_id: String,
+    pub binding_epoch: u64,
+    pub format_revision: u64,
+    pub sequence: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub clock: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<f64>,
+    pub payload_kind: ValuePayloadKindV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub byte_length: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub byte_offset: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actual_shape: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flags: Option<Vec<ValueContinuityFlagV01>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dropped_before: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration: Option<f64>,
+}
+
 fn deserialize_nullable_u64<'de, D>(deserializer: D) -> Result<Option<Option<u64>>, D::Error>
 where
     D: Deserializer<'de>,

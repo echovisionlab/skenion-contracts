@@ -40,7 +40,8 @@ pub use shader_interface::{
 };
 pub use types::{
     CableStyleRegistryV01, CableStyleV01, CanvasNodeViewV01, CanvasViewStateV01, CanvasViewportV01,
-    CycleValidationV01, DataFlowV01, DataTypeV01, EdgeEndpointV01, EdgeSpecV01, ExecutionModelV01,
+    CycleValidationV01, DataFlowV01, DataTypeV01, EdgeEndpointV01, EdgeSpecV01,
+    EndpointBindingDeliveryPolicyV01, EndpointBindingValueFormatV01, ExecutionModelV01,
     ExtensionCodecDescriptorV01, ExtensionCodecDirectionV01, ExtensionFrontendMetadataV01,
     ExtensionHelpEntryV01, ExtensionKindV01, ExtensionManifestV01, ExtensionNativeArtifactAbiV01,
     ExtensionNativeArtifactV01, ExtensionNativeBindingV01, ExtensionProvidesV01,
@@ -80,18 +81,21 @@ pub use types::{
     ProjectObjectBindingDiagnosticV01, ProjectObjectBindingStatusV01,
     ProjectObjectBindingTargetV01, ProjectObjectBindingV01, ProjectPackageDependencyV01,
     ProjectPackageLockEntryV01, ProjectResourceLockEntryV01, ProviderRefKindV01,
-    SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, TriggerModeV01, ViewStateV01,
+    SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, TriggerModeV01, ValueClockV01,
+    ValueContinuityFlagV01, ValueEndpointRefV01, ValueFormatV01, ValueLayoutV01,
+    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ValueResourceKindV01, ViewStateV01,
     derive_patch_contract_v01, derive_patch_contracts_v01,
 };
 pub use validation::{
     ValidationErrorV01, ValidationReportV01, analyze_graph_document_v01,
     analyze_graph_fragment_v01, compatible_data_types_v01, type_label_v01,
-    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_definition_v01, validate_package_discovery_response_v01,
-    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
-    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
+    validate_endpoint_binding_value_format_v01, validate_extension_manifest_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
+    validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
+    validate_package_install_plan_response_v01, validate_package_listing_v01,
+    validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_patch_definition_v01,
-    validate_project_document_v01,
+    validate_project_document_v01, validate_value_format_v01, validate_value_occurrence_header_v01,
 };
 pub use version::{
     CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
