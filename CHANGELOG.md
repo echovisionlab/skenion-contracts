@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.52.0](https://github.com/skenion/skenion-contracts/compare/v0.51.0...v0.52.0) (2026-06-27)
+
+
+### Features
+
+* **contracts:** define object value semantics ([#176](https://github.com/skenion/skenion-contracts/issues/176)) ([1f9a6cc](https://github.com/skenion/skenion-contracts/commit/1f9a6cc73281c8871b95a59e8430029a23f0dbb6)), closes [#174](https://github.com/skenion/skenion-contracts/issues/174)
+
 ## [0.51.0](https://github.com/skenion/skenion-contracts/compare/v0.50.0...v0.51.0) (2026-06-26)
 
 
