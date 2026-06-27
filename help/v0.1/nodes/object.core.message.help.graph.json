@@ -1,0 +1,175 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-message",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "object.core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "Message emits its saved text when clicked, banged, or triggered. set updates the runtime message silently."
+      },
+      "ports": []
+    },
+    {
+      "id": "bang_1",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": "value.core.message",
+          "required": false,
+          "accepts": [
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.string",
+            "value.core.color",
+            "value.core.bang"
+          ],
+          "messageKeys": {
+            "accepted": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool",
+              "string",
+              "color",
+              "identifier",
+              "list",
+              "anything"
+            ],
+            "trigger": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool",
+              "string",
+              "color",
+              "identifier",
+              "list",
+              "anything"
+            ],
+            "emit": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool",
+              "string",
+              "color",
+              "identifier",
+              "list",
+              "anything"
+            ]
+          }
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "label": "Bang",
+          "type": "value.core.bang"
+        }
+      ],
+      "kind": "object.core.bang"
+    },
+    {
+      "id": "message_1",
+      "kind": "object.core.message",
+      "kindVersion": "0.1.0",
+      "params": {
+        "value": "render now"
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": "value.core.message",
+          "required": false,
+          "accepts": [
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.string",
+            "value.core.color",
+            "value.core.bang"
+          ],
+          "messageKeys": {
+            "accepted": [
+              "bang",
+              "set",
+              "float",
+              "int",
+              "uint",
+              "bool",
+              "string",
+              "color",
+              "identifier",
+              "list",
+              "anything"
+            ],
+            "silent": [
+              "set"
+            ],
+            "trigger": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool",
+              "string",
+              "color",
+              "identifier",
+              "list",
+              "anything"
+            ],
+            "store": [
+              "set"
+            ],
+            "emit": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool",
+              "string",
+              "color",
+              "identifier",
+              "list",
+              "anything"
+            ]
+          }
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "label": "Message",
+          "type": "value.core.message"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "bang_1",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "message_1",
+        "portId": "in"
+      }
+    }
+  ]
+}

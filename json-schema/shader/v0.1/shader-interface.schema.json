@@ -76,11 +76,11 @@
         },
         "dataKind": {
           "enum": [
-            "number.float",
-            "number.int",
-            "number.uint",
-            "bool",
-            "color"
+            "value.core.float32",
+            "value.core.int32",
+            "value.core.uint32",
+            "value.core.bool",
+            "value.core.color"
           ]
         },
         "format": {

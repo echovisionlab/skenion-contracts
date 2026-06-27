@@ -1,0 +1,113 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-gpu-upload",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "asset_1",
+      "kind": "object.core.video-asset",
+      "kindVersion": "0.1.0",
+      "params": {
+        "src": "example.mp4"
+      },
+      "ports": [
+        {
+          "id": "asset",
+          "direction": "output",
+          "label": "Asset",
+          "type": "value.core.string"
+        }
+      ]
+    },
+    {
+      "id": "decode_1",
+      "kind": "object.core.video-decode",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "asset",
+          "direction": "input",
+          "label": "Asset",
+          "type": "value.core.string"
+        },
+        {
+          "id": "frames",
+          "direction": "output",
+          "label": "Frames",
+          "type": "value.core.tensor"
+        }
+      ]
+    },
+    {
+      "id": "upload_1",
+      "kind": "object.core.gpu-upload",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "frames",
+          "direction": "input",
+          "label": "Frames",
+          "type": "value.core.tensor"
+        },
+        {
+          "id": "texture",
+          "direction": "output",
+          "label": "Texture",
+          "type": "value.core.tensor"
+        }
+      ]
+    },
+    {
+      "id": "preview_1",
+      "kind": "object.core.preview",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "texture",
+          "direction": "input",
+          "label": "Texture",
+          "type": "value.core.tensor"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "asset_1",
+        "portId": "asset"
+      },
+      "target": {
+        "nodeId": "decode_1",
+        "portId": "asset"
+      }
+    },
+    {
+      "id": "edge-2",
+      "source": {
+        "nodeId": "decode_1",
+        "portId": "frames"
+      },
+      "target": {
+        "nodeId": "upload_1",
+        "portId": "frames"
+      }
+    },
+    {
+      "id": "edge-3",
+      "source": {
+        "nodeId": "upload_1",
+        "portId": "texture"
+      },
+      "target": {
+        "nodeId": "preview_1",
+        "portId": "texture"
+      }
+    }
+  ]
+}

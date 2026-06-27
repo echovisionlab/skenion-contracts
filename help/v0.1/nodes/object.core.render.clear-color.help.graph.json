@@ -1,0 +1,56 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-render-clear-color",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "clear_1",
+      "kind": "object.core.render.clear-color",
+      "kindVersion": "0.1.0",
+      "params": {
+        "color": [
+          0.05,
+          0.1,
+          0.2,
+          1
+        ]
+      },
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "label": "Out",
+          "type": "value.core.tensor"
+        }
+      ]
+    },
+    {
+      "id": "output_1",
+      "kind": "object.core.render.output",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": "value.core.tensor"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "clear_1",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "output_1",
+        "portId": "in"
+      }
+    }
+  ]
+}

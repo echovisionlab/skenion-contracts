@@ -1,0 +1,56 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-preview",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "clear_1",
+      "kind": "object.core.render.clear-color",
+      "kindVersion": "0.1.0",
+      "params": {
+        "color": [
+          0.1,
+          0.2,
+          0.4,
+          1
+        ]
+      },
+      "ports": [
+        {
+          "id": "out",
+          "direction": "output",
+          "label": "Out",
+          "type": "value.core.tensor"
+        }
+      ]
+    },
+    {
+      "id": "preview_1",
+      "kind": "object.core.preview",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "texture",
+          "direction": "input",
+          "label": "Texture",
+          "type": "value.core.tensor"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "clear_1",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "preview_1",
+        "portId": "texture"
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.clear-color",
+  "id": "object.core.render.clear-color",
   "version": "0.1.0",
   "displayName": "Clear Color",
   "category": "Render",
@@ -9,7 +9,7 @@
     {
       "id": "out",
       "direction": "output",
-      "type": "render.frame",
+      "type": "value.core.tensor",
       "rate": "render",
       "description": "Frame produced by clearing the preview target."
     }
@@ -23,6 +23,6 @@
   },
   "permissions": [],
   "capabilities": [
-    "render.frame.v0.1"
+    "value.core.tensor.v0.1"
   ]
 }

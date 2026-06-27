@@ -1,0 +1,42 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.render.fullscreen-shader",
+  "summary": "Runs a WGSL fullscreen shader pass.",
+  "description": "Fullscreen Shader generates instance input ports from @skenion.uniform annotations. Studio analyzes source explicitly; ports do not mutate while the user is typing.",
+  "docsPath": "docs/nodes/object.core.render.fullscreen-shader.md",
+  "helpGraph": "help/v0.1/nodes/object.core.render.fullscreen-shader.help.graph.json",
+  "tags": [
+    "render",
+    "shader",
+    "wgsl",
+    "gpu"
+  ],
+  "runtimeBehavior": "Runtime builds a dynamic uniform layout from the synced input ports, generates WGSL support code, and falls back to clear rendering with structured diagnostics on compile failure.",
+  "relatedNodes": [
+    "object.core.float",
+    "object.core.color",
+    "object.core.render.output"
+  ],
+  "ports": [
+    {
+      "id": "out",
+      "description": "Outputs the rendered GPU texture resource."
+    }
+  ],
+  "params": [
+    {
+      "id": "language",
+      "description": "Shader language. v0.1 supports wgsl."
+    },
+    {
+      "id": "source",
+      "description": "WGSL source containing optional @skenion.uniform annotations."
+    }
+  ],
+  "example": {
+    "title": "Sync shader inputs",
+    "description": "Analyze annotations, sync generated input ports, connect typed control boxes, and feed Render Output.",
+    "graph": "help/v0.1/nodes/object.core.render.fullscreen-shader.help.graph.json"
+  }
+}

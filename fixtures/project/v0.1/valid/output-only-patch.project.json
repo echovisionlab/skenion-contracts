@@ -33,7 +33,7 @@
         "nodes": [
           {
             "id": "amplitude_out",
-            "kind": "core.outlet",
+            "kind": "object.core.outlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "amplitude",
@@ -43,7 +43,7 @@
               {
                 "id": "in",
                 "direction": "input",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Amplitude value leaving the patch."
               }

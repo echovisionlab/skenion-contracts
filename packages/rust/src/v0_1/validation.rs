@@ -4,35 +4,24 @@ use std::{
     fmt,
 };
 
+use super::types::{
+    CycleValidationV01, DataFlowV01, DataTypeV01, EdgeSpecV01, EndpointBindingValueFormatV01,
+    ExtensionKindV01, ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01,
+    GraphDocumentV01, GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01,
+    GraphFragmentV01, GraphFragmentValidationResultV01, GraphValidationDiagnosticV01,
+    GraphValidationResultV01, MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01,
+    PackageDiagnosticSeverityV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
+    PackageInstallPlanCheckStatusV01, PackageInstallPlanIntentV01, PackageInstallPlanRequestV01,
+    PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01,
+    PackageInstallPlanTargetV01, PackageListingArtifactKindV01, PackageListingTargetSupportKindV01,
+    PackageListingV01, PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01,
+    PasteGraphFragmentRequest, PatchDefinitionV01, PortDirectionV01, PortSpecV01,
+    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
+    ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01,
+    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, derive_patch_contract_v01,
+};
 use super::version::{
     derive_v0_compatibility_line, derive_v0_compatibility_range, satisfies_v0_compatibility_range,
-};
-use super::{
-    CycleValidationV01, DataFlowV01, DataTypeV01, EdgeSpecV01, ExtensionKindV01,
-    ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01, GraphDocumentV01,
-    GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
-    GraphFragmentValidationResultV01, GraphValidationDiagnosticV01, GraphValidationResultV01,
-    MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01, PackageDiagnosticSeverityV01,
-    PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
-    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
-    PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01,
-    PackageListingArtifactKindV01, PackageListingTargetSupportKindV01, PackageListingV01,
-    PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
-    PasteGraphFragmentResponse, PatchDefinitionV01, PortDirectionV01, PortSpecV01,
-    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
-    ProjectObjectBindingTargetV01, RuntimeCollaborationAuthSubject,
-    RuntimeCollaborationCausalMetadata, RuntimeCollaborationChange,
-    RuntimeCollaborationEventEnvelope, RuntimeCollaborationEventKind,
-    RuntimeCollaborationEventPayload, RuntimeCollaborationNackReason,
-    RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationBatchResult,
-    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationPayload,
-    RuntimeCollaborationOperationResult, RuntimeCollaborationOperationStatus,
-    RuntimeCollaborationPresenceEnvelope, RuntimeCollaborationSelectionEnvelope,
-    RuntimeConnectionProfile, RuntimeConnectionProfileMode, RuntimeDiagnostic, RuntimeHistory,
-    RuntimeHistoryEntry, RuntimeMutationRequest, RuntimeOperationEnvelope, RuntimeOwnershipMode,
-    RuntimeProjectRequestV01, RuntimeSessionEvent, RuntimeSessionInfoResponse,
-    RuntimeSessionSnapshot, RuntimeViewPatchOperation, SKENION_PACKAGE_MANIFEST_FILE_NAME,
-    ViewStateV01, derive_patch_contract_v01,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -219,6 +208,340 @@ fn is_sha256_hex_v01(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
+fn validate_shape_v01(errors: &mut Vec<ValidationErrorV01>, label: &str, shape: Option<&[u64]>) {
+    let Some(shape) = shape else {
+        return;
+    };
+    if shape.is_empty() {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label} must be a non-empty array of positive integers"
+        )));
+        return;
+    }
+    for (index, dimension) in shape.iter().enumerate() {
+        if *dimension == 0 {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}[{index}] must be a positive integer"
+            )));
+        }
+    }
+}
+
+fn is_value_type_id_v01(value: &str) -> bool {
+    if is_first_party_value_type(value) {
+        return true;
+    }
+    if value.starts_with("value.core.") || value.starts_with("value.media.") {
+        return false;
+    }
+
+    let mut parts = value.split('.');
+    if parts.next() != Some("value") {
+        return false;
+    }
+    let Some(namespace) = parts.next() else {
+        return false;
+    };
+    is_lower_digit_hyphen_segment(namespace)
+        && parts.clone().next().is_some()
+        && parts.all(is_lower_digit_hyphen_segment)
+}
+
+fn expected_formats_for_first_party_value_type(
+    value_type_id: &str,
+) -> Option<&'static [&'static str]> {
+    match value_type_id {
+        "value.core.float8" => Some(&["f8.e4m3", "f8.e5m2"]),
+        "value.core.float16" => Some(&["f16"]),
+        "value.core.float32" => Some(&["f32"]),
+        "value.core.float64" => Some(&["f64"]),
+        "value.core.ufloat8" => Some(&["ufloat8"]),
+        "value.core.ufloat16" => Some(&["ufloat16"]),
+        "value.core.ufloat32" => Some(&["ufloat32"]),
+        "value.core.ufloat64" => Some(&["ufloat64"]),
+        "value.core.int8" => Some(&["i8"]),
+        "value.core.int16" => Some(&["i16"]),
+        "value.core.int32" => Some(&["i32"]),
+        "value.core.int64" => Some(&["i64"]),
+        "value.core.uint8" => Some(&["u8"]),
+        "value.core.uint16" => Some(&["u16"]),
+        "value.core.uint32" => Some(&["u32"]),
+        "value.core.uint64" => Some(&["u64"]),
+        "value.core.color" => Some(&["rgba32f", "rgba16f", "rgba8unorm", "rgb8unorm"]),
+        "value.core.vector" | "value.core.matrix" | "value.core.tensor" => Some(&[
+            "f64",
+            "f32",
+            "f16",
+            "f8.e4m3",
+            "f8.e5m2",
+            "ufloat64",
+            "ufloat32",
+            "ufloat16",
+            "ufloat8",
+            "i64",
+            "i32",
+            "i16",
+            "i8",
+            "u64",
+            "u32",
+            "u16",
+            "u8",
+            "rgba32f",
+            "rgba16f",
+            "rgba8unorm",
+            "rgb8unorm",
+        ]),
+        _ => None,
+    }
+}
+
+fn value_format_errors_v01(value_format: &ValueFormatV01, label: &str) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+    let value_type_id = value_format.value_type_id.as_str();
+
+    if value_type_id.is_empty() {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.valueTypeId must be a non-empty string"
+        )));
+    } else if !is_value_type_id_v01(value_type_id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.valueTypeId is not a valid value type id: {value_type_id}"
+        )));
+    }
+
+    if let Some(format) = value_format.format.as_deref()
+        && let Some(expected_formats) = expected_formats_for_first_party_value_type(value_type_id)
+        && !expected_formats.contains(&format)
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.format {format} is not valid for {value_type_id}"
+        )));
+    }
+
+    validate_shape_v01(
+        &mut errors,
+        &format!("{label}.shape"),
+        value_format.shape.as_deref(),
+    );
+    validate_shape_v01(
+        &mut errors,
+        &format!("{label}.strides"),
+        value_format.strides.as_deref(),
+    );
+
+    if matches!(
+        value_type_id,
+        "value.core.vector" | "value.core.matrix" | "value.core.tensor"
+    ) {
+        if value_format.shape.is_none() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.shape is required for {value_type_id}"
+            )));
+        }
+        if value_format.format.is_none() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.format is required for {value_type_id}"
+            )));
+        }
+    }
+
+    if value_format.byte_length == Some(0) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.byteLength must be a positive integer"
+        )));
+    }
+    if value_format.channels == Some(0) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.channels must be a positive integer"
+        )));
+    }
+    if value_format
+        .sample_rate
+        .is_some_and(|sample_rate| !sample_rate.is_finite() || sample_rate <= 0.0)
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label}.sampleRate must be greater than zero"
+        )));
+    }
+
+    if value_type_id == "value.core.bang" {
+        if value_format.format.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.format is not allowed for value.core.bang"
+            )));
+        }
+        if value_format.shape.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.shape is not allowed for value.core.bang"
+            )));
+        }
+        if value_format.byte_length.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.byteLength is not allowed for value.core.bang"
+            )));
+        }
+        if value_format.resource_kind.is_some() {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label}.resourceKind is not allowed for value.core.bang"
+            )));
+        }
+    }
+
+    errors
+}
+
+pub fn validate_value_format_v01(
+    value_format: &ValueFormatV01,
+) -> Result<&ValueFormatV01, ValidationReportV01> {
+    let errors = value_format_errors_v01(value_format, "valueFormat");
+    if errors.is_empty() {
+        Ok(value_format)
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_endpoint_binding_value_format_v01(
+    binding_format: &EndpointBindingValueFormatV01,
+) -> Result<&EndpointBindingValueFormatV01, ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if binding_format.binding_id.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.bindingId must be a non-empty string",
+        ));
+    }
+    if binding_format.binding_epoch == 0 {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.bindingEpoch must be a positive integer",
+        ));
+    }
+    if binding_format.format_revision == 0 {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.formatRevision must be a positive integer",
+        ));
+    }
+    if binding_format
+        .format_digest
+        .as_deref()
+        .is_some_and(|digest| !is_sha256_hex_v01(digest))
+    {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.formatDigest must be a 64-character sha256 hex string",
+        ));
+    }
+    errors.extend(value_format_errors_v01(
+        &binding_format.value_format,
+        "bindingFormat.valueFormat",
+    ));
+    if binding_format
+        .source
+        .as_ref()
+        .is_some_and(|source| source.node_id.is_empty() || source.port_id.is_empty())
+    {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.source must contain non-empty nodeId and portId",
+        ));
+    }
+    if binding_format
+        .target
+        .as_ref()
+        .is_some_and(|target| target.node_id.is_empty() || target.port_id.is_empty())
+    {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.target must contain non-empty nodeId and portId",
+        ));
+    }
+    if binding_format.delivery.as_ref().is_some_and(|delivery| {
+        delivery
+            .policy
+            .as_deref()
+            .is_some_and(|policy| !matches!(policy, "ordered" | "latest" | "ring" | "drop"))
+            || delivery.max_in_flight == Some(0)
+    }) {
+        errors.push(ValidationErrorV01::new(
+            "bindingFormat.delivery contains an invalid policy or maxInFlight",
+        ));
+    }
+
+    if errors.is_empty() {
+        Ok(binding_format)
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_value_occurrence_header_v01(
+    header: &ValueOccurrenceHeaderV01,
+) -> Result<&ValueOccurrenceHeaderV01, ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if header.binding_id.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.bindingId must be a non-empty string",
+        ));
+    }
+    if header.binding_epoch == 0 {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.bindingEpoch must be a positive integer",
+        ));
+    }
+    if header.format_revision == 0 {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.formatRevision must be a positive integer",
+        ));
+    }
+    if header
+        .timestamp
+        .is_some_and(|timestamp| !timestamp.is_finite())
+    {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.timestamp must be a finite number",
+        ));
+    }
+    if header.byte_length == Some(0) {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.byteLength must be a positive integer",
+        ));
+    }
+    validate_shape_v01(
+        &mut errors,
+        "occurrenceHeader.actualShape",
+        header.actual_shape.as_deref(),
+    );
+    if header
+        .duration
+        .is_some_and(|duration| !duration.is_finite() || duration < 0.0)
+    {
+        errors.push(ValidationErrorV01::new(
+            "occurrenceHeader.duration must be greater than or equal to zero",
+        ));
+    }
+    if header.payload_kind == ValuePayloadKindV01::Empty {
+        if header.byte_length.is_some() {
+            errors.push(ValidationErrorV01::new(
+                "occurrenceHeader.byteLength is not allowed when payloadKind is empty",
+            ));
+        }
+        if header.byte_offset.is_some() {
+            errors.push(ValidationErrorV01::new(
+                "occurrenceHeader.byteOffset is not allowed when payloadKind is empty",
+            ));
+        }
+        if header.actual_shape.is_some() {
+            errors.push(ValidationErrorV01::new(
+                "occurrenceHeader.actualShape is not allowed when payloadKind is empty",
+            ));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(header)
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
 fn validate_package_checksum_v01(
     errors: &mut Vec<ValidationErrorV01>,
     label: &str,
@@ -231,24 +554,43 @@ fn validate_package_checksum_v01(
     }
 }
 
-fn is_message_any_compatible(source_type: &DataTypeV01, target_type: &DataTypeV01) -> bool {
+fn is_message_value_data_kind(data_kind: &str) -> bool {
+    matches!(
+        data_kind,
+        "value.core.bang"
+            | "value.core.bool"
+            | "value.core.uint8"
+            | "value.core.uint16"
+            | "value.core.uint32"
+            | "value.core.uint64"
+            | "value.core.int8"
+            | "value.core.int16"
+            | "value.core.int32"
+            | "value.core.int64"
+            | "value.core.float8"
+            | "value.core.float16"
+            | "value.core.float32"
+            | "value.core.float64"
+            | "value.core.ufloat8"
+            | "value.core.ufloat16"
+            | "value.core.ufloat32"
+            | "value.core.ufloat64"
+            | "value.core.string"
+            | "value.core.message"
+            | "value.core.color"
+    )
+}
+
+fn is_message_value_compatible(source_type: &DataTypeV01, target_type: &DataTypeV01) -> bool {
     if target_type.flow == DataFlowV01::Event {
         return source_type.flow == DataFlowV01::Event;
     }
 
     if target_type.flow == DataFlowV01::Control {
         return (source_type.flow == DataFlowV01::Control
-            && matches!(
-                source_type.data_kind.as_str(),
-                "number.float"
-                    | "number.int"
-                    | "number.uint"
-                    | "bool"
-                    | "color"
-                    | "string"
-                    | "message.any"
-            ))
-            || (source_type.flow == DataFlowV01::Event && source_type.data_kind == "event.bang");
+            && is_message_value_data_kind(&source_type.data_kind))
+            || (source_type.flow == DataFlowV01::Event
+                && source_type.data_kind == "value.core.bang");
     }
 
     false
@@ -256,10 +598,10 @@ fn is_message_any_compatible(source_type: &DataTypeV01, target_type: &DataTypeV0
 
 pub fn compatible_data_types_v01(source_type: &DataTypeV01, target_type: &DataTypeV01) -> bool {
     source_type == target_type
-        || (source_type.data_kind == "message.any"
-            && is_message_any_compatible(source_type, target_type))
-        || (target_type.data_kind == "message.any"
-            && is_message_any_compatible(source_type, target_type))
+        || (source_type.data_kind == "value.core.message"
+            && is_message_value_compatible(source_type, target_type))
+        || (target_type.data_kind == "value.core.message"
+            && is_message_value_compatible(source_type, target_type))
 }
 
 pub fn type_label_v01(data_type: &DataTypeV01) -> String {
@@ -336,8 +678,7 @@ fn merge_policy_for(port: &PortSpecV01) -> MergePolicyV01 {
 }
 
 fn accepts(source: &PortSpecV01, target: &PortSpecV01) -> bool {
-    if target.port_type == "control.message.any" && is_control_message_port_type(&source.port_type)
-    {
+    if target.port_type == "value.core.message" && is_message_value_port_type(&source.port_type) {
         return true;
     }
     if source.port_type == target.port_type {
@@ -349,21 +690,42 @@ fn accepts(source: &PortSpecV01, target: &PortSpecV01) -> bool {
     false
 }
 
-fn is_control_message_port_type(port_type: &str) -> bool {
+fn is_message_value_port_type(port_type: &str) -> bool {
+    is_message_value_data_kind(port_type)
+}
+
+fn is_first_party_value_type(port_type: &str) -> bool {
     matches!(
         port_type,
-        "control.message.any"
-            | "control.number.float"
-            | "control.number.int"
-            | "control.number.uint"
-            | "control.bool"
-            | "control.color"
-            | "control.string"
+        "value.core.bang"
+            | "value.core.bool"
+            | "value.core.uint8"
+            | "value.core.uint16"
+            | "value.core.uint32"
+            | "value.core.uint64"
+            | "value.core.int8"
+            | "value.core.int16"
+            | "value.core.int32"
+            | "value.core.int64"
+            | "value.core.float8"
+            | "value.core.float16"
+            | "value.core.float32"
+            | "value.core.float64"
+            | "value.core.ufloat8"
+            | "value.core.ufloat16"
+            | "value.core.ufloat32"
+            | "value.core.ufloat64"
+            | "value.core.string"
+            | "value.core.message"
+            | "value.core.color"
+            | "value.core.vector"
+            | "value.core.matrix"
+            | "value.core.tensor"
     )
 }
 
-fn is_legacy_control_port_type(port_type: &str) -> bool {
-    matches!(
+fn is_invalid_value_type(port_type: &str) -> bool {
+    if matches!(
         port_type,
         "message.any"
             | "number.float"
@@ -372,23 +734,89 @@ fn is_legacy_control_port_type(port_type: &str) -> bool {
             | "boolean"
             | "color"
             | "string"
-    ) || port_type.starts_with("value.")
+            | "control.number"
+            | "control.message"
+            | "control.message.any"
+            | "event.bang"
+            | "asset.video"
+            | "asset.image"
+            | "asset.audio"
+            | "gpu.texture2d"
+            | "video.frame"
+            | "render.frame"
+            | "stream.video.frame"
+            | "signal.audio"
+            | "value.core.float"
+            | "value.core.int"
+            | "value.core.uint"
+            | "value.core.number"
+            | "value.object.core"
+            | "value.core.frame"
+            | "value.core.symbol"
+            | "value.media.asset"
+            | "value.media.stream"
+            | "value.media.video-stream"
+            | "value.media.audio-stream"
+            | "value.media.audio-sample"
+            | "value.media.audio-frame"
+            | "value.media.audio-buffer"
+            | "value.media.image"
+            | "value.media.matrix"
+            | "value.media.render-frame"
+            | "value.media.video-frame"
+    ) {
+        return true;
+    }
+    if port_type.starts_with("control.")
+        || port_type.starts_with("event.")
+        || port_type.starts_with("stream.")
+        || port_type.starts_with("payload.")
+        || port_type.starts_with("data.")
+        || port_type.starts_with("selector.")
         || port_type.starts_with("value<")
+    {
+        return true;
+    }
+    if port_type.starts_with("value.") && !is_first_party_value_type(port_type) {
+        return true;
+    }
+    false
 }
 
-fn is_selector_aware_input_port(port: &PortSpecV01) -> bool {
+fn is_payload_identity_node_kind(kind: &str) -> bool {
+    matches!(
+        kind,
+        "value"
+            | "data"
+            | "payload"
+            | "bool"
+            | "string"
+            | "object.core.bool"
+            | "object.core.string"
+            | "value.core.message"
+            | "value.core.bang"
+            | "value.core.string"
+            | "value.core.tensor"
+    ) || kind.starts_with("value.")
+        || kind.starts_with("data.")
+        || kind.starts_with("payload.")
+        || kind.starts_with("control.")
+}
+
+fn is_key_aware_input_port(port: &PortSpecV01) -> bool {
     port.direction == PortDirectionV01::Input
-        && (port.port_type == "control.message.any"
-            || port.accepts.as_ref().is_some_and(|accepted| {
-                accepted.iter().any(|value| value == "control.message.any")
-            }))
+        && (port.port_type == "value.core.message"
+            || port
+                .accepts
+                .as_ref()
+                .is_some_and(|accepted| accepted.iter().any(|value| value == "value.core.message")))
 }
 
-fn message_selector_policy_errors(port: &PortSpecV01, label: &str) -> Vec<String> {
-    let Some(policy) = &port.message_selectors else {
-        return if is_selector_aware_input_port(port) {
+fn message_key_policy_errors(port: &PortSpecV01, label: &str) -> Vec<String> {
+    let Some(policy) = &port.message_keys else {
+        return if is_key_aware_input_port(port) {
             vec![format!(
-                "{label} selector-aware input port requires messageSelectors"
+                "{label} message-key-aware input port requires messageKeys"
             )]
         } else {
             Vec::new()
@@ -398,20 +826,20 @@ fn message_selector_policy_errors(port: &PortSpecV01, label: &str) -> Vec<String
     let mut errors = Vec::new();
     if policy.accepted.is_empty() {
         errors.push(format!(
-            "{label} messageSelectors.accepted must list at least one selector"
+            "{label} messageKeys.accepted must list at least one key"
         ));
     }
 
-    for (field, selectors) in [
+    for (field, keys) in [
         ("silent", &policy.silent),
         ("trigger", &policy.trigger),
         ("store", &policy.store),
         ("emit", &policy.emit),
     ] {
-        for selector in selectors.iter().flat_map(|values| values.iter()) {
-            if !policy.accepted.contains(selector) {
+        for key in keys.iter().flat_map(|values| values.iter()) {
+            if !policy.accepted.contains(key) {
                 errors.push(format!(
-                    "{label} messageSelectors.{field} selector {selector} is not accepted"
+                    "{label} messageKeys.{field} key {key} is not accepted"
                 ));
             }
         }
@@ -419,33 +847,29 @@ fn message_selector_policy_errors(port: &PortSpecV01, label: &str) -> Vec<String
     if policy
         .trigger
         .as_ref()
-        .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+        .is_some_and(|keys| keys.iter().any(|key| key == "set"))
     {
-        errors.push(format!(
-            "{label} messageSelectors.trigger must not include set"
-        ));
+        errors.push(format!("{label} messageKeys.trigger must not include set"));
     }
     if policy
         .emit
         .as_ref()
-        .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+        .is_some_and(|keys| keys.iter().any(|key| key == "set"))
     {
-        errors.push(format!(
-            "{label} messageSelectors.emit must not include set"
-        ));
+        errors.push(format!("{label} messageKeys.emit must not include set"));
     }
-    if policy.accepted.iter().any(|selector| selector == "set")
+    if policy.accepted.iter().any(|key| key == "set")
         && !policy
             .silent
             .as_ref()
-            .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+            .is_some_and(|keys| keys.iter().any(|key| key == "set"))
         && !policy
             .store
             .as_ref()
-            .is_some_and(|selectors| selectors.iter().any(|selector| selector == "set"))
+            .is_some_and(|keys| keys.iter().any(|key| key == "set"))
     {
         errors.push(format!(
-            "{label} messageSelectors.set must be silent or store behavior"
+            "{label} messageKeys.set must be silent or store behavior"
         ));
     }
 
@@ -473,7 +897,19 @@ pub fn analyze_graph_fragment_v01(
                 None,
             );
         }
-
+        if is_payload_identity_node_kind(&node.kind) {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "payload-node-kind",
+                format!(
+                    "node {} uses payload identity {} as an executable kind",
+                    node.id, node.kind
+                ),
+                Some(vec![node.id.clone()]),
+                None,
+            );
+        }
         let mut port_ids = HashSet::new();
         for port in &node.ports {
             if !port_ids.insert(port.id.clone()) {
@@ -486,13 +922,13 @@ pub fn analyze_graph_fragment_v01(
                     None,
                 );
             }
-            if is_legacy_control_port_type(&port.port_type) {
+            if is_invalid_value_type(&port.port_type) {
                 fragment_diagnostic(
                     &mut diagnostics,
                     "error",
-                    "legacy-port-type",
+                    "invalid-value-type",
                     format!(
-                        "port {}.{} uses legacy control port type {}",
+                        "port {}.{} uses invalid value type {}",
                         node.id, port.id, port.port_type
                     ),
                     Some(vec![node.id.clone()]),
@@ -501,13 +937,13 @@ pub fn analyze_graph_fragment_v01(
             }
             if let Some(accepted) = &port.accepts {
                 for accepted_type in accepted {
-                    if is_legacy_control_port_type(accepted_type) {
+                    if is_invalid_value_type(accepted_type) {
                         fragment_diagnostic(
                             &mut diagnostics,
                             "error",
-                            "legacy-port-type",
+                            "invalid-value-type",
                             format!(
-                                "port {}.{} accepts legacy control port type {}",
+                                "port {}.{} accepts invalid value type {}",
                                 node.id, port.id, accepted_type
                             ),
                             Some(vec![node.id.clone()]),
@@ -516,13 +952,11 @@ pub fn analyze_graph_fragment_v01(
                     }
                 }
             }
-            for error in
-                message_selector_policy_errors(port, &format!("port {}.{}", node.id, port.id))
-            {
+            for error in message_key_policy_errors(port, &format!("port {}.{}", node.id, port.id)) {
                 fragment_diagnostic(
                     &mut diagnostics,
                     "error",
-                    "message-selector-policy",
+                    "message-key-policy",
                     error,
                     Some(vec![node.id.clone()]),
                     None,
@@ -546,14 +980,14 @@ pub fn analyze_graph_fragment_v01(
         if edge
             .resolved_type
             .as_ref()
-            .is_some_and(|port_type| is_legacy_control_port_type(port_type))
+            .is_some_and(|port_type| is_invalid_value_type(port_type))
         {
             fragment_diagnostic(
                 &mut diagnostics,
                 "error",
-                "legacy-port-type",
+                "invalid-value-type",
                 format!(
-                    "edge {} uses legacy resolvedType {}",
+                    "edge {} uses invalid resolvedType {}",
                     edge.id,
                     edge.resolved_type.as_deref().unwrap_or_default()
                 ),
@@ -665,27 +1099,14 @@ pub fn analyze_graph_fragment_v01(
     }
 }
 
-fn port_family(port_type: &str) -> &str {
-    port_type
-        .split_once('.')
-        .map_or(port_type, |(family, _)| family)
+fn is_immediate_value_cycle_port_type(port_type: &str) -> bool {
+    port_type.starts_with("value.core.")
 }
 
-fn is_control_cycle_port_type(port_type: &str) -> bool {
-    matches!(
-        port_type,
-        "control.message.any"
-            | "event.bang"
-            | "control.number.float"
-            | "control.number.int"
-            | "control.number.uint"
-            | "control.bool"
-            | "control.color"
-            | "control.string"
-    ) || matches!(port_family(port_type), "control")
-}
-
-fn control_cycle_types(edges: &[EdgeSpecV01], ports: &HashMap<String, PortSpecV01>) -> bool {
+fn immediate_value_cycle_types(
+    edges: &[EdgeSpecV01],
+    ports: &HashMap<String, PortSpecV01>,
+) -> bool {
     edges.iter().all(|edge| {
         let source_key = port_key(&edge.source.node_id, &edge.source.port_id);
         let target_key = port_key(&edge.target.node_id, &edge.target.port_id);
@@ -697,7 +1118,8 @@ fn control_cycle_types(edges: &[EdgeSpecV01], ports: &HashMap<String, PortSpecV0
             .get(&target_key)
             .map(|port| port.port_type.as_str())
             .unwrap_or_default();
-        is_control_cycle_port_type(source_type) && is_control_cycle_port_type(target_type)
+        is_immediate_value_cycle_port_type(source_type)
+            && is_immediate_value_cycle_port_type(target_type)
     })
 }
 
@@ -732,14 +1154,14 @@ fn classify_cycle(
         };
     }
 
-    let classification = if control_cycle_types(&edges, ports) {
+    let classification = if immediate_value_cycle_types(&edges, ports) {
         CycleValidationV01::AmbiguousAlgebraicLoop
     } else {
         CycleValidationV01::InvalidCycle
     };
     let message = match classification {
         CycleValidationV01::AmbiguousAlgebraicLoop => {
-            "control cycle requires explicit latch, delay, or feedback policy"
+            "immediate value cycle requires explicit latch, delay, or feedback policy"
         }
         _ => "cycle requires explicit feedback policy",
     };
@@ -862,6 +1284,19 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 None,
             );
         }
+        if is_payload_identity_node_kind(&node.kind) {
+            diagnostic(
+                &mut diagnostics,
+                "error",
+                "payload-node-kind",
+                format!(
+                    "node {} uses payload identity {} as an executable kind",
+                    node.id, node.kind
+                ),
+                Some(vec![node.id.clone()]),
+                None,
+            );
+        }
 
         let mut port_ids = HashSet::new();
         for port in &node.ports {
@@ -875,13 +1310,13 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                     None,
                 );
             }
-            if is_legacy_control_port_type(&port.port_type) {
+            if is_invalid_value_type(&port.port_type) {
                 diagnostic(
                     &mut diagnostics,
                     "error",
-                    "legacy-port-type",
+                    "invalid-value-type",
                     format!(
-                        "port {}.{} uses legacy control port type {}",
+                        "port {}.{} uses invalid value type {}",
                         node.id, port.id, port.port_type
                     ),
                     Some(vec![node.id.clone()]),
@@ -890,13 +1325,13 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             }
             if let Some(accepted) = &port.accepts {
                 for accepted_type in accepted {
-                    if is_legacy_control_port_type(accepted_type) {
+                    if is_invalid_value_type(accepted_type) {
                         diagnostic(
                             &mut diagnostics,
                             "error",
-                            "legacy-port-type",
+                            "invalid-value-type",
                             format!(
-                                "port {}.{} accepts legacy control port type {}",
+                                "port {}.{} accepts invalid value type {}",
                                 node.id, port.id, accepted_type
                             ),
                             Some(vec![node.id.clone()]),
@@ -905,13 +1340,11 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                     }
                 }
             }
-            for error in
-                message_selector_policy_errors(port, &format!("port {}.{}", node.id, port.id))
-            {
+            for error in message_key_policy_errors(port, &format!("port {}.{}", node.id, port.id)) {
                 diagnostic(
                     &mut diagnostics,
                     "error",
-                    "message-selector-policy",
+                    "message-key-policy",
                     error,
                     Some(vec![node.id.clone()]),
                     None,
@@ -924,13 +1357,13 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
         }
 
         for group in node.port_groups.as_deref().unwrap_or_default() {
-            if is_legacy_control_port_type(&group.port_type) {
+            if is_invalid_value_type(&group.port_type) {
                 diagnostic(
                     &mut diagnostics,
                     "error",
-                    "legacy-port-type",
+                    "invalid-value-type",
                     format!(
-                        "port group {}.{} uses legacy control port type {}",
+                        "port group {}.{} uses invalid value type {}",
                         node.id, group.id, group.port_type
                     ),
                     Some(vec![node.id.clone()]),
@@ -940,14 +1373,14 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             if group
                 .default_port_spec
                 .as_ref()
-                .is_some_and(|port| is_legacy_control_port_type(&port.port_type))
+                .is_some_and(|port| is_invalid_value_type(&port.port_type))
             {
                 diagnostic(
                     &mut diagnostics,
                     "error",
-                    "legacy-port-type",
+                    "invalid-value-type",
                     format!(
-                        "port group {}.{} default port uses legacy control port type {}",
+                        "port group {}.{} default port uses invalid value type {}",
                         node.id,
                         group.id,
                         group
@@ -963,13 +1396,13 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             if let Some(default_port) = &group.default_port_spec {
                 if let Some(accepted) = &default_port.accepts {
                     for accepted_type in accepted {
-                        if is_legacy_control_port_type(accepted_type) {
+                        if is_invalid_value_type(accepted_type) {
                             diagnostic(
                                 &mut diagnostics,
                                 "error",
-                                "legacy-port-type",
+                                "invalid-value-type",
                                 format!(
-                                    "port group {}.{} default port accepts legacy control port type {}",
+                                    "port group {}.{} default port accepts invalid value type {}",
                                     node.id, group.id, accepted_type
                                 ),
                                 Some(vec![node.id.clone()]),
@@ -978,14 +1411,14 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                         }
                     }
                 }
-                for error in message_selector_policy_errors(
+                for error in message_key_policy_errors(
                     default_port,
                     &format!("port group {}.{} defaultPortSpec", node.id, group.id),
                 ) {
                     diagnostic(
                         &mut diagnostics,
                         "error",
-                        "message-selector-policy",
+                        "message-key-policy",
                         error,
                         Some(vec![node.id.clone()]),
                         None,
@@ -1041,14 +1474,14 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
         if edge
             .resolved_type
             .as_ref()
-            .is_some_and(|port_type| is_legacy_control_port_type(port_type))
+            .is_some_and(|port_type| is_invalid_value_type(port_type))
         {
             diagnostic(
                 &mut diagnostics,
                 "error",
-                "legacy-port-type",
+                "invalid-value-type",
                 format!(
-                    "edge {} uses legacy resolvedType {}",
+                    "edge {} uses invalid resolvedType {}",
                     edge.id,
                     edge.resolved_type.as_deref().unwrap_or_default()
                 ),
@@ -1334,886 +1767,6 @@ pub fn validate_paste_graph_fragment_request(
     validate_graph_fragment_with_policy(&request.fragment, outside_endpoint_policy)
 }
 
-fn validate_runtime_collaboration_causality(
-    causal: &RuntimeCollaborationCausalMetadata,
-    label: &str,
-) -> Vec<ValidationErrorV01> {
-    let max_vector = causal.vector.values().copied().max().unwrap_or(0);
-    if causal.base_sequence < max_vector {
-        vec![ValidationErrorV01::new(format!(
-            "{label} baseSequence must be greater than or equal to the causal vector maximum"
-        ))]
-    } else {
-        Vec::new()
-    }
-}
-
-fn validate_runtime_collaboration_auth_separation(
-    participant_id: &str,
-    auth_subject: Option<&RuntimeCollaborationAuthSubject>,
-    label: &str,
-) -> Vec<ValidationErrorV01> {
-    let Some(subject) = auth_subject else {
-        return Vec::new();
-    };
-    let Some(subject_id) = subject.subject_id.as_deref() else {
-        return Vec::new();
-    };
-
-    if subject_id == participant_id {
-        vec![ValidationErrorV01::new(format!(
-            "{label} participantId must not mirror auth subject id"
-        ))]
-    } else {
-        Vec::new()
-    }
-}
-
-fn validate_runtime_collaboration_expiry(
-    updated_at: &str,
-    expires_at: &str,
-    label: &str,
-) -> Vec<ValidationErrorV01> {
-    if expires_at <= updated_at {
-        vec![ValidationErrorV01::new(format!(
-            "{label} expiresAt must be later than updatedAt"
-        ))]
-    } else {
-        Vec::new()
-    }
-}
-
-fn runtime_collaboration_change_id(change: &RuntimeCollaborationChange) -> &str {
-    match change {
-        RuntimeCollaborationChange::NodeAdd { change_id, .. } => change_id,
-        RuntimeCollaborationChange::NodeMove { change_id, .. } => change_id,
-        RuntimeCollaborationChange::NodeDelete { change_id, .. } => change_id,
-        RuntimeCollaborationChange::EdgeConnect { change_id, .. } => change_id,
-        RuntimeCollaborationChange::EdgeDisconnect { change_id, .. } => change_id,
-    }
-}
-
-fn validate_runtime_collaboration_payload(
-    payload: &RuntimeCollaborationOperationPayload,
-    participant_id: &str,
-) -> Vec<ValidationErrorV01> {
-    match payload {
-        RuntimeCollaborationOperationPayload::ChangeSet { changes, .. } => duplicate_errors(
-            changes
-                .iter()
-                .map(runtime_collaboration_change_id)
-                .collect(),
-            "collaboration change id",
-        ),
-        RuntimeCollaborationOperationPayload::PasteGraphFragment { request, .. } => {
-            match validate_paste_graph_fragment_request(request) {
-                Ok(_) => Vec::new(),
-                Err(report) => report.errors().to_vec(),
-            }
-        }
-        RuntimeCollaborationOperationPayload::UndoRedo { scope, .. } => {
-            if scope.participant_id != participant_id {
-                vec![ValidationErrorV01::new(
-                    "undoRedo scope participantId must match operation participantId",
-                )]
-            } else {
-                Vec::new()
-            }
-        }
-    }
-}
-
-fn validate_runtime_collaboration_operation_envelope_semantics(
-    envelope: &RuntimeCollaborationOperationEnvelope,
-) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-    errors.extend(validate_runtime_collaboration_causality(
-        &envelope.causal,
-        "operation causal",
-    ));
-    errors.extend(validate_runtime_collaboration_auth_separation(
-        &envelope.participant_id,
-        envelope.auth_subject.as_ref(),
-        "operation",
-    ));
-    errors.extend(validate_runtime_collaboration_payload(
-        &envelope.payload,
-        &envelope.participant_id,
-    ));
-
-    if !envelope
-        .causal
-        .vector
-        .contains_key(&envelope.participant_id)
-    {
-        errors.push(ValidationErrorV01::new(
-            "operation causal vector must include participantId",
-        ));
-    }
-
-    errors
-}
-
-pub fn validate_runtime_collaboration_operation_envelope(
-    envelope: &RuntimeCollaborationOperationEnvelope,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if envelope.schema != "skenion.runtime.collaboration.operation" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.collaboration.operation, found {}",
-            envelope.schema
-        )));
-    }
-    if envelope.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            envelope.schema_version
-        )));
-    }
-    errors.extend(validate_runtime_collaboration_operation_envelope_semantics(
-        envelope,
-    ));
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_runtime_collaboration_operation_batch(
-    batch: &RuntimeCollaborationOperationBatch,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if batch.schema != "skenion.runtime.collaboration.operation-batch" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.collaboration.operation-batch, found {}",
-            batch.schema
-        )));
-    }
-    if batch.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            batch.schema_version
-        )));
-    }
-    errors.extend(duplicate_errors(
-        batch
-            .operations
-            .iter()
-            .map(|operation| operation.idempotency_key.as_str())
-            .collect(),
-        "collaboration idempotency key",
-    ));
-    for operation in &batch.operations {
-        if operation.session_id != batch.session_id {
-            errors.push(ValidationErrorV01::new(
-                "collaboration batch operation sessionId must match batch sessionId",
-            ));
-        }
-        errors.extend(validate_runtime_collaboration_operation_envelope_semantics(
-            operation,
-        ));
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_runtime_collaboration_operation_result(
-    result: &RuntimeCollaborationOperationResult,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if result.schema != "skenion.runtime.collaboration.operation-result" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.collaboration.operation-result, found {}",
-            result.schema
-        )));
-    }
-    if result.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            result.schema_version
-        )));
-    }
-
-    errors.extend(validate_runtime_collaboration_causality(
-        &result.causal,
-        "operation result causal",
-    ));
-
-    let has_ack = result.ack.is_some();
-    let has_nack = result.nack.is_some();
-    let has_rebase = result.rebase.is_some();
-
-    let status_requires_ack = matches!(
-        result.status,
-        RuntimeCollaborationOperationStatus::Accepted
-            | RuntimeCollaborationOperationStatus::Rebased
-    );
-    if status_requires_ack && !has_ack {
-        errors.push(ValidationErrorV01::new(
-            "accepted or rebased collaboration result must include ack",
-        ));
-    }
-    if result.status == RuntimeCollaborationOperationStatus::Accepted && has_nack {
-        errors.push(ValidationErrorV01::new(
-            "accepted collaboration result must not include nack or rebase",
-        ));
-    }
-    if result.status == RuntimeCollaborationOperationStatus::Accepted && has_rebase {
-        errors.push(ValidationErrorV01::new(
-            "accepted collaboration result must not include nack or rebase",
-        ));
-    }
-
-    let status_requires_nack = matches!(
-        result.status,
-        RuntimeCollaborationOperationStatus::Duplicate
-            | RuntimeCollaborationOperationStatus::Rejected
-    );
-    if status_requires_nack && !has_nack {
-        errors.push(ValidationErrorV01::new(
-            "duplicate or rejected collaboration result must include nack",
-        ));
-    }
-    let has_duplicate_idempotency_nack = match result.nack.as_ref() {
-        Some(nack) => nack.reason == RuntimeCollaborationNackReason::DuplicateIdempotencyKey,
-        None => false,
-    };
-    if result.status == RuntimeCollaborationOperationStatus::Duplicate
-        && !has_duplicate_idempotency_nack
-    {
-        errors.push(ValidationErrorV01::new(
-            "duplicate collaboration result nack reason must be duplicate-idempotency-key",
-        ));
-    }
-    if result.status == RuntimeCollaborationOperationStatus::Rebased && !has_rebase {
-        errors.push(ValidationErrorV01::new(
-            "rebased collaboration result must include rebase metadata",
-        ));
-    }
-    if let Some(rebase) = &result.rebase {
-        errors.extend(validate_runtime_collaboration_causality(
-            &rebase.from,
-            "rebase from causal",
-        ));
-        errors.extend(validate_runtime_collaboration_causality(
-            &rebase.to,
-            "rebase to causal",
-        ));
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_runtime_collaboration_operation_batch_result(
-    result: &RuntimeCollaborationOperationBatchResult,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if result.schema != "skenion.runtime.collaboration.operation-batch-result" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.collaboration.operation-batch-result, found {}",
-            result.schema
-        )));
-    }
-    if result.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            result.schema_version
-        )));
-    }
-    if result.results.is_empty() {
-        errors.push(ValidationErrorV01::new(
-            "collaboration batch result must include at least one operation result",
-        ));
-    }
-    errors.extend(duplicate_errors(
-        result
-            .results
-            .iter()
-            .map(|operation_result| operation_result.idempotency_key.as_str())
-            .collect(),
-        "collaboration batch result idempotency key",
-    ));
-    for operation_result in &result.results {
-        if operation_result.session_id != result.session_id {
-            errors.push(ValidationErrorV01::new(
-                "collaboration batch result operation sessionId must match batch result sessionId",
-            ));
-        }
-        if let Err(report) = validate_runtime_collaboration_operation_result(operation_result) {
-            errors.extend(report.errors().to_vec());
-        }
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_runtime_collaboration_presence_envelope(
-    presence: &RuntimeCollaborationPresenceEnvelope,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if presence.schema != "skenion.runtime.collaboration.presence" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.collaboration.presence, found {}",
-            presence.schema
-        )));
-    }
-    if presence.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            presence.schema_version
-        )));
-    }
-    errors.extend(validate_runtime_collaboration_auth_separation(
-        &presence.participant_id,
-        presence.auth_subject.as_ref(),
-        "presence",
-    ));
-    errors.extend(validate_runtime_collaboration_expiry(
-        &presence.updated_at,
-        &presence.expires_at,
-        "presence",
-    ));
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_runtime_collaboration_selection_envelope(
-    selection: &RuntimeCollaborationSelectionEnvelope,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if selection.schema != "skenion.runtime.collaboration.selection" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.collaboration.selection, found {}",
-            selection.schema
-        )));
-    }
-    if selection.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            selection.schema_version
-        )));
-    }
-    errors.extend(validate_runtime_collaboration_expiry(
-        &selection.updated_at,
-        &selection.expires_at,
-        "selection",
-    ));
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-fn runtime_collaboration_event_payload_kind(
-    payload: &RuntimeCollaborationEventPayload,
-) -> RuntimeCollaborationEventKind {
-    match payload {
-        RuntimeCollaborationEventPayload::OperationResult { .. } => {
-            RuntimeCollaborationEventKind::OperationResult
-        }
-        RuntimeCollaborationEventPayload::Presence { .. } => {
-            RuntimeCollaborationEventKind::Presence
-        }
-        RuntimeCollaborationEventPayload::Selection { .. } => {
-            RuntimeCollaborationEventKind::Selection
-        }
-    }
-}
-
-pub fn validate_runtime_collaboration_event_envelope(
-    event: &RuntimeCollaborationEventEnvelope,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if event.schema != "skenion.runtime.collaboration.event" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.collaboration.event, found {}",
-            event.schema
-        )));
-    }
-    if event.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            event.schema_version
-        )));
-    }
-    errors.extend(validate_runtime_collaboration_causality(
-        &event.causal,
-        "collaboration event causal",
-    ));
-    if event.kind != runtime_collaboration_event_payload_kind(&event.payload) {
-        errors.push(ValidationErrorV01::new(
-            "collaboration event kind must match payload kind",
-        ));
-    }
-    match &event.replay.gap {
-        Some(gap) if gap.expected_sequence >= gap.actual_sequence => {
-            errors.push(ValidationErrorV01::new(
-                "collaboration event replay gap expectedSequence must be less than actualSequence",
-            ));
-        }
-        _ => {}
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_runtime_operation_envelope(
-    envelope: &RuntimeOperationEnvelope,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if envelope.schema != "skenion.runtime.operation" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.operation, found {}",
-            envelope.schema
-        )));
-    }
-    if envelope.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            envelope.schema_version
-        )));
-    }
-    if envelope.id.is_empty() {
-        errors.push(ValidationErrorV01::new(
-            "runtime operation id must not be empty",
-        ));
-    }
-    if envelope.kind != "pasteGraphFragment" {
-        errors.push(ValidationErrorV01::new(format!(
-            "unsupported runtime operation kind: {}",
-            envelope.kind
-        )));
-    }
-    if let Err(report) = validate_paste_graph_fragment_request(&envelope.request) {
-        errors.extend(report.errors().iter().cloned());
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_paste_graph_fragment_response(
-    response: &PasteGraphFragmentResponse,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if response.schema != "skenion.runtime.paste-graph-fragment.response" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.paste-graph-fragment.response, found {}",
-            response.schema
-        )));
-    }
-    if response.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            response.schema_version
-        )));
-    }
-    if response.applied && !response.ok {
-        errors.push(ValidationErrorV01::new(
-            "paste response cannot be applied when ok is false",
-        ));
-    }
-    if response.applied && response.revision_after.is_none() {
-        errors.push(ValidationErrorV01::new(
-            "applied paste response must include revisionAfter",
-        ));
-    }
-    for diagnostic in &response.diagnostics {
-        if matches!(
-            diagnostic.code.as_str(),
-            "interface-drift" | "invalid-incident-edge"
-        ) && diagnostic.interface_detail.is_none()
-        {
-            errors.push(ValidationErrorV01::new(format!(
-                "runtime operation diagnostic {} requires interfaceDetail",
-                diagnostic.code
-            )));
-        }
-        if let Some(detail) = &diagnostic.interface_detail
-            && detail.recovery_actions.is_empty()
-        {
-            errors.push(ValidationErrorV01::new(format!(
-                "runtime operation diagnostic {} interfaceDetail requires recoveryActions",
-                diagnostic.code
-            )));
-        }
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-pub fn validate_runtime_session_info_response(
-    response: &RuntimeSessionInfoResponse,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if response.schema != "skenion.runtime.session.info" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.session.info, found {}",
-            response.schema
-        )));
-    }
-    if response.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            response.schema_version
-        )));
-    }
-    if response.session_id.is_empty() {
-        errors.push(ValidationErrorV01::new("sessionId must not be empty"));
-    }
-    errors.extend(runtime_session_snapshot_errors(&response.snapshot));
-    errors.extend(runtime_diagnostic_errors(
-        "session info",
-        &response.diagnostics,
-    ));
-    errors.extend(runtime_profile_errors(&response.profile));
-    if response.capabilities.auth_policy != "deferred" {
-        errors.push(ValidationErrorV01::new(
-            "runtime session authPolicy must be deferred",
-        ));
-    }
-    if response.event_replay.cursor_kind != "sequence" {
-        errors.push(ValidationErrorV01::new(
-            "runtime eventReplay cursorKind must be sequence",
-        ));
-    }
-    if response.event_replay.current_cursor.is_empty() {
-        errors.push(ValidationErrorV01::new(
-            "runtime eventReplay currentCursor must not be empty",
-        ));
-    }
-    if response.event_replay.earliest_sequence == 0 {
-        errors.push(ValidationErrorV01::new(
-            "runtime eventReplay earliestSequence must be at least 1",
-        ));
-    }
-    if matches!(
-        (&response.profile.mode, &response.profile.ownership),
-        (
-            RuntimeConnectionProfileMode::LocalManaged,
-            RuntimeOwnershipMode::OwnedChild
-        ) | (
-            RuntimeConnectionProfileMode::LocalShared,
-            RuntimeOwnershipMode::External
-        ) | (
-            RuntimeConnectionProfileMode::Remote,
-            RuntimeOwnershipMode::Remote
-        )
-    ) {
-    } else {
-        errors.push(ValidationErrorV01::new(
-            "runtime profile ownership must match local-managed, local-shared, or remote mode",
-        ));
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-fn runtime_profile_errors(profile: &RuntimeConnectionProfile) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-    if profile.endpoint.url.is_empty() {
-        errors.push(ValidationErrorV01::new("endpoint url must not be empty"));
-    }
-    if profile
-        .endpoint
-        .canonical_url
-        .as_ref()
-        .is_some_and(String::is_empty)
-    {
-        errors.push(ValidationErrorV01::new(
-            "endpoint canonicalUrl must not be empty",
-        ));
-    }
-    if profile.endpoint.host.as_ref().is_some_and(String::is_empty) {
-        errors.push(ValidationErrorV01::new("endpoint host must not be empty"));
-    }
-    if let Some(process) = &profile.process {
-        if process.pid == Some(0) {
-            errors.push(ValidationErrorV01::new("process pid must be at least 1"));
-        }
-        if process
-            .executable_path
-            .as_ref()
-            .is_some_and(String::is_empty)
-        {
-            errors.push(ValidationErrorV01::new(
-                "process executablePath must not be empty",
-            ));
-        }
-        if process
-            .working_directory
-            .as_ref()
-            .is_some_and(String::is_empty)
-        {
-            errors.push(ValidationErrorV01::new(
-                "process workingDirectory must not be empty",
-            ));
-        }
-        if process
-            .owner_window_id
-            .as_ref()
-            .is_some_and(String::is_empty)
-        {
-            errors.push(ValidationErrorV01::new(
-                "process ownerWindowId must not be empty",
-            ));
-        }
-        if process.platform.as_ref().is_some_and(String::is_empty) {
-            errors.push(ValidationErrorV01::new(
-                "process platform must not be empty",
-            ));
-        }
-        if process.arch.as_ref().is_some_and(String::is_empty) {
-            errors.push(ValidationErrorV01::new("process arch must not be empty"));
-        }
-    }
-    errors
-}
-
-pub fn validate_runtime_session_event(
-    event: &RuntimeSessionEvent,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    if event.schema != "skenion.runtime.session.event" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schema skenion.runtime.session.event, found {}",
-            event.schema
-        )));
-    }
-    if event.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected schemaVersion 0.1.0, found {}",
-            event.schema_version
-        )));
-    }
-    if event.session_id.is_empty() {
-        errors.push(ValidationErrorV01::new("sessionId must not be empty"));
-    }
-    if event.id.is_empty() {
-        errors.push(ValidationErrorV01::new("event id must not be empty"));
-    }
-    if event.sequence == 0 {
-        errors.push(ValidationErrorV01::new("sequence must be at least 1"));
-    }
-    if event.created_at.is_empty() {
-        errors.push(ValidationErrorV01::new("createdAt must not be empty"));
-    }
-    errors.extend(runtime_session_snapshot_errors(&event.snapshot));
-    errors.extend(runtime_diagnostic_errors("event", &event.diagnostics));
-    errors.extend(runtime_history_errors(&event.history));
-    if let Some(mutation) = &event.mutation {
-        errors.extend(runtime_history_entry_errors(mutation, "mutation"));
-    }
-    if event.replay.cursor.is_empty() {
-        errors.push(ValidationErrorV01::new("replay cursor must not be empty"));
-    }
-    if event
-        .replay
-        .previous_cursor
-        .as_ref()
-        .is_some_and(String::is_empty)
-    {
-        errors.push(ValidationErrorV01::new(
-            "replay previousCursor must not be empty",
-        ));
-    }
-    if let Some(gap) = &event.replay.gap {
-        if gap.expected_sequence == 0 || gap.actual_sequence == 0 {
-            errors.push(ValidationErrorV01::new(
-                "replay gap sequences must be at least 1",
-            ));
-        }
-        if gap.expected_sequence >= gap.actual_sequence {
-            errors.push(ValidationErrorV01::new(
-                "replay gap expectedSequence must be less than actualSequence",
-            ));
-        }
-    }
-    if event.session_revision != event.snapshot.session_revision {
-        errors.push(ValidationErrorV01::new(
-            "event sessionRevision must match snapshot.sessionRevision",
-        ));
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-fn runtime_session_snapshot_errors(snapshot: &RuntimeSessionSnapshot) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-    errors.extend(runtime_diagnostic_errors("snapshot", &snapshot.diagnostics));
-    if snapshot.plan.as_ref().is_some_and(|plan| !plan.is_object()) {
-        errors.push(ValidationErrorV01::new(
-            "snapshot plan must be an object or null",
-        ));
-    }
-    if let Some(project) = &snapshot.project
-        && let Err(report) = validate_project_document_v01(project)
-    {
-        errors.extend(
-            report.errors.into_iter().map(|error| {
-                ValidationErrorV01::new(format!("snapshot project {}", error.message))
-            }),
-        );
-    }
-    errors
-}
-
-fn runtime_diagnostic_errors(
-    label: &str,
-    diagnostics: &[RuntimeDiagnostic],
-) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-    if diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.message.is_empty())
-    {
-        errors.push(ValidationErrorV01::new(format!(
-            "{label} diagnostics must include non-empty message"
-        )));
-    }
-    errors
-}
-
-fn runtime_history_errors(history: &RuntimeHistory) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-    if history.schema != "skenion.runtime.history" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected history schema skenion.runtime.history, found {}",
-            history.schema
-        )));
-    }
-    if history.schema_version != "0.1.0" {
-        errors.push(ValidationErrorV01::new(format!(
-            "expected history schemaVersion 0.1.0, found {}",
-            history.schema_version
-        )));
-    }
-    for entry in &history.entries {
-        errors.extend(runtime_history_entry_errors(entry, "history entry"));
-    }
-    errors
-}
-
-fn runtime_history_entry_errors(
-    entry: &RuntimeHistoryEntry,
-    label: &str,
-) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-    if entry.id.is_empty() {
-        errors.push(ValidationErrorV01::new(format!(
-            "{label} id must not be empty"
-        )));
-    }
-    if entry.sequence == 0 {
-        errors.push(ValidationErrorV01::new(format!(
-            "{label} sequence must be at least 1"
-        )));
-    }
-    if entry.created_at.is_empty() {
-        errors.push(ValidationErrorV01::new(format!(
-            "{label} createdAt must not be empty"
-        )));
-    }
-    if entry
-        .subject_event_id
-        .as_ref()
-        .is_some_and(String::is_empty)
-    {
-        errors.push(ValidationErrorV01::new(format!(
-            "{label} subjectEventId must not be empty"
-        )));
-    }
-    if entry.client_id.as_ref().is_some_and(String::is_empty) {
-        errors.push(ValidationErrorV01::new(format!(
-            "{label} clientId must not be empty"
-        )));
-    }
-    errors.extend(runtime_mutation_request_errors(
-        &entry.mutation,
-        &format!("{label} mutation"),
-    ));
-    errors.extend(runtime_mutation_request_errors(
-        &entry.inverse_mutation,
-        &format!("{label} inverseMutation"),
-    ));
-    errors
-}
-
-fn runtime_mutation_request_errors(
-    mutation: &RuntimeMutationRequest,
-    label: &str,
-) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-    if let Some(operation) = &mutation.operation
-        && let Err(report) = validate_runtime_operation_envelope(operation)
-    {
-        errors.extend(
-            report.errors.into_iter().map(|error| {
-                ValidationErrorV01::new(format!("{label} operation {}", error.message))
-            }),
-        );
-    }
-    if let Some(view_patch) = &mutation.view_patch {
-        for operation in &view_patch.ops {
-            match operation {
-                RuntimeViewPatchOperation::SetNodeView { node_id, .. }
-                | RuntimeViewPatchOperation::MoveNodeView { node_id, .. } => {
-                    if node_id.is_empty() {
-                        errors.push(ValidationErrorV01::new(format!(
-                            "{label} viewPatch operation nodeId must not be empty"
-                        )));
-                    }
-                }
-            }
-        }
-    }
-    if mutation.client_id.as_ref().is_some_and(String::is_empty) {
-        errors.push(ValidationErrorV01::new(format!(
-            "{label} clientId must not be empty"
-        )));
-    }
-    errors
-}
-
 pub fn validate_node_definition_v01(
     definition: &NodeDefinitionManifestV01,
 ) -> Result<(), ValidationReportV01> {
@@ -2239,56 +1792,61 @@ pub fn validate_node_definition_v01(
             .collect(),
         &format!("port id on {}", definition.id),
     ));
+    if is_payload_identity_node_kind(&definition.id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "payload identity node definition id: {}",
+            definition.id
+        )));
+    }
 
     for port in &definition.ports {
-        if is_legacy_control_port_type(&port.port_type) {
+        if is_invalid_value_type(&port.port_type) {
             errors.push(ValidationErrorV01::new(format!(
-                "legacy port type on {}.{}: {}",
+                "invalid value type on {}.{}: {}",
                 definition.id, port.id, port.port_type
             )));
         }
         if let Some(accepted) = &port.accepts {
             for accepted_type in accepted {
-                if is_legacy_control_port_type(accepted_type) {
+                if is_invalid_value_type(accepted_type) {
                     errors.push(ValidationErrorV01::new(format!(
-                        "legacy accepted port type on {}.{}: {}",
+                        "invalid accepted value type on {}.{}: {}",
                         definition.id, port.id, accepted_type
                     )));
                 }
             }
         }
-        for error in
-            message_selector_policy_errors(port, &format!("port {}.{}", definition.id, port.id))
+        for error in message_key_policy_errors(port, &format!("port {}.{}", definition.id, port.id))
         {
             errors.push(ValidationErrorV01::new(error));
         }
     }
 
     for group in definition.port_groups.as_deref().unwrap_or_default() {
-        if is_legacy_control_port_type(&group.port_type) {
+        if is_invalid_value_type(&group.port_type) {
             errors.push(ValidationErrorV01::new(format!(
-                "legacy port group type on {}.{}: {}",
+                "invalid port group type on {}.{}: {}",
                 definition.id, group.id, group.port_type
             )));
         }
         if let Some(default_port) = &group.default_port_spec {
-            if is_legacy_control_port_type(&default_port.port_type) {
+            if is_invalid_value_type(&default_port.port_type) {
                 errors.push(ValidationErrorV01::new(format!(
-                    "legacy default port type on {}.{}: {}",
+                    "invalid default value type on {}.{}: {}",
                     definition.id, group.id, default_port.port_type
                 )));
             }
             if let Some(accepted) = &default_port.accepts {
                 for accepted_type in accepted {
-                    if is_legacy_control_port_type(accepted_type) {
+                    if is_invalid_value_type(accepted_type) {
                         errors.push(ValidationErrorV01::new(format!(
-                            "legacy default accepted port type on {}.{}: {}",
+                            "invalid default accepted value type on {}.{}: {}",
                             definition.id, group.id, accepted_type
                         )));
                     }
                 }
             }
-            for error in message_selector_policy_errors(
+            for error in message_key_policy_errors(
                 default_port,
                 &format!("port group {}.{} defaultPortSpec", definition.id, group.id),
             ) {
@@ -2531,135 +2089,6 @@ pub fn validate_project_document_v01(
         }
     }
     errors.extend(project_package_reference_errors(project));
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(ValidationReportV01::new(errors))
-    }
-}
-
-fn project_document_from_runtime_project_request(
-    request: &RuntimeProjectRequestV01,
-) -> ProjectDocumentV01 {
-    ProjectDocumentV01 {
-        schema: request.schema.clone(),
-        schema_version: request.schema_version.clone(),
-        id: request.id.clone(),
-        revision: request.revision.clone(),
-        metadata: request.metadata.clone(),
-        graph: request.graph.clone(),
-        view_state: request.view_state.clone(),
-        patch_library: request.patch_library.clone(),
-        package_dependencies: request.package_dependencies.clone(),
-        package_lock: request.package_lock.clone(),
-        resource_lock: request.resource_lock.clone(),
-        object_bindings: request.object_bindings.clone(),
-        tutorial: request.tutorial.clone(),
-        help: request.help.clone(),
-    }
-}
-
-fn requires_runtime_node_definition(kind: &str) -> bool {
-    !matches!(kind, "core.inlet" | "core.outlet")
-}
-
-fn runtime_project_graph_node_definition_errors(
-    graph: &GraphDocumentV01,
-    label: &str,
-    definition_keys: &HashSet<String>,
-    versions_by_id: &HashMap<String, BTreeSet<String>>,
-) -> Vec<ValidationErrorV01> {
-    let mut errors = Vec::new();
-
-    for node in &graph.nodes {
-        if !requires_runtime_node_definition(&node.kind) {
-            continue;
-        }
-        let required_key = format!("{}@{}", node.kind, node.kind_version);
-        if definition_keys.contains(&required_key) {
-            continue;
-        }
-
-        if let Some(provided_versions) = versions_by_id.get(&node.kind) {
-            errors.push(ValidationErrorV01::new(format!(
-                "node definition version mismatch: {required_key} ({label} node {}; provided versions: {})",
-                node.id,
-                provided_versions
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )));
-        } else {
-            errors.push(ValidationErrorV01::new(format!(
-                "missing node definition: {required_key} ({label} node {})",
-                node.id
-            )));
-        }
-    }
-
-    errors
-}
-
-pub fn validate_runtime_project_request_v01(
-    request: &RuntimeProjectRequestV01,
-) -> Result<(), ValidationReportV01> {
-    let mut errors = Vec::new();
-    let project = project_document_from_runtime_project_request(request);
-
-    if let Err(report) = validate_project_document_v01(&project) {
-        errors.extend(report.errors);
-    }
-
-    if request.nodes.is_empty() {
-        errors.push(ValidationErrorV01::new(
-            "runtime project request requires at least one node definition",
-        ));
-    }
-
-    let definition_key_values = request
-        .nodes
-        .iter()
-        .map(|definition| format!("{}@{}", definition.id, definition.version))
-        .collect::<Vec<_>>();
-    errors.extend(duplicate_errors(
-        definition_key_values.iter().map(String::as_str).collect(),
-        "runtime project node definition",
-    ));
-
-    let definition_keys = definition_key_values.into_iter().collect::<HashSet<_>>();
-    let mut versions_by_id = HashMap::<String, BTreeSet<String>>::new();
-    for definition in &request.nodes {
-        versions_by_id
-            .entry(definition.id.clone())
-            .or_default()
-            .insert(definition.version.clone());
-
-        if let Err(report) = validate_node_definition_v01(definition) {
-            errors.extend(report.errors.into_iter().map(|error| {
-                ValidationErrorV01::new(format!(
-                    "runtime project node {}@{}: {}",
-                    definition.id, definition.version, error.message
-                ))
-            }));
-        }
-    }
-
-    errors.extend(runtime_project_graph_node_definition_errors(
-        &request.graph,
-        "root graph",
-        &definition_keys,
-        &versions_by_id,
-    ));
-    for patch in &request.patch_library {
-        errors.extend(runtime_project_graph_node_definition_errors(
-            &patch.graph,
-            &format!("patch {}", patch.id),
-            &definition_keys,
-            &versions_by_id,
-        ));
-    }
 
     if errors.is_empty() {
         Ok(())
@@ -4149,20 +3578,11 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
 
 #[cfg(test)]
 mod tests {
-    use super::super::RuntimeDiagnosticSeverity;
     use super::*;
     use crate::v0_1::{
-        EdgeEndpointV01, FeedbackPolicyV01, GraphFragmentV01, GraphNodeV01, GraphTargetRef,
-        IdConflictPolicy, IdRemapResult, PasteGraphFragmentOptions, PasteGraphFragmentRequest,
-        PasteGraphFragmentResponse, PatchPath, RuntimeCollaborationEventEnvelope,
-        RuntimeCollaborationOperationBatch, RuntimeCollaborationOperationEnvelope,
-        RuntimeCollaborationOperationResult, RuntimeCollaborationPresenceEnvelope,
-        RuntimeCollaborationSelectionEnvelope, RuntimeEventReplayGap, RuntimeEventReplayGapReason,
-        RuntimeHistoryEntry, RuntimeOperationDiagnostic, RuntimeOperationEnvelope,
-        RuntimeSessionEvent, RuntimeSessionInfoResponse, StringOrStringsV01,
+        EdgeEndpointV01, FeedbackPolicyV01, GraphFragmentV01, GraphNodeV01, StringOrStringsV01,
     };
     use serde_json::json;
-    use std::collections::BTreeMap;
 
     fn graph(json: &str) -> GraphDocumentV01 {
         serde_json::from_str(json).expect("graph should parse")
@@ -4170,10 +3590,6 @@ mod tests {
 
     fn node(json: &str) -> NodeDefinitionManifestV01 {
         serde_json::from_str(json).expect("node should parse")
-    }
-
-    fn value(json: &str) -> serde_json::Value {
-        serde_json::from_str(json).expect("json value should parse")
     }
 
     fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -4203,20 +3619,20 @@ mod tests {
               "nodes": [
                 {
                   "id": "source",
-                  "kind": "core.float",
+                  "kind": "object.core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "out", "direction": "output", "type": "control.number.float" }
+                    { "id": "out", "direction": "output", "type": "value.core.float64" }
                   ]
                 },
                 {
                   "id": "target",
-                  "kind": "core.float",
+                  "kind": "object.core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "in", "direction": "input", "type": "control.number.float" }
+                    { "id": "in", "direction": "input", "type": "value.core.float64" }
                   ]
                 }
               ],
@@ -4243,523 +3659,6 @@ mod tests {
             omitted_edges: None,
             metadata: None,
         }
-    }
-
-    fn root_target() -> GraphTargetRef {
-        GraphTargetRef {
-            path: PatchPath::Root,
-            base_revision: "1".to_owned(),
-            target_revision: None,
-        }
-    }
-
-    fn paste_request(fragment: GraphFragmentV01) -> PasteGraphFragmentRequest {
-        PasteGraphFragmentRequest {
-            target: root_target(),
-            fragment,
-            placement: None,
-            options: None,
-        }
-    }
-
-    fn runtime_operation(fragment: GraphFragmentV01) -> RuntimeOperationEnvelope {
-        RuntimeOperationEnvelope {
-            schema: "skenion.runtime.operation".to_owned(),
-            schema_version: "0.1.0".to_owned(),
-            id: "operation".to_owned(),
-            kind: "pasteGraphFragment".to_owned(),
-            request: paste_request(fragment),
-            attribution: None,
-            correlation_id: None,
-            created_at: None,
-        }
-    }
-
-    fn collaboration_causal(participant_id: &str, sequence: u64) -> serde_json::Value {
-        let json = format!(
-            r#"{{
-              "baseRevision": "root-rev-{sequence}",
-              "baseSequence": {sequence},
-              "vector": {{ "{participant_id}": {sequence} }}
-            }}"#
-        );
-        value(&json)
-    }
-
-    fn collaboration_ack(sequence: u64) -> serde_json::Value {
-        let json = format!(
-            r#"{{
-              "sequence": {sequence},
-              "revision": "root-rev-{sequence}",
-              "serverClock": {{
-                "revision": "root-rev-{sequence}",
-                "sequence": {sequence},
-                "vector": {{ "participant-a": {sequence} }}
-              }},
-              "appliedAt": "2026-06-22T00:00:00.050Z"
-            }}"#
-        );
-        value(&json)
-    }
-
-    fn collaboration_nack(reason: &str) -> serde_json::Value {
-        let json = format!(
-            r#"{{
-              "reason": "{reason}",
-              "retryable": false,
-              "diagnostics": [
-                {{
-                  "severity": "error",
-                  "code": "{reason}",
-                  "message": "operation was rejected"
-                }}
-              ]
-            }}"#
-        );
-        value(&json)
-    }
-
-    fn collaboration_rebase_value() -> serde_json::Value {
-        value(
-            r#"{
-              "from": {
-                "baseRevision": "root-rev-1",
-                "baseSequence": 1,
-                "vector": { "participant-a": 1 }
-              },
-              "to": {
-                "baseRevision": "root-rev-2",
-                "baseSequence": 2,
-                "vector": { "participant-a": 2 }
-              },
-              "strategy": "ot-transform",
-              "conflicts": []
-            }"#,
-        )
-    }
-
-    fn collaboration_undo_redo_payload(participant_id: &str) -> serde_json::Value {
-        let json = format!(
-            r#"{{
-              "kind": "undoRedo",
-              "action": "undo",
-              "scope": {{ "kind": "participant", "participantId": "{participant_id}" }},
-              "maxOperations": 1
-            }}"#
-        );
-        value(&json)
-    }
-
-    fn collaboration_operation_value(payload: serde_json::Value) -> serde_json::Value {
-        let mut operation = value(
-            r#"{
-              "schema": "skenion.runtime.collaboration.operation",
-              "schemaVersion": "0.1.0",
-              "operationId": "op-collab-test",
-              "sessionId": "session-collab-a",
-              "participantId": "participant-a",
-              "idempotencyKey": "session-collab-a:participant-a:test",
-              "causal": null,
-              "payload": null,
-              "submittedAt": "2026-06-22T00:00:00.000Z"
-            }"#,
-        );
-        operation["causal"] = collaboration_causal("participant-a", 1);
-        operation["payload"] = payload;
-        operation
-    }
-
-    fn collaboration_operation(
-        payload: serde_json::Value,
-    ) -> RuntimeCollaborationOperationEnvelope {
-        serde_json::from_value(collaboration_operation_value(payload))
-            .expect("collaboration operation should parse")
-    }
-
-    fn collaboration_result_value(status: &str) -> serde_json::Value {
-        let mut result = value(
-            r#"{
-              "schema": "skenion.runtime.collaboration.operation-result",
-              "schemaVersion": "0.1.0",
-              "sessionId": "session-collab-a",
-              "operationId": "op-collab-test",
-              "participantId": "participant-a",
-              "idempotencyKey": "session-collab-a:participant-a:test",
-              "status": "accepted",
-              "causal": null,
-              "diagnostics": [],
-              "createdAt": "2026-06-22T00:00:00.050Z"
-            }"#,
-        );
-        result["status"] = serde_json::Value::String(status.to_owned());
-        result["causal"] = collaboration_causal("participant-a", 2);
-        result
-    }
-
-    fn accepted_collaboration_result_value() -> serde_json::Value {
-        let mut result = collaboration_result_value("accepted");
-        result["ack"] = collaboration_ack(2);
-        result
-    }
-
-    fn collaboration_presence_value() -> serde_json::Value {
-        value(
-            r#"{
-              "schema": "skenion.runtime.collaboration.presence",
-              "schemaVersion": "0.1.0",
-              "sessionId": "session-collab-a",
-              "participantId": "participant-a",
-              "presence": {
-                "state": "active",
-                "displayName": "Ada",
-                "connectionId": "conn-a",
-                "clientWindowId": "window-a"
-              },
-              "authSubject": {
-                "kind": "user",
-                "subjectId": "user-123",
-                "issuer": "local-dev"
-              },
-              "updatedAt": "2026-06-22T00:00:02.000Z",
-              "expiresAt": "2026-06-22T00:00:17.000Z"
-            }"#,
-        )
-    }
-
-    fn collaboration_selection_value() -> serde_json::Value {
-        value(
-            r#"{
-              "schema": "skenion.runtime.collaboration.selection",
-              "schemaVersion": "0.1.0",
-              "sessionId": "session-collab-a",
-              "participantId": "participant-a",
-              "target": {
-                "path": { "kind": "root" },
-                "baseRevision": "root-rev-2"
-              },
-              "selection": {
-                "ranges": [
-                  { "kind": "nodes", "nodeIds": ["source"] },
-                  {
-                    "kind": "ports",
-                    "endpoints": [
-                      { "nodeId": "source", "portId": "out" }
-                    ]
-                  },
-                  {
-                    "kind": "text",
-                    "anchor": { "nodeId": "message-1", "field": "text", "offset": 0 },
-                    "focus": { "nodeId": "message-1", "field": "text", "offset": 5 }
-                  }
-                ],
-                "activeRangeIndex": 2
-              },
-              "cursor": {
-                "kind": "node",
-                "nodeId": "source",
-                "portId": "out",
-                "clientWindowId": "window-a"
-              },
-              "updatedAt": "2026-06-22T00:00:03.000Z",
-              "expiresAt": "2026-06-22T00:00:08.000Z"
-            }"#,
-        )
-    }
-
-    fn collaboration_event_value() -> serde_json::Value {
-        let mut event = value(
-            r#"{
-              "schema": "skenion.runtime.collaboration.event",
-              "schemaVersion": "0.1.0",
-              "eventId": "event-collab-test",
-              "sessionId": "session-collab-a",
-              "sequence": 2,
-              "causal": null,
-              "kind": "operation-result",
-              "payload": {
-                "kind": "operationResult",
-                "result": null
-              },
-              "replay": {
-                "cursor": "2",
-                "previousCursor": "1",
-                "replayed": false,
-                "gap": null,
-                "overflow": false
-              },
-              "createdAt": "2026-06-22T00:00:00.050Z"
-            }"#,
-        );
-        event["causal"] = collaboration_causal("participant-a", 2);
-        event["payload"]["result"] = accepted_collaboration_result_value();
-        event
-    }
-
-    fn runtime_session_info() -> RuntimeSessionInfoResponse {
-        serde_json::from_str(
-            r#"{
-              "schema": "skenion.runtime.session.info",
-              "schemaVersion": "0.1.0",
-              "ok": true,
-              "sessionId": "session-a",
-              "lifecycle": "ready",
-              "snapshot": {
-                "sessionRevision": 1,
-                "viewRevision": 1,
-                "controlRevision": 1,
-                "project": null,
-                "diagnostics": [],
-                "plan": null
-              },
-              "profile": {
-                "mode": "local-managed",
-                "ownership": "owned-child",
-                "endpoint": { "url": "http://127.0.0.1:49231", "protocol": "http" },
-                "process": { "ownedByHost": true }
-              },
-              "capabilities": {
-                "sessionAddressing": true,
-                "eventReplay": true,
-                "multiWindow": true,
-                "profiles": ["local-managed", "local-shared", "remote"],
-                "authPolicy": "deferred"
-              },
-              "eventReplay": {
-                "cursorKind": "sequence",
-                "currentCursor": "1",
-                "earliestSequence": 1,
-                "latestSequence": 1,
-                "replayLimit": 512
-              },
-              "diagnostics": []
-            }"#,
-        )
-        .expect("session info should parse")
-    }
-
-    fn runtime_session_event() -> RuntimeSessionEvent {
-        serde_json::from_str(
-            r#"{
-              "schema": "skenion.runtime.session.event",
-              "schemaVersion": "0.1.0",
-              "id": "event-1",
-              "sessionId": "session-a",
-              "sequence": 1,
-              "sessionRevision": 1,
-              "kind": "snapshot",
-              "snapshot": {
-                "sessionRevision": 1,
-                "viewRevision": 1,
-                "controlRevision": 1,
-                "project": null,
-                "diagnostics": [],
-                "plan": null
-              },
-              "history": {
-                "schema": "skenion.runtime.history",
-                "schemaVersion": "0.1.0",
-                "entries": [],
-                "canUndo": false,
-                "canRedo": false,
-                "undoDepth": 0,
-                "redoDepth": 0
-              },
-              "replay": {
-                "cursor": "1",
-                "previousCursor": null,
-                "replayed": false,
-                "gap": null,
-                "overflow": false
-              },
-              "diagnostics": [],
-              "createdAt": "2026-06-22T00:00:00.000Z"
-            }"#,
-        )
-        .expect("session event should parse")
-    }
-
-    fn runtime_session_mutation_event(
-        mutation: serde_json::Value,
-        inverse_mutation: serde_json::Value,
-    ) -> serde_json::Value {
-        let mut event = value(
-            r#"{
-              "schema": "skenion.runtime.session.event",
-              "schemaVersion": "0.1.0",
-              "id": "event-mutate",
-              "sessionId": "session-a",
-              "sequence": 2,
-              "sessionRevision": 2,
-              "kind": "mutate",
-              "snapshot": {
-                "sessionRevision": 2,
-                "viewRevision": 2,
-                "controlRevision": 1,
-                "project": null,
-                "diagnostics": [],
-                "plan": null
-              },
-              "history": {
-                "schema": "skenion.runtime.history",
-                "schemaVersion": "0.1.0",
-                "entries": [
-                  {
-                    "id": "history-2",
-                    "sequence": 2,
-                    "kind": "apply",
-                    "mutation": null,
-                    "inverseMutation": null,
-                    "clientId": "studio-main",
-                    "createdAt": "2026-06-22T00:00:02.000Z"
-                  }
-                ],
-                "canUndo": true,
-                "canRedo": false,
-                "undoDepth": 1,
-                "redoDepth": 0
-              },
-              "replay": {
-                "cursor": "2",
-                "previousCursor": "1",
-                "replayed": false,
-                "gap": null,
-                "overflow": false
-              },
-              "diagnostics": [],
-              "createdAt": "2026-06-22T00:00:02.000Z"
-            }"#,
-        );
-        event["history"]["entries"][0]["mutation"] = mutation;
-        event["history"]["entries"][0]["inverseMutation"] = inverse_mutation;
-        event
-    }
-
-    fn runtime_operation_mutation(extra_operation_key: bool) -> serde_json::Value {
-        let mut mutation = value(
-            r#"{
-              "operation": {
-                "schema": "skenion.runtime.operation",
-                "schemaVersion": "0.1.0",
-                "id": "op-runtime-paste",
-                "kind": "pasteGraphFragment",
-                "request": {
-                  "target": {
-                    "path": { "kind": "root" },
-                    "baseRevision": "1"
-                  },
-                  "fragment": {
-                    "schema": "skenion.graph.fragment",
-                    "schemaVersion": "0.1.0",
-                    "nodes": [
-                      {
-                        "id": "float_1",
-                        "kind": "core.float",
-                        "kindVersion": "0.1.0",
-                        "params": { "value": 0.5 },
-                        "ports": [
-                          { "id": "out", "direction": "output", "type": "control.number.float", "rate": "control" }
-                        ]
-                      }
-                    ],
-                    "edges": []
-                  },
-                  "placement": { "kind": "position", "x": 0, "y": 0 }
-                },
-                "correlationId": "runtime-paste-test"
-              }
-            }"#,
-        );
-        if extra_operation_key {
-            mutation["operation"]["unexpected"] = serde_json::Value::Bool(true);
-        }
-        mutation
-    }
-
-    fn runtime_view_patch_mutation(extra_operation_key: bool) -> serde_json::Value {
-        let mut mutation = value(
-            r#"{
-              "viewPatch": {
-                "baseViewRevision": 1,
-                "ops": [
-                  {
-                    "op": "setNodeView",
-                    "nodeId": "float_1",
-                    "view": { "x": 0, "y": 0 }
-                  }
-                ]
-              }
-            }"#,
-        );
-        if extra_operation_key {
-            mutation["viewPatch"]["ops"][0]["unexpected"] = serde_json::Value::Bool(true);
-        }
-        mutation
-    }
-
-    fn fully_valid_runtime_operation_mutation() -> serde_json::Value {
-        let mut mutation = runtime_operation_mutation(false);
-        mutation["viewPatch"] = runtime_view_patch_mutation(false)["viewPatch"].clone();
-        mutation["clientId"] = serde_json::Value::String("studio-main".to_owned());
-        mutation["description"] =
-            serde_json::Value::String("exercise active runtime operation branch".to_owned());
-        mutation
-    }
-
-    #[test]
-    fn rejects_extra_nested_runtime_patch_operation_keys_at_parse_boundary() {
-        serde_json::from_value::<RuntimeSessionEvent>(runtime_session_mutation_event(
-            json!({}),
-            json!({}),
-        ))
-        .expect("empty mutation requests should parse");
-
-        let legacy_graph_patch = runtime_session_mutation_event(
-            json!({ "graphPatch": null }),
-            runtime_view_patch_mutation(false),
-        );
-        let legacy_graph_patch_error =
-            serde_json::from_value::<RuntimeSessionEvent>(legacy_graph_patch)
-                .expect_err("legacy graphPatch should fail");
-        assert!(
-            legacy_graph_patch_error
-                .to_string()
-                .contains("unknown field `graphPatch`")
-        );
-
-        let operation_extra = runtime_session_mutation_event(
-            runtime_operation_mutation(true),
-            runtime_view_patch_mutation(false),
-        );
-        let operation_error = serde_json::from_value::<RuntimeSessionEvent>(operation_extra)
-            .expect_err("extra nested runtime operation key should fail");
-        assert!(
-            operation_error
-                .to_string()
-                .contains("unknown field `unexpected`")
-        );
-
-        let view_extra = runtime_session_mutation_event(
-            runtime_operation_mutation(false),
-            runtime_view_patch_mutation(true),
-        );
-        let view_error = serde_json::from_value::<RuntimeSessionEvent>(view_extra)
-            .expect_err("extra nested viewPatch operation key should fail");
-        assert!(
-            view_error
-                .to_string()
-                .contains("unknown field `unexpected`")
-        );
-    }
-
-    #[test]
-    fn validates_complete_runtime_mutation_patch_branches() {
-        let event: RuntimeSessionEvent = serde_json::from_value(runtime_session_mutation_event(
-            fully_valid_runtime_operation_mutation(),
-            fully_valid_runtime_operation_mutation(),
-        ))
-        .expect("valid mutation event should parse");
-
-        validate_runtime_session_event(&event).expect("valid mutation event should validate");
     }
 
     #[test]
@@ -4835,24 +3734,27 @@ mod tests {
         let many = StringOrStringsV01::Many(vec!["f32".to_owned(), "i32".to_owned()]);
         assert_eq!(many.values(), vec!["f32", "i32"]);
 
-        let event_message_any = data_type(DataFlowV01::Event, "message.any");
-        let bang_event = data_type(DataFlowV01::Event, "event.bang");
+        let event_message_any = data_type(DataFlowV01::Event, "value.core.message");
+        let bang_event = data_type(DataFlowV01::Event, "value.core.bang");
         assert!(compatible_data_types_v01(&event_message_any, &bang_event));
 
-        let control_message_any = data_type(DataFlowV01::Control, "message.any");
-        let control_string = data_type(DataFlowV01::Control, "string");
+        let message_value_any = data_type(DataFlowV01::Control, "value.core.message");
+        let control_string = data_type(DataFlowV01::Control, "value.core.string");
         assert!(compatible_data_types_v01(
-            &control_message_any,
+            &message_value_any,
             &control_string
         ));
-        assert!(compatible_data_types_v01(&bang_event, &control_message_any));
+        assert!(compatible_data_types_v01(&bang_event, &message_value_any));
 
-        let signal_any = data_type(DataFlowV01::Signal, "message.any");
-        let signal_number = data_type(DataFlowV01::Signal, "number.float");
+        let signal_any = data_type(DataFlowV01::Signal, "value.core.message");
+        let signal_number = data_type(DataFlowV01::Signal, "value.core.float32");
         assert!(!compatible_data_types_v01(&signal_any, &signal_number));
 
-        assert_eq!(type_label_v01(&bang_event), "event<event.bang>");
-        assert_eq!(type_label_v01(&control_message_any), "control<message.any>");
+        assert_eq!(type_label_v01(&bang_event), "event<value.core.bang>");
+        assert_eq!(
+            type_label_v01(&message_value_any),
+            "control<value.core.message>"
+        );
         assert_eq!(
             type_label_v01(&data_type(DataFlowV01::Stream, "midi.event")),
             "stream<midi.event>"
@@ -4894,7 +3796,7 @@ mod tests {
             super::super::PortGroupSpecV01 {
                 id: "outputs".to_owned(),
                 direction: PortDirectionV01::Output,
-                port_type: "control.number.float".to_owned(),
+                port_type: "value.core.float64".to_owned(),
                 min_ports: 1,
                 label: Some("Outputs".to_owned()),
                 rate: None,
@@ -4907,7 +3809,7 @@ mod tests {
             super::super::PortGroupSpecV01 {
                 id: "dynamic_outputs".to_owned(),
                 direction: PortDirectionV01::Output,
-                port_type: "control.number.float".to_owned(),
+                port_type: "value.core.float64".to_owned(),
                 min_ports: 0,
                 label: None,
                 rate: None,
@@ -4919,7 +3821,7 @@ mod tests {
             },
         ]);
         let mut valid_default_port = graph.nodes[0].ports[0].clone();
-        valid_default_port.accepts = Some(vec!["control.number.float".to_owned()]);
+        valid_default_port.accepts = Some(vec!["value.core.float64".to_owned()]);
         graph.nodes[0].port_groups.as_mut().unwrap()[0].default_port_spec =
             Some(valid_default_port);
         let mut valid_default_without_accepts = graph.nodes[0].ports[0].clone();
@@ -4942,17 +3844,17 @@ mod tests {
         default_port.port_type = "number.float".to_owned();
         default_port.accepts = Some(vec![
             "message.any".to_owned(),
-            "control.message.any".to_owned(),
+            "value.core.message".to_owned(),
         ]);
         invalid_default_port.nodes[0].port_groups.as_mut().unwrap()[0].default_port_spec =
             Some(default_port);
         let report = validate_graph_document_v01(&invalid_default_port)
-            .expect_err("legacy default port contract should fail");
+            .expect_err("invalid default port contract should fail");
         let text = report.to_string();
-        assert!(text.contains("port group source.outputs uses legacy control port type"));
-        assert!(text.contains("default port uses legacy control port type number.float"));
-        assert!(text.contains("default port accepts legacy control port type message.any"));
-        assert!(text.contains("defaultPortSpec selector-aware input port requires"));
+        assert!(text.contains("port group source.outputs uses invalid value type"));
+        assert!(text.contains("default port uses invalid value type number.float"));
+        assert!(text.contains("default port accepts invalid value type message.any"));
+        assert!(text.contains("defaultPortSpec message-key-aware input port requires"));
     }
 
     #[test]
@@ -4997,20 +3899,31 @@ mod tests {
                 .contains("duplicate-edge-id")
         );
 
-        let mut legacy_fragment_contracts = fragment.clone();
-        legacy_fragment_contracts.nodes[1].ports[0].port_type = "control.message.any".to_owned();
-        legacy_fragment_contracts.nodes[1].ports[0].accepts = Some(vec![
+        let mut payload_identity_node = fragment.clone();
+        payload_identity_node.nodes[0].kind = "value.core.float32".to_owned();
+        assert!(
+            validate_graph_fragment_v01(&payload_identity_node)
+                .expect_err("payload identity node should fail")
+                .to_string()
+                .contains("payload-node-kind")
+        );
+
+        let mut invalid_fragment_contracts = fragment.clone();
+        invalid_fragment_contracts.nodes[1].ports[0].port_type = "value.core.message".to_owned();
+        invalid_fragment_contracts.nodes[1].ports[0].accepts = Some(vec![
             "message.any".to_owned(),
-            "control.number.float".to_owned(),
+            "value.core.float64".to_owned(),
         ]);
-        legacy_fragment_contracts.nodes[1].ports[0].message_selectors = None;
-        legacy_fragment_contracts.edges[0].resolved_type = Some("number.float".to_owned());
-        let legacy_fragment_report = validate_graph_fragment_v01(&legacy_fragment_contracts)
+        invalid_fragment_contracts.nodes[1].ports[0].message_keys = None;
+        invalid_fragment_contracts.edges[0].resolved_type = Some("number.float".to_owned());
+        let invalid_fragment_report = validate_graph_fragment_v01(&invalid_fragment_contracts)
             .expect_err("legacy fragment contracts should fail");
-        let legacy_fragment_text = legacy_fragment_report.to_string();
-        assert!(legacy_fragment_text.contains("accepts legacy control port type message.any"));
-        assert!(legacy_fragment_text.contains("requires messageSelectors"));
-        assert!(legacy_fragment_text.contains("edge edge_source_target uses legacy resolvedType"));
+        let invalid_fragment_text = invalid_fragment_report.to_string();
+        assert!(invalid_fragment_text.contains("accepts invalid value type message.any"));
+        assert!(invalid_fragment_text.contains("requires messageKeys"));
+        assert!(
+            invalid_fragment_text.contains("edge edge_source_target uses invalid resolvedType")
+        );
 
         let mut outside = fragment.clone();
         outside.edges[0].target.node_id = "outside".to_owned();
@@ -5072,445 +3985,145 @@ mod tests {
     }
 
     #[test]
-    fn validates_runtime_operation_and_paste_response_branches() {
-        let fragment = base_fragment();
-        let operation = runtime_operation(fragment.clone());
-        validate_runtime_operation_envelope(&operation).expect("operation should validate");
-        validate_paste_graph_fragment_request(&operation.request)
-            .expect("paste request should validate");
+    fn validates_value_transfer_semantic_error_branches() {
+        for (payload, expected) in [
+            (
+                json!({ "valueTypeId": "" }),
+                "valueFormat.valueTypeId must be a non-empty string",
+            ),
+            (
+                json!({ "valueTypeId": "not-value" }),
+                "valueFormat.valueTypeId is not a valid value type id",
+            ),
+            (
+                json!({ "valueTypeId": "value" }),
+                "valueFormat.valueTypeId is not a valid value type id",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.vector", "format": "f32", "shape": [2, 0] }),
+                "valueFormat.shape[1] must be a positive integer",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.vector", "format": "i32" }),
+                "valueFormat.shape is required for value.core.vector",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.matrix", "shape": [2, 2] }),
+                "valueFormat.format is required for value.core.matrix",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "format": "i32" }),
+                "valueFormat.format i32 is not valid for value.core.float32",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "byteLength": 0 }),
+                "valueFormat.byteLength must be a positive integer",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "channels": 0 }),
+                "valueFormat.channels must be a positive integer",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.float32", "sampleRate": 0 }),
+                "valueFormat.sampleRate must be greater than zero",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.bang", "shape": [1] }),
+                "valueFormat.shape is not allowed for value.core.bang",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.bang", "byteLength": 1 }),
+                "valueFormat.byteLength is not allowed for value.core.bang",
+            ),
+            (
+                json!({ "valueTypeId": "value.core.bang", "resourceKind": "file" }),
+                "valueFormat.resourceKind is not allowed for value.core.bang",
+            ),
+        ] {
+            let value_format: ValueFormatV01 =
+                serde_json::from_value(payload).expect("value format should parse");
+            let report = validate_value_format_v01(&value_format)
+                .expect_err("invalid value format should fail");
+            assert!(
+                report.to_string().contains(expected),
+                "expected {expected}, got {report}"
+            );
+        }
 
-        let mut outside_operation = runtime_operation(fragment);
-        outside_operation.request.fragment.edges[0].target.node_id = "outside".to_owned();
-        assert!(
-            validate_runtime_operation_envelope(&outside_operation)
-                .expect_err("outside endpoint should fail by default")
-                .to_string()
-                .contains("fragment-edge-outside-selection")
-        );
-        outside_operation.request.options = Some(PasteGraphFragmentOptions {
-            outside_endpoint_policy: Some(GraphFragmentOutsideEndpointPolicyV01::Omit),
-            id_conflict_policy: Some(IdConflictPolicy::Remap),
-            interface_incident_edge_policy: None,
-            preserve_relative_positions: Some(true),
-        });
-        let omit_result = validate_runtime_operation_envelope(&outside_operation);
-        assert!(omit_result.is_ok());
-
-        let mut invalid_operation = outside_operation;
-        invalid_operation.schema = "wrong".to_owned();
-        invalid_operation.schema_version = "9.9.9".to_owned();
-        invalid_operation.kind = "loadProject".to_owned();
-        let invalid_report = validate_runtime_operation_envelope(&invalid_operation)
-            .expect_err("invalid operation should fail");
-        let invalid_text = invalid_report.to_string();
-        assert!(invalid_text.contains("skenion.runtime.operation"));
-        assert!(invalid_text.contains("0.1.0"));
-        assert!(invalid_text.contains("unsupported runtime operation kind"));
-
-        let response = PasteGraphFragmentResponse {
-            schema: "skenion.runtime.paste-graph-fragment.response".to_owned(),
-            schema_version: "0.1.0".to_owned(),
-            ok: true,
-            applied: true,
-            conflict: false,
-            target: root_target(),
-            revision_before: "1".to_owned(),
-            revision_after: Some("2".to_owned()),
-            history_entry_id: Some("history".to_owned()),
-            id_remap: IdRemapResult {
-                node_id_map: BTreeMap::from([("source".to_owned(), "source_2".to_owned())]),
-                edge_id_map: BTreeMap::from([(
-                    "edge_source_target".to_owned(),
-                    "edge_source_target_2".to_owned(),
-                )]),
-                omitted_edge_ids: Vec::new(),
-            },
-            diagnostics: vec![RuntimeOperationDiagnostic {
-                severity: "info".to_owned(),
-                code: "operation-rebased".to_owned(),
-                message: "rebased".to_owned(),
-                path: None,
-                target: None,
-                expected_revision: Some("1".to_owned()),
-                actual_revision: Some("1".to_owned()),
-                duplicates: None,
-                nodes: None,
-                edges: None,
-                interface_policy: None,
-                interface_detail: None,
-            }],
-        };
-        validate_paste_graph_fragment_response(&response).expect("response should validate");
-
-        let mut invalid_response = response;
-        invalid_response.schema = "wrong".to_owned();
-        invalid_response.schema_version = "9.9.9".to_owned();
-        invalid_response.ok = false;
-        invalid_response.revision_after = None;
-        let response_report = validate_paste_graph_fragment_response(&invalid_response)
-            .expect_err("invalid response should fail");
-        let response_text = response_report.to_string();
-        assert!(response_text.contains("paste-graph-fragment"));
-        assert!(response_text.contains("0.1.0"));
-        assert!(response_text.contains("cannot be applied"));
-        assert!(response_text.contains("revisionAfter"));
-    }
-
-    #[test]
-    fn validates_collaboration_operation_branch_coverage() {
-        let disconnect_operation = collaboration_operation(json!({
-            "kind": "changeSet",
-            "target": {
-                "path": { "kind": "root" },
-                "baseRevision": "root-rev-1"
-            },
-            "changes": [
-                {
-                    "op": "edge.disconnect",
-                    "changeId": "change-disconnect-source-target",
-                    "edgeId": "edge_source_target"
-                }
-            ],
-            "undoGroupId": "undo-group-disconnect",
-            "description": "Disconnect source from target"
-        }));
-        validate_runtime_collaboration_operation_envelope(&disconnect_operation)
-            .expect("edge.disconnect change should validate");
-        let serialized =
-            serde_json::to_value(&disconnect_operation).expect("operation should serialize");
-        assert_eq!(serialized["payload"]["changes"][0]["op"], "edge.disconnect");
-        assert_eq!(
-            serialized["payload"]["changes"][0]["changeId"],
-            "change-disconnect-source-target"
-        );
-
-        let mut outside_fragment = base_fragment();
-        outside_fragment.edges[0].target.node_id = "outside".to_owned();
-        let outside_paste = collaboration_operation(json!({
-            "kind": "pasteGraphFragment",
-            "request": paste_request(outside_fragment)
-        }));
-        assert!(
-            validate_runtime_collaboration_operation_envelope(&outside_paste)
-                .expect_err("outside paste should fail")
-                .to_string()
-                .contains("fragment-edge-outside-selection")
-        );
-
-        let mut missing_participant =
-            collaboration_operation_value(collaboration_undo_redo_payload("participant-a"));
-        missing_participant["schema"] = json!("wrong");
-        missing_participant["schemaVersion"] = json!("9.9.9");
-        missing_participant["causal"]["vector"] = json!({ "participant-b": 1 });
-        let missing_participant: RuntimeCollaborationOperationEnvelope =
-            serde_json::from_value(missing_participant)
-                .expect("missing-participant operation should parse");
-        let text = validate_runtime_collaboration_operation_envelope(&missing_participant)
-            .expect_err("schema and causal vector should fail")
-            .to_string();
-        assert!(text.contains("skenion.runtime.collaboration.operation"));
-        assert!(text.contains("0.1.0"));
-        assert!(text.contains("causal vector must include participantId"));
-    }
-
-    #[test]
-    fn validates_collaboration_batch_branch_coverage() {
-        let mut mismatched_operation =
-            collaboration_operation_value(collaboration_undo_redo_payload("participant-a"));
-        mismatched_operation["sessionId"] = json!("session-other");
-        let batch: RuntimeCollaborationOperationBatch = serde_json::from_value(json!({
-            "schema": "wrong",
-            "schemaVersion": "9.9.9",
-            "sessionId": "session-collab-a",
-            "operations": [mismatched_operation],
-            "submittedAt": "2026-06-22T00:00:00.000Z"
+        let invalid_binding: EndpointBindingValueFormatV01 = serde_json::from_value(json!({
+            "bindingId": "",
+            "bindingEpoch": 1,
+            "formatRevision": 1,
+            "valueFormat": { "valueTypeId": "value.core.float32", "format": "f32" },
+            "source": { "nodeId": "", "portId": "out" },
+            "target": { "nodeId": "target", "portId": "" },
+            "delivery": { "policy": "nonsense", "maxInFlight": 0 }
         }))
-        .expect("batch should parse");
+        .expect("invalid binding should parse");
+        let binding_report = validate_endpoint_binding_value_format_v01(&invalid_binding)
+            .expect_err("invalid binding should fail");
+        let binding_text = binding_report.to_string();
+        assert!(binding_text.contains("bindingFormat.bindingId must be a non-empty string"));
+        assert!(binding_text.contains("bindingFormat.source must contain non-empty"));
+        assert!(binding_text.contains("bindingFormat.target must contain non-empty"));
+        assert!(binding_text.contains("bindingFormat.delivery contains an invalid policy"));
 
-        let text = validate_runtime_collaboration_operation_batch(&batch)
-            .expect_err("batch schema and session mismatch should fail")
-            .to_string();
-        assert!(text.contains("skenion.runtime.collaboration.operation-batch"));
-        assert!(text.contains("0.1.0"));
-        assert!(text.contains("sessionId must match batch sessionId"));
-    }
-
-    #[test]
-    fn validates_collaboration_result_branch_coverage() {
-        let mut accepted_with_nack = accepted_collaboration_result_value();
-        accepted_with_nack["schema"] = json!("wrong");
-        accepted_with_nack["schemaVersion"] = json!("9.9.9");
-        accepted_with_nack["nack"] = collaboration_nack("invalid-operation");
-        let accepted_with_nack: RuntimeCollaborationOperationResult =
-            serde_json::from_value(accepted_with_nack)
-                .expect("accepted result with nack should parse");
-        let text = validate_runtime_collaboration_operation_result(&accepted_with_nack)
-            .expect_err("accepted result with nack should fail")
-            .to_string();
-        assert!(text.contains("skenion.runtime.collaboration.operation-result"));
-        assert!(text.contains("0.1.0"));
-        assert!(text.contains("must not include nack or rebase"));
-
-        let rejected_without_nack: RuntimeCollaborationOperationResult =
-            serde_json::from_value(collaboration_result_value("rejected"))
-                .expect("rejected result without nack should parse");
+        let invalid_occurrence: ValueOccurrenceHeaderV01 = serde_json::from_value(json!({
+            "bindingId": "",
+            "bindingEpoch": 0,
+            "formatRevision": 0,
+            "sequence": 1,
+            "payloadKind": "empty",
+            "byteLength": 0,
+            "byteOffset": 4,
+            "actualShape": [1],
+            "duration": -1
+        }))
+        .expect("invalid occurrence should parse");
+        let occurrence_report = validate_value_occurrence_header_v01(&invalid_occurrence)
+            .expect_err("invalid occurrence should fail");
+        let occurrence_text = occurrence_report.to_string();
+        assert!(occurrence_text.contains("occurrenceHeader.bindingId must be a non-empty string"));
         assert!(
-            validate_runtime_collaboration_operation_result(&rejected_without_nack)
-                .expect_err("rejected result without nack should fail")
-                .to_string()
-                .contains("must include nack")
+            occurrence_text.contains("occurrenceHeader.bindingEpoch must be a positive integer")
         );
-
-        let mut duplicate_with_wrong_nack = collaboration_result_value("duplicate");
-        duplicate_with_wrong_nack["nack"] = collaboration_nack("invalid-operation");
-        let duplicate_with_wrong_nack: RuntimeCollaborationOperationResult =
-            serde_json::from_value(duplicate_with_wrong_nack)
-                .expect("duplicate result with wrong nack should parse");
         assert!(
-            validate_runtime_collaboration_operation_result(&duplicate_with_wrong_nack)
-                .expect_err("duplicate result with wrong nack should fail")
-                .to_string()
-                .contains("duplicate-idempotency-key")
+            occurrence_text.contains("occurrenceHeader.formatRevision must be a positive integer")
         );
-
-        let mut rebased_without_rebase = collaboration_result_value("rebased");
-        rebased_without_rebase["ack"] = collaboration_ack(2);
-        let rebased_without_rebase: RuntimeCollaborationOperationResult =
-            serde_json::from_value(rebased_without_rebase)
-                .expect("rebased result without rebase should parse");
+        assert!(occurrence_text.contains("occurrenceHeader.byteLength must be a positive integer"));
+        assert!(occurrence_text.contains("occurrenceHeader.duration must be greater than"));
         assert!(
-            validate_runtime_collaboration_operation_result(&rebased_without_rebase)
-                .expect_err("rebased result without rebase should fail")
-                .to_string()
-                .contains("must include rebase metadata")
+            occurrence_text.contains("occurrenceHeader.byteLength is not allowed when payloadKind")
         );
-    }
-
-    #[test]
-    fn validates_collaboration_presence_selection_and_event_branches() {
-        let mut presence = collaboration_presence_value();
-        presence["schema"] = json!("wrong");
-        presence["schemaVersion"] = json!("9.9.9");
-        let presence: RuntimeCollaborationPresenceEnvelope =
-            serde_json::from_value(presence).expect("presence should parse");
-        let text = validate_runtime_collaboration_presence_envelope(&presence)
-            .expect_err("presence schema should fail")
-            .to_string();
-        assert!(text.contains("skenion.runtime.collaboration.presence"));
-        assert!(text.contains("0.1.0"));
-
-        let mut selection = collaboration_selection_value();
-        selection["schema"] = json!("wrong");
-        selection["schemaVersion"] = json!("9.9.9");
-        selection["expiresAt"] = selection["updatedAt"].clone();
-        let selection: RuntimeCollaborationSelectionEnvelope =
-            serde_json::from_value(selection).expect("selection should parse");
-        let text = validate_runtime_collaboration_selection_envelope(&selection)
-            .expect_err("selection schema and expiry should fail")
-            .to_string();
-        assert!(text.contains("skenion.runtime.collaboration.selection"));
-        assert!(text.contains("0.1.0"));
-        assert!(text.contains("expiresAt must be later than updatedAt"));
-
-        let mut event = collaboration_event_value();
-        event["schema"] = json!("wrong");
-        event["schemaVersion"] = json!("9.9.9");
-        let event: RuntimeCollaborationEventEnvelope =
-            serde_json::from_value(event).expect("event should parse");
-        let text = validate_runtime_collaboration_event_envelope(&event)
-            .expect_err("event schema should fail")
-            .to_string();
-        assert!(text.contains("skenion.runtime.collaboration.event"));
-        assert!(text.contains("0.1.0"));
-
-        let mut invalid_gap_event = collaboration_event_value();
-        invalid_gap_event["replay"]["gap"] = value(
-            r#"{
-              "expectedSequence": 8,
-              "actualSequence": 6,
-              "reason": "unknown"
-            }"#,
-        );
-        let invalid_gap_event: RuntimeCollaborationEventEnvelope =
-            serde_json::from_value(invalid_gap_event).expect("invalid gap event should parse");
         assert!(
-            validate_runtime_collaboration_event_envelope(&invalid_gap_event)
-                .expect_err("replay gap order should fail")
-                .to_string()
-                .contains("expectedSequence must be less than actualSequence")
+            occurrence_text.contains("occurrenceHeader.byteOffset is not allowed when payloadKind")
         );
-
-        let mut valid_gap_event = collaboration_event_value();
-        valid_gap_event["replay"]["gap"] = value(
-            r#"{
-              "expectedSequence": 1,
-              "actualSequence": 3,
-              "reason": "retention-overflow"
-            }"#,
-        );
-        let valid_gap_event: RuntimeCollaborationEventEnvelope =
-            serde_json::from_value(valid_gap_event).expect("valid gap event should parse");
-        validate_runtime_collaboration_event_envelope(&valid_gap_event)
-            .expect("valid replay gap should validate");
-    }
-
-    #[test]
-    fn validates_unit_target_optional_success_and_rebase_branches() {
-        let valid_presence: RuntimeCollaborationPresenceEnvelope =
-            serde_json::from_value(collaboration_presence_value()).expect("presence should parse");
-        validate_runtime_collaboration_presence_envelope(&valid_presence)
-            .expect("valid presence should validate");
-
-        let mut deferred_auth_presence = collaboration_presence_value();
-        deferred_auth_presence["authSubject"] = json!({
-            "kind": "deferred",
-            "issuer": "local-dev"
-        });
-        let deferred_auth_presence: RuntimeCollaborationPresenceEnvelope =
-            serde_json::from_value(deferred_auth_presence)
-                .expect("deferred auth presence should parse");
-        validate_runtime_collaboration_presence_envelope(&deferred_auth_presence)
-            .expect("auth subject without subjectId should validate");
-
-        let valid_selection: RuntimeCollaborationSelectionEnvelope =
-            serde_json::from_value(collaboration_selection_value())
-                .expect("selection should parse");
-        validate_runtime_collaboration_selection_envelope(&valid_selection)
-            .expect("valid selection should validate");
-
-        let mut valid_batch = value(
-            r#"{
-              "schema": "skenion.runtime.collaboration.operation-batch",
-              "schemaVersion": "0.1.0",
-              "sessionId": "session-collab-a",
-              "operations": [],
-              "submittedAt": "2026-06-22T00:00:00.000Z"
-            }"#,
-        );
-        valid_batch["operations"] = serde_json::Value::Array(vec![collaboration_operation_value(
-            collaboration_undo_redo_payload("participant-a"),
-        )]);
-        let valid_batch: RuntimeCollaborationOperationBatch =
-            serde_json::from_value(valid_batch).expect("valid batch should parse");
-        validate_runtime_collaboration_operation_batch(&valid_batch)
-            .expect("valid batch should validate");
-
-        let change_set = collaboration_operation(value(
-            r#"{
-              "kind": "changeSet",
-              "target": {
-                "path": { "kind": "root" },
-                "baseRevision": "root-rev-1"
-              },
-              "changes": [
-                {
-                  "op": "node.add",
-                  "changeId": "change-add",
-                  "node": {
-                    "id": "added",
-                    "kind": "core.float",
-                    "kindVersion": "0.1.0",
-                    "params": {},
-                    "ports": [
-                      { "id": "out", "direction": "output", "type": "control.number.float" }
-                    ]
-                  }
-                },
-                {
-                  "op": "node.move",
-                  "changeId": "change-move",
-                  "nodeId": "source",
-                  "to": { "x": 20, "y": 40 }
-                },
-                {
-                  "op": "node.delete",
-                  "changeId": "change-delete",
-                  "nodeId": "old"
-                },
-                {
-                  "op": "edge.connect",
-                  "changeId": "change-connect",
-                  "edge": {
-                    "id": "edge-added-target",
-                    "source": { "nodeId": "added", "portId": "out" },
-                    "target": { "nodeId": "target", "portId": "in" }
-                  }
-                }
-              ]
-            }"#,
-        ));
-        validate_runtime_collaboration_operation_envelope(&change_set)
-            .expect("all change id variants should validate");
-
-        let mut accepted_with_rebase = accepted_collaboration_result_value();
-        accepted_with_rebase["rebase"] = collaboration_rebase_value();
-        let accepted_with_rebase: RuntimeCollaborationOperationResult =
-            serde_json::from_value(accepted_with_rebase)
-                .expect("accepted result with rebase should parse");
         assert!(
-            validate_runtime_collaboration_operation_result(&accepted_with_rebase)
-                .expect_err("accepted result with rebase should fail")
-                .to_string()
-                .contains("must not include nack or rebase")
+            occurrence_text
+                .contains("occurrenceHeader.actualShape is not allowed when payloadKind")
         );
 
-        let mut rebased = collaboration_result_value("rebased");
-        rebased["ack"] = collaboration_ack(2);
-        rebased["rebase"] = collaboration_rebase_value();
-        let rebased: RuntimeCollaborationOperationResult =
-            serde_json::from_value(rebased).expect("rebased result should parse");
-        validate_runtime_collaboration_operation_result(&rebased)
-            .expect("rebased result with rebase metadata should validate");
-
-        let mut event = runtime_session_event();
-        event.replay.gap = Some(RuntimeEventReplayGap {
-            expected_sequence: 1,
-            actual_sequence: 0,
-            reason: RuntimeEventReplayGapReason::Unknown,
-        });
+        let invalid_timestamp = ValueOccurrenceHeaderV01 {
+            binding_id: "edge_1".to_owned(),
+            binding_epoch: 1,
+            format_revision: 1,
+            sequence: 1,
+            clock: None,
+            timestamp: Some(f64::NAN),
+            payload_kind: ValuePayloadKindV01::Json,
+            byte_length: None,
+            byte_offset: None,
+            actual_shape: None,
+            flags: None,
+            dropped_before: None,
+            duration: None,
+        };
         assert!(
-            validate_runtime_session_event(&event)
-                .expect_err("zero actual replay sequence should fail")
+            validate_value_occurrence_header_v01(&invalid_timestamp)
+                .expect_err("invalid timestamp should fail")
                 .to_string()
-                .contains("replay gap sequences must be at least 1")
+                .contains("occurrenceHeader.timestamp must be a finite number")
         );
-
-        let mut valid_gap_event = runtime_session_event();
-        valid_gap_event.replay.gap = Some(RuntimeEventReplayGap {
-            expected_sequence: 1,
-            actual_sequence: 3,
-            reason: RuntimeEventReplayGapReason::RetentionOverflow,
-        });
-        validate_runtime_session_event(&valid_gap_event)
-            .expect("ordered replay gap should validate");
-
-        let grouped = node(
-            r#"{
-              "schema": "skenion.node.definition",
-              "schemaVersion": "0.1.0",
-              "id": "core.dynamic-group",
-              "version": "0.1.0",
-              "displayName": "Dynamic Group",
-              "category": "Core",
-              "ports": [
-                { "id": "sum", "direction": "output", "type": "control.number.float" }
-              ],
-              "portGroups": [
-                {
-                  "id": "inputs",
-                  "direction": "input",
-                  "type": "control.number.float",
-                  "minPorts": 1,
-                  "maxPorts": 2
-                }
-              ],
-              "execution": { "model": "control" },
-              "state": { "persistent": false },
-              "permissions": [],
-              "capabilities": []
-            }"#,
-        );
-        validate_node_definition_v01(&grouped).expect("valid maxPorts should validate");
     }
 
     #[test]
@@ -5528,8 +4141,8 @@ mod tests {
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "in", "direction": "input", "type": "control.number.float" },
-                    { "id": "out", "direction": "output", "type": "control.number.float" }
+                    { "id": "in", "direction": "input", "type": "value.core.float64" },
+                    { "id": "out", "direction": "output", "type": "value.core.float64" }
                   ]
                 }
               ],
@@ -5567,8 +4180,8 @@ mod tests {
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "in", "direction": "input", "type": "control.number.float" },
-                      { "id": "out", "direction": "output", "type": "control.number.float" }
+                      { "id": "in", "direction": "input", "type": "value.core.float64" },
+                      { "id": "out", "direction": "output", "type": "value.core.float64" }
                     ]
                   },
                   {
@@ -5577,8 +4190,8 @@ mod tests {
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "in", "direction": "input", "type": "control.number.float" },
-                      { "id": "out", "direction": "output", "type": "control.number.float" }
+                      { "id": "in", "direction": "input", "type": "value.core.float64" },
+                      { "id": "out", "direction": "output", "type": "value.core.float64" }
                     ]
                   }
                 ],
@@ -5618,20 +4231,20 @@ mod tests {
                     "nodes": [
                       {
                         "id": "left_in",
-                        "kind": "core.inlet",
+                        "kind": "object.core.inlet",
                         "kindVersion": "0.1.0",
                         "params": {},
                         "ports": [
-                          { "id": "out", "direction": "output", "type": "control.number.float" }
+                          { "id": "out", "direction": "output", "type": "value.core.float64" }
                         ]
                       },
                       {
                         "id": "right_out",
-                        "kind": "core.outlet",
+                        "kind": "object.core.outlet",
                         "kindVersion": "0.1.0",
                         "params": {},
                         "ports": [
-                          { "id": "in", "direction": "input", "type": "control.number.float" }
+                          { "id": "in", "direction": "input", "type": "value.core.float64" }
                         ]
                       }
                     ],
@@ -5676,20 +4289,20 @@ mod tests {
                     "nodes": [
                       {
                         "id": "inlet_a",
-                        "kind": "core.inlet",
+                        "kind": "object.core.inlet",
                         "kindVersion": "0.1.0",
                         "params": { "portId": "same" },
                         "ports": [
-                          { "id": "out", "direction": "output", "type": "control.number.float" }
+                          { "id": "out", "direction": "output", "type": "value.core.float64" }
                         ]
                       },
                       {
                         "id": "inlet_b",
-                        "kind": "core.inlet",
+                        "kind": "object.core.inlet",
                         "kindVersion": "0.1.0",
                         "params": { "portId": "same" },
                         "ports": [
-                          { "id": "out", "direction": "output", "type": "control.number.float" }
+                          { "id": "out", "direction": "output", "type": "value.core.float64" }
                         ]
                       }
                     ],
@@ -5721,8 +4334,8 @@ mod tests {
     fn reports_direction_missing_duplicate_type_and_fanout_errors() {
         let mut graph = base_graph();
         graph.nodes[0].ports[0].fan_out_policy = Some(super::super::FanOutPolicyV01::Forbid);
-        graph.nodes[1].ports[0].port_type = "render.frame".to_owned();
-        graph.nodes[1].ports[0].accepts = Some(vec!["gpu.texture2d".to_owned()]);
+        graph.nodes[1].ports[0].port_type = "value.core.tensor".to_owned();
+        graph.nodes[1].ports[0].accepts = Some(vec!["value.core.tensor".to_owned()]);
         let duplicate_port = graph.nodes[1].ports[0].clone();
         graph.nodes[1].ports.push(duplicate_port);
         graph.nodes.push(graph.nodes[1].clone());
@@ -5842,8 +4455,8 @@ mod tests {
     #[test]
     fn validates_accepts_required_merge_and_unlimited_connection_rules() {
         let mut graph = base_graph();
-        graph.nodes[0].ports[0].port_type = "gpu.texture2d".to_owned();
-        graph.nodes[1].ports[0].accepts = Some(vec!["gpu.texture2d".to_owned()]);
+        graph.nodes[0].ports[0].port_type = "value.core.tensor".to_owned();
+        graph.nodes[1].ports[0].accepts = Some(vec!["value.core.tensor".to_owned()]);
         assert!(validate_graph_document_v01(&graph).is_ok());
 
         graph.nodes[1].ports[0].required = Some(true);
@@ -5853,7 +4466,7 @@ mod tests {
 
         graph.nodes.push(GraphNodeV01 {
             id: "source_two".to_owned(),
-            kind: "core.float".to_owned(),
+            kind: "object.core.float".to_owned(),
             kind_version: "0.1.0".to_owned(),
             object_text: None,
             binding_ref: None,
@@ -5861,7 +4474,7 @@ mod tests {
             ports: vec![PortSpecV01 {
                 id: "out".to_owned(),
                 direction: PortDirectionV01::Output,
-                port_type: "gpu.texture2d".to_owned(),
+                port_type: "value.core.tensor".to_owned(),
                 label: None,
                 rate: None,
                 accepts: None,
@@ -5870,7 +4483,7 @@ mod tests {
                 merge_policy: None,
                 fan_out_policy: None,
                 trigger_mode: None,
-                message_selectors: None,
+                message_keys: None,
                 default_value: None,
                 latch: None,
                 required: None,
@@ -5943,52 +4556,52 @@ mod tests {
               "nodes": [
                 {
                   "id": "button",
-                  "kind": "core.bang",
+                  "kind": "object.core.bang",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "out", "direction": "output", "type": "event.bang", "rate": "event" }
+                    { "id": "out", "direction": "output", "type": "value.core.bang", "rate": "event" }
                   ]
                 },
                 {
                   "id": "int_source",
-                  "kind": "core.int",
+                  "kind": "object.core.int",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "value", "direction": "output", "type": "control.number.int", "rate": "control" }
+                    { "id": "value", "direction": "output", "type": "value.core.int64", "rate": "control" }
                   ]
                 },
                 {
                   "id": "bool_source",
-                  "kind": "core.bool",
+                  "kind": "test.bool-emitter",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
-                    { "id": "value", "direction": "output", "type": "control.bool", "rate": "control" }
+                    { "id": "value", "direction": "output", "type": "value.core.bool", "rate": "control" }
                   ]
                 },
                 {
                   "id": "number_box",
-                  "kind": "core.float",
+                  "kind": "object.core.float",
                   "kindVersion": "0.1.0",
                   "params": {},
                   "ports": [
                     {
                       "id": "in",
                       "direction": "input",
-                      "type": "control.message.any",
+                      "type": "value.core.message",
                       "rate": "control",
                       "accepts": [
-                        "control.number.float",
-                        "control.number.int",
-                        "control.bool",
-                        "event.bang"
+                        "value.core.float64",
+                        "value.core.int64",
+                        "value.core.bool",
+                        "value.core.bang"
                       ],
                       "maxConnections": 3,
                       "mergePolicy": "ordered-events",
                       "triggerMode": "trigger",
-                      "messageSelectors": {
+                      "messageKeys": {
                         "accepted": ["bang", "set", "float", "int", "bool"],
                         "silent": ["set"],
                         "trigger": ["bang", "float", "int", "bool"],
@@ -6023,17 +4636,17 @@ mod tests {
         validate_graph_document_v01(&graph)
             .expect("numeric control accepts and explicit bang trigger should validate");
 
-        let mut missing_selector_policy = graph.clone();
-        missing_selector_policy.nodes[3].ports[0].message_selectors = None;
-        let report = validate_graph_document_v01(&missing_selector_policy)
-            .expect_err("selector-aware input should require messageSelectors");
-        assert!(report.to_string().contains("requires messageSelectors"));
+        let mut missing_key_policy = graph.clone();
+        missing_key_policy.nodes[3].ports[0].message_keys = None;
+        let report = validate_graph_document_v01(&missing_key_policy)
+            .expect_err("message-key-aware input should require messageKeys");
+        assert!(report.to_string().contains("requires messageKeys"));
 
         let mut invalid_set_trigger = graph.clone();
         let policy = invalid_set_trigger.nodes[3].ports[0]
-            .message_selectors
+            .message_keys
             .as_mut()
-            .expect("number box should declare selector policy");
+            .expect("number box should declare key policy");
         policy.accepted = vec!["set".to_owned()];
         policy.silent = None;
         policy.trigger = Some(vec!["set".to_owned()]);
@@ -6047,9 +4660,9 @@ mod tests {
 
         let mut invalid_set_emit = graph.clone();
         let policy = invalid_set_emit.nodes[3].ports[0]
-            .message_selectors
+            .message_keys
             .as_mut()
-            .expect("number box should declare selector policy");
+            .expect("number box should declare key policy");
         policy.accepted = vec!["set".to_owned()];
         policy.silent = Some(vec!["set".to_owned()]);
         policy.trigger = None;
@@ -6060,66 +4673,64 @@ mod tests {
 
         let mut valid_set_store = graph.clone();
         let policy = valid_set_store.nodes[3].ports[0]
-            .message_selectors
+            .message_keys
             .as_mut()
-            .expect("number box should declare selector policy");
+            .expect("number box should declare key policy");
         policy.accepted = vec!["set".to_owned()];
         policy.silent = None;
         policy.trigger = None;
         policy.store = Some(vec!["set".to_owned()]);
         policy.emit = None;
         validate_graph_document_v01(&valid_set_store)
-            .expect("set should be valid as store selector behavior");
+            .expect("set should be valid as store key behavior");
 
-        let mut empty_selector_policy = graph.clone();
-        let policy = empty_selector_policy.nodes[3].ports[0]
-            .message_selectors
+        let mut empty_key_policy = graph.clone();
+        let policy = empty_key_policy.nodes[3].ports[0]
+            .message_keys
             .as_mut()
-            .expect("number box should declare selector policy");
+            .expect("number box should declare key policy");
         policy.accepted.clear();
         policy.silent = None;
         policy.trigger = None;
         policy.store = None;
         policy.emit = None;
-        let report = validate_graph_document_v01(&empty_selector_policy)
-            .expect_err("accepted selector set must not be empty");
+        let report = validate_graph_document_v01(&empty_key_policy)
+            .expect_err("accepted key set must not be empty");
         assert!(
             report
                 .to_string()
-                .contains("accepted must list at least one selector")
+                .contains("accepted must list at least one key")
         );
 
-        let mut unaccepted_trigger_selector = graph.clone();
-        let policy = unaccepted_trigger_selector.nodes[3].ports[0]
-            .message_selectors
+        let mut unaccepted_trigger_key = graph.clone();
+        let policy = unaccepted_trigger_key.nodes[3].ports[0]
+            .message_keys
             .as_mut()
-            .expect("number box should declare selector policy");
+            .expect("number box should declare key policy");
         policy.accepted = vec!["float".to_owned()];
         policy.silent = None;
         policy.trigger = Some(vec!["int".to_owned()]);
         policy.store = None;
         policy.emit = None;
-        let report = validate_graph_document_v01(&unaccepted_trigger_selector)
-            .expect_err("selector behavior must stay inside accepted selectors");
+        let report = validate_graph_document_v01(&unaccepted_trigger_key)
+            .expect_err("key behavior must stay inside accepted keys");
         assert!(
             report
                 .to_string()
-                .contains("messageSelectors.trigger selector int is not accepted")
+                .contains("messageKeys.trigger key int is not accepted")
         );
 
         let mut without_bang_accept = graph.clone();
         without_bang_accept.nodes[3].ports[0].accepts = Some(vec![
-            "control.number.float".to_owned(),
-            "control.number.int".to_owned(),
-            "control.bool".to_owned(),
+            "value.core.float64".to_owned(),
+            "value.core.int64".to_owned(),
+            "value.core.bool".to_owned(),
         ]);
-        let report = validate_graph_document_v01(&without_bang_accept)
-            .expect_err("bang requires an explicit accepted type");
-        assert!(report.to_string().contains("incompatible-type"));
+        assert!(validate_graph_document_v01(&without_bang_accept).is_ok());
     }
 
     #[test]
-    fn rejects_legacy_control_port_aliases_in_current_contracts() {
+    fn rejects_invalid_value_type_aliases_in_current_contracts() {
         let legacy_types = [
             "value.number",
             "value<number.float>",
@@ -6128,33 +4739,40 @@ mod tests {
             "number.uint",
             "boolean",
             "message.any",
+            "value.core.symbol",
+            "value.media.asset",
+            "value.media.audio-sample",
+            "value.media.audio-frame",
+            "value.media.audio-buffer",
+            "value.media.image",
+            "value.media.matrix",
         ];
 
         for legacy_type in legacy_types {
             let mut graph = base_graph();
             graph.nodes[0].ports[0].port_type = legacy_type.to_owned();
-            let report = validate_graph_document_v01(&graph).expect_err("legacy port should fail");
+            let report = validate_graph_document_v01(&graph).expect_err("invalid port should fail");
             assert!(
-                report.to_string().contains("legacy-port-type"),
+                report.to_string().contains("invalid-value-type"),
                 "{legacy_type}"
             );
 
             let mut graph = base_graph();
-            graph.nodes[1].ports[0].port_type = "control.message.any".to_owned();
+            graph.nodes[1].ports[0].port_type = "value.core.message".to_owned();
             graph.nodes[1].ports[0].accepts = Some(vec![legacy_type.to_owned()]);
             let report =
                 validate_graph_document_v01(&graph).expect_err("legacy accepted type should fail");
             assert!(
-                report.to_string().contains("legacy-port-type"),
+                report.to_string().contains("invalid-value-type"),
                 "{legacy_type}"
             );
 
             let mut graph = base_graph();
             graph.edges[0].resolved_type = Some(legacy_type.to_owned());
             let report =
-                validate_graph_document_v01(&graph).expect_err("legacy resolvedType should fail");
+                validate_graph_document_v01(&graph).expect_err("invalid resolvedType should fail");
             assert!(
-                report.to_string().contains("legacy-port-type"),
+                report.to_string().contains("invalid-value-type"),
                 "{legacy_type}"
             );
 
@@ -6189,8 +4807,45 @@ mod tests {
             let report =
                 validate_node_definition_v01(&definition).expect_err("legacy node should fail");
             assert!(
-                report.to_string().contains("legacy port type"),
+                report.to_string().contains("invalid value type"),
                 "{legacy_type}"
+            );
+        }
+
+        for payload_identity in ["bool", "string"] {
+            let mut graph = base_graph();
+            graph.nodes[0].kind = payload_identity.to_owned();
+            let report = validate_graph_document_v01(&graph).expect_err("payload kind should fail");
+            assert!(
+                report.to_string().contains("payload-node-kind"),
+                "{payload_identity}"
+            );
+
+            let mut definition = node(
+                r#"{
+                  "schema": "skenion.node.definition",
+                  "schemaVersion": "0.1.0",
+                  "id": "test.node",
+                  "version": "0.1.0",
+                  "displayName": "Payload Identity",
+                  "category": "Test",
+                  "ports": [
+                    { "id": "out", "direction": "output", "type": "value.core.float64" }
+                  ],
+                  "execution": { "model": "control" },
+                  "state": { "persistent": false },
+                  "permissions": [],
+                  "capabilities": []
+                }"#,
+            );
+            definition.id = payload_identity.to_owned();
+            let report = validate_node_definition_v01(&definition)
+                .expect_err("payload node definition id should fail");
+            assert!(
+                report
+                    .to_string()
+                    .contains("payload identity node definition id"),
+                "{payload_identity}"
             );
         }
     }
@@ -6201,7 +4856,7 @@ mod tests {
         graph.nodes[0].ports.push(PortSpecV01 {
             id: "in".to_owned(),
             direction: PortDirectionV01::Input,
-            port_type: "control.number.float".to_owned(),
+            port_type: "value.core.float64".to_owned(),
             label: None,
             rate: None,
             accepts: None,
@@ -6210,7 +4865,7 @@ mod tests {
             merge_policy: None,
             fan_out_policy: None,
             trigger_mode: None,
-            message_selectors: None,
+            message_keys: None,
             default_value: None,
             latch: None,
             required: None,
@@ -6221,7 +4876,7 @@ mod tests {
         graph.nodes[1].ports.push(PortSpecV01 {
             id: "out".to_owned(),
             direction: PortDirectionV01::Output,
-            port_type: "control.number.float".to_owned(),
+            port_type: "value.core.float64".to_owned(),
             label: None,
             rate: None,
             accepts: None,
@@ -6230,7 +4885,7 @@ mod tests {
             merge_policy: None,
             fan_out_policy: None,
             trigger_mode: None,
-            message_selectors: None,
+            message_keys: None,
             default_value: None,
             latch: None,
             required: None,
@@ -6261,14 +4916,14 @@ mod tests {
         let ambiguous = validate_graph_document_v01(&graph).expect_err("cycle should fail");
         assert!(ambiguous.to_string().contains("ambiguous-algebraic-loop"));
 
-        let mut control_cycle = graph.clone();
-        for node in &mut control_cycle.nodes {
+        let mut immediate_value_cycle = graph.clone();
+        for node in &mut immediate_value_cycle.nodes {
             for port in &mut node.ports {
-                port.port_type = "control.number".to_owned();
+                port.port_type = "value.core.float64".to_owned();
             }
         }
-        let control_ambiguous =
-            validate_graph_document_v01(&control_cycle).expect_err("control cycle should fail");
+        let control_ambiguous = validate_graph_document_v01(&immediate_value_cycle)
+            .expect_err("immediate value cycle should fail");
         assert!(
             control_ambiguous
                 .to_string()
@@ -6308,17 +4963,17 @@ mod tests {
             r#"{
               "schema": "skenion.node.definition",
               "schemaVersion": "0.1.0",
-              "id": "render.clear-color",
+              "id": "object.core.render.clear-color",
               "version": "0.1.0",
               "displayName": "Clear Color",
               "category": "Render",
               "ports": [
-                { "id": "out", "direction": "output", "type": "render.frame" }
+                { "id": "out", "direction": "output", "type": "value.core.tensor" }
               ],
               "execution": { "model": "gpu_pass", "clock": "frame" },
               "state": { "persistent": false },
               "permissions": [],
-              "capabilities": ["render.frame.v0.1"]
+              "capabilities": ["value.core.tensor.v0.1"]
             }"#,
         );
         validate_node_definition_v01(&valid).expect("node should validate");
@@ -6326,338 +4981,73 @@ mod tests {
         let mut invalid = valid;
         invalid.schema = "wrong".to_owned();
         invalid.schema_version = "9.9.9".to_owned();
+        invalid.id = "object.core.string".to_owned();
         invalid.permissions.push("network".to_owned());
         invalid.ports.push(invalid.ports[0].clone());
         invalid.ports[0].accepts = Some(vec![
             "message.any".to_owned(),
-            "control.number.float".to_owned(),
+            "value.core.float64".to_owned(),
         ]);
-        let mut selector_port = invalid.ports[0].clone();
-        selector_port.id = "selector".to_owned();
-        selector_port.direction = PortDirectionV01::Input;
-        selector_port.port_type = "control.message.any".to_owned();
-        selector_port.accepts = None;
-        selector_port.message_selectors = None;
-        invalid.ports.push(selector_port);
-        invalid.port_groups = Some(vec![super::super::PortGroupSpecV01 {
-            id: "bad".to_owned(),
-            direction: PortDirectionV01::Input,
-            port_type: "number.float".to_owned(),
-            min_ports: 2,
-            label: None,
-            rate: None,
-            max_ports: Some(1),
-            ordered: None,
-            port_id_pattern: None,
-            create_label: None,
-            default_port_spec: Some({
-                let mut port = invalid.ports[0].clone();
-                port.id = "default".to_owned();
-                port.direction = PortDirectionV01::Input;
-                port.port_type = "number.float".to_owned();
-                port.accepts = Some(vec![
-                    "message.any".to_owned(),
-                    "control.message.any".to_owned(),
-                ]);
-                port.message_selectors = None;
-                port
-            }),
-        }]);
+        let mut key_port = invalid.ports[0].clone();
+        key_port.id = "key".to_owned();
+        key_port.direction = PortDirectionV01::Input;
+        key_port.port_type = "value.core.message".to_owned();
+        key_port.accepts = None;
+        key_port.message_keys = None;
+        invalid.ports.push(key_port);
+        invalid.port_groups = Some(vec![
+            super::super::PortGroupSpecV01 {
+                id: "bad".to_owned(),
+                direction: PortDirectionV01::Input,
+                port_type: "number.float".to_owned(),
+                min_ports: 2,
+                label: None,
+                rate: None,
+                max_ports: Some(1),
+                ordered: None,
+                port_id_pattern: None,
+                create_label: None,
+                default_port_spec: Some({
+                    let mut port = invalid.ports[0].clone();
+                    port.id = "default".to_owned();
+                    port.direction = PortDirectionV01::Input;
+                    port.port_type = "number.float".to_owned();
+                    port.accepts = Some(vec![
+                        "message.any".to_owned(),
+                        "value.core.message".to_owned(),
+                    ]);
+                    port.message_keys = None;
+                    port
+                }),
+            },
+            super::super::PortGroupSpecV01 {
+                id: "without-default".to_owned(),
+                direction: PortDirectionV01::Output,
+                port_type: "value.core.tensor".to_owned(),
+                min_ports: 0,
+                label: None,
+                rate: None,
+                max_ports: None,
+                ordered: None,
+                port_id_pattern: None,
+                create_label: None,
+                default_port_spec: None,
+            },
+        ]);
         let report = validate_node_definition_v01(&invalid).expect_err("node should fail");
         let text = report.to_string();
         assert!(text.contains("expected schema skenion.node.definition"));
         assert!(text.contains("expected schemaVersion 0.1.0"));
+        assert!(text.contains("payload identity node definition id"));
         assert!(text.contains("unsupported permission"));
         assert!(text.contains("duplicate port id"));
-        assert!(text.contains("legacy accepted port type"));
-        assert!(text.contains("selector-aware input port requires messageSelectors"));
-        assert!(text.contains("legacy port group type"));
-        assert!(text.contains("legacy default port type"));
-        assert!(text.contains("legacy default accepted port type"));
-        assert!(text.contains("defaultPortSpec selector-aware input port requires"));
+        assert!(text.contains("invalid accepted value type"));
+        assert!(text.contains("message-key-aware input port requires messageKeys"));
+        assert!(text.contains("invalid port group type"));
+        assert!(text.contains("invalid default value type"));
+        assert!(text.contains("invalid default accepted value type"));
+        assert!(text.contains("defaultPortSpec message-key-aware input port requires"));
         assert!(text.contains("maxPorts"));
-    }
-
-    #[test]
-    fn validates_runtime_session_profile_and_replay_branches() {
-        let info = runtime_session_info();
-        validate_runtime_session_info_response(&info).expect("session info should validate");
-
-        let mut invalid_info = info.clone();
-        invalid_info.schema = "wrong".to_owned();
-        invalid_info.schema_version = "9.9.9".to_owned();
-        invalid_info.session_id.clear();
-        invalid_info.capabilities.auth_policy = "trusted-local".to_owned();
-        invalid_info.event_replay.cursor_kind = "timestamp".to_owned();
-        invalid_info.event_replay.current_cursor.clear();
-        invalid_info.event_replay.earliest_sequence = 0;
-        invalid_info.profile.endpoint.url.clear();
-        invalid_info.profile.endpoint.canonical_url = Some(String::new());
-        invalid_info.profile.endpoint.host = Some(String::new());
-        let process = invalid_info
-            .profile
-            .process
-            .as_mut()
-            .expect("local-managed fixture should include process metadata");
-        process.pid = Some(0);
-        process.executable_path = Some(String::new());
-        process.working_directory = Some(String::new());
-        process.owner_window_id = Some(String::new());
-        process.platform = Some(String::new());
-        process.arch = Some(String::new());
-        invalid_info.profile.ownership = RuntimeOwnershipMode::Remote;
-        let info_error = validate_runtime_session_info_response(&invalid_info)
-            .expect_err("invalid session info should fail")
-            .to_string();
-        assert!(info_error.contains("skenion.runtime.session.info"));
-        assert!(info_error.contains("0.1.0"));
-        assert!(info_error.contains("sessionId must not be empty"));
-        assert!(info_error.contains("authPolicy must be deferred"));
-        assert!(info_error.contains("cursorKind must be sequence"));
-        assert!(info_error.contains("currentCursor must not be empty"));
-        assert!(info_error.contains("earliestSequence must be at least 1"));
-        assert!(info_error.contains("endpoint url must not be empty"));
-        assert!(info_error.contains("endpoint canonicalUrl must not be empty"));
-        assert!(info_error.contains("endpoint host must not be empty"));
-        assert!(info_error.contains("process pid must be at least 1"));
-        assert!(info_error.contains("process executablePath must not be empty"));
-        assert!(info_error.contains("process workingDirectory must not be empty"));
-        assert!(info_error.contains("process ownerWindowId must not be empty"));
-        assert!(info_error.contains("process platform must not be empty"));
-        assert!(info_error.contains("process arch must not be empty"));
-        assert!(info_error.contains("profile ownership must match"));
-
-        let shared = serde_json::from_value(json!({
-            "schema": "skenion.runtime.session.info",
-            "schemaVersion": "0.1.0",
-            "ok": true,
-            "sessionId": "session-b",
-            "lifecycle": "ready",
-            "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
-            "profile": {
-                "mode": "local-shared",
-                "ownership": "external",
-                "endpoint": { "url": "http://127.0.0.1:49232", "protocol": "http" },
-                "process": { "ownedByHost": false }
-            },
-            "capabilities": {
-                "sessionAddressing": true,
-                "eventReplay": true,
-                "multiWindow": true,
-                "profiles": ["local-shared"],
-                "authPolicy": "deferred"
-            },
-            "eventReplay": {
-                "cursorKind": "sequence",
-                "currentCursor": "1",
-                "earliestSequence": 1,
-                "latestSequence": 1,
-                "replayLimit": null
-            },
-            "diagnostics": []
-        }))
-        .expect("shared info should parse");
-        validate_runtime_session_info_response(&shared).expect("shared info should validate");
-
-        let remote = serde_json::from_value(json!({
-            "schema": "skenion.runtime.session.info",
-            "schemaVersion": "0.1.0",
-            "ok": true,
-            "sessionId": "session-c",
-            "lifecycle": "ready",
-            "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
-            "profile": {
-                "mode": "remote",
-                "ownership": "remote",
-                "endpoint": { "url": "https://runtime.example.test", "protocol": "https" },
-                "process": null
-            },
-            "capabilities": {
-                "sessionAddressing": true,
-                "eventReplay": true,
-                "multiWindow": true,
-                "profiles": ["remote"],
-                "authPolicy": "deferred"
-            },
-            "eventReplay": {
-                "cursorKind": "sequence",
-                "currentCursor": "1",
-                "earliestSequence": 1,
-                "latestSequence": 1,
-                "replayLimit": 512
-            },
-            "diagnostics": []
-        }))
-        .expect("remote info should parse");
-        validate_runtime_session_info_response(&remote).expect("remote info should validate");
-
-        let event = runtime_session_event();
-        validate_runtime_session_event(&event).expect("session event should validate");
-
-        let mut invalid_event = event.clone();
-        invalid_event.schema = "wrong".to_owned();
-        invalid_event.schema_version = "9.9.9".to_owned();
-        invalid_event.id.clear();
-        invalid_event.session_id.clear();
-        invalid_event.sequence = 0;
-        invalid_event.created_at.clear();
-        invalid_event.session_revision = 2;
-        invalid_event.snapshot.diagnostics.push(RuntimeDiagnostic {
-            severity: RuntimeDiagnosticSeverity::Warning,
-            message: String::new(),
-            code: None,
-            details: None,
-        });
-        invalid_event.snapshot.plan = Some(json!("opaque-plan"));
-        let graph = serde_json::to_value(base_graph()).expect("base graph should serialize");
-        let mut invalid_snapshot_project: ProjectDocumentV01 = serde_json::from_value(json!({
-            "schema": "skenion.project",
-            "schemaVersion": "0.1.0",
-            "id": "runtime-project",
-            "revision": "1",
-            "graph": graph,
-            "viewState": {
-                "schema": "skenion.view-state",
-                "schemaVersion": "0.1.0",
-                "canvas": {
-                    "nodes": {
-                        "source": { "x": 0, "y": 0 },
-                        "target": { "x": 120, "y": 0 }
-                    }
-                }
-            },
-            "patchLibrary": []
-        }))
-        .expect("snapshot project should parse");
-        invalid_snapshot_project.schema = "wrong".to_owned();
-        invalid_event.snapshot.project = Some(invalid_snapshot_project);
-        invalid_event.history.schema = "wrong".to_owned();
-        invalid_event.history.schema_version = "9.9.9".to_owned();
-        let invalid_runtime_operation = json!({
-            "schema": "wrong",
-            "schemaVersion": "9.9.9",
-            "id": "",
-            "kind": "loadProject",
-            "request": {
-                "target": {
-                    "path": { "kind": "root" },
-                    "baseRevision": "1"
-                },
-                "fragment": {
-                    "schema": "skenion.graph.fragment",
-                    "schemaVersion": "0.1.0",
-                    "nodes": [
-                        {
-                            "id": "",
-                            "kind": "",
-                            "kindVersion": "",
-                            "params": {},
-                            "ports": [
-                            {
-                                "id": "",
-                                "direction": "input",
-                                    "type": "control.number.float"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "",
-                            "kind": "core.float",
-                            "kindVersion": "0.1.0",
-                            "params": {},
-                            "ports": []
-                        }
-                    ],
-                    "edges": [
-                        {
-                            "id": "edge-missing-source",
-                            "source": { "nodeId": "missing", "portId": "out" },
-                            "target": { "nodeId": "", "portId": "" }
-                        }
-                    ]
-                }
-            }
-        });
-        let invalid_view_patch = json!({
-            "baseViewRevision": 0,
-            "ops": [
-                { "op": "setNodeView", "nodeId": "", "view": { "x": 0, "y": 0 } },
-                { "op": "moveNodeView", "nodeId": "", "from": { "x": 0, "y": 0 }, "to": { "x": 1, "y": 1 } }
-            ]
-        });
-        let invalid_entry: RuntimeHistoryEntry = serde_json::from_value(json!({
-            "id": "",
-            "sequence": 0,
-            "kind": "apply",
-            "mutation": {
-                "operation": invalid_runtime_operation,
-                "clientId": ""
-            },
-            "inverseMutation": {
-                "viewPatch": invalid_view_patch,
-                "clientId": ""
-            },
-            "subjectEventId": "",
-            "clientId": "",
-            "createdAt": ""
-        }))
-        .expect("invalid history entry should parse structurally");
-        invalid_event.history.entries.push(invalid_entry.clone());
-        invalid_event.mutation = Some(invalid_entry);
-        invalid_event.replay.cursor.clear();
-        invalid_event.replay.previous_cursor = Some(String::new());
-        invalid_event.replay.gap = Some(RuntimeEventReplayGap {
-            expected_sequence: 0,
-            actual_sequence: 0,
-            reason: RuntimeEventReplayGapReason::Unknown,
-        });
-        let event_error = validate_runtime_session_event(&invalid_event)
-            .expect_err("invalid session event should fail")
-            .to_string();
-        let expected_messages = [
-            "skenion.runtime.session.event",
-            "0.1.0",
-            "event id must not be empty",
-            "sessionId must not be empty",
-            "sequence must be at least 1",
-            "createdAt must not be empty",
-            "snapshot project expected schema skenion.project",
-            "snapshot diagnostics must include non-empty message",
-            "snapshot plan must be an object or null",
-            "expected history schema skenion.runtime.history",
-            "expected history schemaVersion 0.1.0",
-            "history entry id must not be empty",
-            "history entry sequence must be at least 1",
-            "history entry createdAt must not be empty",
-            "history entry subjectEventId must not be empty",
-            "history entry clientId must not be empty",
-            "history entry mutation operation expected schema skenion.runtime.operation",
-            "history entry mutation operation expected schemaVersion 0.1.0",
-            "history entry mutation operation runtime operation id must not be empty",
-            "history entry mutation operation unsupported runtime operation kind",
-            "history entry mutation operation duplicate-node-id",
-            "history entry mutation operation fragment-edge-outside-selection",
-            "history entry mutation clientId must not be empty",
-            "history entry inverseMutation viewPatch operation nodeId must not be empty",
-            "history entry inverseMutation clientId must not be empty",
-            "mutation id must not be empty",
-            "mutation mutation operation expected schema skenion.runtime.operation",
-            "mutation mutation operation duplicate-node-id",
-            "mutation mutation clientId must not be empty",
-            "mutation inverseMutation viewPatch operation nodeId must not be empty",
-            "mutation inverseMutation clientId must not be empty",
-            "replay cursor must not be empty",
-            "replay previousCursor must not be empty",
-            "replay gap sequences must be at least 1",
-            "expectedSequence must be less than actualSequence",
-            "sessionRevision must match",
-        ];
-        let missing_messages = expected_messages
-            .iter()
-            .copied()
-            .filter(|expected| !event_error.contains(expected))
-            .collect::<Vec<_>>();
-        assert!(missing_messages.is_empty(), "{missing_messages:?}");
     }
 
     #[test]
@@ -6676,7 +5066,7 @@ mod tests {
             port_groups: Some(vec![super::super::PortGroupSpecV01 {
                 id: "bad".to_owned(),
                 direction: PortDirectionV01::Input,
-                port_type: "control.number.float".to_owned(),
+                port_type: "value.core.float64".to_owned(),
                 min_ports: 2,
                 label: None,
                 rate: None,

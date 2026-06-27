@@ -1,0 +1,13 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.audio.phasor",
+  "summary": "Pd-style phasor~ ramp generator.",
+  "description": "Phasor is a stateful phase ramp generator used to build saw-like shapes and phase-domain patches.",
+  "helpGraph": "help/v0.1/nodes/object.core.audio.phasor.help.graph.json",
+  "tags": [
+    "audio",
+    "pd"
+  ],
+  "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+}

@@ -33,7 +33,7 @@
         "nodes": [
           {
             "id": "left_in",
-            "kind": "core.inlet",
+            "kind": "object.core.inlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "left",
@@ -43,7 +43,7 @@
               {
                 "id": "out",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Left input value."
               }
@@ -51,7 +51,7 @@
           },
           {
             "id": "right_in",
-            "kind": "core.inlet",
+            "kind": "object.core.inlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "right",
@@ -61,7 +61,7 @@
               {
                 "id": "out",
                 "direction": "output",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Right input value."
               }
@@ -69,7 +69,7 @@
           },
           {
             "id": "sum_out",
-            "kind": "core.outlet",
+            "kind": "object.core.outlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "sum",
@@ -79,7 +79,7 @@
               {
                 "id": "in",
                 "direction": "input",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "mergePolicy": "latest",
                 "maxConnections": null,
@@ -89,7 +89,7 @@
           },
           {
             "id": "difference_out",
-            "kind": "core.outlet",
+            "kind": "object.core.outlet",
             "kindVersion": "0.1.0",
             "params": {
               "portId": "difference",
@@ -99,7 +99,7 @@
               {
                 "id": "in",
                 "direction": "input",
-                "type": "control.number.float",
+                "type": "value.core.float64",
                 "rate": "control",
                 "description": "Difference output."
               }
@@ -117,7 +117,7 @@
               "nodeId": "sum_out",
               "portId": "in"
             },
-            "resolvedType": "control.number.float",
+            "resolvedType": "value.core.float64",
             "order": 0
           },
           {
@@ -130,7 +130,7 @@
               "nodeId": "sum_out",
               "portId": "in"
             },
-            "resolvedType": "control.number.float",
+            "resolvedType": "value.core.float64",
             "order": 1
           },
           {
@@ -143,7 +143,7 @@
               "nodeId": "difference_out",
               "portId": "in"
             },
-            "resolvedType": "control.number.float"
+            "resolvedType": "value.core.float64"
           }
         ]
       },

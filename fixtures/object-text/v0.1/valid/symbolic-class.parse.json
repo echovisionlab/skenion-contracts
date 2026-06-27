@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[frobnicate]",
+  "ok": true,
+  "className": "frobnicate",
+  "creationArgs": [],
+  "resolvedKind": null,
+  "resolvedKindVersion": null,
+  "params": {},
+  "instancePorts": [],
+  "displayText": "frobnicate",
+  "diagnostics": []
+}

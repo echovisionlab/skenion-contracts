@@ -12,11 +12,11 @@
         {
           "id": "out",
           "direction": "output",
-          "type": "event.bang",
+          "type": "value.core.bang",
           "rate": "event"
         }
       ],
-      "kind": "core.bang"
+      "kind": "object.core.bang"
     },
     {
       "id": "button_b",
@@ -26,11 +26,11 @@
         {
           "id": "out",
           "direction": "output",
-          "type": "event.bang",
+          "type": "value.core.bang",
           "rate": "event"
         }
       ],
-      "kind": "core.bang"
+      "kind": "object.core.bang"
     },
     {
       "id": "event_log",
@@ -40,14 +40,14 @@
         {
           "id": "in",
           "direction": "input",
-          "type": "event.bang",
+          "type": "value.core.bang",
           "rate": "event",
           "maxConnections": 2,
           "mergePolicy": "ordered-events",
           "triggerMode": "trigger"
         }
       ],
-      "kind": "core.message"
+      "kind": "object.core.message"
     }
   ],
   "edges": [
@@ -61,7 +61,7 @@
         "nodeId": "event_log",
         "portId": "in"
       },
-      "resolvedType": "event.bang",
+      "resolvedType": "value.core.bang",
       "order": 0
     },
     {
@@ -74,7 +74,7 @@
         "nodeId": "event_log",
         "portId": "in"
       },
-      "resolvedType": "event.bang",
+      "resolvedType": "value.core.bang",
       "order": 1
     }
   ]

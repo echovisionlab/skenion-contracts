@@ -86,12 +86,12 @@ function derivedPatchBoundaryPortIds(patch) {
   const portIds = [];
 
   for (const node of patch.graph.nodes) {
-    if (node.kind === "core.inlet") {
+    if (node.kind === "object.core.inlet") {
       const ports = node.ports.filter((port) => port.direction === "output");
       for (const port of ports) {
         portIds.push(boundaryPortId(node, port, ports.length));
       }
-    } else if (node.kind === "core.outlet") {
+    } else if (node.kind === "object.core.outlet") {
       const ports = node.ports.filter((port) => port.direction === "input");
       for (const port of ports) {
         portIds.push(boundaryPortId(node, port, ports.length));
@@ -240,56 +240,6 @@ function validateProjectV01Semantics(file, project) {
     if (binding.target.packageId !== lockEntry.packageId) {
       fail(file, `object binding ${binding.id} packageId ${binding.target.packageId} does not match lock entry package ${lockEntry.packageId}`);
     }
-  }
-}
-
-function requiresRuntimeNodeDefinition(kind) {
-  return kind !== "core.inlet" && kind !== "core.outlet";
-}
-
-function validateRuntimeProjectRequestSemantics(file, request) {
-  validateProjectV01Semantics(file, request);
-
-  duplicateCheck(
-    file,
-    request.nodes.map((definition) => `${definition.id}@${definition.version}`),
-    "runtime project node definition"
-  );
-
-  const definitionKeys = new Set();
-  const versionsById = new Map();
-  for (const definition of request.nodes) {
-    validateNodeDefinitionV01Semantics(file, definition);
-    definitionKeys.add(`${definition.id}@${definition.version}`);
-    const versions = versionsById.get(definition.id) ?? new Set();
-    versions.add(definition.version);
-    versionsById.set(definition.id, versions);
-  }
-
-  const validateGraphNodes = (graph, label) => {
-    for (const node of graph.nodes) {
-      if (!requiresRuntimeNodeDefinition(node.kind)) {
-        continue;
-      }
-      const requiredKey = `${node.kind}@${node.kindVersion}`;
-      if (definitionKeys.has(requiredKey)) {
-        continue;
-      }
-
-      const providedVersions = versionsById.get(node.kind);
-      if (providedVersions?.size > 0) {
-        fail(
-          file,
-          `node definition version mismatch: ${requiredKey} (${label} node ${node.id}; provided versions: ${[...providedVersions].sort().join(", ")})`
-        );
-      }
-      fail(file, `missing node definition: ${requiredKey} (${label} node ${node.id})`);
-    }
-  };
-
-  validateGraphNodes(request.graph, "root graph");
-  for (const patch of request.patchLibrary) {
-    validateGraphNodes(patch.graph, `patch ${patch.id}`);
   }
 }
 
@@ -660,81 +610,186 @@ function edgeEnabled(edge) {
   return edge.enabled !== false;
 }
 
-function v01ControlMessagePortType(type) {
+function v01MessageValuePortType(type) {
   return [
-    "control.message.any",
-    "control.number.float",
-    "control.number.int",
-    "control.number.uint",
-    "control.bool",
-    "control.color",
-    "control.string"
+    "value.core.message",
+    "value.core.float64",
+    "value.core.int64",
+    "value.core.uint64",
+    "value.core.bool",
+    "value.core.color",
+    "value.core.string"
   ].includes(type);
 }
 
 function portTypeAccepts(source, target) {
-  if (target.type === "control.message.any" && v01ControlMessagePortType(source.type)) {
+  if (target.type === "value.core.message" && v01MessageValuePortType(source.type)) {
     return true;
   }
   return source.type === target.type || target.accepts?.includes(source.type) === true;
 }
 
-function legacyControlPortType(type) {
-  return [
+const firstPartyValueTypeIds = new Set([
+  "value.core.bang",
+  "value.core.bool",
+  "value.core.uint8",
+  "value.core.uint16",
+  "value.core.uint32",
+  "value.core.uint64",
+  "value.core.int8",
+  "value.core.int16",
+  "value.core.int32",
+  "value.core.int64",
+  "value.core.float8",
+  "value.core.float16",
+  "value.core.float32",
+  "value.core.float64",
+  "value.core.ufloat8",
+  "value.core.ufloat16",
+  "value.core.ufloat32",
+  "value.core.ufloat64",
+  "value.core.string",
+  "value.core.message",
+  "value.core.color",
+  "value.core.vector",
+  "value.core.matrix",
+  "value.core.tensor"
+]);
+
+const invalidValueTypeIds = new Set([
+  "value.core.float",
+  "value.core.int",
+  "value.core.uint",
+  "value.core.number",
+  "value.object.core",
+  "value.core.frame",
+  "value.core.symbol",
+  "value.media.asset",
+  "value.media.stream",
+  "value.media.video-stream",
+  "value.media.audio-stream",
+  "value.media.audio-sample",
+  "value.media.audio-frame",
+  "value.media.audio-buffer",
+  "value.media.image",
+  "value.media.matrix",
+  "value.media.render-frame",
+  "value.media.video-frame"
+]);
+
+function invalidPortValueType(type) {
+  if ([
     "message.any",
     "number.float",
     "number.int",
     "number.uint",
     "boolean",
     "color",
-    "string"
-  ].includes(type) || String(type).startsWith("value.") || String(type).startsWith("value<");
+    "string",
+    "control.number",
+    "control.message",
+    "control.message.any",
+    "event.bang",
+    "asset.video",
+    "asset.image",
+    "asset.audio",
+    "gpu.texture2d",
+    "video.frame",
+    "render.frame",
+    "stream.video.frame",
+    "signal.audio"
+  ].includes(type)) {
+    return true;
+  }
+  if (
+    String(type).startsWith("control.") ||
+    String(type).startsWith("event.") ||
+    String(type).startsWith("stream.") ||
+    String(type).startsWith("payload.") ||
+    String(type).startsWith("data.") ||
+    String(type).startsWith("selector.") ||
+    String(type).startsWith("value<")
+  ) {
+    return true;
+  }
+  if (invalidValueTypeIds.has(type)) {
+    return true;
+  }
+  if (
+    (String(type).startsWith("value.core.") || String(type).startsWith("value.media.")) &&
+    !firstPartyValueTypeIds.has(type)
+  ) {
+    return true;
+  }
+  return false;
 }
 
-function selectorAwareInputPort(port) {
+function payloadIdentityNodeKind(kind) {
+  return [
+    "value",
+    "data",
+    "payload",
+    "bool",
+    "string",
+    "object.core.bool",
+    "object.core.string",
+    "value.core.message",
+    "value.core.bang",
+    "value.core.string",
+    "value.core.string",
+    "value.core.string",
+    "value.core.tensor"
+  ].includes(kind) ||
+    String(kind).startsWith("value.") ||
+    String(kind).startsWith("data.") ||
+    String(kind).startsWith("payload.") ||
+    String(kind).startsWith("control.");
+}
+
+function messageKeyAwareInputPort(port) {
   return port.direction === "input" && (
-    port.type === "control.message.any" ||
-    port.accepts?.includes("control.message.any") === true
+    port.type === "value.core.message" ||
+    port.accepts?.includes("value.core.message") === true
   );
 }
 
-function validateMessageSelectorPolicy(file, port, label) {
-  if (!port.messageSelectors) {
-    if (selectorAwareInputPort(port)) {
-      fail(file, `${label} selector-aware input port requires messageSelectors`);
+function validateMessageKeyPolicy(file, port, label) {
+  if (!port.messageKeys) {
+    if (messageKeyAwareInputPort(port)) {
+      fail(file, `${label} message-key-aware input port requires messageKeys`);
     }
     return;
   }
-  const accepted = port.messageSelectors.accepted ?? [];
+  const accepted = port.messageKeys.accepted ?? [];
   if (accepted.length === 0) {
-    fail(file, `${label} messageSelectors.accepted must list at least one selector`);
+    fail(file, `${label} messageKeys.accepted must list at least one key`);
   }
   const acceptedSet = new Set(accepted);
   for (const field of ["silent", "trigger", "store", "emit"]) {
-    for (const selector of port.messageSelectors[field] ?? []) {
-      if (!acceptedSet.has(selector)) {
-        fail(file, `${label} messageSelectors.${field} selector ${selector} is not accepted`);
+    for (const key of port.messageKeys[field] ?? []) {
+      if (!acceptedSet.has(key)) {
+        fail(file, `${label} messageKeys.${field} key ${key} is not accepted`);
       }
     }
   }
-  if (port.messageSelectors.trigger?.includes("set")) {
-    fail(file, `${label} messageSelectors.trigger must not include set`);
+  if (port.messageKeys.trigger?.includes("set")) {
+    fail(file, `${label} messageKeys.trigger must not include set`);
   }
-  if (port.messageSelectors.emit?.includes("set")) {
-    fail(file, `${label} messageSelectors.emit must not include set`);
+  if (port.messageKeys.emit?.includes("set")) {
+    fail(file, `${label} messageKeys.emit must not include set`);
   }
   if (
     acceptedSet.has("set") &&
-    !port.messageSelectors.silent?.includes("set") &&
-    !port.messageSelectors.store?.includes("set")
+    !port.messageKeys.silent?.includes("set") &&
+    !port.messageKeys.store?.includes("set")
   ) {
-    fail(file, `${label} messageSelectors.set must be silent or store behavior`);
+    fail(file, `${label} messageKeys.set must be silent or store behavior`);
   }
 }
 
 function validateObjectTextParseResultSemantics(file, result) {
   for (const port of result.instancePorts ?? []) {
-    validateMessageSelectorPolicy(file, port, `objectText instancePort ${result.classSymbol}.${port.id}`);
+    validateMessageKeyPolicy(file, port, `objectText instancePort ${result.className}.${port.id}`);
   }
 }
 
@@ -752,19 +807,16 @@ function mergePolicy(port) {
   return port.mergePolicy ?? "forbid";
 }
 
-function typeFamily(type) {
-  return type.split(".")[0] ?? type;
+function immediateValueCyclePortType(type) {
+  return String(type).startsWith("value.core.");
 }
 
-function controlCyclePortType(type) {
-  return type === "event.bang" || v01ControlMessagePortType(type) || typeFamily(type) === "control";
-}
-
-function controlCycleTypes(edges, ports) {
+function immediateValueCycleTypes(edges, ports) {
   return edges.every((edge) => {
     const source = ports.get(portSpecKey(edge.source.nodeId, edge.source.portId));
     const target = ports.get(portSpecKey(edge.target.nodeId, edge.target.portId));
-    return controlCyclePortType(source?.type ?? "") && controlCyclePortType(target?.type ?? "");
+    return immediateValueCyclePortType(source?.type ?? "") &&
+      immediateValueCyclePortType(target?.type ?? "");
   });
 }
 
@@ -839,40 +891,43 @@ function validateGraphV01Semantics(file, graph) {
   const incoming = new Map();
   const outgoing = new Map();
   for (const node of graph.nodes) {
+    if (payloadIdentityNodeKind(node.kind)) {
+      fail(file, `node ${node.id} uses payload identity ${node.kind} as an executable kind`);
+    }
     duplicateCheck(
       file,
       node.ports.map((port) => port.id),
       `port id on ${node.id}`
     );
     for (const group of node.portGroups ?? []) {
-      if (legacyControlPortType(group.type)) {
-        fail(file, `port group ${node.id}.${group.id} uses legacy control port type ${group.type}`);
+      if (invalidPortValueType(group.type)) {
+        fail(file, `port group ${node.id}.${group.id} uses invalid value type ${group.type}`);
       }
-      if (legacyControlPortType(group.defaultPortSpec?.type ?? "")) {
-        fail(file, `port group ${node.id}.${group.id} default port uses legacy control port type ${group.defaultPortSpec.type}`);
+      if (invalidPortValueType(group.defaultPortSpec?.type ?? "")) {
+        fail(file, `port group ${node.id}.${group.id} default port uses invalid value type ${group.defaultPortSpec.type}`);
       }
       for (const acceptedType of group.defaultPortSpec?.accepts ?? []) {
-        if (legacyControlPortType(acceptedType)) {
-          fail(file, `port group ${node.id}.${group.id} default port accepts legacy control port type ${acceptedType}`);
+        if (invalidPortValueType(acceptedType)) {
+          fail(file, `port group ${node.id}.${group.id} default port accepts invalid value type ${acceptedType}`);
         }
       }
       if (group.defaultPortSpec) {
-        validateMessageSelectorPolicy(file, group.defaultPortSpec, `port group ${node.id}.${group.id} defaultPortSpec`);
+        validateMessageKeyPolicy(file, group.defaultPortSpec, `port group ${node.id}.${group.id} defaultPortSpec`);
       }
       if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
         fail(file, `port group ${node.id}.${group.id} maxPorts is less than minPorts`);
       }
     }
     for (const port of node.ports) {
-      if (legacyControlPortType(port.type)) {
-        fail(file, `port ${node.id}.${port.id} uses legacy control port type ${port.type}`);
+      if (invalidPortValueType(port.type)) {
+        fail(file, `port ${node.id}.${port.id} uses invalid value type ${port.type}`);
       }
       for (const acceptedType of port.accepts ?? []) {
-        if (legacyControlPortType(acceptedType)) {
-          fail(file, `port ${node.id}.${port.id} accepts legacy control port type ${acceptedType}`);
+        if (invalidPortValueType(acceptedType)) {
+          fail(file, `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`);
         }
       }
-      validateMessageSelectorPolicy(file, port, `port ${node.id}.${port.id}`);
+      validateMessageKeyPolicy(file, port, `port ${node.id}.${port.id}`);
       const key = portSpecKey(node.id, port.id);
       ports.set(key, port);
       incoming.set(key, []);
@@ -897,8 +952,8 @@ function validateGraphV01Semantics(file, graph) {
     const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
     const source = ports.get(sourceKey);
     const target = ports.get(targetKey);
-    if (legacyControlPortType(edge.resolvedType ?? "")) {
-      fail(file, `edge ${edge.id} uses legacy resolvedType ${edge.resolvedType}`);
+    if (invalidPortValueType(edge.resolvedType ?? "")) {
+      fail(file, `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`);
     }
     if (!source) {
       fail(file, `edge ${edge.id} references missing source port ${sourceKey}`);
@@ -952,8 +1007,8 @@ function validateGraphV01Semantics(file, graph) {
       continue;
     }
     const feedback = cycleEdges.find((edge) => edge.feedback?.enabled === true);
-    if (!feedback && controlCycleTypes(cycleEdges, ports)) {
-      fail(file, "ambiguous-algebraic-loop: control cycle requires explicit latch, delay, or feedback policy");
+    if (!feedback && immediateValueCycleTypes(cycleEdges, ports)) {
+      fail(file, "ambiguous-algebraic-loop: immediate value cycle requires explicit latch, delay, or feedback policy");
     }
     if (!feedback) {
       fail(file, "invalid-cycle: cycle requires explicit feedback policy");
@@ -971,21 +1026,24 @@ function validateGraphFragmentV01Semantics(file, fragment) {
   const nodeIds = new Set(fragment.nodes.map((node) => node.id));
   const ports = new Map();
   for (const node of fragment.nodes) {
+    if (payloadIdentityNodeKind(node.kind)) {
+      fail(file, `node ${node.id} uses payload identity ${node.kind} as an executable kind`);
+    }
     duplicateCheck(
       file,
       node.ports.map((port) => port.id),
       `port id on ${node.id}`
     );
     for (const port of node.ports) {
-      if (legacyControlPortType(port.type)) {
-        fail(file, `port ${node.id}.${port.id} uses legacy control port type ${port.type}`);
+      if (invalidPortValueType(port.type)) {
+        fail(file, `port ${node.id}.${port.id} uses invalid value type ${port.type}`);
       }
       for (const acceptedType of port.accepts ?? []) {
-        if (legacyControlPortType(acceptedType)) {
-          fail(file, `port ${node.id}.${port.id} accepts legacy control port type ${acceptedType}`);
+        if (invalidPortValueType(acceptedType)) {
+          fail(file, `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`);
         }
       }
-      validateMessageSelectorPolicy(file, port, `port ${node.id}.${port.id}`);
+      validateMessageKeyPolicy(file, port, `port ${node.id}.${port.id}`);
       ports.set(portSpecKey(node.id, port.id), port);
     }
   }
@@ -1004,8 +1062,8 @@ function validateGraphFragmentV01Semantics(file, fragment) {
     const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
     const source = ports.get(sourceKey);
     const target = ports.get(targetKey);
-    if (legacyControlPortType(edge.resolvedType ?? "")) {
-      fail(file, `edge ${edge.id} uses legacy resolvedType ${edge.resolvedType}`);
+    if (invalidPortValueType(edge.resolvedType ?? "")) {
+      fail(file, `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`);
     }
     if (!source) {
       fail(file, `edge ${edge.id} references missing source port ${sourceKey}`);
@@ -1033,19 +1091,19 @@ function validateNodeDefinitionV01Semantics(file, definition) {
   );
 
   for (const group of definition.portGroups ?? []) {
-    if (legacyControlPortType(group.type)) {
-      fail(file, `legacy port group type on ${definition.id}.${group.id}: ${group.type}`);
+    if (invalidPortValueType(group.type)) {
+      fail(file, `invalid port group type on ${definition.id}.${group.id}: ${group.type}`);
     }
-    if (legacyControlPortType(group.defaultPortSpec?.type ?? "")) {
-      fail(file, `legacy default port type on ${definition.id}.${group.id}: ${group.defaultPortSpec.type}`);
+    if (invalidPortValueType(group.defaultPortSpec?.type ?? "")) {
+      fail(file, `invalid default value type on ${definition.id}.${group.id}: ${group.defaultPortSpec.type}`);
     }
     for (const acceptedType of group.defaultPortSpec?.accepts ?? []) {
-      if (legacyControlPortType(acceptedType)) {
-        fail(file, `legacy default accepted port type on ${definition.id}.${group.id}: ${acceptedType}`);
+      if (invalidPortValueType(acceptedType)) {
+        fail(file, `invalid default accepted value type on ${definition.id}.${group.id}: ${acceptedType}`);
       }
     }
     if (group.defaultPortSpec) {
-      validateMessageSelectorPolicy(file, group.defaultPortSpec, `port group ${definition.id}.${group.id} defaultPortSpec`);
+      validateMessageKeyPolicy(file, group.defaultPortSpec, `port group ${definition.id}.${group.id} defaultPortSpec`);
     }
     if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
       fail(file, `port group ${definition.id}.${group.id} maxPorts is less than minPorts`);
@@ -1053,150 +1111,21 @@ function validateNodeDefinitionV01Semantics(file, definition) {
   }
 
   for (const port of definition.ports) {
-    if (legacyControlPortType(port.type)) {
-      fail(file, `legacy port type on ${definition.id}.${port.id}: ${port.type}`);
+    if (invalidPortValueType(port.type)) {
+      fail(file, `invalid value type on ${definition.id}.${port.id}: ${port.type}`);
     }
     for (const acceptedType of port.accepts ?? []) {
-      if (legacyControlPortType(acceptedType)) {
-        fail(file, `legacy accepted port type on ${definition.id}.${port.id}: ${acceptedType}`);
+      if (invalidPortValueType(acceptedType)) {
+        fail(file, `invalid accepted value type on ${definition.id}.${port.id}: ${acceptedType}`);
       }
     }
-    validateMessageSelectorPolicy(file, port, `port ${definition.id}.${port.id}`);
+    validateMessageKeyPolicy(file, port, `port ${definition.id}.${port.id}`);
   }
 
   for (const permission of definition.permissions) {
     if (!allowedNodePermissions.has(permission)) {
       fail(file, `unsupported permission: ${permission}`);
     }
-  }
-}
-
-function validateRuntimeSessionEventSemantics(file, event) {
-  const gap = event.replay?.gap;
-  if (gap && gap.expectedSequence >= gap.actualSequence) {
-    fail(file, "replay gap expectedSequence must be less than actualSequence");
-  }
-  if (event.sessionRevision !== event.snapshot?.sessionRevision) {
-    fail(file, "sessionRevision must match snapshot.sessionRevision");
-  }
-}
-
-function validateRuntimeCollaborationCausality(file, causal, label) {
-  const maxVector = Math.max(...Object.values(causal.vector));
-  if (causal.baseSequence < maxVector) {
-    fail(file, `${label} baseSequence must be greater than or equal to the causal vector maximum`);
-  }
-}
-
-function validateRuntimeCollaborationAuthSeparation(file, participantId, authSubject, label) {
-  if (authSubject?.subjectId && authSubject.subjectId === participantId) {
-    fail(file, `${label} participantId must not mirror auth subject id`);
-  }
-}
-
-function validateRuntimeCollaborationExpiry(file, updatedAt, expiresAt, label) {
-  if (expiresAt <= updatedAt) {
-    fail(file, `${label} expiresAt must be later than updatedAt`);
-  }
-}
-
-function validateRuntimeCollaborationOperationEnvelopeSemantics(file, operation) {
-  validateRuntimeCollaborationCausality(file, operation.causal, "operation causal");
-  validateRuntimeCollaborationAuthSeparation(file, operation.participantId, operation.authSubject, "operation");
-  if (!(operation.participantId in operation.causal.vector)) {
-    fail(file, "operation causal vector must include participantId");
-  }
-  if (operation.payload.kind === "changeSet") {
-    duplicateCheck(
-      file,
-      operation.payload.changes.map((change) => change.changeId),
-      "collaboration change id"
-    );
-  }
-  if (operation.payload.kind === "pasteGraphFragment") {
-    validateGraphFragmentV01Semantics(file, operation.payload.request.fragment);
-  }
-  if (
-    operation.payload.kind === "undoRedo" &&
-    operation.payload.scope.participantId !== operation.participantId
-  ) {
-    fail(file, "undoRedo scope participantId must match operation participantId");
-  }
-}
-
-function validateRuntimeCollaborationOperationBatchSemantics(file, batch) {
-  duplicateCheck(
-    file,
-    batch.operations.map((operation) => operation.idempotencyKey),
-    "collaboration idempotency key"
-  );
-  for (const operation of batch.operations) {
-    if (operation.sessionId !== batch.sessionId) {
-      fail(file, "collaboration batch operation sessionId must match batch sessionId");
-    }
-    validateRuntimeCollaborationOperationEnvelopeSemantics(file, operation);
-  }
-}
-
-function validateRuntimeCollaborationOperationResultSemantics(file, result) {
-  validateRuntimeCollaborationCausality(file, result.causal, "operation result causal");
-  if ((result.status === "accepted" || result.status === "rebased") && !result.ack) {
-    fail(file, "accepted or rebased collaboration result must include ack");
-  }
-  if (result.status === "accepted" && (result.nack || result.rebase)) {
-    fail(file, "accepted collaboration result must not include nack or rebase");
-  }
-  if ((result.status === "duplicate" || result.status === "rejected") && !result.nack) {
-    fail(file, "duplicate or rejected collaboration result must include nack");
-  }
-  if (result.status === "duplicate" && result.nack?.reason !== "duplicate-idempotency-key") {
-    fail(file, "duplicate collaboration result nack reason must be duplicate-idempotency-key");
-  }
-  if (result.status === "rebased" && !result.rebase) {
-    fail(file, "rebased collaboration result must include rebase metadata");
-  }
-  if (result.rebase) {
-    validateRuntimeCollaborationCausality(file, result.rebase.from, "rebase from causal");
-    validateRuntimeCollaborationCausality(file, result.rebase.to, "rebase to causal");
-  }
-}
-
-function validateRuntimeCollaborationOperationBatchResultSemantics(file, result) {
-  duplicateCheck(
-    file,
-    result.results.map((operationResult) => operationResult.idempotencyKey),
-    "collaboration batch result idempotency key"
-  );
-  for (const operationResult of result.results) {
-    if (operationResult.sessionId !== result.sessionId) {
-      fail(file, "collaboration batch result operation sessionId must match batch result sessionId");
-    }
-    validateRuntimeCollaborationOperationResultSemantics(file, operationResult);
-  }
-}
-
-function validateRuntimeCollaborationPresenceSemantics(file, presence) {
-  validateRuntimeCollaborationAuthSeparation(file, presence.participantId, presence.authSubject, "presence");
-  validateRuntimeCollaborationExpiry(file, presence.updatedAt, presence.expiresAt, "presence");
-}
-
-function validateRuntimeCollaborationSelectionSemantics(file, selection) {
-  validateRuntimeCollaborationExpiry(file, selection.updatedAt, selection.expiresAt, "selection");
-}
-
-function validateRuntimeCollaborationEventSemantics(file, event) {
-  validateRuntimeCollaborationCausality(file, event.causal, "collaboration event causal");
-  const expectedPayloadKindByEventKind = {
-    "operation-result": "operationResult",
-    presence: "presence",
-    selection: "selection"
-  };
-  if (event.payload.kind !== expectedPayloadKindByEventKind[event.kind]) {
-    fail(file, "collaboration event kind must match payload kind");
-  }
-  const gap = event.replay?.gap;
-  if (gap && gap.expectedSequence >= gap.actualSequence) {
-    fail(file, "collaboration event replay gap expectedSequence must be less than actualSequence");
   }
 }
 
@@ -1266,47 +1195,11 @@ function validateCompatibilityMatrixSemantics(file, matrix) {
 }
 
 function selectValidator(file, document, validators) {
-  if (isRuntimeProjectRequestFixture(file)) {
-    return validators.runtimeProjectRequestV0;
-  }
   if (document.schema === "skenion.graph" && document.schemaVersion === "0.1.0") {
     return validators.graphV01;
   }
   if (document.schema === "skenion.graph.fragment" && document.schemaVersion === "0.1.0") {
     return validators.graphFragmentV01;
-  }
-  if (document.schema === "skenion.runtime.operation" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeOperationV0;
-  }
-  if (document.schema === "skenion.runtime.session.info" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeSessionInfo;
-  }
-  if (document.schema === "skenion.runtime.session.event" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeSessionEvent;
-  }
-  if (document.schema === "skenion.runtime.paste-graph-fragment.response" && document.schemaVersion === "0.1.0") {
-    return validators.pasteGraphFragmentResponse;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperation;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperationBatch;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch-result" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperationBatchResult;
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-result" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationOperationResult;
-  }
-  if (document.schema === "skenion.runtime.collaboration.presence" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationPresence;
-  }
-  if (document.schema === "skenion.runtime.collaboration.selection" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationSelection;
-  }
-  if (document.schema === "skenion.runtime.collaboration.event" && document.schemaVersion === "0.1.0") {
-    return validators.runtimeCollaborationEvent;
   }
   if (document.schema === "skenion.view-state" && document.schemaVersion === "0.1.0") {
     return validators.viewStateV01;
@@ -1366,37 +1259,6 @@ function validateDocument(file, document, validators) {
   if (document.schema === "skenion.graph.fragment" && document.schemaVersion === "0.1.0") {
     validateGraphFragmentV01Semantics(file, document);
   }
-  if (isRuntimeProjectRequestFixture(file)) {
-    validateRuntimeProjectRequestSemantics(file, document);
-    return;
-  }
-  if (document.schema === "skenion.runtime.operation" && document.schemaVersion === "0.1.0") {
-    validateGraphFragmentV01Semantics(file, document.request.fragment);
-  }
-  if (document.schema === "skenion.runtime.session.event" && document.schemaVersion === "0.1.0") {
-    validateRuntimeSessionEventSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationEnvelopeSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationBatchSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-batch-result" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationBatchResultSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.operation-result" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationOperationResultSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.presence" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationPresenceSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.selection" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationSelectionSemantics(file, document);
-  }
-  if (document.schema === "skenion.runtime.collaboration.event" && document.schemaVersion === "0.1.0") {
-    validateRuntimeCollaborationEventSemantics(file, document);
-  }
   if (document.schema === "skenion.project" && document.schemaVersion === "0.1.0") {
     validateProjectV01Semantics(file, document);
   }
@@ -1436,7 +1298,7 @@ function validateDocument(file, document, validators) {
   }
 }
 
-function validateBuiltinManifest(file, manifest) {
+function validateBuiltinFixtureManifest(file, manifest) {
   if (manifest.schema !== "skenion.builtins.manifest") {
     fail(file, "schema must be skenion.builtins.manifest");
   }
@@ -1446,6 +1308,9 @@ function validateBuiltinManifest(file, manifest) {
   if (manifest.version !== "0.1") {
     fail(file, "version must be 0.1");
   }
+  if (manifest.scope !== "fixture-reference") {
+    fail(file, "scope must be fixture-reference");
+  }
   if (!Array.isArray(manifest.nodes) || manifest.nodes.length === 0) {
     fail(file, "nodes must be a non-empty array");
   }
@@ -1454,13 +1319,13 @@ function validateBuiltinManifest(file, manifest) {
   }
 
   for (const node of manifest.nodes) {
-    requireString(file, node, "node id");
+    requireString(file, node, "fixture node id");
   }
   for (const type of manifest.canonicalTypes) {
     requireString(file, type, "canonical type");
   }
 
-  duplicateCheck(file, manifest.nodes, "builtin node id");
+  duplicateCheck(file, manifest.nodes, "fixture node id");
   duplicateCheck(file, manifest.canonicalTypes, "canonical type");
 
   for (const [type, representations] of Object.entries(manifest.representations ?? {})) {
@@ -1477,13 +1342,16 @@ function validateBuiltinManifest(file, manifest) {
   }
 }
 
-function validateBuiltinNodeDefinition(file, definition, id, manifest) {
+function validateBuiltinFixtureNodeDefinition(file, definition, id, manifest) {
   validateDocument(file, definition, validators);
   if (definition.id !== id) {
-    fail(file, `node definition id ${definition.id} does not match canonical id ${id}`);
+    fail(file, `node definition id ${definition.id} does not match fixture id ${id}`);
+  }
+  if (payloadIdentityNodeKind(definition.id)) {
+    fail(file, `payload identity node definition id: ${definition.id}`);
   }
   if (!manifest.nodes.includes(definition.id)) {
-    fail(file, `node definition is not listed in builtins manifest: ${definition.id}`);
+    fail(file, `node definition is not listed in fixture manifest: ${definition.id}`);
   }
 
   const canonicalTypes = new Set(manifest.canonicalTypes);
@@ -1499,7 +1367,7 @@ function validateBuiltinNodeDefinition(file, definition, id, manifest) {
   }
 }
 
-function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
+function validateBuiltinFixtureHelp(file, help, id, manifest, nodeDefinitions) {
   if (help.schema !== "skenion.node.help") {
     fail(file, "schema must be skenion.node.help");
   }
@@ -1507,7 +1375,7 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
     fail(file, "schemaVersion must be 0.1.0");
   }
   if (help.id !== id) {
-    fail(file, `help id ${help.id} does not match canonical id ${id}`);
+    fail(file, `help id ${help.id} does not match fixture id ${id}`);
   }
   for (const key of ["summary", "description", "helpGraph"]) {
     requireString(file, help[key], key);
@@ -1520,7 +1388,7 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
   }
   duplicateCheck(file, help.tags, "help tag");
   if (!manifest.nodes.includes(help.id)) {
-    fail(file, `help is not listed in builtins manifest: ${help.id}`);
+    fail(file, `help is not listed in fixture manifest: ${help.id}`);
   }
   const expectedHelpGraph = `help/v0.1/nodes/${id}.help.graph.json`;
   if (help.helpGraph !== expectedHelpGraph) {
@@ -1531,7 +1399,7 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
   }
   for (const relatedNode of help.relatedNodes ?? []) {
     if (!manifest.nodes.includes(relatedNode)) {
-      fail(file, `related node is not listed in builtins manifest: ${relatedNode}`);
+      fail(file, `related node is not listed in fixture manifest: ${relatedNode}`);
     }
   }
 
@@ -1546,15 +1414,15 @@ function validateBuiltinHelp(file, help, id, manifest, nodeDefinitions) {
   }
 }
 
-function validateBuiltinHelpGraph(file, graph, id, manifest) {
+function validateBuiltinFixtureHelpGraph(file, graph, id, manifest) {
   validateDocument(file, graph, validators);
   if (graph.id !== `help-${id.replaceAll(".", "-")}`) {
     fail(file, `help graph id must be help-${id.replaceAll(".", "-")}`);
   }
-  const builtinKinds = new Set(manifest.nodes);
+  const fixtureKinds = new Set(manifest.nodes);
   for (const node of graph.nodes) {
-    if (!builtinKinds.has(node.kind)) {
-      fail(file, `help graph node ${node.id} uses non-canonical builtin kind ${node.kind}`);
+    if (!fixtureKinds.has(node.kind)) {
+      fail(file, `help graph fixture node ${node.id} uses kind ${node.kind} outside the fixture manifest`);
     }
     if (node.kindVersion !== "0.1.0") {
       fail(file, `help graph node ${node.id} kindVersion must be 0.1.0`);
@@ -1565,7 +1433,7 @@ function validateBuiltinHelpGraph(file, graph, id, manifest) {
 async function validateBuiltinsAndHelp() {
   const manifestFile = "builtins/v0.1/builtins.manifest.json";
   const manifest = await readJson(manifestFile);
-  validateBuiltinManifest(manifestFile, manifest);
+  validateBuiltinFixtureManifest(manifestFile, manifest);
 
   const nodeFiles = (await walk("builtins/v0.1/nodes"))
     .filter((file) => file.endsWith(".node.json"));
@@ -1577,26 +1445,26 @@ async function validateBuiltinsAndHelp() {
   const nodeIds = nodeFiles.map((file) => path.basename(file, ".node.json"));
   const helpIds = helpFiles.map((file) => path.basename(file, ".help.json"));
   const helpGraphIds = helpGraphFiles.map((file) => path.basename(file, ".help.graph.json"));
-  assertSameSet(manifestFile, nodeIds, manifest.nodes, "builtin node file ids");
-  assertSameSet(manifestFile, helpIds, manifest.nodes, "builtin help file ids");
-  assertSameSet(manifestFile, helpGraphIds, manifest.nodes, "builtin help graph file ids");
+  assertSameSet(manifestFile, nodeIds, manifest.nodes, "fixture node file ids");
+  assertSameSet(manifestFile, helpIds, manifest.nodes, "fixture help file ids");
+  assertSameSet(manifestFile, helpGraphIds, manifest.nodes, "fixture help graph file ids");
 
   const nodeDefinitions = new Map();
   for (const file of nodeFiles) {
     const id = path.basename(file, ".node.json");
     const definition = await readJson(file);
-    validateBuiltinNodeDefinition(file, definition, id, manifest);
+    validateBuiltinFixtureNodeDefinition(file, definition, id, manifest);
     nodeDefinitions.set(definition.id, definition);
   }
 
   for (const file of helpFiles) {
     const id = path.basename(file, ".help.json");
-    validateBuiltinHelp(file, await readJson(file), id, manifest, nodeDefinitions);
+    validateBuiltinFixtureHelp(file, await readJson(file), id, manifest, nodeDefinitions);
   }
 
   for (const file of helpGraphFiles) {
     const id = path.basename(file, ".help.graph.json");
-    validateBuiltinHelpGraph(file, await readJson(file), id, manifest);
+    validateBuiltinFixtureHelpGraph(file, await readJson(file), id, manifest);
   }
 
   return {
@@ -1629,10 +1497,6 @@ function normalizedPath(file) {
   return file.split(path.sep).join("/");
 }
 
-function isRuntimeProjectRequestFixture(file) {
-  return normalizedPath(file).startsWith("fixtures/runtime-project/v0/");
-}
-
 function isExplicitlyLoadedSchemaFile(file) {
   const normalized = normalizedPath(file);
   return [
@@ -1652,15 +1516,9 @@ for (const file of schemaFiles) {
   await readJson(file);
 }
 
-await readFile("openapi/runtime-http.v0.yaml", "utf8");
-
 const ajv = new Ajv2020({ allErrors: true });
 const graphV01Schema = await readJson("json-schema/graph/v0.1/graph.schema.json");
 const graphFragmentV01Schema = await readJson("json-schema/graph/v0.1/fragment.schema.json");
-const runtimeProjectRequestV0Schema = await readJson("json-schema/runtime/v0/project-request.schema.json");
-const runtimeOperationV0Schema = await readJson("json-schema/runtime/v0/operation.schema.json");
-const runtimeSessionV0Schema = await readJson("json-schema/runtime/v0/session.schema.json");
-const runtimeCollaborationV0Schema = await readJson("json-schema/runtime/v0/collaboration.schema.json");
 const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.schema.json");
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
@@ -1673,67 +1531,15 @@ const packageInstallPlanResponseV01Schema = await readJson("json-schema/package/
 const compatibilityMatrixV01Schema = await readJson("json-schema/compatibility-matrix/v0.1/compatibility-matrix.schema.json");
 ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
-ajv.addSchema(runtimeProjectRequestV0Schema);
-ajv.addSchema(runtimeOperationV0Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(projectV01Schema);
-ajv.addSchema(runtimeSessionV0Schema);
-ajv.addSchema(runtimeCollaborationV0Schema);
 ajv.addSchema(packageListingV01Schema);
 ajv.addSchema(packageInstallPlanRequestV01Schema);
 ajv.addSchema(compatibilityMatrixV01Schema);
 const validators = {
   graphV01: ajv.compile(graphV01Schema),
   graphFragmentV01: ajv.compile(graphFragmentV01Schema),
-  runtimeProjectRequestV0: ajv.compile(runtimeProjectRequestV0Schema),
-  runtimeOperationV0: ajv.compile(runtimeOperationV0Schema),
-  runtimeSessionInfo: ajv.compile(runtimeSessionV0Schema),
-  runtimeSessionEvent: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/session-event.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/session.schema.json#/$defs/runtimeSessionEvent"
-  }),
-  pasteGraphFragmentResponse: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-response.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
-  }),
-  runtimeCollaborationOperation: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationEnvelope"
-  }),
-  runtimeCollaborationOperationBatch: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatch"
-  }),
-  runtimeCollaborationOperationBatchResult: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch-result.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatchResult"
-  }),
-  runtimeCollaborationOperationResult: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-result.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationResult"
-  }),
-  runtimeCollaborationPresence: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-presence.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationPresenceEnvelope"
-  }),
-  runtimeCollaborationSelection: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-selection.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationSelectionEnvelope"
-  }),
-  runtimeCollaborationEvent: ajv.compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://skenion.dev/schemas/runtime/v0/collaboration-event.fixture.schema.json",
-    $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationEventEnvelope"
-  }),
   viewStateV01: ajv.compile(viewStateV01Schema),
   projectV01: ajv.compile(projectV01Schema),
   nodeDefinitionV01: ajv.compile(nodeDefinitionV01Schema),
@@ -1774,5 +1580,5 @@ const builtinsSummary = await validateBuiltinsAndHelp();
 const docCount = await validatePublicDocs();
 
 console.log(
-  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinsSummary.nodeCount} builtin node definitions, ${builtinsSummary.helpCount} help files, ${builtinsSummary.helpGraphCount} help graphs, and ${docCount} public docs`
+  `validated ${schemaFiles.length} schemas, ${validFixtureFiles.length} valid fixtures, ${invalidFixtureFiles.length} invalid fixtures, ${builtinsSummary.nodeCount} builtin fixture node definitions, ${builtinsSummary.helpCount} fixture help files, ${builtinsSummary.helpGraphCount} fixture help graphs, and ${docCount} public docs`
 );

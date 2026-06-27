@@ -77,10 +77,10 @@ function deriveBoundaryPorts(
 
 export function derivePatchContractV01(patch: PatchDefinitionV01): PatchContractV01 {
   const ports = patch.graph.nodes.flatMap((node): PatchContractPortV01[] => {
-    if (node.kind === "core.inlet") {
+    if (node.kind === "object.core.inlet") {
       return deriveBoundaryPorts(node, "output", "input");
     }
-    if (node.kind === "core.outlet") {
+    if (node.kind === "object.core.outlet") {
       return deriveBoundaryPorts(node, "input", "output");
     }
     return [];

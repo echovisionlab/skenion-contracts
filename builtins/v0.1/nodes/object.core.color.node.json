@@ -1,0 +1,59 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.color",
+  "version": "0.1.0",
+  "displayName": "Color",
+  "category": "Typed Controls",
+  "ports": [
+    {
+      "id": "in",
+      "direction": "input",
+      "label": "In",
+      "type": "value.core.message",
+      "required": false,
+      "accepts": [
+        "value.core.color",
+        "value.core.bang"
+      ],
+      "triggerMode": "trigger",
+      "messageKeys": {
+        "accepted": ["bang", "set", "color"],
+        "silent": ["set"],
+        "trigger": ["bang", "color"],
+        "store": ["set", "color"],
+        "emit": ["bang", "color"]
+      },
+      "latch": true
+    },
+    {
+      "id": "cold",
+      "direction": "input",
+      "label": "Cold",
+      "type": "value.core.color",
+      "required": false,
+      "accepts": [
+        "value.core.color"
+      ],
+      "triggerMode": "passive",
+      "latch": true
+    },
+    {
+      "id": "value",
+      "direction": "output",
+      "label": "Color",
+      "type": "value.core.color"
+    }
+  ],
+  "execution": {
+    "model": "control"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [],
+  "surface": {
+    "palette": "direct"
+  }
+}

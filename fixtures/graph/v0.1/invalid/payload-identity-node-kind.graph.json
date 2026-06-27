@@ -1,0 +1,61 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "payload-identity-node-kind",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "float_payload",
+      "kind": "value.core.float64",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "value",
+          "direction": "output",
+          "type": "value.core.float64"
+        }
+      ]
+    },
+    {
+      "id": "video_payload",
+      "kind": "value.core.string",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "asset",
+          "direction": "output",
+          "type": "value.core.string"
+        }
+      ]
+    },
+    {
+      "id": "bool_payload",
+      "kind": "value.core.bool",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "value",
+          "direction": "output",
+          "type": "value.core.bool"
+        }
+      ]
+    },
+    {
+      "id": "string_payload",
+      "kind": "value.core.string",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "value",
+          "direction": "output",
+          "type": "value.core.string"
+        }
+      ]
+    }
+  ],
+  "edges": []
+}

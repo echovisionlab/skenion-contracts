@@ -1,0 +1,39 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.audio.input",
+  "version": "0.1.0",
+  "displayName": "Audio Input",
+  "category": "Audio",
+  "ports": [
+    {
+      "id": "left",
+      "direction": "output",
+      "label": "Left",
+      "type": "value.core.float32",
+      "rate": "audio"
+    },
+    {
+      "id": "right",
+      "direction": "output",
+      "label": "Right",
+      "type": "value.core.float32",
+      "rate": "audio"
+    }
+  ],
+  "execution": {
+    "model": "audio_block",
+    "clock": "audio"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "object.core.audio.input.v0.1",
+    "pd.audio.v0.1"
+  ],
+  "surface": {
+    "palette": "direct"
+  }
+}

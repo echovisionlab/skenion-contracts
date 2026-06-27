@@ -2,39 +2,31 @@ use skenion_contracts::{
     AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01, AudioClockDomainV01,
     CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
     ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, CompatibilityMatrixV01,
-    DataFlowV01, DataTypeV01, ExtensionKindV01, ExtensionManifestV01, GraphDocumentV01,
-    GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, MidiClockMessageKindV01,
-    MidiClockMessageV01, MidiClockSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01,
-    ObjectTextParseResultV01, PackageCategoryV01, PackageDiscoveryResponseV01,
-    PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
-    PackageInstallPlanDiagnosticCodeV01, PackageInstallPlanIntentV01, PackageInstallPlanRequestV01,
-    PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01,
-    PackageListingArtifactKindV01, PackageListingDiagnosticCodeV01,
-    PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
-    PackageRegistryListResponseV01, PackageRootDocumentV01, PackageRootKindV01,
-    PackageTargetTripleV01, PasteGraphFragmentResponse, ProjectDocumentV01,
-    ProjectObjectBindingTargetV01, RuntimeCollaborationEventEnvelope,
-    RuntimeCollaborationEventKind, RuntimeCollaborationOperationBatchResult,
-    RuntimeCollaborationOperationEnvelope, RuntimeCollaborationOperationResult,
-    RuntimeCollaborationRebaseStrategy, RuntimeDiagnostic, RuntimeDiagnosticSeverity,
-    RuntimeOperationEnvelope, RuntimeSessionEvent, RuntimeSessionEventKind,
-    RuntimeSessionInfoResponse, SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01,
+    DataFlowV01, DataTypeV01, EndpointBindingValueFormatV01, ExtensionKindV01,
+    ExtensionManifestV01, GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01,
+    GraphFragmentV01, MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01,
+    NodeDefinitionManifestV01, NumberRangeV01, ObjectTextAtomV01, ObjectTextParseResultV01,
+    PackageCategoryV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
+    PackageInstallPlanCheckStatusV01, PackageInstallPlanDiagnosticCodeV01,
+    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
+    PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageListingArtifactKindV01,
+    PackageListingDiagnosticCodeV01, PackageListingTargetSupportKindV01, PackageListingV01,
+    PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
+    ProjectDocumentV01, ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    StringOrStringsV01, ValueFormatV01, ValueOccurrenceHeaderV01, ValuePayloadKindV01,
     analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
     compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
     derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
     midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
     plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
-    validate_compatibility_matrix_v01, validate_extension_manifest_v01,
-    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
-    validate_object_text_parse_result_v01, validate_package_discovery_response_v01,
-    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
-    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
-    validate_paste_graph_fragment_response, validate_project_document_v01,
-    validate_runtime_collaboration_event_envelope,
-    validate_runtime_collaboration_operation_batch_result,
-    validate_runtime_collaboration_operation_envelope,
-    validate_runtime_collaboration_operation_result, validate_runtime_operation_envelope,
-    validate_runtime_session_event, validate_runtime_session_info_response,
+    validate_compatibility_matrix_v01, validate_endpoint_binding_value_format_v01,
+    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
+    validate_node_definition_v01, validate_object_text_parse_result_v01,
+    validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
+    validate_package_install_plan_response_v01, validate_package_listing_v01,
+    validate_package_manifest_v01, validate_package_root_v01,
+    validate_paste_graph_fragment_request, validate_project_document_v01,
+    validate_value_format_v01, validate_value_occurrence_header_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -56,7 +48,7 @@ fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
 
 #[test]
 fn serializes_optional_contract_fields_as_absent() {
-    let mut number = data_type(DataFlowV01::Control, "number.float");
+    let mut number = data_type(DataFlowV01::Control, "value.core.float32");
     number.range = Some(NumberRangeV01 {
         min: Some(0.0),
         max: None,
@@ -68,7 +60,7 @@ fn serializes_optional_contract_fields_as_absent() {
         serialized_type,
         serde_json::json!({
             "flow": "control",
-            "dataKind": "number.float",
+            "dataKind": "value.core.float32",
             "range": { "min": 0.0 }
         })
     );
@@ -86,7 +78,7 @@ fn serializes_optional_contract_fields_as_absent() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": "control.number.float" }
+                { "id": "out", "direction": "output", "type": "value.core.float64" }
               ]
             }
           ],
@@ -97,7 +89,7 @@ fn serializes_optional_contract_fields_as_absent() {
     let serialized_graph = serde_json::to_string(&graph).expect("graph should serialize");
 
     assert!(!serialized_graph.contains("null"));
-    assert!(serialized_graph.contains(r#""type":"control.number.float""#));
+    assert!(serialized_graph.contains(r#""type":"value.core.float64""#));
     assert!(validate_graph_document_v01(&graph).is_ok());
 }
 
@@ -129,121 +121,6 @@ fn derives_public_contracts_compatibility_line_helpers() {
         "0.45.0",
         ">=0.44.0 <0.45.0"
     ));
-}
-
-#[test]
-fn parses_public_runtime_diagnostic_code_and_details() {
-    let diagnostic: RuntimeDiagnostic = serde_json::from_value(serde_json::json!({
-        "severity": "warning",
-        "message": "Package load reported non-fatal diagnostics.",
-        "code": "package-load-diagnostics",
-        "details": {
-            "packageId": "skenion/core",
-            "quietSuccess": true,
-            "ignoredDiagnostics": ["info", null, { "count": 2 }]
-        }
-    }))
-    .expect("runtime diagnostic should parse");
-
-    assert_eq!(diagnostic.severity, RuntimeDiagnosticSeverity::Warning);
-    assert_eq!(diagnostic.code.as_deref(), Some("package-load-diagnostics"));
-    assert_eq!(
-        diagnostic
-            .details
-            .as_ref()
-            .expect("details should be retained")["quietSuccess"],
-        true
-    );
-
-    let minimal = RuntimeDiagnostic {
-        severity: RuntimeDiagnosticSeverity::Info,
-        message: "Package loaded.".to_owned(),
-        code: None,
-        details: None,
-    };
-    let serialized = serde_json::to_value(&minimal).expect("diagnostic should serialize");
-
-    assert_eq!(
-        serialized,
-        serde_json::json!({
-            "severity": "info",
-            "message": "Package loaded."
-        })
-    );
-}
-
-#[test]
-fn rejects_unknown_public_runtime_diagnostic_fields() {
-    let extra_top_level = serde_json::from_value::<RuntimeDiagnostic>(serde_json::json!({
-        "severity": "warning",
-        "message": "Package load reported non-fatal diagnostics.",
-        "code": "package-load-diagnostics",
-        "details": {
-            "packageId": "skenion/core",
-            "ignoredDiagnostics": ["info", null, { "count": 2 }]
-        },
-        "traceId": "trace-runtime-diagnostic"
-    }));
-
-    assert!(
-        extra_top_level.is_err(),
-        "runtime diagnostic should reject unknown top-level fields"
-    );
-}
-
-#[test]
-fn rejects_unknown_runtime_session_diagnostic_fields() {
-    let session_info = serde_json::from_value::<RuntimeSessionInfoResponse>(serde_json::json!({
-        "schema": "skenion.runtime.session.info",
-        "schemaVersion": "0.1.0",
-        "ok": true,
-        "sessionId": "session-a",
-        "lifecycle": "ready",
-        "snapshot": {
-            "sessionRevision": 1,
-            "viewRevision": 1,
-            "controlRevision": 1,
-            "project": null,
-            "diagnostics": [],
-            "plan": null
-        },
-        "profile": {
-            "mode": "remote",
-            "ownership": "remote",
-            "endpoint": { "url": "https://runtime.example.test", "protocol": "https" },
-            "process": null
-        },
-        "capabilities": {
-            "sessionAddressing": true,
-            "eventReplay": true,
-            "multiWindow": true,
-            "profiles": ["local-managed", "local-shared", "remote"],
-            "authPolicy": "deferred"
-        },
-        "eventReplay": {
-            "cursorKind": "sequence",
-            "currentCursor": "1",
-            "earliestSequence": 1,
-            "latestSequence": 1,
-            "replayLimit": 512
-        },
-        "diagnostics": [
-            {
-                "severity": "warning",
-                "message": "Package load reported non-fatal diagnostics.",
-                "details": {
-                    "packageId": "skenion/core",
-                    "ignoredDiagnostics": ["info", null, { "count": 2 }]
-                },
-                "traceId": "trace-runtime-diagnostic"
-            }
-        ]
-    }));
-
-    assert!(
-        session_info.is_err(),
-        "runtime session parsing should reject unknown diagnostic fields"
-    );
 }
 
 #[test]
@@ -284,716 +161,173 @@ fn parses_public_compatibility_matrix_contract() {
 }
 
 #[test]
-fn parses_public_graph_fragment_paste_contracts() {
-    let operation: RuntimeOperationEnvelope = serde_json::from_str(
+fn validates_public_value_format_and_occurrence_primitives() {
+    let tensor_format: ValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "valueTypeId": "value.core.tensor",
+        "format": "rgba8unorm",
+        "shape": [1080, 1920, 4],
+        "layout": "row-major",
+        "colorSpace": "srgb",
+        "alphaPolicy": "premultiplied"
+    }))
+    .expect("tensor value format should parse");
+    validate_value_format_v01(&tensor_format).expect("tensor value format should validate");
+
+    let custom_format: ValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "valueTypeId": "value.mike32.selector",
+        "format": "mike32.selector.v1"
+    }))
+    .expect("custom value format should parse");
+    validate_value_format_v01(&custom_format)
+        .expect("custom provider value format should validate");
+
+    for invalid in [
+        serde_json::json!({ "valueTypeId": "value.media.video-frame", "format": "rgba8unorm", "shape": [1, 1, 4] }),
+        serde_json::json!({ "valueTypeId": "value.core.tensor", "format": "rgba8unorm", "shape": [] }),
+        serde_json::json!({ "valueTypeId": "value.core.float32", "format": "i32" }),
+        serde_json::json!({ "valueTypeId": "value.core.bang", "format": "f32" }),
+    ] {
+        let invalid: ValueFormatV01 =
+            serde_json::from_value(invalid).expect("invalid semantic value format should parse");
+        validate_value_format_v01(&invalid)
+            .expect_err("invalid semantic value format should fail validation");
+    }
+
+    let digest = "a".repeat(64);
+    let binding: EndpointBindingValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "bindingId": "edge_1",
+        "bindingEpoch": 1,
+        "formatRevision": 2,
+        "formatDigest": digest,
+        "valueFormat": {
+            "valueTypeId": "value.core.matrix",
+            "format": "f32",
+            "shape": [128, 2],
+            "sampleRate": 48000,
+            "channels": 2,
+            "layout": "interleaved"
+        },
+        "source": { "nodeId": "source_1", "portId": "out" },
+        "target": { "nodeId": "target_1", "portId": "in" },
+        "delivery": { "policy": "ordered", "maxInFlight": 2 }
+    }))
+    .expect("binding value format should parse");
+    validate_endpoint_binding_value_format_v01(&binding)
+        .expect("binding value format should validate");
+
+    let stale_binding: EndpointBindingValueFormatV01 = serde_json::from_value(serde_json::json!({
+        "bindingId": "edge_1",
+        "bindingEpoch": 0,
+        "formatRevision": 0,
+        "formatDigest": "not-sha",
+        "valueFormat": { "valueTypeId": "value.core.float32", "format": "f32" }
+    }))
+    .expect("stale binding should parse");
+    let stale_report = validate_endpoint_binding_value_format_v01(&stale_binding)
+        .expect_err("stale binding should fail semantic validation");
+    assert!(
+        stale_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("bindingEpoch"))
+    );
+    assert!(
+        stale_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("formatRevision"))
+    );
+
+    let occurrence: ValueOccurrenceHeaderV01 = serde_json::from_value(serde_json::json!({
+        "bindingId": "edge_1",
+        "bindingEpoch": 1,
+        "formatRevision": 2,
+        "sequence": 0,
+        "clock": "render-frame",
+        "timestamp": 12,
+        "payloadKind": "bytes",
+        "byteLength": 4096,
+        "byteOffset": 0,
+        "actualShape": [32, 32, 4],
+        "flags": ["keyframe"]
+    }))
+    .expect("occurrence header should parse");
+    validate_value_occurrence_header_v01(&occurrence).expect("occurrence header should validate");
+
+    let invalid_occurrence = ValueOccurrenceHeaderV01 {
+        binding_id: "edge_1".to_owned(),
+        binding_epoch: 1,
+        format_revision: 0,
+        sequence: 0,
+        clock: None,
+        timestamp: None,
+        payload_kind: ValuePayloadKindV01::Empty,
+        byte_length: Some(1),
+        byte_offset: None,
+        actual_shape: None,
+        flags: None,
+        dropped_before: None,
+        duration: None,
+    };
+    let occurrence_report = validate_value_occurrence_header_v01(&invalid_occurrence)
+        .expect_err("invalid occurrence should fail");
+    assert!(
+        occurrence_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("formatRevision"))
+    );
+    assert!(
+        occurrence_report
+            .errors()
+            .iter()
+            .any(|error| error.message.contains("byteLength is not allowed"))
+    );
+}
+
+#[test]
+fn parses_public_graph_fragment_paste_request_payload() {
+    let request: PasteGraphFragmentRequest = serde_json::from_str(
         r#"{
-          "schema": "skenion.runtime.operation",
-          "schemaVersion": "0.1.0",
-          "id": "op-public-paste",
-          "kind": "pasteGraphFragment",
-          "request": {
-            "target": {
-              "path": { "kind": "root" },
-              "baseRevision": "1"
-            },
-            "fragment": {
-              "schema": "skenion.graph.fragment",
-              "schemaVersion": "0.1.0",
-              "nodes": [
-                {
-                  "id": "source",
-                  "kind": "core.float",
-                  "kindVersion": "0.1.0",
-                  "params": {},
-                  "ports": [
-                    { "id": "out", "direction": "output", "type": "control.number.float" }
-                  ]
-                }
-              ],
-              "edges": []
-            }
+          "target": {
+            "path": { "kind": "root" },
+            "baseRevision": "1"
           },
-          "correlationId": "public-test"
+          "fragment": {
+            "schema": "skenion.graph.fragment",
+            "schemaVersion": "0.1.0",
+            "nodes": [
+              {
+                "id": "source",
+                "kind": "object.core.float",
+                "kindVersion": "0.1.0",
+                "params": {},
+                "ports": [
+                  { "id": "out", "direction": "output", "type": "value.core.float64" }
+                ]
+              }
+            ],
+            "edges": []
+          },
+          "placement": { "kind": "position", "x": 10, "y": 20 },
+          "options": {
+            "outsideEndpointPolicy": "reject",
+            "idConflictPolicy": "remap",
+            "interfaceIncidentEdgePolicy": "reject",
+            "preserveRelativePositions": true
+          }
         }"#,
     )
-    .expect("operation should parse");
+    .expect("paste request should parse");
 
-    validate_runtime_operation_envelope(&operation).expect("operation should validate");
-    assert!(operation.attribution.is_none());
-    assert_eq!(operation.request.target.base_revision, "1");
+    validate_paste_graph_fragment_request(&request).expect("paste request should validate");
+    assert_eq!(request.target.base_revision, "1");
 
-    let fragment: &GraphFragmentV01 = &operation.request.fragment;
+    let fragment: &GraphFragmentV01 = &request.fragment;
     let analysis =
         analyze_graph_fragment_v01(fragment, GraphFragmentOutsideEndpointPolicyV01::Reject);
     assert!(analysis.ok);
     validate_graph_fragment_v01(fragment).expect("fragment should validate");
-
-    let response: PasteGraphFragmentResponse = serde_json::from_str(include_str!(
-        "../../../fixtures/runtime-operation/v0/valid/interface-diagnostic.response.json"
-    ))
-    .expect("interface diagnostic response should parse");
-    validate_paste_graph_fragment_response(&response)
-        .expect("interface diagnostic response should validate");
-    let detail = response.diagnostics[0]
-        .interface_detail
-        .as_ref()
-        .expect("interface detail");
-    assert_eq!(detail.edge_id, "edge-stale");
-    assert_eq!(detail.recovery_actions.len(), 4);
-}
-
-#[test]
-fn parses_public_collaboration_operation_contract() {
-    let operation: RuntimeCollaborationOperationEnvelope = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.collaboration.operation",
-          "schemaVersion": "0.1.0",
-          "operationId": "op-public-collab",
-          "sessionId": "session-a",
-          "participantId": "participant-a",
-          "idempotencyKey": "session-a:participant-a:1",
-          "causal": {
-            "baseRevision": "root-rev-1",
-            "baseSequence": 1,
-            "vector": { "participant-a": 1 }
-          },
-          "payload": {
-            "kind": "undoRedo",
-            "action": "undo",
-            "scope": { "kind": "participant", "participantId": "participant-a" },
-            "maxOperations": 1
-          },
-          "submittedAt": "2026-06-22T00:00:00.000Z"
-        }"#,
-    )
-    .expect("collaboration operation should parse");
-
-    validate_runtime_collaboration_operation_envelope(&operation)
-        .expect("collaboration operation should validate");
-    assert_eq!(operation.participant_id, "participant-a");
-}
-
-#[test]
-fn parses_public_collaboration_batch_result_and_rebase_enums() {
-    let batch_result: RuntimeCollaborationOperationBatchResult =
-        serde_json::from_str(include_str!(
-            "../../../fixtures/runtime-collaboration/v0/valid/operation-batch-result.json"
-        ))
-        .expect("batch result should parse");
-    validate_runtime_collaboration_operation_batch_result(&batch_result)
-        .expect("batch result should validate");
-    assert_eq!(batch_result.results.len(), 2);
-
-    let mut wrong_schema = batch_result.clone();
-    wrong_schema.schema = "skenion.runtime.collaboration.operation-batch".to_owned();
-    let wrong_schema_report = validate_runtime_collaboration_operation_batch_result(&wrong_schema)
-        .expect_err("wrong batch result schema should fail");
-    assert!(
-        wrong_schema_report
-            .errors()
-            .iter()
-            .any(|error| error.message.contains("expected schema"))
-    );
-
-    let mut wrong_version = batch_result.clone();
-    wrong_version.schema_version = "9.9.9".to_owned();
-    let wrong_version_report =
-        validate_runtime_collaboration_operation_batch_result(&wrong_version)
-            .expect_err("wrong batch result schemaVersion should fail");
-    assert!(
-        wrong_version_report
-            .errors()
-            .iter()
-            .any(|error| error.message.contains("expected schemaVersion 0.1.0"))
-    );
-
-    let mut empty_results = batch_result.clone();
-    empty_results.results.clear();
-    let empty_results_report =
-        validate_runtime_collaboration_operation_batch_result(&empty_results)
-            .expect_err("empty batch result should fail");
-    assert!(
-        empty_results_report
-            .errors()
-            .iter()
-            .any(|error| error.message.contains("at least one operation result"))
-    );
-
-    let mut nested_invalid = batch_result.clone();
-    nested_invalid.results[0].schema = "skenion.runtime.collaboration.operation".to_owned();
-    let nested_invalid_report =
-        validate_runtime_collaboration_operation_batch_result(&nested_invalid)
-            .expect_err("invalid nested operation result should fail");
-    assert!(
-        nested_invalid_report
-            .errors()
-            .iter()
-            .any(|error| error.message.contains("expected schema"))
-    );
-
-    let rebased: RuntimeCollaborationOperationResult = serde_json::from_str(include_str!(
-        "../../../fixtures/runtime-collaboration/v0/valid/rebased-mixed-change-set.operation-result.json"
-    ))
-    .expect("rebased result should parse");
-    validate_runtime_collaboration_operation_result(&rebased)
-        .expect("rebased result should validate");
-    assert_eq!(
-        rebased
-            .rebase
-            .as_ref()
-            .expect("rebased result should include rebase metadata")
-            .strategy,
-        RuntimeCollaborationRebaseStrategy::OtTransform
-    );
-
-    let invalid_strategy = serde_json::from_str::<RuntimeCollaborationOperationResult>(
-        include_str!(
-            "../../../fixtures/runtime-collaboration/v0/invalid/rebase-unknown-strategy.operation-result.json"
-        ),
-    );
-    assert!(invalid_strategy.is_err());
-}
-
-#[test]
-fn validates_public_remaining_collaboration_coverage_paths() {
-    let accepted_disabled_graph: GraphDocumentV01 = serde_json::from_str(
-        r#"{
-          "schema": "skenion.graph",
-          "schemaVersion": "0.1.0",
-          "id": "accepted-disabled-graph",
-          "revision": "1",
-          "nodes": [
-            {
-              "id": "texture",
-              "kind": "gpu.texture",
-              "kindVersion": "0.1.0",
-              "params": {},
-              "ports": [
-                { "id": "out", "direction": "output", "type": "gpu.texture2d" }
-              ],
-              "portGroups": [
-                {
-                  "id": "layers",
-                  "direction": "output",
-                  "type": "gpu.texture2d",
-                  "minPorts": 1,
-                  "maxPorts": 2
-                }
-              ]
-            },
-            {
-              "id": "viewer",
-              "kind": "render.viewer",
-              "kindVersion": "0.1.0",
-              "params": {},
-              "ports": [
-                {
-                  "id": "in",
-                  "direction": "input",
-                  "type": "render.frame",
-                  "accepts": ["gpu.texture2d"]
-                }
-              ]
-            }
-          ],
-          "edges": [
-            {
-              "id": "edge-texture-viewer",
-              "source": { "nodeId": "texture", "portId": "out" },
-              "target": { "nodeId": "viewer", "portId": "in" },
-              "enabled": false
-            }
-          ]
-        }"#,
-    )
-    .expect("accepted disabled graph should parse");
-    validate_graph_document_v01(&accepted_disabled_graph)
-        .expect("accepted disabled graph should validate");
-
-    let missing_source_graph: GraphDocumentV01 = serde_json::from_str(
-        r#"{
-          "schema": "skenion.graph",
-          "schemaVersion": "0.1.0",
-          "id": "missing-source-graph",
-          "revision": "1",
-          "nodes": [
-            {
-              "id": "viewer",
-              "kind": "render.viewer",
-              "kindVersion": "0.1.0",
-              "params": {},
-              "ports": [
-                { "id": "in", "direction": "input", "type": "render.frame" }
-              ]
-            }
-          ],
-          "edges": [
-            {
-              "id": "edge-missing-source",
-              "source": { "nodeId": "missing-source", "portId": "out" },
-              "target": { "nodeId": "viewer", "portId": "in" }
-            }
-          ]
-        }"#,
-    )
-    .expect("missing source graph should parse");
-    let missing_source = analyze_graph_document_v01(&missing_source_graph);
-    assert!(!missing_source.ok);
-    assert!(
-        missing_source
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.code == "missing-source-port")
-    );
-
-    let value_to_render_cycle: GraphDocumentV01 = serde_json::from_str(
-        r#"{
-          "schema": "skenion.graph",
-          "schemaVersion": "0.1.0",
-          "id": "value-to-render-cycle",
-          "revision": "1",
-          "nodes": [
-            {
-              "id": "loop",
-              "kind": "core.loop",
-              "kindVersion": "0.1.0",
-              "params": {},
-              "ports": [
-                {
-                  "id": "in",
-                  "direction": "input",
-                  "type": "render.frame",
-                  "accepts": ["control.number.float"]
-                },
-                { "id": "out", "direction": "output", "type": "control.number.float" }
-              ]
-            }
-          ],
-          "edges": [
-            {
-              "id": "edge-loop",
-              "source": { "nodeId": "loop", "portId": "out" },
-              "target": { "nodeId": "loop", "portId": "in" }
-            }
-          ]
-        }"#,
-    )
-    .expect("value-to-render cycle should parse");
-    assert!(
-        validate_graph_document_v01(&value_to_render_cycle)
-            .expect_err("mixed family self-cycle should fail")
-            .to_string()
-            .contains("invalid-cycle")
-    );
-
-    let change_set: RuntimeCollaborationOperationEnvelope = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.collaboration.operation",
-          "schemaVersion": "0.1.0",
-          "operationId": "op-integration-change-set",
-          "sessionId": "session-collab-a",
-          "participantId": "participant-a",
-          "idempotencyKey": "session-collab-a:participant-a:coverage-change-set",
-          "causal": {
-            "baseRevision": "root-rev-7",
-            "baseSequence": 7,
-            "vector": { "participant-a": 7 }
-          },
-          "payload": {
-            "kind": "changeSet",
-            "target": {
-              "path": { "kind": "root" },
-              "baseRevision": "root-rev-7"
-            },
-            "changes": [
-              {
-                "op": "node.add",
-                "changeId": "change-add-node",
-                "node": {
-                  "id": "gain",
-                  "kind": "core.float",
-                  "kindVersion": "0.1.0",
-                  "params": {},
-                  "ports": [
-                    { "id": "out", "direction": "output", "type": "control.number.float" }
-                  ]
-                }
-              },
-              {
-                "op": "node.move",
-                "changeId": "change-move-node",
-                "nodeId": "source",
-                "to": { "x": 120, "y": 140 }
-              },
-              {
-                "op": "node.delete",
-                "changeId": "change-delete-node",
-                "nodeId": "old-preview"
-              },
-              {
-                "op": "edge.connect",
-                "changeId": "change-connect-edge",
-                "edge": {
-                  "id": "edge-source-gain",
-                  "source": { "nodeId": "source", "portId": "out" },
-                  "target": { "nodeId": "gain", "portId": "out" }
-                }
-              },
-              {
-                "op": "edge.disconnect",
-                "changeId": "change-disconnect-edge",
-                "edgeId": "edge-old-preview"
-              }
-            ]
-          },
-          "submittedAt": "2026-06-22T00:00:00.000Z"
-        }"#,
-    )
-    .expect("change-set operation should parse");
-    validate_runtime_collaboration_operation_envelope(&change_set)
-        .expect("change-set operation should validate");
-
-    let valid_gap_event: RuntimeCollaborationEventEnvelope = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.collaboration.event",
-          "schemaVersion": "0.1.0",
-          "eventId": "event-valid-gap",
-          "sessionId": "session-collab-a",
-          "sequence": 9,
-          "causal": {
-            "baseRevision": "root-rev-9",
-            "baseSequence": 9,
-            "vector": { "participant-a": 9 }
-          },
-          "kind": "operation-result",
-          "payload": {
-            "kind": "operationResult",
-            "result": {
-              "schema": "skenion.runtime.collaboration.operation-result",
-              "schemaVersion": "0.1.0",
-              "sessionId": "session-collab-a",
-              "operationId": "op-integration-change-set",
-              "participantId": "participant-a",
-              "idempotencyKey": "session-collab-a:participant-a:coverage-change-set",
-              "status": "accepted",
-              "causal": {
-                "baseRevision": "root-rev-9",
-                "baseSequence": 9,
-                "vector": { "participant-a": 9 }
-              },
-              "ack": {
-                "sequence": 9,
-                "revision": "root-rev-9",
-                "serverClock": {
-                  "revision": "root-rev-9",
-                  "sequence": 9,
-                  "vector": { "participant-a": 9 }
-                },
-                "appliedAt": "2026-06-22T00:00:00.050Z"
-              },
-              "diagnostics": [],
-              "createdAt": "2026-06-22T00:00:00.050Z"
-            }
-          },
-          "replay": {
-            "cursor": "9",
-            "previousCursor": "6",
-            "replayed": true,
-            "gap": {
-              "expectedSequence": 7,
-              "actualSequence": 9,
-              "reason": "retention-overflow"
-            },
-            "overflow": false
-          },
-          "createdAt": "2026-06-22T00:00:00.050Z"
-        }"#,
-    )
-    .expect("valid gap event should parse");
-    validate_runtime_collaboration_event_envelope(&valid_gap_event)
-        .expect("valid collaboration replay gap should validate");
-    assert_eq!(
-        valid_gap_event.kind,
-        RuntimeCollaborationEventKind::OperationResult
-    );
-
-    let selection_event: RuntimeCollaborationEventEnvelope = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.collaboration.event",
-          "schemaVersion": "0.1.0",
-          "eventId": "event-selection",
-          "sessionId": "session-collab-a",
-          "sequence": 10,
-          "causal": {
-            "baseRevision": "root-rev-10",
-            "baseSequence": 10,
-            "vector": { "participant-a": 10 }
-          },
-          "kind": "selection",
-          "payload": {
-            "kind": "selection",
-            "selection": {
-              "schema": "skenion.runtime.collaboration.selection",
-              "schemaVersion": "0.1.0",
-              "sessionId": "session-collab-a",
-              "participantId": "participant-a",
-              "target": { "path": { "kind": "root" }, "baseRevision": "root-rev-10" },
-              "selection": {
-                "ranges": [
-                  { "kind": "nodes", "nodeIds": ["gain"] }
-                ],
-                "activeRangeIndex": 0
-              },
-              "cursor": {
-                "kind": "canvas",
-                "x": 120.0,
-                "y": 80.0,
-                "clientWindowId": "window-a"
-              },
-              "updatedAt": "2026-06-22T00:00:00.050Z",
-              "expiresAt": "2026-06-22T00:00:05.050Z"
-            }
-          },
-          "replay": {
-            "cursor": "10",
-            "previousCursor": "9",
-            "replayed": false,
-            "gap": null,
-            "overflow": false
-          },
-          "createdAt": "2026-06-22T00:00:00.050Z"
-        }"#,
-    )
-    .expect("selection event should parse");
-    validate_runtime_collaboration_event_envelope(&selection_event)
-        .expect("selection event should validate");
-    assert_eq!(
-        selection_event.kind,
-        RuntimeCollaborationEventKind::Selection
-    );
-
-    let outside_operation: RuntimeOperationEnvelope = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.operation",
-          "schemaVersion": "0.1.0",
-          "id": "op-outside-fragment",
-          "kind": "pasteGraphFragment",
-          "request": {
-            "target": {
-              "path": { "kind": "root" },
-              "baseRevision": "1"
-            },
-            "fragment": {
-              "schema": "skenion.graph.fragment",
-              "schemaVersion": "0.1.0",
-              "nodes": [
-                {
-                  "id": "source",
-                  "kind": "core.float",
-                  "kindVersion": "0.1.0",
-                  "params": {},
-                  "ports": [
-                    { "id": "out", "direction": "output", "type": "control.number.float" }
-                  ]
-                }
-              ],
-              "edges": [
-                {
-                  "id": "edge-to-outside",
-                  "source": { "nodeId": "source", "portId": "out" },
-                  "target": { "nodeId": "outside", "portId": "in" }
-                }
-              ]
-            }
-          }
-        }"#,
-    )
-    .expect("outside runtime operation should parse");
-    assert!(
-        validate_runtime_operation_envelope(&outside_operation)
-            .expect_err("outside endpoint should fail by default")
-            .to_string()
-            .contains("fragment-edge-outside-selection")
-    );
-
-    let valid_mutation_event: RuntimeSessionEvent = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.session.event",
-          "schemaVersion": "0.1.0",
-          "id": "event-valid-mutation",
-          "sessionId": "session-a",
-          "sequence": 3,
-          "sessionRevision": 3,
-          "kind": "mutate",
-          "snapshot": {
-            "sessionRevision": 3,
-            "viewRevision": 3,
-            "controlRevision": 1,
-            "project": null,
-            "diagnostics": [],
-            "plan": null
-          },
-          "history": {
-            "schema": "skenion.runtime.history",
-            "schemaVersion": "0.1.0",
-            "entries": [
-              {
-                "id": "history-valid-mutation",
-                "sequence": 3,
-                "kind": "apply",
-                "mutation": {
-	                  "operation": {
-	                    "schema": "skenion.runtime.operation",
-	                    "schemaVersion": "0.1.0",
-	                    "id": "op-runtime-full",
-	                    "kind": "pasteGraphFragment",
-	                    "request": {
-	                      "target": {
-	                        "path": { "kind": "root" },
-	                        "baseRevision": "2"
-	                      },
-	                      "fragment": {
-	                        "schema": "skenion.graph.fragment",
-	                        "schemaVersion": "0.1.0",
-	                        "nodes": [
-	                          {
-	                            "id": "float_2",
-	                            "kind": "core.float",
-	                            "kindVersion": "0.1.0",
-	                            "params": { "value": 0.75 },
-	                            "ports": [
-	                              { "id": "out", "direction": "output", "type": "control.number.float", "rate": "control" }
-	                            ]
-	                          }
-	                        ],
-	                        "edges": []
-	                      },
-	                      "placement": { "kind": "position", "x": 10, "y": 20 }
-	                    },
-	                    "correlationId": "runtime-session-valid"
-	                  },
-                  "viewPatch": {
-                    "baseViewRevision": 2,
-                    "ops": [
-                      { "op": "setNodeView", "nodeId": "float_2", "view": { "x": 10, "y": 20 } },
-                      {
-                        "op": "moveNodeView",
-                        "nodeId": "float_2",
-                        "from": { "x": 10, "y": 20 },
-                        "to": { "x": 20, "y": 30 }
-                      }
-                    ]
-                  },
-                  "clientId": "studio-main",
-                  "description": "exercise every valid runtime patch branch"
-                },
-                "inverseMutation": {
-                  "viewPatch": {
-                    "baseViewRevision": 3,
-                    "ops": [
-                      { "op": "setNodeView", "nodeId": "float_2", "view": { "x": 0, "y": 0 } }
-                    ]
-                  },
-                  "clientId": "studio-main"
-                },
-                "subjectEventId": "event-2",
-                "clientId": "studio-main",
-                "createdAt": "2026-06-22T00:00:02.000Z"
-              }
-            ],
-            "canUndo": true,
-            "canRedo": false,
-            "undoDepth": 1,
-            "redoDepth": 0
-          },
-          "replay": {
-            "cursor": "3",
-            "previousCursor": "2",
-            "replayed": false,
-            "gap": null,
-            "overflow": false
-          },
-          "diagnostics": [],
-          "createdAt": "2026-06-22T00:00:03.000Z"
-        }"#,
-    )
-    .expect("valid mutation event should parse");
-    validate_runtime_session_event(&valid_mutation_event)
-        .expect("valid mutation event should validate");
-}
-
-#[test]
-fn parses_public_session_addressed_runtime_event() {
-    let info: RuntimeSessionInfoResponse = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.session.info",
-          "schemaVersion": "0.1.0",
-          "ok": true,
-          "sessionId": "session-a",
-          "lifecycle": "ready",
-          "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
-          "profile": {
-            "mode": "remote",
-            "ownership": "remote",
-            "endpoint": { "url": "https://runtime.example.test", "protocol": "https" },
-            "process": null
-          },
-          "capabilities": {
-            "sessionAddressing": true,
-            "eventReplay": true,
-            "multiWindow": true,
-            "profiles": ["local-managed", "local-shared", "remote"],
-            "authPolicy": "deferred"
-          },
-          "eventReplay": {
-            "cursorKind": "sequence",
-            "currentCursor": "1",
-            "earliestSequence": 1,
-            "latestSequence": 1,
-            "replayLimit": 512
-          },
-          "diagnostics": []
-        }"#,
-    )
-    .expect("session info should parse");
-    validate_runtime_session_info_response(&info).expect("session info should validate");
-    assert_eq!(info.session_id, "session-a");
-
-    let event: RuntimeSessionEvent = serde_json::from_str(
-        r#"{
-          "schema": "skenion.runtime.session.event",
-          "schemaVersion": "0.1.0",
-          "id": "event-1",
-          "sessionId": "session-a",
-          "sequence": 1,
-          "sessionRevision": 1,
-          "kind": "snapshot",
-          "snapshot": { "sessionRevision": 1, "viewRevision": 1, "controlRevision": 1, "project": null, "diagnostics": [], "plan": null },
-          "history": {
-            "schema": "skenion.runtime.history",
-            "schemaVersion": "0.1.0",
-            "entries": [],
-            "canUndo": false,
-            "canRedo": false,
-            "undoDepth": 0,
-            "redoDepth": 0
-          },
-          "replay": {
-            "cursor": "1",
-            "previousCursor": null,
-            "replayed": false,
-            "gap": null,
-            "overflow": false
-          },
-          "diagnostics": [],
-          "createdAt": "2026-06-21T00:00:00.000Z"
-        }"#,
-    )
-    .expect("session event should parse");
-
-    validate_runtime_session_event(&event).expect("session event should validate");
-    assert_eq!(event.session_id, "session-a");
-    assert_eq!(event.kind, RuntimeSessionEventKind::Snapshot);
 }
 
 #[test]
@@ -1007,7 +341,7 @@ fn reports_public_validation_errors() {
           "displayName": "Bad",
           "category": "Script",
           "ports": [
-            { "id": "out", "direction": "output", "type": "event.bang" }
+            { "id": "out", "direction": "output", "type": "value.core.bang" }
           ],
           "execution": { "model": "script_control" },
           "state": { "persistent": false },
@@ -1030,8 +364,8 @@ fn reports_public_validation_errors() {
           "displayName": "Duplicate Port",
           "category": "Core",
           "ports": [
-            { "id": "value", "direction": "input", "type": "control.number.float" },
-            { "id": "value", "direction": "output", "type": "control.number.float" }
+            { "id": "value", "direction": "input", "type": "value.core.float64" },
+            { "id": "value", "direction": "output", "type": "value.core.float64" }
           ],
           "execution": { "model": "control" },
           "state": { "persistent": false },
@@ -1057,19 +391,19 @@ fn parses_extension_manifest_contract_surface() {
           "kind": "core-package",
           "provides": {
             "help": [
-              { "nodeId": "core.float", "markdownPath": "help/float.md" }
+              { "nodeId": "object.core.float", "markdownPath": "help/float.md" }
             ]
           },
           "permissions": [],
           "tests": [
-            { "id": "float-baseline", "kind": "node", "target": "core.float", "fixturePath": "tests/float.input.json" }
+            { "id": "float-baseline", "kind": "node", "target": "object.core.float", "fixturePath": "tests/float.input.json" }
           ]
         }"#,
     )
     .expect("extension manifest should parse");
 
     assert_eq!(manifest.kind, ExtensionKindV01::CorePackage);
-    assert_eq!(manifest.provides.help[0].node_id, "core.float");
+    assert_eq!(manifest.provides.help[0].node_id, "object.core.float");
     assert_eq!(manifest.tests[0].id, "float-baseline");
 }
 
@@ -1215,56 +549,6 @@ fn validates_public_package_manifest_contract_surface() {
     assert_eq!(
         project.graph.nodes[0].binding_ref.as_deref(),
         Some("binding-example-oscillator")
-    );
-
-    let registry_json = serde_json::json!({
-        "ok": true,
-        "packages": [
-            {
-                "packageId": "skenion/examples",
-                "version": "0.45.0",
-                "category": "patch",
-                "source": "first-party",
-                "root": "package",
-                "trust": "trusted",
-                "contracts": { "line": "0.45", "range": ">=0.45.0 <0.46.0" },
-                "manifestPath": "skenion.package.json",
-                "manifestChecksum": {
-                    "algorithm": "sha256",
-                    "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                },
-                "provides": { "patches": [{ "id": "example.oscillator", "path": "patches/oscillator.skenion.json" }] },
-                "diagnostics": []
-            }
-        ],
-        "diagnostics": []
-    });
-    let registry: PackageRegistryListResponseV01 =
-        serde_json::from_value(registry_json.clone()).expect("registry list DTO should parse");
-
-    assert!(registry.ok);
-    assert_eq!(registry.packages[0].root, PackageRootKindV01::Package);
-
-    let mut registry_revision = registry_json.clone();
-    registry_revision["revision"] = serde_json::json!("registry-rev-1");
-    assert!(serde_json::from_value::<PackageRegistryListResponseV01>(registry_revision).is_err());
-
-    let mut registry_event_cursor = registry_json.clone();
-    registry_event_cursor["eventId"] = serde_json::json!("event-1");
-    assert!(
-        serde_json::from_value::<PackageRegistryListResponseV01>(registry_event_cursor).is_err()
-    );
-
-    let mut package_runtime_state = registry_json.clone();
-    package_runtime_state["packages"][0]["state"] = serde_json::json!("active");
-    assert!(
-        serde_json::from_value::<PackageRegistryListResponseV01>(package_runtime_state).is_err()
-    );
-
-    let mut package_ledger_metadata = registry_json;
-    package_ledger_metadata["packages"][0]["revision"] = serde_json::json!("pkg-rev-1");
-    assert!(
-        serde_json::from_value::<PackageRegistryListResponseV01>(package_ledger_metadata).is_err()
     );
 
     let listing: PackageListingV01 = serde_json::from_str(include_str!(
@@ -2280,26 +1564,41 @@ fn validates_public_object_text_parse_results() {
         r#"{
           "schema": "skenion.object-text.parse-result",
           "schemaVersion": "0.1.0",
-          "input": "[*~ 0.5]",
+          "input": "example.gain 0.5",
           "ok": true,
-          "classSymbol": "*~",
+          "className": "example.gain",
           "creationArgs": [{ "type": "float", "value": 0.5, "representation": "f32" }],
-          "resolvedKind": "audio.operator.mul",
+          "resolvedKind": "example.package.gain",
           "resolvedKindVersion": "0.1.0",
-          "params": { "right": 0.5 },
+          "params": { "gain": 0.5 },
           "instancePorts": [
-            { "id": "in", "direction": "input", "type": "signal.audio", "rate": "audio", "activation": "latched" },
-            { "id": "right", "direction": "input", "type": "control.number.float", "rate": "control", "activation": "latched", "defaultValue": 0.5 },
-            { "id": "out", "direction": "output", "type": "signal.audio", "rate": "audio" }
+            {
+              "id": "in",
+              "direction": "input",
+              "type": "value.core.message",
+              "rate": "control",
+              "activation": "trigger",
+              "messageKeys": {
+                "accepted": ["bang", "set", "float"],
+                "silent": ["set"],
+                "store": ["set"],
+                "trigger": ["bang", "float"],
+                "emit": ["bang", "float"]
+              }
+            },
+            { "id": "out", "direction": "output", "type": "value.core.float64", "rate": "control" }
           ],
-          "displayText": "*~ 0.5",
+          "displayText": "example.gain 0.5",
           "diagnostics": []
         }"#,
     )
     .expect("object text result should parse");
 
     validate_object_text_parse_result_v01(&result).expect("object text result should validate");
-    assert_eq!(result.resolved_kind.as_deref(), Some("audio.operator.mul"));
+    assert_eq!(
+        result.resolved_kind.as_deref(),
+        Some("example.package.gain")
+    );
 
     let mut wrong_schema = result.clone();
     wrong_schema.schema = "wrong.object-text".to_owned();
@@ -2307,75 +1606,81 @@ fn validates_public_object_text_parse_results() {
         .expect_err("schema mismatch should fail");
     assert!(schema_error.to_string().contains("wrong.object-text"));
 
-    let mut wrong_version = result;
+    let mut wrong_version = result.clone();
     wrong_version.schema_version = "9.9.9".to_owned();
     let version_error = validate_object_text_parse_result_v01(&wrong_version)
         .expect_err("schema version mismatch should fail");
     assert!(version_error.to_string().contains("9.9.9"));
 
     let parsed = parse_object_text_v01("[osc~ 440]");
-    assert_eq!(parsed.resolved_kind.as_deref(), Some("audio.osc"));
+    assert_eq!(parsed.class_name, "osc~");
+    assert_eq!(parsed.resolved_kind, None);
+    assert!(parsed.params.is_empty());
+    assert!(parsed.instance_ports.is_empty());
     assert_eq!(
-        parsed.params.get("frequency"),
-        Some(&serde_json::json!(440))
+        parsed.creation_args,
+        vec![ObjectTextAtomV01::Int {
+            value: 440,
+            representation: Some("i32".to_owned())
+        }]
     );
 
-    let mut missing_selectors = parse_object_text_v01("+ 1");
-    missing_selectors.instance_ports[0].message_selectors = None;
-    let missing_selectors_error = validate_object_text_parse_result_v01(&missing_selectors)
-        .expect_err("control.message.any object text port without selectors should fail");
+    let mut missing_keys = result.clone();
+    missing_keys.instance_ports[0].message_keys = None;
+    let missing_keys_error = validate_object_text_parse_result_v01(&missing_keys)
+        .expect_err("value.core.message object text port without keys should fail");
     assert!(
-        missing_selectors_error
+        missing_keys_error
             .to_string()
-            .contains("requires messageSelectors")
+            .contains("requires messageKeys")
     );
 
-    let mut accepting_message_any = parse_object_text_v01("+ 1");
-    accepting_message_any.instance_ports[0].port_type = "control.number.float".to_owned();
-    accepting_message_any.instance_ports[0].accepts = Some(vec!["control.message.any".to_owned()]);
-    accepting_message_any.instance_ports[0].message_selectors = None;
+    let mut accepting_message_any = result.clone();
+    accepting_message_any.instance_ports[0].port_type = "value.core.float64".to_owned();
+    accepting_message_any.instance_ports[0].accepts = Some(vec!["value.core.message".to_owned()]);
+    accepting_message_any.instance_ports[0].message_keys = None;
     let accepting_message_any_error = validate_object_text_parse_result_v01(&accepting_message_any)
-        .expect_err("object text port accepting control.message.any without selectors should fail");
+        .expect_err("object text port accepting value.core.message without keys should fail");
     assert!(
         accepting_message_any_error
             .to_string()
-            .contains("requires messageSelectors")
+            .contains("requires messageKeys")
     );
 
-    let mut empty_selector_set = parse_object_text_v01("+ 1");
-    let policy = empty_selector_set.instance_ports[0]
-        .message_selectors
+    let mut empty_key_set = result.clone();
+    let policy = empty_key_set.instance_ports[0]
+        .message_keys
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted.clear();
-    let empty_selector_error = validate_object_text_parse_result_v01(&empty_selector_set)
-        .expect_err("empty selector policy should fail");
+    let empty_key_error = validate_object_text_parse_result_v01(&empty_key_set)
+        .expect_err("empty key policy should fail");
     assert!(
-        empty_selector_error
+        empty_key_error
             .to_string()
-            .contains("accepted must list at least one selector")
+            .contains("accepted must list at least one key")
     );
 
-    let mut unaccepted_trigger = parse_object_text_v01("+ 1");
+    let mut unaccepted_trigger = result.clone();
     let policy = unaccepted_trigger.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["float".to_owned()];
     policy.trigger = Some(vec!["int".to_owned()]);
     let unaccepted_trigger_error = validate_object_text_parse_result_v01(&unaccepted_trigger)
-        .expect_err("selector behavior outside accepted set should fail");
+        .expect_err("key behavior outside accepted set should fail");
     assert!(
         unaccepted_trigger_error
             .to_string()
-            .contains("messageSelectors.trigger selector int is not accepted")
+            .contains("messageKeys.trigger key int is not accepted")
     );
 
-    let mut set_as_emit = parse_object_text_v01("+ 1");
+    let mut set_as_emit = result.clone();
     let policy = set_as_emit.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
@@ -2386,14 +1691,14 @@ fn validates_public_object_text_parse_results() {
     assert!(
         set_emit_error
             .to_string()
-            .contains("messageSelectors.emit must not include set")
+            .contains("messageKeys.emit must not include set")
     );
 
-    let mut set_as_trigger = parse_object_text_v01("+ 1");
+    let mut set_as_trigger = result.clone();
     let policy = set_as_trigger.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = Some(vec!["set".to_owned()]);
@@ -2402,85 +1707,67 @@ fn validates_public_object_text_parse_results() {
     let set_trigger_error = validate_object_text_parse_result_v01(&set_as_trigger)
         .expect_err("set must not be trigger behavior");
     let set_trigger_text = set_trigger_error.to_string();
-    assert!(set_trigger_text.contains("messageSelectors.trigger must not include set"));
-    assert!(set_trigger_text.contains("messageSelectors.set must be silent or store behavior"));
+    assert!(set_trigger_text.contains("messageKeys.trigger must not include set"));
+    assert!(set_trigger_text.contains("messageKeys.set must be silent or store behavior"));
 
-    let mut set_as_silent = parse_object_text_v01("+ 1");
+    let mut set_as_silent = result.clone();
     let policy = set_as_silent.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
     policy.store = None;
     policy.emit = None;
     validate_object_text_parse_result_v01(&set_as_silent)
-        .expect("set should be valid as silent selector behavior");
+        .expect("set should be valid as silent key behavior");
 
-    let mut set_as_store = parse_object_text_v01("+ 1");
+    let mut set_as_store = result.clone();
     let policy = set_as_store.instance_ports[0]
-        .message_selectors
+        .message_keys
         .as_mut()
-        .expect("numeric object text should declare selector policy");
+        .expect("resolved object text should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = None;
     policy.store = Some(vec!["set".to_owned()]);
     policy.emit = None;
     validate_object_text_parse_result_v01(&set_as_store)
-        .expect("set should be valid as store selector behavior");
+        .expect("set should be valid as store key behavior");
 }
 
 #[test]
-fn parses_public_object_text_baseline_matrix() {
-    let supported = [
-        ("[+ 1]", Some("core.operator.add")),
-        ("[+ 1.]", Some("core.operator.add")),
-        ("[+]", Some("core.operator.add")),
-        ("[* 0.5]", Some("core.operator.mul")),
-        ("[/ 0.5]", Some("core.operator.div")),
-        ("[sqrt]", Some("core.operator.sqrt")),
-        ("[+~]", Some("audio.operator.add")),
-        ("[-~]", Some("audio.operator.sub")),
-        ("[*~ 0.5]", Some("audio.operator.mul")),
-        ("[/~ 0.5]", Some("audio.operator.div")),
-        ("[sqrt~]", Some("audio.operator.sqrt")),
-        ("[osc~ 440]", Some("audio.osc")),
-        ("[phasor~ 1]", Some("audio.phasor")),
-        ("[adc~]", Some("audio.input")),
-        ("[dac~]", Some("audio.output")),
-    ];
-
-    for (input, expected_kind) in supported {
+fn parses_public_object_text_lexical_matrix() {
+    for input in [
+        "[+ 1]",
+        "[+ 1.]",
+        "[+]",
+        "[* 0.5]",
+        "[/ 0.5]",
+        "[sqrt]",
+        "[+~]",
+        "[-~]",
+        "[*~ 0.5]",
+        "[/~ 0.5]",
+        "[sqrt~]",
+        "[osc~ 440]",
+        "[phasor~ 1]",
+        "[adc~]",
+        "[dac~]",
+        "[frobnicate]",
+        "[expr $f1]",
+    ] {
         let result = parse_object_text_v01(input);
         validate_object_text_parse_result_v01(&result).expect("parse result should validate");
         assert!(result.ok, "{input} should parse");
-        assert_eq!(result.resolved_kind.as_deref(), expected_kind);
+        assert_eq!(result.resolved_kind, None);
+        assert_eq!(result.resolved_kind_version, None);
+        assert!(result.params.is_empty());
+        assert!(result.instance_ports.is_empty());
     }
 
-    for input in [
-        "[+ 1",
-        "+ 1]",
-        "",
-        "[+ 1 2]",
-        "[+ true]",
-        "[+ false]",
-        "[+ 1.bad]",
-        "[+ 1e309]",
-        "[*~ 1 2]",
-        "[*~ beep]",
-        "[/~ false]",
-        "[sqrt~ 1]",
-        "[osc~ 1 2]",
-        "[osc~ false]",
-        "[phasor~ beep]",
-        "[adc~ 1]",
-        "[dac~ 1]",
-        "[sin~]",
-        "[expr $f1]",
-        "[frobnicate]",
-    ] {
+    for input in ["[+ 1", "+ 1]", ""] {
         let result = parse_object_text_v01(input);
         validate_object_text_parse_result_v01(&result).expect("failure result should validate");
         assert!(!result.ok, "{input} should fail without throwing");
@@ -2496,7 +1783,7 @@ fn plans_public_audio_clock_bridge_requirements() {
     let source = AudioClockDomainV01 {
         id: "input-device".to_owned(),
         authority: AudioClockDomainAuthorityV01::DriverReported,
-        source: "audio.input".to_owned(),
+        source: "object.core.audio.input".to_owned(),
         sample_rate: Some(48_000),
         drift_compensated: None,
         shared_with: None,
@@ -2504,7 +1791,7 @@ fn plans_public_audio_clock_bridge_requirements() {
     let same = AudioClockDomainV01 {
         id: "input-device".to_owned(),
         authority: AudioClockDomainAuthorityV01::DriverReported,
-        source: "audio.output".to_owned(),
+        source: "object.core.audio.output".to_owned(),
         sample_rate: Some(48_000),
         drift_compensated: None,
         shared_with: None,
@@ -2512,7 +1799,7 @@ fn plans_public_audio_clock_bridge_requirements() {
     let independent = AudioClockDomainV01 {
         id: "output-device".to_owned(),
         authority: AudioClockDomainAuthorityV01::DriverReported,
-        source: "audio.output".to_owned(),
+        source: "object.core.audio.output".to_owned(),
         sample_rate: Some(48_000),
         drift_compensated: None,
         shared_with: None,
@@ -2726,10 +2013,10 @@ fn parses_public_midi_clock_messages_into_clock_state() {
 
 #[test]
 fn validates_public_type_helpers() {
-    let mut source = data_type(DataFlowV01::Signal, "number.float");
-    let mut target = data_type(DataFlowV01::Signal, "number.float");
+    let mut source = data_type(DataFlowV01::Signal, "value.core.float32");
+    let mut target = data_type(DataFlowV01::Signal, "value.core.float32");
 
-    assert_eq!(type_label_v01(&source), "signal<number.float>");
+    assert_eq!(type_label_v01(&source), "signal<value.core.float32>");
     assert_eq!(
         StringOrStringsV01::One("f32".to_owned()).values(),
         vec!["f32"]
@@ -2742,25 +2029,25 @@ fn validates_public_type_helpers() {
     assert!(!compatible_data_types_v01(&source, &target));
     source.format = Some(StringOrStringsV01::One("f32".to_owned()));
     assert!(compatible_data_types_v01(&source, &target));
-    target.data_kind = "bool".to_owned();
+    target.data_kind = "value.core.bool".to_owned();
     assert!(!compatible_data_types_v01(&source, &target));
 
-    let control_message_any = data_type(DataFlowV01::Control, "message.any");
+    let message_value_any = data_type(DataFlowV01::Control, "value.core.message");
     for data_kind in [
-        "number.float",
-        "number.int",
-        "number.uint",
-        "bool",
-        "color",
-        "string",
-        "message.any",
+        "value.core.float32",
+        "value.core.int32",
+        "value.core.uint32",
+        "value.core.bool",
+        "value.core.color",
+        "value.core.string",
+        "value.core.message",
     ] {
         assert!(
             compatible_data_types_v01(
                 &data_type(DataFlowV01::Control, data_kind),
-                &control_message_any,
+                &message_value_any,
             ),
-            "{data_kind} should be compatible with control message.any"
+            "{data_kind} should be compatible with control value.core.message"
         );
     }
 }
@@ -2780,7 +2067,7 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "out", "direction": "output", "type": "control.number.float" }
+                { "id": "out", "direction": "output", "type": "value.core.float64" }
               ]
             },
             {
@@ -2789,7 +2076,7 @@ fn reports_public_graph_semantic_errors() {
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "in", "direction": "input", "type": "event.bang" }
+                { "id": "in", "direction": "input", "type": "value.core.bang" }
               ]
             }
           ],
@@ -2819,20 +2106,20 @@ fn validates_public_v01_graph_and_node_contracts() {
           "nodes": [
             {
               "id": "clear",
-              "kind": "render.clear-color",
+              "kind": "object.core.render.clear-color",
               "kindVersion": "0.1.0",
               "params": { "color": [0, 0, 0, 1] },
               "ports": [
-                { "id": "out", "direction": "output", "type": "render.frame", "rate": "render" }
+                { "id": "out", "direction": "output", "type": "value.core.tensor", "rate": "render" }
               ]
             },
             {
               "id": "output",
-              "kind": "render.output",
+              "kind": "object.core.render.output",
               "kindVersion": "0.1.0",
               "params": {},
               "ports": [
-                { "id": "in", "direction": "input", "type": "render.frame", "rate": "render", "required": true }
+                { "id": "in", "direction": "input", "type": "value.core.tensor", "rate": "render", "required": true }
               ]
             }
           ],
@@ -2841,7 +2128,7 @@ fn validates_public_v01_graph_and_node_contracts() {
               "id": "edge_clear_output",
               "source": { "nodeId": "clear", "portId": "out" },
               "target": { "nodeId": "output", "portId": "in" },
-              "resolvedType": "render.frame"
+              "resolvedType": "value.core.tensor"
             }
           ]
         }"#,
@@ -2856,17 +2143,17 @@ fn validates_public_v01_graph_and_node_contracts() {
         r#"{
           "schema": "skenion.node.definition",
           "schemaVersion": "0.1.0",
-          "id": "render.output",
+          "id": "object.core.render.output",
           "version": "0.1.0",
           "displayName": "Render Output",
           "category": "Render",
           "ports": [
-            { "id": "in", "direction": "input", "type": "render.frame", "rate": "render", "required": true }
+            { "id": "in", "direction": "input", "type": "value.core.tensor", "rate": "render", "required": true }
           ],
           "execution": { "model": "gpu_pass", "clock": "frame" },
           "state": { "persistent": false },
           "permissions": [],
-          "capabilities": ["render.output.v0.1"]
+          "capabilities": ["object.core.render.output.v0.1"]
         }"#,
     )
     .expect("v0.1 node should parse");
@@ -2940,30 +2227,30 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                 "nodes": [
                   {
                     "id": "fallback_input",
-                    "kind": "core.inlet",
+                    "kind": "object.core.inlet",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "out", "direction": "output", "type": "control.number.float" }
+                      { "id": "out", "direction": "output", "type": "value.core.float64" }
                     ]
                   },
                   {
                     "id": "multi_input",
-                    "kind": "core.inlet",
+                    "kind": "object.core.inlet",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "first", "direction": "output", "type": "control.number.float" },
-                      { "id": "second", "direction": "output", "type": "control.number.float" }
+                      { "id": "first", "direction": "output", "type": "value.core.float64" },
+                      { "id": "second", "direction": "output", "type": "value.core.float64" }
                     ]
                   },
                   {
                     "id": "fallback_output",
-                    "kind": "core.outlet",
+                    "kind": "object.core.outlet",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                      { "id": "in", "direction": "input", "type": "control.number.float" }
+                      { "id": "in", "direction": "input", "type": "value.core.float64" }
                     ]
                   }
                 ],
@@ -3015,20 +2302,20 @@ fn reports_public_v01_project_and_patch_definition_errors() {
             "nodes": [
                 {
                     "id": "source",
-                    "kind": "core.float",
+                    "kind": "object.core.float",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                        { "id": "out", "direction": "output", "type": "control.number.float" }
+                        { "id": "out", "direction": "output", "type": "value.core.float64" }
                     ]
                 },
                 {
                     "id": "target",
-                    "kind": "render.output",
+                    "kind": "object.core.render.output",
                     "kindVersion": "0.1.0",
                     "params": {},
                     "ports": [
-                        { "id": "in", "direction": "input", "type": "render.frame" }
+                        { "id": "in", "direction": "input", "type": "value.core.tensor" }
                     ]
                 }
             ],
@@ -3061,29 +2348,29 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                     "nodes": [
                         {
                             "id": "inlet_a",
-                            "kind": "core.inlet",
+                            "kind": "object.core.inlet",
                             "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
-                                { "id": "out", "direction": "output", "type": "control.number.float" }
+                                { "id": "out", "direction": "output", "type": "value.core.float64" }
                             ]
                         },
                         {
                             "id": "inlet_b",
-                            "kind": "core.inlet",
+                            "kind": "object.core.inlet",
                             "kindVersion": "0.1.0",
                             "params": { "portId": "same" },
                             "ports": [
-                                { "id": "out", "direction": "output", "type": "control.number.float" }
+                                { "id": "out", "direction": "output", "type": "value.core.float64" }
                             ]
                         },
                         {
                             "id": "sink",
-                            "kind": "render.output",
+                            "kind": "object.core.render.output",
                             "kindVersion": "0.1.0",
                             "params": {},
                             "ports": [
-                                { "id": "in", "direction": "input", "type": "render.frame" }
+                                { "id": "in", "direction": "input", "type": "value.core.tensor" }
                             ]
                         }
                     ],

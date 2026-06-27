@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "[sin~]",
+  "ok": true,
+  "className": "sin~",
+  "creationArgs": [],
+  "resolvedKind": null,
+  "resolvedKindVersion": null,
+  "params": {},
+  "instancePorts": [],
+  "displayText": "sin~",
+  "diagnostics": []
+}

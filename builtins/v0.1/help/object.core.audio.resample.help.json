@@ -1,0 +1,14 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.audio.resample",
+  "summary": "Explicit audio sample-rate and drift compensation boundary.",
+  "description": "Audio Resample marks a signal route where sample-rate conversion or drift compensation is needed between independent audio clock domains.",
+  "helpGraph": "help/v0.1/nodes/object.core.audio.resample.help.graph.json",
+  "tags": [
+    "audio",
+    "clock",
+    "resample"
+  ],
+  "runtimeBehavior": "Validation and planning boundary only in v0. Real resampling quality is deferred to a later audio backend milestone."
+}

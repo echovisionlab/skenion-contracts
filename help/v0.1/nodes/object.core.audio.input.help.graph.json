@@ -1,0 +1,74 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-audio-input",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "input",
+      "kind": "object.core.audio.input",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "left",
+          "direction": "output",
+          "type": "value.core.float32",
+          "rate": "audio"
+        },
+        {
+          "id": "right",
+          "direction": "output",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "kind": "object.core.audio.output",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "same-device"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        },
+        {
+          "id": "right",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "input",
+        "portId": "left"
+      },
+      "target": {
+        "nodeId": "output",
+        "portId": "left"
+      }
+    },
+    {
+      "id": "edge-2",
+      "source": {
+        "nodeId": "input",
+        "portId": "right"
+      },
+      "target": {
+        "nodeId": "output",
+        "portId": "right"
+      }
+    }
+  ]
+}

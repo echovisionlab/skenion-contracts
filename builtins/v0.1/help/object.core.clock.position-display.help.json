@@ -1,0 +1,28 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.clock.position-display",
+  "summary": "Displays clock position fields with authority metadata.",
+  "description": "Clock Position Display is a UI object for clock.state. It may show bar, beat, division, tick, timecode, or time fields when the source provides them, and must distinguish authoritative, derived, estimated, and unavailable values.",
+  "helpGraph": "help/v0.1/nodes/object.core.clock.position-display.help.graph.json",
+  "tags": [
+    "clock",
+    "display",
+    "transport"
+  ],
+  "runtimeBehavior": "Displays clock.state projections only. It does not create a master transport and does not drive audio or render callbacks.",
+  "relatedNodes": [
+    "object.core.clock.local"
+  ],
+  "ports": [
+    {
+      "id": "clock",
+      "description": "Accepts clock.state from object.core.clock.local or future external clock source objects."
+    }
+  ],
+  "example": {
+    "title": "Inspect clock authority",
+    "description": "Use this display to see whether bar, beat, timecode, and phase are authoritative, derived, estimated, or unavailable.",
+    "graph": "help/v0.1/nodes/object.core.clock.position-display.help.graph.json"
+  }
+}

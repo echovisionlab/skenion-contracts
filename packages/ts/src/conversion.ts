@@ -8,25 +8,27 @@ import type {
 } from "./types.js";
 
 export const representationRegistryV01 = [
-  { id: "f64", semanticDataKind: "number.float", bitsPerComponent: 64, signed: true },
-  { id: "f32", semanticDataKind: "number.float", bitsPerComponent: 32, signed: true },
-  { id: "f16", semanticDataKind: "number.float", bitsPerComponent: 16, signed: true },
-  { id: "f8.e4m3", semanticDataKind: "number.float", bitsPerComponent: 8, signed: true },
-  { id: "f8.e5m2", semanticDataKind: "number.float", bitsPerComponent: 8, signed: true },
-  { id: "ufloat16", semanticDataKind: "number.float", bitsPerComponent: 16, signed: false },
-  { id: "ufloat8", semanticDataKind: "number.float", bitsPerComponent: 8, signed: false },
-  { id: "i64", semanticDataKind: "number.int", bitsPerComponent: 64, signed: true, integer: true },
-  { id: "i32", semanticDataKind: "number.int", bitsPerComponent: 32, signed: true, integer: true },
-  { id: "i16", semanticDataKind: "number.int", bitsPerComponent: 16, signed: true, integer: true },
-  { id: "i8", semanticDataKind: "number.int", bitsPerComponent: 8, signed: true, integer: true },
-  { id: "u64", semanticDataKind: "number.uint", bitsPerComponent: 64, signed: false, integer: true },
-  { id: "u32", semanticDataKind: "number.uint", bitsPerComponent: 32, signed: false, integer: true },
-  { id: "u16", semanticDataKind: "number.uint", bitsPerComponent: 16, signed: false, integer: true },
-  { id: "u8", semanticDataKind: "number.uint", bitsPerComponent: 8, signed: false, integer: true },
-  { id: "rgba32f", semanticDataKind: "color", bitsPerComponent: 32, signed: false, channels: 4 },
-  { id: "rgba16f", semanticDataKind: "color", bitsPerComponent: 16, signed: false, channels: 4 },
-  { id: "rgba8unorm", semanticDataKind: "color", bitsPerComponent: 8, signed: false, normalized: true, channels: 4 },
-  { id: "rgb8unorm", semanticDataKind: "color", bitsPerComponent: 8, signed: false, normalized: true, channels: 3 }
+  { id: "f64", semanticDataKind: "value.core.float64", bitsPerComponent: 64, signed: true },
+  { id: "f32", semanticDataKind: "value.core.float32", bitsPerComponent: 32, signed: true },
+  { id: "f16", semanticDataKind: "value.core.float16", bitsPerComponent: 16, signed: true },
+  { id: "f8.e4m3", semanticDataKind: "value.core.float8", bitsPerComponent: 8, signed: true },
+  { id: "f8.e5m2", semanticDataKind: "value.core.float8", bitsPerComponent: 8, signed: true },
+  { id: "ufloat64", semanticDataKind: "value.core.ufloat64", bitsPerComponent: 64, signed: false },
+  { id: "ufloat32", semanticDataKind: "value.core.ufloat32", bitsPerComponent: 32, signed: false },
+  { id: "ufloat16", semanticDataKind: "value.core.ufloat16", bitsPerComponent: 16, signed: false },
+  { id: "ufloat8", semanticDataKind: "value.core.ufloat8", bitsPerComponent: 8, signed: false },
+  { id: "i64", semanticDataKind: "value.core.int64", bitsPerComponent: 64, signed: true, integer: true },
+  { id: "i32", semanticDataKind: "value.core.int32", bitsPerComponent: 32, signed: true, integer: true },
+  { id: "i16", semanticDataKind: "value.core.int16", bitsPerComponent: 16, signed: true, integer: true },
+  { id: "i8", semanticDataKind: "value.core.int8", bitsPerComponent: 8, signed: true, integer: true },
+  { id: "u64", semanticDataKind: "value.core.uint64", bitsPerComponent: 64, signed: false, integer: true },
+  { id: "u32", semanticDataKind: "value.core.uint32", bitsPerComponent: 32, signed: false, integer: true },
+  { id: "u16", semanticDataKind: "value.core.uint16", bitsPerComponent: 16, signed: false, integer: true },
+  { id: "u8", semanticDataKind: "value.core.uint8", bitsPerComponent: 8, signed: false, integer: true },
+  { id: "rgba32f", semanticDataKind: "value.core.color", bitsPerComponent: 32, signed: false, channels: 4 },
+  { id: "rgba16f", semanticDataKind: "value.core.color", bitsPerComponent: 16, signed: false, channels: 4 },
+  { id: "rgba8unorm", semanticDataKind: "value.core.color", bitsPerComponent: 8, signed: false, normalized: true, channels: 4 },
+  { id: "rgb8unorm", semanticDataKind: "value.core.color", bitsPerComponent: 8, signed: false, normalized: true, channels: 3 }
 ] satisfies RepresentationSpecV01[];
 
 const representationById = new Map<string, RepresentationSpecV01>(
@@ -34,21 +36,54 @@ const representationById = new Map<string, RepresentationSpecV01>(
 );
 
 const defaultRepresentationByDataKind = new Map<string, RepresentationV01>([
-  ["number.float", "f32"],
-  ["number.int", "i32"],
-  ["number.uint", "u32"],
-  ["color", "rgba32f"]
+  ["value.core.float64", "f64"],
+  ["value.core.float32", "f32"],
+  ["value.core.float16", "f16"],
+  ["value.core.ufloat64", "ufloat64"],
+  ["value.core.ufloat32", "ufloat32"],
+  ["value.core.ufloat16", "ufloat16"],
+  ["value.core.ufloat8", "ufloat8"],
+  ["value.core.int64", "i64"],
+  ["value.core.int32", "i32"],
+  ["value.core.int16", "i16"],
+  ["value.core.int8", "i8"],
+  ["value.core.uint64", "u64"],
+  ["value.core.uint32", "u32"],
+  ["value.core.uint16", "u16"],
+  ["value.core.uint8", "u8"],
+  ["value.core.color", "rgba32f"]
 ]);
 
-const numericKinds = new Set(["number.float", "number.int", "number.uint"]);
-const controlMessageDataKinds = new Set([
-  "bool",
-  "color",
-  "message.any",
-  "number.float",
-  "number.int",
-  "number.uint",
-  "string"
+const floatKinds = new Set([
+  "value.core.float64",
+  "value.core.float32",
+  "value.core.float16",
+  "value.core.float8",
+  "value.core.ufloat64",
+  "value.core.ufloat32",
+  "value.core.ufloat16",
+  "value.core.ufloat8"
+]);
+const intKinds = new Set([
+  "value.core.int64",
+  "value.core.int32",
+  "value.core.int16",
+  "value.core.int8"
+]);
+const uintKinds = new Set([
+  "value.core.uint64",
+  "value.core.uint32",
+  "value.core.uint16",
+  "value.core.uint8"
+]);
+const numericKinds = new Set([...floatKinds, ...intKinds, ...uintKinds]);
+const messageValueDataKinds = new Set([
+  "value.core.bang",
+  "value.core.bool",
+  "value.core.color",
+  "value.core.message",
+  ...numericKinds,
+  "value.core.string"
 ]);
 
 export function representationForDataType(type: DataTypeV01): string | undefined {
@@ -72,7 +107,7 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
     implicit: true
   };
 
-  if (targetType.dataKind === "message.any" && isMessageAnyCompatible(sourceType, targetType)) {
+  if (targetType.dataKind === "value.core.message" && isMessageValueCompatible(sourceType, targetType)) {
     return {
       ...base,
       ok: true,
@@ -100,19 +135,19 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
     return numericConversionPlan(base);
   }
 
-  if (source.dataKind === "color" && target.dataKind === "color") {
+  if (source.dataKind === "value.core.color" && target.dataKind === "value.core.color") {
     const sourceRepresentation = representationById.get(String(source.representation));
     const targetRepresentation = representationById.get(String(target.representation));
-    if (!sourceRepresentation || sourceRepresentation.semanticDataKind !== "color") {
+    if (!sourceRepresentation || sourceRepresentation.semanticDataKind !== "value.core.color") {
       return failedPlan(
         base,
-        `unknown or mismatched source representation ${source.representation} for color`
+        `unknown or mismatched source representation ${source.representation} for value.core.color`
       );
     }
-    if (!targetRepresentation || targetRepresentation.semanticDataKind !== "color") {
+    if (!targetRepresentation || targetRepresentation.semanticDataKind !== "value.core.color") {
       return failedPlan(
         base,
-        `unknown or mismatched target representation ${target.representation} for color`
+        `unknown or mismatched target representation ${target.representation} for value.core.color`
       );
     }
 
@@ -133,14 +168,14 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
   return failedPlan(base, `${source.dataKind} is not compatible with ${target.dataKind}`);
 }
 
-function isMessageAnyCompatible(sourceType: DataTypeV01, targetType: DataTypeV01): boolean {
+function isMessageValueCompatible(sourceType: DataTypeV01, targetType: DataTypeV01): boolean {
   if (targetType.flow === "event") {
     return sourceType.flow === "event";
   }
   if (targetType.flow === "control") {
     return (
-      (sourceType.flow === "control" && controlMessageDataKinds.has(sourceType.dataKind)) ||
-      (sourceType.flow === "event" && sourceType.dataKind === "event.bang")
+      (sourceType.flow === "control" && messageValueDataKinds.has(sourceType.dataKind)) ||
+      (sourceType.flow === "event" && sourceType.dataKind === "value.core.bang")
     );
   }
   return false;
@@ -167,9 +202,9 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
   const narrowing = Boolean(
     sourceRepresentation.bitsPerComponent > targetRepresentation.bitsPerComponent
   );
-  const lossy = narrowing || sourceKind !== targetKind || base.source.representation !== base.target.representation;
+  const representationChanged = base.source.representation !== base.target.representation;
 
-  if (sourceKind === "number.float" && (targetKind === "number.int" || targetKind === "number.uint")) {
+  if (floatKinds.has(String(sourceKind)) && (intKinds.has(String(targetKind)) || uintKinds.has(String(targetKind)))) {
     return {
       ...base,
       ok: true,
@@ -184,11 +219,11 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
     };
   }
 
-  if ((sourceKind === "number.int" || sourceKind === "number.uint") && targetKind === "number.float") {
+  if ((intKinds.has(String(sourceKind)) || uintKinds.has(String(sourceKind))) && floatKinds.has(String(targetKind))) {
     return {
       ...base,
       ok: true,
-      lossy,
+      lossy: true,
       steps: [{
         policy: "integer-to-float",
         clamp: "saturating",
@@ -200,8 +235,8 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
   }
 
   if (
-    (sourceKind === "number.int" && targetKind === "number.uint") ||
-    (sourceKind === "number.uint" && targetKind === "number.int")
+    (intKinds.has(String(sourceKind)) && uintKinds.has(String(targetKind))) ||
+    (uintKinds.has(String(sourceKind)) && intKinds.has(String(targetKind)))
   ) {
     return {
       ...base,
@@ -215,7 +250,7 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
   return {
     ...base,
     ok: true,
-    lossy,
+    lossy: narrowing || representationChanged,
     steps: [{
       policy: "numeric-cast",
       clamp: "saturating",

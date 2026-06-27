@@ -7,14 +7,14 @@ representations.
 
 Canonical control port types describe the meaning of a value:
 
-- `control.number.float`
-- `control.number.int`
-- `control.number.uint`
-- `control.bool`
-- `control.string`
-- `control.color`
-- `control.message.any`
-- `event.bang`
+- `value.core.float64`
+- `value.core.int64`
+- `value.core.uint64`
+- `value.core.bool`
+- `value.core.string`
+- `value.core.color`
+- `value.core.message`
+- `value.core.bang`
 
 Representation-specific names such as `number.f32`, `number.i32`, or
 `color.rgba` are not canonical data kinds.
@@ -23,10 +23,23 @@ Representation-specific names such as `number.f32`, `number.i32`, or
 
 Representations describe how a semantic value is stored or delivered:
 
-- `control.number.float`: `f64`, `f32`, `f16`, `f8.e4m3`, `f8.e5m2`, `ufloat16`, `ufloat8`
-- `control.number.int`: `i64`, `i32`, `i16`, `i8`
-- `control.number.uint`: `u64`, `u32`, `u16`, `u8`
-- `control.color`: `rgba32f`, `rgba16f`, `rgba8unorm`, `rgb8unorm`
+- `value.core.float64`: `f64`
+- `value.core.float32`: `f32`
+- `value.core.float16`: `f16`
+- `value.core.float8`: `f8.e4m3`, `f8.e5m2`
+- `value.core.ufloat64`: `ufloat64`
+- `value.core.ufloat32`: `ufloat32`
+- `value.core.ufloat16`: `ufloat16`
+- `value.core.ufloat8`: `ufloat8`
+- `value.core.int64`: `i64`
+- `value.core.int32`: `i32`
+- `value.core.int16`: `i16`
+- `value.core.int8`: `i8`
+- `value.core.uint64`: `u64`
+- `value.core.uint32`: `u32`
+- `value.core.uint16`: `u16`
+- `value.core.uint8`: `u8`
+- `value.core.color`: `rgba32f`, `rgba16f`, `rgba8unorm`, `rgb8unorm`
 
 Node definitions and graph instance ports may use `format` to declare the
 chosen representation. If omitted, consumers should use the builtin default for

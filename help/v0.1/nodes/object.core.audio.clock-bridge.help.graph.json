@@ -1,0 +1,84 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-audio-clock-bridge",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "input",
+      "kind": "object.core.audio.input",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "input-device"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "output",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    },
+    {
+      "id": "bridge",
+      "kind": "object.core.audio.clock-bridge",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "kind": "object.core.audio.output",
+      "kindVersion": "0.1.0",
+      "params": {
+        "clockDomain": "output-device"
+      },
+      "ports": [
+        {
+          "id": "left",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "input",
+        "portId": "left"
+      },
+      "target": {
+        "nodeId": "bridge",
+        "portId": "in"
+      }
+    },
+    {
+      "id": "edge-2",
+      "source": {
+        "nodeId": "bridge",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "output",
+        "portId": "left"
+      }
+    }
+  ]
+}

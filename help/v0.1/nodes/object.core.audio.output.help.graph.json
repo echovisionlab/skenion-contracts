@@ -1,0 +1,73 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-audio-output",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "osc",
+      "kind": "object.core.audio.osc",
+      "kindVersion": "0.1.0",
+      "params": {
+        "frequency": 440
+      },
+      "ports": [
+        {
+          "id": "frequency",
+          "direction": "input",
+          "type": "value.core.float64"
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "kind": "object.core.audio.output",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "left",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        },
+        {
+          "id": "right",
+          "direction": "input",
+          "type": "value.core.float32",
+          "rate": "audio"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "osc",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "output",
+        "portId": "left"
+      }
+    },
+    {
+      "id": "edge-2",
+      "source": {
+        "nodeId": "osc",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "output",
+        "portId": "right"
+      }
+    }
+  ]
+}

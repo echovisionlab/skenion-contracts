@@ -12,8 +12,8 @@ skenion Docs [Clock And Transport model](https://github.com/skenion/skenion-docs
 - `clock.*` objects carry musical timing, transport, phase, and sync data
   through graph cables.
 - `clock.*` objects do not drive the audio callback or render loop.
-- `audio.output` owns the audio device sample clock.
-- `render.output` owns the render frame clock.
+- `object.core.audio.output` owns the audio device sample clock.
+- `object.core.render.output` owns the render frame clock.
 - Bit depth and sample format are representation concerns; sample rate and
   sample frame are clock concerns.
 
@@ -37,16 +37,16 @@ External sources do not provide equivalent data:
 
 ## Published Builtins
 
-`clock.local` publishes:
+`object.core.clock.local` publishes:
 
 - `sync: clock.state`
-- `reset: event.bang`
+- `reset: value.core.bang`
 - `state: clock.state`
-- `tick: event.bang`
-- `phase: control.number.float`
-- `tempo: control.number.float`
+- `tick: value.core.bang`
+- `phase: value.core.float64`
+- `tempo: value.core.float64`
 
-`clock.position-display` publishes:
+`object.core.clock.position-display` publishes:
 
 - `clock: clock.state`
 

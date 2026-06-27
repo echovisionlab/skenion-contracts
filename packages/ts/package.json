@@ -24,10 +24,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./runtime/http": {
-      "types": "./dist/runtimeHttp.d.ts",
-      "import": "./dist/runtimeHttp.js"
-    },
     "./extension/v0.1/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
@@ -60,23 +56,11 @@
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
-    "./runtime/v0/operation-schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./runtime/v0/session-schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
-    "./runtime/v0/collaboration-schema": {
-      "types": "./dist/generated/schemas.d.ts",
-      "import": "./dist/generated/schemas.js"
-    },
     "./view/v0.1/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
-    "./control/v0.1/message-schema": {
+    "./message/v0.1/value-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
@@ -96,8 +80,8 @@
     "build": "pnpm run clean && pnpm run generate && tsc -p tsconfig.json",
     "clean": "node scripts/clean-dist.mjs",
     "ci": "pnpm run build && pnpm run coverage",
-    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/generated/**' --test-coverage-exclude='dist/runtimeHttp.js' test/*.test.mjs",
-    "generate": "node scripts/generate-schemas.mjs && node scripts/generate-builtins.mjs",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/generated/**' test/*.test.mjs",
+    "generate": "node scripts/generate-schemas.mjs",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {

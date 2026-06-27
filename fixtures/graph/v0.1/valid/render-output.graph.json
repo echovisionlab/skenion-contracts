@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": "clear_color",
-      "kind": "render.clear-color",
+      "kind": "object.core.render.clear-color",
       "kindVersion": "0.1.0",
       "params": {
         "color": [
@@ -20,21 +20,21 @@
         {
           "id": "out",
           "direction": "output",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         }
       ]
     },
     {
       "id": "output",
-      "kind": "render.output",
+      "kind": "object.core.render.output",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "in",
           "direction": "input",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render",
           "required": true
         }
@@ -52,7 +52,7 @@
         "nodeId": "output",
         "portId": "in"
       },
-      "resolvedType": "render.frame"
+      "resolvedType": "value.core.tensor"
     }
   ]
 }

@@ -22,20 +22,33 @@ export interface DataTypeV01 {
   values?: Array<string | number | boolean>;
 }
 
-export type SemanticDataKindV01 =
-  | "number.float"
-  | "number.int"
-  | "number.uint"
-  | "bool"
-  | "string"
-  | "message.any"
-  | "event.bang"
-  | "clock.state"
-  | "asset.video"
-  | "video.frame"
-  | "signal.audio"
-  | "gpu.texture2d"
-  | "color";
+export type ValueTypeIdV01 =
+  | "value.core.bang"
+  | "value.core.bool"
+  | "value.core.uint8"
+  | "value.core.uint16"
+  | "value.core.uint32"
+  | "value.core.uint64"
+  | "value.core.int8"
+  | "value.core.int16"
+  | "value.core.int32"
+  | "value.core.int64"
+  | "value.core.float8"
+  | "value.core.float16"
+  | "value.core.float32"
+  | "value.core.float64"
+  | "value.core.ufloat8"
+  | "value.core.ufloat16"
+  | "value.core.ufloat32"
+  | "value.core.ufloat64"
+  | "value.core.string"
+  | "value.core.message"
+  | "value.core.color"
+  | "value.core.vector"
+  | "value.core.matrix"
+  | "value.core.tensor";
+
+export type SemanticDataKindV01 = ValueTypeIdV01;
 
 export type FloatRepresentationV01 =
   | "f64"
@@ -43,6 +56,8 @@ export type FloatRepresentationV01 =
   | "f16"
   | "f8.e4m3"
   | "f8.e5m2"
+  | "ufloat64"
+  | "ufloat32"
   | "ufloat16"
   | "ufloat8";
 
@@ -70,6 +85,90 @@ export type ColorRepresentationV01 =
   | "rgb8unorm";
 
 export type RepresentationV01 = NumericRepresentationV01 | ColorRepresentationV01;
+
+export type ValueLayoutV01 =
+  | "scalar"
+  | "interleaved"
+  | "planar"
+  | "row-major"
+  | "column-major"
+  | "strided"
+  | "opaque";
+
+export type ValuePayloadKindV01 = "empty" | "json" | "bytes" | "resource-handle";
+export type ValueResourceKindV01 =
+  | "cpu-buffer"
+  | "gpu-buffer"
+  | "gpu-texture"
+  | "runtime-handle";
+export type ValueClockV01 =
+  | "logical"
+  | "host-time"
+  | "audio-sample-frame"
+  | "render-frame"
+  | "video-pts";
+export type ValueContinuityFlagV01 =
+  | "discontinuity"
+  | "keyframe"
+  | "dropped-before"
+  | "end-of-stream";
+
+export interface ValueEndpointRefV01 {
+  nodeId: string;
+  portId: string;
+}
+
+export interface ValueFormatV01 {
+  valueTypeId: SemanticDataKindV01 | string;
+  format?: RepresentationV01 | string;
+  shape?: number[];
+  dynamicShape?: boolean;
+  layout?: ValueLayoutV01 | string;
+  strides?: number[];
+  byteLength?: number;
+  sampleRate?: number;
+  channels?: number;
+  channelLayout?: string;
+  colorSpace?: string;
+  colorRange?: string;
+  transfer?: string;
+  primaries?: string;
+  alphaPolicy?: string;
+  resourceKind?: ValueResourceKindV01 | string;
+}
+
+export interface EndpointBindingDeliveryPolicyV01 {
+  policy?: "ordered" | "latest" | "ring" | "drop";
+  maxInFlight?: number;
+  keyframes?: boolean;
+}
+
+export interface EndpointBindingValueFormatV01 {
+  bindingId: string;
+  bindingEpoch: number;
+  formatRevision: number;
+  formatDigest?: string;
+  valueFormat: ValueFormatV01;
+  source?: ValueEndpointRefV01;
+  target?: ValueEndpointRefV01;
+  delivery?: EndpointBindingDeliveryPolicyV01;
+}
+
+export interface ValueOccurrenceHeaderV01 {
+  bindingId: string;
+  bindingEpoch: number;
+  formatRevision: number;
+  sequence: number;
+  clock?: ValueClockV01 | string;
+  timestamp?: number;
+  payloadKind: ValuePayloadKindV01;
+  byteLength?: number;
+  byteOffset?: number;
+  actualShape?: number[];
+  flags?: ValueContinuityFlagV01[];
+  droppedBefore?: number;
+  duration?: number;
+}
 
 export type AudioEndpointDirectionV01 = "input" | "output";
 export type AudioClockDomainAuthorityV01 =
@@ -136,545 +235,19 @@ export interface ClockStateV01 {
   lastUpdateHostTimeNs?: number;
 }
 
-export type RuntimeClockDiagnosticSeverity = "warning" | "error";
-
-export interface RuntimeClockDiagnostic {
-  severity: RuntimeClockDiagnosticSeverity;
-  code: string;
-  message: string;
-}
-
-export type RuntimeIoDiagnosticSeverity = "warning" | "error";
-
-export interface RuntimeIoDiagnostic {
-  severity: RuntimeIoDiagnosticSeverity;
-  code: string;
-  message: string;
-}
-
-export type RuntimeIoTransportKind = "midi" | "hid" | "serial" | "inline";
-export type RuntimeIoDirection = "input" | "output";
-
-export interface RuntimeIoDeviceDescriptor {
-  id: string;
-  name: string;
-  transportKind: RuntimeIoTransportKind;
-  directions: RuntimeIoDirection[];
-  backend: string;
-  index?: number;
-  stable: boolean;
-}
-
-export interface RuntimeIoDeviceListResponse {
-  ok: boolean;
-  devices: RuntimeIoDeviceDescriptor[];
-  diagnostics: RuntimeIoDiagnostic[];
-}
-
-export interface RuntimeIoInlineFrame {
-  atNs: number;
-  bytes: number[];
-}
-
-export type RuntimeIoBindingConfig =
-  | { kind: "midi"; deviceId: string }
-  | { kind: "hid"; deviceId: string }
-  | { kind: "serial"; deviceId: string; baudRate?: number }
-  | { kind: "inline"; frames: RuntimeIoInlineFrame[] };
-
-export type RuntimeDiagnosticSeverityV01 = "error" | "warning" | "info";
-export type RuntimeDiagnosticSeverity = RuntimeDiagnosticSeverityV01;
-export type RuntimeDiagnosticDetails =
+export type JsonValueV01 =
   | string
   | number
   | boolean
   | null
-  | RuntimeDiagnosticDetails[]
-  | { [key: string]: RuntimeDiagnosticDetails };
-
-export interface RuntimeDiagnosticV01 {
-  severity: RuntimeDiagnosticSeverityV01;
-  message: string;
-  code?: string;
-  details?: RuntimeDiagnosticDetails;
-}
-
-export type RuntimeDiagnostic = RuntimeDiagnosticV01;
-
-export interface RuntimeHealth {
-  ok: boolean;
-  service: string;
-  version: string;
-}
-
-export interface RuntimeInfo {
-  name: string;
-  version: string;
-  apiVersion: string;
-  capabilities: string[];
-}
-
-export type RuntimeSessionLifecycleState = "initializing" | "ready" | "closing" | "closed" | "error";
-export type RuntimeConnectionProfileMode = "local-managed" | "local-shared" | "remote";
-export type RuntimeOwnershipMode = "owned-child" | "external" | "remote";
-
-export interface RuntimeEndpointMetadata {
-  url: string;
-  canonicalUrl?: string;
-  protocol: "http" | "https";
-  host?: string;
-  port?: number;
-  tls?: boolean;
-}
-
-export interface RuntimeProcessMetadata {
-  ownedByHost: boolean;
-  pid?: number;
-  executablePath?: string;
-  workingDirectory?: string;
-  startedAt?: string;
-  ownerWindowId?: string;
-  platform?: string;
-  arch?: string;
-}
-
-export interface RuntimeConnectionProfileBase {
-  displayName?: string;
-  endpoint: RuntimeEndpointMetadata;
-  process?: RuntimeProcessMetadata | null;
-}
-
-export type RuntimeConnectionProfile =
-  | (RuntimeConnectionProfileBase & { mode: "local-managed"; ownership: "owned-child" })
-  | (RuntimeConnectionProfileBase & { mode: "local-shared"; ownership: "external" })
-  | (RuntimeConnectionProfileBase & { mode: "remote"; ownership: "remote" });
-
-export interface RuntimeEventReplayWindow {
-  cursorKind: "sequence";
-  currentCursor: string;
-  earliestSequence: number;
-  latestSequence: number;
-  replayLimit: number | null;
-  overflow?: boolean;
-}
-
-export interface RuntimeSessionCapabilitySet {
-  sessionAddressing: boolean;
-  eventReplay: boolean;
-  multiWindow: boolean;
-  profiles: RuntimeConnectionProfileMode[];
-  authPolicy: "deferred";
-}
-
-export interface RuntimeLogEvent {
-  id: number;
-  timestamp: string;
-  source: "runtime";
-  level: RuntimeDiagnosticSeverity;
-  code: string | null;
-  message: string;
-}
-
-export interface RuntimeLogRetention {
-  replayLimit: number;
-  replayLevels: RuntimeDiagnosticSeverity[];
-}
-
-export interface RuntimeLogSnapshotResponse {
-  schema: "skenion.runtime.logs";
-  schemaVersion: string;
-  ok: boolean;
-  events: RuntimeLogEvent[];
-  retention: RuntimeLogRetention;
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export type RuntimeProjectSnapshot = ProjectDocumentV01;
-
-export interface RuntimeProjectRequestV01 extends ProjectDocumentV01 {
-  nodes: NodeDefinitionManifestV01[];
-}
-
-export type RuntimeProjectRequest = RuntimeProjectRequestV01;
-
-export interface RuntimePlan {
-  graphId: string;
-  graphRevision: string;
-  nodes: RuntimePlanNode[];
-  edges: RuntimePlanEdge[];
-  groups: RuntimeExecutionGroup[];
-}
-
-export interface RuntimePlanNode {
-  nodeId: string;
-  kind: string;
-  kindVersion: string;
-  executionModel: string;
-  order: number;
-}
-
-export interface RuntimePlanEdge {
-  fromNode: string;
-  fromPort: string;
-  toNode: string;
-  toPort: string;
-  metadata?: RuntimePlanEdgeMetadata | null;
-}
-
-export interface RuntimePlanEdgeMetadata {
-  resolvedType?: string | null;
-  mergePolicy?: string | null;
-  fanOutPolicy?: string | null;
-  order?: number | null;
-  feedback?: {
-    boundary: string;
-    bufferMode?: string;
-    maxLatencyFrames?: number;
-  } | null;
-  cycleClassification?: string | null;
-}
-
-export interface RuntimeExecutionGroup {
-  executionModel: string;
-  nodeIds: string[];
-}
-
-export interface RuntimeDummyExecutionReport {
-  graphId: string;
-  graphRevision: string;
-  frameCount: number;
-  frames: RuntimeDummyFrameReport[];
-}
-
-export interface RuntimeDummyFrameReport {
-  index: number;
-  executedNodes: RuntimeDummyNodeExecution[];
-}
-
-export interface RuntimeDummyNodeExecution {
-  nodeId: string;
-  kind: string;
-  kindVersion: string;
-  executionModel: string;
-  order: number;
-  status: string;
-}
-
-export interface RuntimeApiResponse {
-  ok: boolean;
-  diagnostics: RuntimeDiagnostic[];
-  plan: RuntimePlan | null;
-  report: RuntimeDummyExecutionReport | null;
-}
-
-export interface RuntimeSessionSnapshot {
-  sessionRevision: number;
-  viewRevision: number;
-  controlRevision: number;
-  project: RuntimeProjectSnapshot | null;
-  diagnostics: RuntimeDiagnosticV01[];
-  plan: Record<string, unknown> | null;
-}
-
-export interface RuntimeSessionResponse {
-  ok: boolean;
-  snapshot: RuntimeSessionSnapshot;
-  diagnostics: RuntimeDiagnosticV01[];
-  report: RuntimeDummyExecutionReport | null;
-}
-
-export interface RuntimeSessionInfoResponse {
-  schema: "skenion.runtime.session.info";
-  schemaVersion: "0.1.0";
-  ok: boolean;
-  sessionId: string;
-  lifecycle: RuntimeSessionLifecycleState;
-  snapshot: RuntimeSessionSnapshot;
-  profile: RuntimeConnectionProfile;
-  capabilities: RuntimeSessionCapabilitySet;
-  eventReplay: RuntimeEventReplayWindow;
-  diagnostics: RuntimeDiagnosticV01[];
-}
-
-export interface RuntimeMutationRequest {
-  operation?: RuntimeOperationEnvelope;
-  viewPatch?: RuntimeViewPatch;
-  clientId?: string;
-  description?: string;
-}
-
-export interface RuntimeViewPatch {
-  baseViewRevision: number;
-  ops: RuntimeViewPatchOperation[];
-}
-
-export type RuntimeViewPatchOperation =
-  | { op: "setNodeView"; nodeId: string; view: CanvasNodeViewV01 }
-  | { op: "moveNodeView"; nodeId: string; from?: CanvasNodeViewV01; to: CanvasNodeViewV01 };
-
-export type RuntimeHistoryEntryKind = "apply" | "undo" | "redo";
-
-export interface RuntimeHistoryEntry {
-  id: string;
-  sequence: number;
-  kind: RuntimeHistoryEntryKind;
-  mutation: RuntimeMutationRequest;
-  inverseMutation: RuntimeMutationRequest;
-  subjectEventId?: string;
-  clientId?: string;
-  description?: string;
-  createdAt: string;
-}
-
-export interface RuntimeHistory {
-  schema: "skenion.runtime.history";
-  schemaVersion: "0.1.0";
-  entries: RuntimeHistoryEntry[];
-  canUndo: boolean;
-  canRedo: boolean;
-  undoDepth: number;
-  redoDepth: number;
-}
-
-export interface RuntimeMutationResponse {
-  ok: boolean;
-  applied: boolean;
-  conflict: boolean;
-  snapshot: RuntimeSessionSnapshot;
-  history: RuntimeHistory;
-  diagnostics: RuntimeDiagnosticV01[];
-}
-
-export type RuntimeSessionEventKind = "snapshot" | "load" | "clear" | "mutate" | "undo" | "redo";
-
-export interface RuntimeEventReplayGap {
-  expectedSequence: number;
-  actualSequence: number;
-  reason: "retention-overflow" | "stream-reset" | "unknown";
-}
-
-export interface RuntimeEventReplayMetadata {
-  cursor: string;
-  previousCursor: string | null;
-  replayed: boolean;
-  gap: RuntimeEventReplayGap | null;
-  overflow: boolean;
-}
-
-export interface RuntimeSessionEvent {
-  schema: "skenion.runtime.session.event";
-  schemaVersion: "0.1.0";
-  id: string;
-  sessionId: string;
-  sequence: number;
-  sessionRevision: number;
-  kind: RuntimeSessionEventKind;
-  snapshot: RuntimeSessionSnapshot;
-  history: RuntimeHistory;
-  mutation?: RuntimeHistoryEntry;
-  replay: RuntimeEventReplayMetadata;
-  diagnostics: RuntimeDiagnosticV01[];
-  createdAt: string;
-}
-
-export type RuntimePreviewState = "stopped" | "starting" | "running" | "exited" | "error";
-
-export interface RuntimePreviewStatus {
-  ok: boolean;
-  state: RuntimePreviewState;
-  pid: number | null;
-  graphId: string | null;
-  graphRevision: string | null;
-  sessionRevision: number | null;
-  previewSessionRevision: number | null;
-  controlRevision: number | null;
-  previewControlRevision: number | null;
-  controlLive: boolean;
-  lastControlUpdateAt: string | null;
-  stale: boolean;
-  startedAt: string | null;
-  exitedAt: string | null;
-  exitCode: number | null;
-  message: string | null;
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export interface RuntimePreviewStartRequest {
-  restart: boolean;
-}
-
-export interface RuntimeAsset {
-  id: string;
-  name: string;
-  mimeType: string;
-  kind: string;
-  sizeBytes: number;
-  runtimeUri: string;
-}
-
-export interface RuntimeAssetImportResponse {
-  ok: boolean;
-  asset: RuntimeAsset | null;
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export interface RuntimeAssetListResponse {
-  ok: boolean;
-  assets: RuntimeAsset[];
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export interface RuntimeAssetGetResponse {
-  ok: boolean;
-  asset: RuntimeAsset | null;
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export type RuntimeControlValue =
-  | { type: "float"; representation: FloatRepresentationV01; value: number }
-  | { type: "int"; representation: IntRepresentationV01; value: number }
-  | { type: "uint"; representation: UintRepresentationV01; value: number }
-  | { type: "bool"; value: boolean }
-  | { type: "string"; value: string }
-  | {
-      type: "color";
-      representation: ColorRepresentationV01;
-      colorSpace: "linear" | "srgb";
-      value: [number, number, number, number];
-    };
-
-export type RuntimeControlAtom = RuntimeControlValue;
-
-export interface RuntimeControlMessage {
-  selector: string;
-  atoms: RuntimeControlAtom[];
-}
-
-export interface RuntimeControlEventRequest {
-  nodeId: string;
-  portId: "in" | "cold" | "value" | "out";
-  message: RuntimeControlMessage;
-}
-
-export interface RuntimeControlEmission {
-  nodeId: string;
-  portId: "in" | "out" | "value";
-  message: RuntimeControlMessage;
-}
-
-export interface RuntimeControlEventResponse {
-  ok: boolean;
-  changed: boolean;
-  controlRevision: number | null;
-  emitted: RuntimeControlEmission[];
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export interface RuntimeControlStateResponse {
-  ok: boolean;
-  controlRevision: number;
-  values: Record<string, RuntimeControlValue>;
-  channels: Record<string, RuntimeControlMessage>;
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export type RuntimeControlReadTarget = "param" | "port" | "state";
-
-export interface RuntimeControlReadRequest {
-  nodeId: string;
-  target: RuntimeControlReadTarget;
-  id: string;
-}
-
-export type RuntimeControlReadValue =
-  | RuntimeControlValue
-  | {
-      type: "json";
-      value: unknown;
-    };
-
-export interface RuntimeControlReadResponse {
-  ok: boolean;
-  address: RuntimeControlReadRequest;
-  value: RuntimeControlReadValue | null;
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export interface RuntimeTelemetrySnapshot {
-  schema: "skenion.runtime.telemetry";
-  schemaVersion: "0.1.0";
-  ok: boolean;
-  timestamp: string;
-  session: RuntimeTelemetrySession;
-  preview: RuntimeTelemetryPreview;
-  render: RuntimeTelemetryRender;
-  process: RuntimeTelemetryProcess;
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export interface RuntimeTelemetrySession {
-  loaded: boolean;
-  graphId: string | null;
-  graphRevision: string | null;
-  sessionRevision: number;
-  controlRevision: number;
-}
-
-export interface RuntimeTelemetryPreview {
-  state: RuntimePreviewState;
-  pid: number | null;
-  stale: boolean;
-  graphId: string | null;
-  graphRevision: string | null;
-  sessionRevision: number | null;
-  previewSessionRevision: number | null;
-  controlRevision: number | null;
-  previewControlRevision: number | null;
-  controlLive: boolean;
-  lastControlUpdateAt: string | null;
-}
-
-export interface RuntimeTelemetryRender {
-  active: boolean;
-  backend: string | null;
-  renderer: string | null;
-  framesRendered: number;
-  approxFps: number | null;
-  lastFrameMs: number | null;
-  lastError: string | null;
-  sourceNodeId: string | null;
-  diagnostics: ShaderDiagnosticV01[];
-  generatedSourceAvailable: boolean;
-  controlRevision: number | null;
-  previewControlRevision: number | null;
-  controlLive: boolean;
-  lastControlUpdateAt: string | null;
-}
-
-export interface RuntimeTelemetryProcess {
-  runtimeVersion: string;
-  uptimeMs: number;
-}
-
-export interface RuntimeGeneratedShaderResponse {
-  ok: boolean;
-  nodeId: string | null;
-  language: "wgsl" | null;
-  source: string | null;
-  sourceMap: GeneratedShaderSourceMapV01 | null;
-  diagnostics: ShaderDiagnosticV01[];
-}
-
-export interface RuntimeSessionRunRequest {
-  frames: number;
-}
+  | JsonValueV01[]
+  | { [key: string]: JsonValueV01 };
 
 export type ExtensionKindV01 = "core-package" | "native-runtime" | "codec" | "node-pack";
 export type ExtensionNativeArtifactAbiV01 = "c";
 export type ExtensionCodecDirectionV01 = "decode" | "encode" | "duplex";
 export type ExtensionTransportKindV01 = "midi" | "hid" | "serial" | "inline";
 export type ExtensionTestKindV01 = "node" | "codec" | "extension";
-export type RuntimeExtensionStatus = "loaded" | "disabled" | "failed";
 
 export interface ExtensionNativeArtifactV01 {
   os: string;
@@ -827,7 +400,7 @@ export interface PackageDiagnosticV01 {
   severity: PackageDiagnosticSeverityV01;
   code: string;
   message: string;
-  details?: RuntimeDiagnosticDetails;
+  details?: JsonValueV01;
 }
 
 export interface PackageManifestV01 {
@@ -906,7 +479,7 @@ export interface PackageListingDiagnosticV01 {
   severity: PackageDiagnosticSeverityV01;
   code: PackageListingDiagnosticCodeV01;
   message: string;
-  details?: RuntimeDiagnosticDetails;
+  details?: JsonValueV01;
 }
 
 /**
@@ -1074,7 +647,7 @@ export interface PackageInstallPlanDiagnosticV01 {
   severity: PackageDiagnosticSeverityV01;
   code: PackageInstallPlanDiagnosticCodeV01;
   message: string;
-  details?: RuntimeDiagnosticDetails;
+  details?: JsonValueV01;
 }
 
 /**
@@ -1095,66 +668,6 @@ export interface PackageInstallPlanResponseV01 {
   checks: PackageInstallPlanCheckV01[];
   actions: PackageInstallPlanActionV01[];
   diagnostics: PackageInstallPlanDiagnosticV01[];
-}
-
-/**
- * Runtime HTTP package registry entry exposed to clients.
- *
- * This is a Contracts-owned projection of package manifest identity, provided
- * surfaces, checksum evidence, and load diagnostics. Runtime registry revisions,
- * event ids, install transactions, active/enabled state, watcher state, and
- * cache bookkeeping remain Runtime-internal until a later contract promotes
- * one of those fields explicitly.
- */
-export interface PackageRegistryEntryV01 {
-  packageId: string;
-  version: string;
-  category: PackageCategoryV01;
-  source: PackageSourceV01;
-  root: PackageRootV01;
-  trust: PackageTrustV01;
-  contracts: PackageContractsSupportV01;
-  runtimeAbiRange?: string;
-  targets?: PackageTargetTripleV01[];
-  manifestPath: string;
-  manifestChecksum: PackageChecksumV01;
-  provides: PackageProvidesV01;
-  diagnostics: PackageDiagnosticV01[];
-}
-
-/**
- * Snapshot DTO for Runtime's `/v0/packages` endpoint.
- *
- * The response intentionally has no revision or event cursor; clients that need
- * registry event history must use a future explicit Runtime contract rather
- * than inferring ledger state from this package list.
- */
-export interface PackageRegistryListResponseV01 {
-  ok: boolean;
-  packages: PackageRegistryEntryV01[];
-  diagnostics: PackageDiagnosticV01[];
-}
-
-export interface RuntimeExtensionDescriptor {
-  id: string;
-  version: string;
-  kind: ExtensionKindV01;
-  runtimeAbiVersion: string;
-  manifestPath: string;
-  status: RuntimeExtensionStatus;
-  capabilities: string[];
-  providedNodes: string[];
-  providedCodecs: string[];
-  providedTransports: string[];
-  providedHelp: string[];
-  testIds: string[];
-  diagnostics: RuntimeDiagnostic[];
-}
-
-export interface RuntimeExtensionListResponse {
-  ok: boolean;
-  extensions: RuntimeExtensionDescriptor[];
-  diagnostics: RuntimeDiagnostic[];
 }
 
 export interface AudioDeviceDescriptorV01 {
@@ -1254,7 +767,7 @@ export interface AudioResamplerPlanV01 {
 
 export interface RepresentationSpecV01 {
   id: RepresentationV01;
-  semanticDataKind: "number.float" | "number.int" | "number.uint" | "color";
+  semanticDataKind: ValueTypeIdV01;
   bitsPerComponent: number;
   signed?: boolean;
   integer?: boolean;
@@ -1328,7 +841,7 @@ export type CycleValidationV01 =
   | "ambiguous-algebraic-loop"
   | "invalid-cycle";
 
-export interface MessageSelectorPolicyV01 {
+export interface MessageKeyPolicyV01 {
   accepted: string[];
   silent?: string[];
   trigger?: string[];
@@ -1348,7 +861,7 @@ export interface PortSpecV01 {
   mergePolicy?: MergePolicyV01;
   fanOutPolicy?: FanOutPolicyV01;
   triggerMode?: TriggerModeV01;
-  messageSelectors?: MessageSelectorPolicyV01;
+  messageKeys?: MessageKeyPolicyV01;
   defaultValue?: unknown;
   latch?: boolean;
   required?: boolean;
@@ -1565,382 +1078,6 @@ export interface PasteGraphFragmentRequest {
   options?: PasteGraphFragmentOptions;
 }
 
-export interface RuntimeOperationAttribution {
-  actorId?: string;
-  clientId?: string;
-  label?: string;
-}
-
-export interface RuntimeOperationEnvelope {
-  schema: "skenion.runtime.operation";
-  schemaVersion: "0.1.0";
-  id: string;
-  kind: "pasteGraphFragment";
-  request: PasteGraphFragmentRequest;
-  attribution?: RuntimeOperationAttribution;
-  correlationId?: string;
-  createdAt?: string;
-}
-
-export interface IdRemapResult {
-  nodeIdMap: Record<string, string>;
-  edgeIdMap: Record<string, string>;
-  omittedEdgeIds: string[];
-}
-
-export type RuntimeOperationDiagnosticSeverity = "error" | "warning" | "info";
-
-export interface RuntimeOperationDiagnostic {
-  severity: RuntimeOperationDiagnosticSeverity;
-  code: string;
-  message: string;
-  path?: string;
-  target?: GraphTargetRef;
-  expectedRevision?: string;
-  actualRevision?: string;
-  duplicates?: string[];
-  nodes?: string[];
-  edges?: string[];
-  interfacePolicy?: InterfaceIncidentEdgePolicyV01;
-  interfaceDetail?: InterfaceDiagnosticDetailV01;
-}
-
-export interface PasteGraphFragmentResponse {
-  schema: "skenion.runtime.paste-graph-fragment.response";
-  schemaVersion: "0.1.0";
-  ok: boolean;
-  applied: boolean;
-  conflict: boolean;
-  target: GraphTargetRef;
-  revisionBefore: string;
-  revisionAfter: string | null;
-  historyEntryId: string | null;
-  idRemap: IdRemapResult;
-  diagnostics: RuntimeOperationDiagnostic[];
-}
-
-export interface RuntimeCollaborationCausalMetadata {
-  baseRevision: string;
-  baseSequence: number;
-  vector: Record<string, number>;
-  observedOperationIds?: string[];
-}
-
-export type RuntimeCollaborationAuthSubjectKind = "anonymous" | "user" | "service" | "deferred";
-
-export interface RuntimeCollaborationAuthSubject {
-  kind: RuntimeCollaborationAuthSubjectKind;
-  subjectId?: string;
-  issuer?: string;
-  displayName?: string;
-}
-
-export interface RuntimeCollaborationParticipant {
-  participantId: string;
-  sessionId: string;
-  joinedAt: string;
-  displayName?: string;
-  color?: string;
-  capabilities?: string[];
-  authSubject?: RuntimeCollaborationAuthSubject;
-}
-
-export interface RuntimeCollaborationCanvasPosition {
-  x: number;
-  y: number;
-}
-
-export type RuntimeCollaborationChange =
-  | {
-      op: "node.add";
-      changeId: string;
-      node: GraphNodeV01;
-      view?: RuntimeCollaborationCanvasPosition;
-    }
-  | {
-      op: "node.move";
-      changeId: string;
-      nodeId: string;
-      from?: RuntimeCollaborationCanvasPosition;
-      to: RuntimeCollaborationCanvasPosition;
-    }
-  | {
-      op: "node.delete";
-      changeId: string;
-      nodeId: string;
-      tombstoneId?: string;
-    }
-  | {
-      op: "edge.connect";
-      changeId: string;
-      edge: EdgeSpecV01;
-    }
-  | {
-      op: "edge.disconnect";
-      changeId: string;
-      edgeId: string;
-    };
-
-export interface RuntimeCollaborationChangeSetPayload {
-  kind: "changeSet";
-  target: GraphTargetRef;
-  changes: RuntimeCollaborationChange[];
-  undoGroupId?: string;
-  description?: string;
-}
-
-export interface RuntimeCollaborationPasteGraphFragmentPayload {
-  kind: "pasteGraphFragment";
-  request: PasteGraphFragmentRequest;
-  undoGroupId?: string;
-  description?: string;
-}
-
-export type RuntimeCollaborationUndoRedoAction = "undo" | "redo";
-
-export interface RuntimeCollaborationUndoScope {
-  kind: "participant";
-  participantId: string;
-}
-
-export interface RuntimeCollaborationUndoRedoPayload {
-  kind: "undoRedo";
-  action: RuntimeCollaborationUndoRedoAction;
-  scope: RuntimeCollaborationUndoScope;
-  subjectOperationId?: string;
-  undoGroupId?: string;
-  maxOperations?: number;
-}
-
-export type RuntimeCollaborationOperationPayload =
-  | RuntimeCollaborationChangeSetPayload
-  | RuntimeCollaborationPasteGraphFragmentPayload
-  | RuntimeCollaborationUndoRedoPayload;
-
-export interface RuntimeCollaborationOperationEnvelope {
-  schema: "skenion.runtime.collaboration.operation";
-  schemaVersion: "0.1.0";
-  operationId: string;
-  sessionId: string;
-  participantId: string;
-  idempotencyKey: string;
-  causal: RuntimeCollaborationCausalMetadata;
-  payload: RuntimeCollaborationOperationPayload;
-  authSubject?: RuntimeCollaborationAuthSubject;
-  correlationId?: string;
-  submittedAt: string;
-}
-
-export interface RuntimeCollaborationOperationBatch {
-  schema: "skenion.runtime.collaboration.operation-batch";
-  schemaVersion: "0.1.0";
-  sessionId: string;
-  operations: RuntimeCollaborationOperationEnvelope[];
-  submittedAt?: string;
-}
-
-export type RuntimeCollaborationOperationDiagnosticSeverity = "error" | "warning" | "info";
-
-export type RuntimeCollaborationOperationDiagnosticCode =
-  | "base-revision-mismatch"
-  | "causality-gap"
-  | "duplicate-idempotency-key"
-  | "idempotent-replay"
-  | "invalid-operation"
-  | "operation-rebased"
-  | "participant-expired"
-  | "participant-mismatch"
-  | "presence-expired"
-  | "selection-expired"
-  | "unsupported-operation";
-
-export interface RuntimeCollaborationOperationDiagnostic {
-  severity: RuntimeCollaborationOperationDiagnosticSeverity;
-  code: RuntimeCollaborationOperationDiagnosticCode;
-  message: string;
-  path?: string;
-  participantId?: string;
-  operationId?: string;
-  idempotencyKey?: string;
-  expectedRevision?: string;
-  actualRevision?: string;
-  expectedSequence?: number;
-  actualSequence?: number;
-}
-
-export interface RuntimeCollaborationServerClock {
-  revision: string;
-  sequence: number;
-  vector: Record<string, number>;
-}
-
-export interface RuntimeCollaborationAck {
-  sequence: number;
-  revision: string;
-  serverClock: RuntimeCollaborationServerClock;
-  appliedAt: string;
-}
-
-export type RuntimeCollaborationNackReason =
-  | "base-revision-mismatch"
-  | "causality-gap"
-  | "duplicate-idempotency-key"
-  | "invalid-operation"
-  | "participant-expired"
-  | "unsupported-operation";
-
-export interface RuntimeCollaborationNack {
-  reason: RuntimeCollaborationNackReason;
-  retryable?: boolean;
-  diagnostics?: RuntimeCollaborationOperationDiagnostic[];
-}
-
-export interface RuntimeCollaborationConflict {
-  code: string;
-  message: string;
-  changeIds?: string[];
-  nodeIds?: string[];
-  edgeIds?: string[];
-}
-
-export type RuntimeCollaborationRebaseStrategy =
-  | "ot-transform"
-  | "crdt-merge"
-  | "server-reject";
-
-export interface RuntimeCollaborationRebase {
-  from: RuntimeCollaborationCausalMetadata;
-  to: RuntimeCollaborationCausalMetadata;
-  strategy: RuntimeCollaborationRebaseStrategy;
-  transformedPayload?: RuntimeCollaborationOperationPayload;
-  conflicts: RuntimeCollaborationConflict[];
-}
-
-export type RuntimeCollaborationOperationStatus =
-  | "accepted"
-  | "duplicate"
-  | "rejected"
-  | "rebased";
-
-export interface RuntimeCollaborationOperationResult {
-  schema: "skenion.runtime.collaboration.operation-result";
-  schemaVersion: "0.1.0";
-  sessionId: string;
-  operationId: string;
-  participantId: string;
-  idempotencyKey: string;
-  status: RuntimeCollaborationOperationStatus;
-  causal: RuntimeCollaborationCausalMetadata;
-  ack?: RuntimeCollaborationAck;
-  nack?: RuntimeCollaborationNack;
-  rebase?: RuntimeCollaborationRebase;
-  diagnostics: RuntimeCollaborationOperationDiagnostic[];
-  createdAt: string;
-}
-
-export interface RuntimeCollaborationOperationBatchResult {
-  schema: "skenion.runtime.collaboration.operation-batch-result";
-  schemaVersion: "0.1.0";
-  sessionId: string;
-  results: RuntimeCollaborationOperationResult[];
-  diagnostics: RuntimeCollaborationOperationDiagnostic[];
-  createdAt: string;
-}
-
-export type RuntimeCollaborationPresenceState =
-  | "joined"
-  | "active"
-  | "idle"
-  | "away"
-  | "left"
-  | "expired";
-
-export interface RuntimeCollaborationPresence {
-  state: RuntimeCollaborationPresenceState;
-  displayName?: string;
-  color?: string;
-  statusText?: string;
-  capabilities?: string[];
-  connectionId?: string;
-  clientWindowId?: string;
-}
-
-export interface RuntimeCollaborationPresenceEnvelope {
-  schema: "skenion.runtime.collaboration.presence";
-  schemaVersion: "0.1.0";
-  sessionId: string;
-  participantId: string;
-  presence: RuntimeCollaborationPresence;
-  authSubject?: RuntimeCollaborationAuthSubject;
-  updatedAt: string;
-  expiresAt: string;
-}
-
-export interface RuntimeCollaborationPortEndpoint {
-  nodeId: string;
-  portId: string;
-}
-
-export interface RuntimeCollaborationTextPosition {
-  nodeId: string;
-  field: string;
-  offset: number;
-}
-
-export type RuntimeCollaborationSelectionRange =
-  | { kind: "nodes"; nodeIds: string[] }
-  | { kind: "edges"; edgeIds: string[] }
-  | { kind: "ports"; endpoints: RuntimeCollaborationPortEndpoint[] }
-  | {
-      kind: "text";
-      anchor: RuntimeCollaborationTextPosition;
-      focus: RuntimeCollaborationTextPosition;
-    };
-
-export interface RuntimeCollaborationSelection {
-  ranges: RuntimeCollaborationSelectionRange[];
-  activeRangeIndex?: number;
-}
-
-export type RuntimeCollaborationCursor =
-  | { kind: "canvas"; x: number; y: number; clientWindowId?: string }
-  | { kind: "node"; nodeId: string; portId?: string; clientWindowId?: string };
-
-export interface RuntimeCollaborationSelectionEnvelope {
-  schema: "skenion.runtime.collaboration.selection";
-  schemaVersion: "0.1.0";
-  sessionId: string;
-  participantId: string;
-  target: GraphTargetRef;
-  selection: RuntimeCollaborationSelection;
-  cursor?: RuntimeCollaborationCursor;
-  updatedAt: string;
-  expiresAt: string;
-}
-
-export type RuntimeCollaborationEventPayload =
-  | { kind: "operationResult"; result: RuntimeCollaborationOperationResult }
-  | { kind: "presence"; presence: RuntimeCollaborationPresenceEnvelope }
-  | { kind: "selection"; selection: RuntimeCollaborationSelectionEnvelope };
-
-export type RuntimeCollaborationEventKind =
-  | "operation-result"
-  | "presence"
-  | "selection";
-
-export interface RuntimeCollaborationEventEnvelope {
-  schema: "skenion.runtime.collaboration.event";
-  schemaVersion: "0.1.0";
-  eventId: string;
-  sessionId: string;
-  sequence: number;
-  causal: RuntimeCollaborationCausalMetadata;
-  kind: RuntimeCollaborationEventKind;
-  payload: RuntimeCollaborationEventPayload;
-  replay: RuntimeEventReplayMetadata;
-  createdAt: string;
-}
-
 export interface ProjectMetadataV01 {
   title?: string;
   description?: string;
@@ -1999,7 +1136,7 @@ export interface ProjectObjectBindingDiagnosticV01 {
   severity: PackageDiagnosticSeverityV01;
   code: ProjectObjectBindingDiagnosticCodeV01;
   message: string;
-  details?: RuntimeDiagnosticDetails;
+  details?: JsonValueV01;
 }
 
 export interface ProjectPatchBindingTargetV01 {
@@ -2131,7 +1268,12 @@ export interface NodeDefinitionManifestV01 {
 }
 
 export type ShaderLanguageV01 = "wgsl";
-export type ShaderUniformDataKindV01 = "number.float" | "number.int" | "number.uint" | "bool" | "color";
+export type ShaderUniformDataKindV01 =
+  | "value.core.float32"
+  | "value.core.int32"
+  | "value.core.uint32"
+  | "value.core.bool"
+  | "value.core.color";
 
 export interface ShaderUniformV01 {
   id: string;
@@ -2187,7 +1329,7 @@ export interface ShaderInterfaceAnalysisV01 {
   diagnostics: ShaderInterfaceDiagnosticV01[];
 }
 
-export type ControlAtomV01 =
+export type MessageAtomV01 =
   | { type: "float"; representation: FloatRepresentationV01; value: number }
   | { type: "int"; representation: IntRepresentationV01; value: number }
   | { type: "uint"; representation: UintRepresentationV01; value: number }
@@ -2200,9 +1342,9 @@ export type ControlAtomV01 =
       value: [number, number, number, number];
     };
 
-export interface ControlMessageV01 {
-  selector: string;
-  atoms: ControlAtomV01[];
+export interface MessageValueV01 {
+  key: string;
+  atoms: MessageAtomV01[];
 }
 
 export type ObjectTextAtomV01 =
@@ -2210,7 +1352,7 @@ export type ObjectTextAtomV01 =
   | { type: "int"; value: number; representation?: string }
   | { type: "uint"; value: number; representation?: string }
   | { type: "bool"; value: boolean }
-  | { type: "symbol"; value: string }
+  | { type: "identifier"; value: string }
   | { type: "string"; value: string };
 
 export interface ObjectTextPortV01 {
@@ -2221,7 +1363,7 @@ export interface ObjectTextPortV01 {
   accepts?: string[];
   activation?: "trigger" | "latched" | "passive";
   defaultValue?: unknown;
-  messageSelectors?: MessageSelectorPolicyV01;
+  messageKeys?: MessageKeyPolicyV01;
   description?: string;
 }
 
@@ -2236,7 +1378,7 @@ export interface ObjectTextParseResultV01 {
   schemaVersion: "0.1.0";
   input: string;
   ok: boolean;
-  classSymbol: string;
+  className: string;
   creationArgs: ObjectTextAtomV01[];
   resolvedKind: string | null;
   resolvedKindVersion: string | null;

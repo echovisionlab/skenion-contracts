@@ -1,0 +1,153 @@
+{
+  "schema": "skenion.graph",
+  "schemaVersion": "0.1.0",
+  "id": "help-object-core-uint",
+  "revision": "1",
+  "nodes": [
+    {
+      "id": "note_1",
+      "kind": "object.core.comment",
+      "kindVersion": "0.1.0",
+      "params": {
+        "text": "UInt stores non-negative integer values such as counts or modes."
+      },
+      "ports": []
+    },
+    {
+      "id": "bang_1",
+      "kindVersion": "0.1.0",
+      "params": {},
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": "value.core.message",
+          "required": false,
+          "accepts": [
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.bang"
+          ],
+          "messageKeys": {
+            "accepted": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool"
+            ],
+            "trigger": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool"
+            ],
+            "emit": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool"
+            ]
+          }
+        },
+        {
+          "id": "out",
+          "direction": "output",
+          "label": "Bang",
+          "type": "value.core.bang"
+        }
+      ],
+      "kind": "object.core.bang"
+    },
+    {
+      "id": "uint_1",
+      "kind": "object.core.uint",
+      "kindVersion": "0.1.0",
+      "params": {
+        "value": 8,
+        "representation": "u32"
+      },
+      "ports": [
+        {
+          "id": "in",
+          "direction": "input",
+          "label": "In",
+          "type": "value.core.message",
+          "required": false,
+          "accepts": [
+            "value.core.float64",
+            "value.core.int64",
+            "value.core.uint64",
+            "value.core.bool",
+            "value.core.bang"
+          ],
+          "messageKeys": {
+            "accepted": [
+              "bang",
+              "set",
+              "float",
+              "int",
+              "uint",
+              "bool"
+            ],
+            "silent": [
+              "set"
+            ],
+            "trigger": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool"
+            ],
+            "store": [
+              "set",
+              "float",
+              "int",
+              "uint",
+              "bool"
+            ],
+            "emit": [
+              "bang",
+              "float",
+              "int",
+              "uint",
+              "bool"
+            ]
+          }
+        },
+        {
+          "id": "cold",
+          "direction": "input",
+          "label": "Cold",
+          "type": "value.core.uint64",
+          "required": false
+        },
+        {
+          "id": "value",
+          "direction": "output",
+          "label": "Value",
+          "type": "value.core.uint64"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": {
+        "nodeId": "bang_1",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "uint_1",
+        "portId": "in"
+      }
+    }
+  ]
+}

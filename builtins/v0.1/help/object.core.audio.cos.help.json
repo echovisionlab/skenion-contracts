@@ -1,0 +1,13 @@
+{
+  "schema": "skenion.node.help",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.audio.cos",
+  "summary": "Pd-style cos~ phase-domain cosine lookup.",
+  "description": "Cosine maps an audio phase signal to cosine output. It is not a frequency oscillator by itself.",
+  "helpGraph": "help/v0.1/nodes/object.core.audio.cos.help.graph.json",
+  "tags": [
+    "audio",
+    "pd"
+  ],
+  "runtimeBehavior": "Runs in or crosses an audio_block DSP context. Device IO and real-time audio backend behavior are deferred."
+}

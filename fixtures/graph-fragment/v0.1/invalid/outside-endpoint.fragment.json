@@ -5,14 +5,14 @@
   "nodes": [
     {
       "id": "source",
-      "kind": "core.float",
+      "kind": "object.core.float",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "out",
           "direction": "output",
-          "type": "control.number.float",
+          "type": "value.core.float64",
           "rate": "control"
         }
       ]

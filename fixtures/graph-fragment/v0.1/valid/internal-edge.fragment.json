@@ -5,7 +5,7 @@
   "nodes": [
     {
       "id": "source",
-      "kind": "core.float",
+      "kind": "object.core.float",
       "kindVersion": "0.1.0",
       "params": {
         "value": 0.5
@@ -14,21 +14,21 @@
         {
           "id": "out",
           "direction": "output",
-          "type": "control.number.float",
+          "type": "value.core.float64",
           "rate": "control"
         }
       ]
     },
     {
       "id": "sink",
-      "kind": "core.preview",
+      "kind": "object.core.preview",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "in",
           "direction": "input",
-          "type": "control.number.float",
+          "type": "value.core.float64",
           "rate": "control"
         }
       ]
@@ -45,7 +45,7 @@
         "nodeId": "sink",
         "portId": "in"
       },
-      "resolvedType": "control.number.float"
+      "resolvedType": "value.core.float64"
     }
   ],
   "view": {

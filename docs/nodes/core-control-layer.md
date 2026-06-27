@@ -1,45 +1,47 @@
 # Core Control Layer Nodes
 
 The core control layer establishes the basic Max/MSP-style patching surface for
-typed payloads and simple control annotations.
+typed payloads and simple control annotations. The object names below are
+Runtime-owned examples, not a Contracts-owned inventory.
 
-## Typed Control Objects
+## Control Objects And Payloads
 
-`core.float`, `core.int`, `core.uint`, `core.bool`, `core.color`, and
-`core.string` share the same stored-payload surface:
+Runtime-owned behavior-named control objects may include trigger and message
+box objects. Runtime-owned numeric/color stored-payload objects may share this
+surface:
 
-- `in`: hot `control.message.any` inlet; typed controls update and emit,
+- `in`: hot `value.core.message` inlet; typed controls update and emit,
   `bang` emits the stored payload, and `set ...` updates silently
 - `cold`: cold inlet; compatible typed control payloads update silently
 - `value`: output the current stored payload. The port id is payload/state
   naming, not a value-object contract.
 
-`core.bool` is also the canonical toggle object when `params.widget` is
-`"toggle"` or `"checkbox"`. In that widget mode, `bang` sent to `in` flips the
-stored bool and emits the new payload. Typed control objects may also use
-`sendName` and `receiveName` graph params for named typed routing.
+Bool and string are payload/atom semantics. `value.core.bool`, `value.core.string`,
+and the `bool`, `string`, and `symbol` keys can be carried by
+`MessageValue` and handled by behavior-named objects. A toggle, checkbox,
+label, or text UI must be introduced as a behavior-named object rather than a
+payload-named object identity.
 
 ## Message And Comment
 
-`core.message` is a Max/Pd-like message box. Click or `bang` on `in` emits its
+`object.core.message` is a Max/Pd-like message box. Click or `bang` on `in` emits its
 saved payload. `set <message>` on `in` updates runtime message state silently.
 Inspector text edits remain saved graph mutations.
 
-`core.comment` documents the patch as a text annotation. It receives
-`control.message.any` on `in`; `set <text>` updates runtime display text
+`object.core.comment` documents the patch as a text annotation. It receives
+`value.core.message` on `in`; `set <text>` updates runtime display text
 silently. It has no output. Inspector text edits remain saved graph mutations.
 
-`core.panel` groups controls visually. It receives `control.message.any` on
+`object.core.panel` groups controls visually. It receives `value.core.message` on
 `in`; `set <hex>` updates runtime panel color silently. It has no output.
 Inspector color edits remain saved graph mutations.
 
 ## UI Widgets
 
-Buttons, sliders, toggles, and compact number boxes are widget modes on
-canonical core objects. `core.bang` is the button-like bang object, `core.float`
-with `widget: "slider"` is the float slider, and `core.bool` with
-`widget: "toggle"` is the bool toggle. Standalone routing nodes are not part
-of the builtin object model.
+Buttons, sliders, toggles, and compact number boxes are widget modes only when
+the object identity names behavior. Toggle/text widgets are deferred until they
+have behavior-named object contracts. Standalone routing nodes are not part of
+the Contracts object model.
 
 ## Addressing
 

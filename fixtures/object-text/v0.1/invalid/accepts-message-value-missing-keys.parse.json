@@ -1,0 +1,39 @@
+{
+  "schema": "skenion.object-text.parse-result",
+  "schemaVersion": "0.1.0",
+  "input": "example.gain 1",
+  "ok": true,
+  "className": "example.gain",
+  "creationArgs": [
+    {
+      "type": "int",
+      "value": 1,
+      "representation": "i32"
+    }
+  ],
+  "resolvedKind": "example.package.gain",
+  "resolvedKindVersion": "0.1.0",
+  "params": {
+    "gain": 1
+  },
+  "instancePorts": [
+    {
+      "id": "in",
+      "direction": "input",
+      "type": "value.core.float64",
+      "rate": "control",
+      "accepts": [
+        "value.core.message"
+      ],
+      "activation": "trigger"
+    },
+    {
+      "id": "out",
+      "direction": "output",
+      "type": "value.core.float64",
+      "rate": "control"
+    }
+  ],
+  "displayText": "example.gain 1",
+  "diagnostics": []
+}

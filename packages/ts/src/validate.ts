@@ -6,7 +6,7 @@ import type {
 } from "ajv/dist/2020.js";
 import {
   compatibilityMatrixV01Schema,
-  controlMessageV01Schema,
+  messageValueV01Schema,
   extensionManifestV01Schema,
   graphFragmentV01Schema,
   graphV01Schema,
@@ -18,17 +18,13 @@ import {
   packageListingV01Schema,
   packageManifestV01Schema,
   projectV01Schema,
-  runtimeCollaborationV0Schema,
-  runtimeOperationV0Schema,
-  runtimeProjectRequestV0Schema,
-  runtimeSessionV0Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
 import { derivePatchContractV01 } from "./project.js";
 import type {
   CompatibilityMatrixV01,
-  ControlMessageV01,
+  MessageValueV01,
   EdgeSpecV01,
   ExtensionManifestV01,
   GraphCycleValidationV01,
@@ -39,6 +35,7 @@ import type {
   GraphFragmentV01,
   GraphValidationDiagnosticV01,
   GraphValidationResultV01,
+  EndpointBindingValueFormatV01,
   NodeDefinitionManifestV01,
   ObjectTextParseResultV01,
   PackageDiscoveryResponseV01,
@@ -50,24 +47,11 @@ import type {
   PackageRootDocumentV01,
   PatchDefinitionV01,
   PasteGraphFragmentRequest,
-  PasteGraphFragmentResponse,
   PortSpecV01,
   ProjectDocumentV01,
   ProjectPackageLockEntryV01,
-  RuntimeCollaborationAuthSubject,
-  RuntimeCollaborationCausalMetadata,
-  RuntimeCollaborationEventEnvelope,
-  RuntimeCollaborationOperationBatch,
-  RuntimeCollaborationOperationBatchResult,
-  RuntimeCollaborationOperationEnvelope,
-  RuntimeCollaborationOperationPayload,
-  RuntimeCollaborationOperationResult,
-  RuntimeCollaborationPresenceEnvelope,
-  RuntimeCollaborationSelectionEnvelope,
-  RuntimeOperationEnvelope,
-  RuntimeProjectRequestV01,
-  RuntimeSessionEvent,
-  RuntimeSessionInfoResponse,
+  ValueFormatV01,
+  ValueOccurrenceHeaderV01,
   ShaderInterfaceV01,
   ValidationResult,
   ViewStateV01
@@ -90,71 +74,14 @@ ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(projectV01Schema);
-ajv.addSchema(runtimeProjectRequestV0Schema);
-ajv.addSchema(runtimeOperationV0Schema);
-ajv.addSchema(runtimeSessionV0Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphFragmentV01Validator = ajv.compile(graphFragmentV01Schema);
-const runtimeOperationV0Validator = ajv.compile(runtimeOperationV0Schema);
-ajv.compile(runtimeCollaborationV0Schema);
-const runtimeCollaborationOperationEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationEnvelope"
-});
-const runtimeCollaborationOperationBatchValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatch"
-});
-const runtimeCollaborationOperationResultValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-result.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationResult"
-});
-const runtimeCollaborationOperationBatchResultValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-operation-batch-result.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationOperationBatchResult"
-});
-const runtimeCollaborationPresenceEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-presence.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationPresenceEnvelope"
-});
-const runtimeCollaborationSelectionEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-selection.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationSelectionEnvelope"
-});
-const runtimeCollaborationEventEnvelopeValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/collaboration-event.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/collaboration.schema.json#/$defs/runtimeCollaborationEventEnvelope"
-});
-const runtimeSessionInfoResponseValidator = ajv.compile(runtimeSessionV0Schema);
-const runtimeSessionEventValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/session-event.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/session.schema.json#/$defs/runtimeSessionEvent"
-});
-const pasteGraphFragmentRequestValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-request.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentRequest"
-});
-const pasteGraphFragmentResponseValidator = ajv.compile({
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://skenion.dev/schemas/runtime/v0/paste-graph-fragment-response.schema.json",
-  $ref: "https://skenion.dev/schemas/runtime/v0/operation.schema.json#/$defs/pasteGraphFragmentResponse"
-});
-const controlMessageV01Validator = ajv.compile(controlMessageV01Schema);
+const messageValueV01Validator = ajv.compile(messageValueV01Schema);
 const objectTextParseResultV01Validator = ajv.compile(objectTextParseResultV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
-const runtimeProjectRequestV0Validator = ajv.compile(runtimeProjectRequestV0Schema);
 const patchDefinitionV01Validator = ajv.compile({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://skenion.dev/schemas/project/v0.1/patch-definition.schema.json",
@@ -755,87 +682,606 @@ function portFanOutPolicy(port: PortSpecV01): string {
 }
 
 function portTypeAccepts(source: PortSpecV01, target: PortSpecV01): boolean {
-  if (target.type === "control.message.any" && isControlMessagePortType(source.type)) {
+  if (target.type === "value.core.message" && isMessageValuePortType(source.type)) {
     return true;
   }
   return source.type === target.type || target.accepts?.includes(source.type) === true;
 }
 
-function isControlMessagePortType(type: string): boolean {
+function isMessageValuePortType(type: string): boolean {
   return [
-    "control.message.any",
-    "control.number.float",
-    "control.number.int",
-    "control.number.uint",
-    "control.bool",
-    "control.color",
-    "control.string"
+    "value.core.message",
+    "value.core.bang",
+    "value.core.bool",
+    "value.core.uint8",
+    "value.core.uint16",
+    "value.core.uint32",
+    "value.core.uint64",
+    "value.core.int8",
+    "value.core.int16",
+    "value.core.int32",
+    "value.core.int64",
+    "value.core.float8",
+    "value.core.float16",
+    "value.core.float32",
+    "value.core.float64",
+    "value.core.ufloat8",
+    "value.core.ufloat16",
+    "value.core.ufloat32",
+    "value.core.ufloat64",
+    "value.core.color",
+    "value.core.string"
   ].includes(type);
 }
 
-function isLegacyControlPortType(type: string): boolean {
-  return [
+const firstPartyValueTypeIds = new Set([
+  "value.core.bang",
+  "value.core.bool",
+  "value.core.uint8",
+  "value.core.uint16",
+  "value.core.uint32",
+  "value.core.uint64",
+  "value.core.int8",
+  "value.core.int16",
+  "value.core.int32",
+  "value.core.int64",
+  "value.core.float8",
+  "value.core.float16",
+  "value.core.float32",
+  "value.core.float64",
+  "value.core.ufloat8",
+  "value.core.ufloat16",
+  "value.core.ufloat32",
+  "value.core.ufloat64",
+  "value.core.string",
+  "value.core.message",
+  "value.core.color",
+  "value.core.vector",
+  "value.core.matrix",
+  "value.core.tensor"
+]);
+
+const invalidValueTypeIds = new Set([
+  "value.core.float",
+  "value.core.int",
+  "value.core.uint",
+  "value.core.number",
+  "value.object.core",
+  "value.core.frame",
+  "value.core.symbol",
+  "value.media.asset",
+  "value.media.stream",
+  "value.media.video-stream",
+  "value.media.audio-stream",
+  "value.media.audio-sample",
+  "value.media.audio-frame",
+  "value.media.audio-buffer",
+  "value.media.image",
+  "value.media.matrix",
+  "value.media.render-frame",
+  "value.media.video-frame"
+]);
+
+const valueTypeIdPattern = /^value\.[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/;
+const sha256Pattern = /^[a-fA-F0-9]{64}$/;
+const firstPartyRepresentations = new Set([
+  "f64",
+  "f32",
+  "f16",
+  "f8.e4m3",
+  "f8.e5m2",
+  "ufloat64",
+  "ufloat32",
+  "ufloat16",
+  "ufloat8",
+  "i64",
+  "i32",
+  "i16",
+  "i8",
+  "u64",
+  "u32",
+  "u16",
+  "u8",
+  "rgba32f",
+  "rgba16f",
+  "rgba8unorm",
+  "rgb8unorm"
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowedKeys: Set<string>, label: string): string[] {
+  return Object.keys(value)
+    .filter((key) => !allowedKeys.has(key))
+    .map((key) => `${label}.${key} is not allowed`);
+}
+
+function validateOptionalPositiveInteger(
+  errors: string[],
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (value[key] !== undefined && !isPositiveInteger(value[key])) {
+    errors.push(`${label}.${key} must be a positive integer`);
+  }
+}
+
+function validateOptionalNonNegativeInteger(
+  errors: string[],
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (value[key] !== undefined && !isNonNegativeInteger(value[key])) {
+    errors.push(`${label}.${key} must be a non-negative integer`);
+  }
+}
+
+function validateOptionalFiniteNumber(
+  errors: string[],
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (value[key] !== undefined && !isFiniteNumber(value[key])) {
+    errors.push(`${label}.${key} must be a finite number`);
+  }
+}
+
+function validateShapeArray(errors: string[], value: unknown, label: string): void {
+  if (!Array.isArray(value) || value.length === 0) {
+    errors.push(`${label} must be a non-empty array of positive integers`);
+    return;
+  }
+  for (const [index, dimension] of value.entries()) {
+    if (!isPositiveInteger(dimension)) {
+      errors.push(`${label}[${index}] must be a positive integer`);
+    }
+  }
+}
+
+function validateEndpointRef(errors: string[], value: unknown, label: string): void {
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  errors.push(...hasOnlyKeys(value, new Set(["nodeId", "portId"]), label));
+  if (typeof value.nodeId !== "string" || value.nodeId.length === 0) {
+    errors.push(`${label}.nodeId must be a non-empty string`);
+  }
+  if (typeof value.portId !== "string" || value.portId.length === 0) {
+    errors.push(`${label}.portId must be a non-empty string`);
+  }
+}
+
+function isValidValueTypeId(value: string): boolean {
+  if (invalidValueTypeIds.has(value)) {
+    return false;
+  }
+  if (firstPartyValueTypeIds.has(value)) {
+    return true;
+  }
+  if (value.startsWith("value.core.") || value.startsWith("value.media.")) {
+    return false;
+  }
+  return valueTypeIdPattern.test(value);
+}
+
+function expectedFormatForFirstPartyValueType(valueTypeId: string): Set<string> | null {
+  if (valueTypeId === "value.core.float8") {
+    return new Set(["f8.e4m3", "f8.e5m2"]);
+  }
+  if (valueTypeId === "value.core.float16") {
+    return new Set(["f16"]);
+  }
+  if (valueTypeId === "value.core.float32") {
+    return new Set(["f32"]);
+  }
+  if (valueTypeId === "value.core.float64") {
+    return new Set(["f64"]);
+  }
+  if (valueTypeId === "value.core.ufloat8") {
+    return new Set(["ufloat8"]);
+  }
+  if (valueTypeId === "value.core.ufloat16") {
+    return new Set(["ufloat16"]);
+  }
+  if (valueTypeId === "value.core.ufloat32") {
+    return new Set(["ufloat32"]);
+  }
+  if (valueTypeId === "value.core.ufloat64") {
+    return new Set(["ufloat64"]);
+  }
+  if (valueTypeId === "value.core.int8") {
+    return new Set(["i8"]);
+  }
+  if (valueTypeId === "value.core.int16") {
+    return new Set(["i16"]);
+  }
+  if (valueTypeId === "value.core.int32") {
+    return new Set(["i32"]);
+  }
+  if (valueTypeId === "value.core.int64") {
+    return new Set(["i64"]);
+  }
+  if (valueTypeId === "value.core.uint8") {
+    return new Set(["u8"]);
+  }
+  if (valueTypeId === "value.core.uint16") {
+    return new Set(["u16"]);
+  }
+  if (valueTypeId === "value.core.uint32") {
+    return new Set(["u32"]);
+  }
+  if (valueTypeId === "value.core.uint64") {
+    return new Set(["u64"]);
+  }
+  if (valueTypeId === "value.core.color") {
+    return new Set(["rgba32f", "rgba16f", "rgba8unorm", "rgb8unorm"]);
+  }
+  if (["value.core.vector", "value.core.matrix", "value.core.tensor"].includes(valueTypeId)) {
+    return firstPartyRepresentations;
+  }
+  return null;
+}
+
+function validateValueFormatErrors(valueFormat: unknown, label = "valueFormat"): string[] {
+  if (!isRecord(valueFormat)) {
+    return [`${label} must be an object`];
+  }
+
+  const allowedKeys = new Set([
+    "valueTypeId",
+    "format",
+    "shape",
+    "dynamicShape",
+    "layout",
+    "strides",
+    "byteLength",
+    "sampleRate",
+    "channels",
+    "channelLayout",
+    "colorSpace",
+    "colorRange",
+    "transfer",
+    "primaries",
+    "alphaPolicy",
+    "resourceKind"
+  ]);
+  const errors = hasOnlyKeys(valueFormat, allowedKeys, label);
+  const valueTypeId = valueFormat.valueTypeId;
+
+  if (typeof valueTypeId !== "string" || valueTypeId.length === 0) {
+    errors.push(`${label}.valueTypeId must be a non-empty string`);
+  } else if (!isValidValueTypeId(valueTypeId)) {
+    errors.push(`${label}.valueTypeId is not a valid value type id: ${valueTypeId}`);
+  }
+
+  if (valueFormat.format !== undefined && typeof valueFormat.format !== "string") {
+    errors.push(`${label}.format must be a string`);
+  }
+  if (typeof valueTypeId === "string" && typeof valueFormat.format === "string") {
+    const expectedFormats = expectedFormatForFirstPartyValueType(valueTypeId);
+    if (expectedFormats && !expectedFormats.has(valueFormat.format)) {
+      errors.push(`${label}.format ${valueFormat.format} is not valid for ${valueTypeId}`);
+    }
+  }
+
+  if (valueFormat.shape !== undefined) {
+    validateShapeArray(errors, valueFormat.shape, `${label}.shape`);
+  }
+  if (["value.core.vector", "value.core.matrix", "value.core.tensor"].includes(String(valueTypeId))) {
+    if (valueFormat.shape === undefined) {
+      errors.push(`${label}.shape is required for ${valueTypeId}`);
+    }
+    if (valueFormat.format === undefined) {
+      errors.push(`${label}.format is required for ${valueTypeId}`);
+    }
+  }
+  if (valueFormat.strides !== undefined) {
+    validateShapeArray(errors, valueFormat.strides, `${label}.strides`);
+  }
+  validateOptionalPositiveInteger(errors, valueFormat, "byteLength", label);
+  validateOptionalPositiveInteger(errors, valueFormat, "channels", label);
+  validateOptionalFiniteNumber(errors, valueFormat, "sampleRate", label);
+  if (valueFormat.sampleRate !== undefined && isFiniteNumber(valueFormat.sampleRate) && valueFormat.sampleRate <= 0) {
+    errors.push(`${label}.sampleRate must be greater than zero`);
+  }
+  if (valueFormat.dynamicShape !== undefined && typeof valueFormat.dynamicShape !== "boolean") {
+    errors.push(`${label}.dynamicShape must be a boolean`);
+  }
+
+  for (const key of ["layout", "channelLayout", "colorSpace", "colorRange", "transfer", "primaries", "alphaPolicy", "resourceKind"]) {
+    if (valueFormat[key] !== undefined && typeof valueFormat[key] !== "string") {
+      errors.push(`${label}.${key} must be a string`);
+    }
+  }
+
+  if (valueTypeId === "value.core.bang") {
+    for (const key of Object.keys(valueFormat)) {
+      if (key !== "valueTypeId") {
+        errors.push(`${label}.${key} is not allowed for value.core.bang`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function validateEndpointBindingValueFormatErrors(
+  bindingFormat: unknown,
+  label = "bindingFormat"
+): string[] {
+  if (!isRecord(bindingFormat)) {
+    return [`${label} must be an object`];
+  }
+
+  const allowedKeys = new Set([
+    "bindingId",
+    "bindingEpoch",
+    "formatRevision",
+    "formatDigest",
+    "valueFormat",
+    "source",
+    "target",
+    "delivery"
+  ]);
+  const errors = hasOnlyKeys(bindingFormat, allowedKeys, label);
+
+  if (typeof bindingFormat.bindingId !== "string" || bindingFormat.bindingId.length === 0) {
+    errors.push(`${label}.bindingId must be a non-empty string`);
+  }
+  validateOptionalPositiveInteger(errors, bindingFormat, "bindingEpoch", label);
+  if (bindingFormat.bindingEpoch === undefined) {
+    errors.push(`${label}.bindingEpoch is required`);
+  }
+  validateOptionalPositiveInteger(errors, bindingFormat, "formatRevision", label);
+  if (bindingFormat.formatRevision === undefined) {
+    errors.push(`${label}.formatRevision is required`);
+  }
+  if (bindingFormat.formatDigest !== undefined) {
+    if (typeof bindingFormat.formatDigest !== "string" || !sha256Pattern.test(bindingFormat.formatDigest)) {
+      errors.push(`${label}.formatDigest must be a 64-character sha256 hex string`);
+    }
+  }
+  errors.push(...validateValueFormatErrors(bindingFormat.valueFormat, `${label}.valueFormat`));
+  if (bindingFormat.source !== undefined) {
+    validateEndpointRef(errors, bindingFormat.source, `${label}.source`);
+  }
+  if (bindingFormat.target !== undefined) {
+    validateEndpointRef(errors, bindingFormat.target, `${label}.target`);
+  }
+  if (bindingFormat.delivery !== undefined) {
+    if (!isRecord(bindingFormat.delivery)) {
+      errors.push(`${label}.delivery must be an object`);
+    } else {
+      const delivery = bindingFormat.delivery;
+      errors.push(...hasOnlyKeys(delivery, new Set(["policy", "maxInFlight", "keyframes"]), `${label}.delivery`));
+      if (delivery.policy !== undefined && !["ordered", "latest", "ring", "drop"].includes(String(delivery.policy))) {
+        errors.push(`${label}.delivery.policy is invalid`);
+      }
+      validateOptionalPositiveInteger(errors, delivery, "maxInFlight", `${label}.delivery`);
+      if (delivery.keyframes !== undefined && typeof delivery.keyframes !== "boolean") {
+        errors.push(`${label}.delivery.keyframes must be a boolean`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function validateValueOccurrenceHeaderErrors(
+  header: unknown,
+  label = "occurrenceHeader"
+): string[] {
+  if (!isRecord(header)) {
+    return [`${label} must be an object`];
+  }
+
+  const allowedKeys = new Set([
+    "bindingId",
+    "bindingEpoch",
+    "formatRevision",
+    "sequence",
+    "clock",
+    "timestamp",
+    "payloadKind",
+    "byteLength",
+    "byteOffset",
+    "actualShape",
+    "flags",
+    "droppedBefore",
+    "duration"
+  ]);
+  const errors = hasOnlyKeys(header, allowedKeys, label);
+
+  if (typeof header.bindingId !== "string" || header.bindingId.length === 0) {
+    errors.push(`${label}.bindingId must be a non-empty string`);
+  }
+  validateOptionalPositiveInteger(errors, header, "bindingEpoch", label);
+  if (header.bindingEpoch === undefined) {
+    errors.push(`${label}.bindingEpoch is required`);
+  }
+  validateOptionalPositiveInteger(errors, header, "formatRevision", label);
+  if (header.formatRevision === undefined) {
+    errors.push(`${label}.formatRevision is required`);
+  }
+  validateOptionalNonNegativeInteger(errors, header, "sequence", label);
+  if (header.sequence === undefined) {
+    errors.push(`${label}.sequence is required`);
+  }
+  if (typeof header.payloadKind !== "string" || !["empty", "json", "bytes", "resource-handle"].includes(header.payloadKind)) {
+    errors.push(`${label}.payloadKind is invalid`);
+  }
+  if (header.clock !== undefined && typeof header.clock !== "string") {
+    errors.push(`${label}.clock must be a string`);
+  }
+  validateOptionalFiniteNumber(errors, header, "timestamp", label);
+  validateOptionalPositiveInteger(errors, header, "byteLength", label);
+  validateOptionalNonNegativeInteger(errors, header, "byteOffset", label);
+  if (header.actualShape !== undefined) {
+    validateShapeArray(errors, header.actualShape, `${label}.actualShape`);
+  }
+  if (header.flags !== undefined) {
+    if (!Array.isArray(header.flags)) {
+      errors.push(`${label}.flags must be an array`);
+    } else {
+      for (const [index, flag] of header.flags.entries()) {
+        if (!["discontinuity", "keyframe", "dropped-before", "end-of-stream"].includes(String(flag))) {
+          errors.push(`${label}.flags[${index}] is invalid`);
+        }
+      }
+    }
+  }
+  validateOptionalNonNegativeInteger(errors, header, "droppedBefore", label);
+  validateOptionalFiniteNumber(errors, header, "duration", label);
+  if (header.duration !== undefined && isFiniteNumber(header.duration) && header.duration < 0) {
+    errors.push(`${label}.duration must be greater than or equal to zero`);
+  }
+
+  if (header.payloadKind === "empty") {
+    for (const key of ["byteLength", "byteOffset", "actualShape"]) {
+      if (header[key] !== undefined) {
+        errors.push(`${label}.${key} is not allowed when payloadKind is empty`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function invalidPortValueType(type: string): boolean {
+  if ([
     "message.any",
     "number.float",
     "number.int",
     "number.uint",
     "boolean",
     "color",
-    "string"
-  ].includes(type) || type.startsWith("value.") || type.startsWith("value<");
+    "string",
+    "control.number",
+    "control.message",
+    "control.message.any",
+    "event.bang",
+    "asset.video",
+    "asset.image",
+    "asset.audio",
+    "gpu.texture2d",
+    "video.frame",
+    "render.frame",
+    "stream.video.frame",
+    "signal.audio"
+  ].includes(type)) {
+    return true;
+  }
+  if (
+    type.startsWith("control.") ||
+    type.startsWith("event.") ||
+    type.startsWith("stream.") ||
+    type.startsWith("payload.") ||
+    type.startsWith("data.") ||
+    type.startsWith("selector.") ||
+    type.startsWith("value<")
+  ) {
+    return true;
+  }
+  if (invalidValueTypeIds.has(type)) {
+    return true;
+  }
+  if (type.startsWith("value.") && !firstPartyValueTypeIds.has(type)) {
+    return true;
+  }
+  return false;
 }
 
-type MessageSelectorPolicyPortV01 = Pick<PortSpecV01, "direction" | "type" | "accepts" | "messageSelectors">;
+function isPayloadIdentityNodeKind(kind: string): boolean {
+  return [
+    "value",
+    "data",
+    "payload",
+    "bool",
+    "string",
+    "object.core.bool",
+    "object.core.string",
+    "value.core.message",
+    "value.core.bang",
+    "value.core.string",
+    "value.core.string",
+    "value.core.string",
+    "value.core.tensor"
+  ].includes(kind) ||
+    kind.startsWith("value.") ||
+    kind.startsWith("data.") ||
+    kind.startsWith("payload.") ||
+    kind.startsWith("control.");
+}
 
-function isSelectorAwareInputPort(port: MessageSelectorPolicyPortV01): boolean {
+type MessageKeyPolicyPortV01 = Pick<PortSpecV01, "direction" | "type" | "accepts" | "messageKeys">;
+
+function isKeyAwareInputPort(port: MessageKeyPolicyPortV01): boolean {
   return port.direction === "input" && (
-    port.type === "control.message.any" ||
-    port.accepts?.includes("control.message.any") === true
+    port.type === "value.core.message" ||
+    port.accepts?.includes("value.core.message") === true
   );
 }
 
-type MessageSelectorPolicyField = "silent" | "trigger" | "store" | "emit";
+type MessageKeyPolicyField = "silent" | "trigger" | "store" | "emit";
 
-const messageSelectorPolicyFields: MessageSelectorPolicyField[] = [
+const messageKeyPolicyFields: MessageKeyPolicyField[] = [
   "silent",
   "trigger",
   "store",
   "emit"
 ];
 
-function messageSelectorPolicyErrors(port: MessageSelectorPolicyPortV01, label: string): string[] {
-  const policy = port.messageSelectors;
+function messageKeyPolicyErrors(port: MessageKeyPolicyPortV01, label: string): string[] {
+  const policy = port.messageKeys;
   if (!policy) {
-    return isSelectorAwareInputPort(port)
-      ? [`${label} selector-aware input port requires messageSelectors`]
+    return isKeyAwareInputPort(port)
+      ? [`${label} message-key-aware input port requires messageKeys`]
       : [];
   }
 
   const errors: string[] = [];
   const accepted = policy.accepted ?? [];
   if (accepted.length === 0) {
-    errors.push(`${label} messageSelectors.accepted must list at least one selector`);
+    errors.push(`${label} messageKeys.accepted must list at least one key`);
   }
   const acceptedSet = new Set(accepted);
-  for (const field of messageSelectorPolicyFields) {
-    for (const selector of policy[field] ?? []) {
-      if (!acceptedSet.has(selector)) {
-        errors.push(`${label} messageSelectors.${field} selector ${selector} is not accepted`);
+  for (const field of messageKeyPolicyFields) {
+    for (const key of policy[field] ?? []) {
+      if (!acceptedSet.has(key)) {
+        errors.push(`${label} messageKeys.${field} key ${key} is not accepted`);
       }
     }
   }
   if (policy.trigger?.includes("set") === true) {
-    errors.push(`${label} messageSelectors.trigger must not include set`);
+    errors.push(`${label} messageKeys.trigger must not include set`);
   }
   if (policy.emit?.includes("set") === true) {
-    errors.push(`${label} messageSelectors.emit must not include set`);
+    errors.push(`${label} messageKeys.emit must not include set`);
   }
   if (
     acceptedSet.has("set") &&
     policy.silent?.includes("set") !== true &&
     policy.store?.includes("set") !== true
   ) {
-    errors.push(`${label} messageSelectors.set must be silent or store behavior`);
+    errors.push(`${label} messageKeys.set must be silent or store behavior`);
   }
 
   return errors;
@@ -843,7 +1289,7 @@ function messageSelectorPolicyErrors(port: MessageSelectorPolicyPortV01, label: 
 
 function validateObjectTextParseResultV01Semantics(result: ObjectTextParseResultV01): string[] {
   return result.instancePorts.flatMap((port) =>
-    messageSelectorPolicyErrors(port, `objectText instancePort ${result.classSymbol}.${port.id}`)
+    messageKeyPolicyErrors(port, `objectText instancePort ${result.className}.${port.id}`)
   );
 }
 
@@ -879,6 +1325,15 @@ function analyzeFragmentSemantics(
       );
     }
     nodeIds.add(node.id);
+    if (isPayloadIdentityNodeKind(node.kind)) {
+      fragmentDiagnostic(
+        diagnostics,
+        "error",
+        "payload-node-kind",
+        `node ${node.id} uses payload identity ${node.kind} as an executable kind`,
+        { nodes: [node.id] }
+      );
+    }
 
     const portIds = new Set<string>();
     for (const port of node.ports) {
@@ -892,28 +1347,28 @@ function analyzeFragmentSemantics(
         );
       }
       portIds.add(port.id);
-      if (isLegacyControlPortType(port.type)) {
+      if (invalidPortValueType(port.type)) {
         fragmentDiagnostic(
           diagnostics,
           "error",
-          "legacy-port-type",
-          `port ${node.id}.${port.id} uses legacy control port type ${port.type}`,
+          "invalid-value-type",
+          `port ${node.id}.${port.id} uses invalid value type ${port.type}`,
           { nodes: [node.id] }
         );
       }
       for (const acceptedType of port.accepts ?? []) {
-        if (isLegacyControlPortType(acceptedType)) {
+        if (invalidPortValueType(acceptedType)) {
           fragmentDiagnostic(
             diagnostics,
             "error",
-            "legacy-port-type",
-            `port ${node.id}.${port.id} accepts legacy control port type ${acceptedType}`,
+            "invalid-value-type",
+            `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`,
             { nodes: [node.id] }
           );
         }
       }
-      for (const error of messageSelectorPolicyErrors(port, `port ${node.id}.${port.id}`)) {
-        fragmentDiagnostic(diagnostics, "error", "message-selector-policy", error, { nodes: [node.id] });
+      for (const error of messageKeyPolicyErrors(port, `port ${node.id}.${port.id}`)) {
+        fragmentDiagnostic(diagnostics, "error", "message-key-policy", error, { nodes: [node.id] });
       }
       ports.set(portSpecKey(node.id, port.id), port);
     }
@@ -930,12 +1385,12 @@ function analyzeFragmentSemantics(
       );
     }
     edgeIds.add(edge.id);
-    if (edge.resolvedType !== undefined && isLegacyControlPortType(edge.resolvedType)) {
+    if (edge.resolvedType !== undefined && invalidPortValueType(edge.resolvedType)) {
       fragmentDiagnostic(
         diagnostics,
         "error",
-        "legacy-port-type",
-        `edge ${edge.id} uses legacy resolvedType ${edge.resolvedType}`,
+        "invalid-value-type",
+        `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`,
         { edges: [edge.id] }
       );
     }
@@ -1020,19 +1475,15 @@ function analyzeFragmentSemantics(
   };
 }
 
-function portFamily(type: string): string {
-  return type.split(".", 1).join("");
+function isImmediateValueCyclePortType(type: string): boolean {
+  return type.startsWith("value.core.");
 }
 
-function isControlCyclePortType(type: string): boolean {
-  return isControlMessagePortType(type) || portFamily(type) === "control";
-}
-
-function controlCycleTypes(edges: EdgeSpecV01[], ports: Map<string, PortSpecV01>): boolean {
+function immediateValueCycleTypes(edges: EdgeSpecV01[], ports: Map<string, PortSpecV01>): boolean {
   return edges.every((edge) => {
     const source = ports.get(portSpecKey(edge.source.nodeId, edge.source.portId));
     const target = ports.get(portSpecKey(edge.target.nodeId, edge.target.portId));
-    return isControlCyclePortType(source?.type ?? "") && isControlCyclePortType(target?.type ?? "");
+    return isImmediateValueCyclePortType(source?.type ?? "") && isImmediateValueCyclePortType(target?.type ?? "");
   });
 }
 
@@ -1043,7 +1494,7 @@ function classifyCycle(
 ): GraphCycleValidationV01 {
   const feedback = edges.find((edge) => edge.feedback?.enabled === true);
   if (!feedback) {
-    const classification = controlCycleTypes(edges, ports)
+    const classification = immediateValueCycleTypes(edges, ports)
       ? "ambiguous-algebraic-loop"
       : "invalid-cycle";
     return {
@@ -1051,7 +1502,7 @@ function classifyCycle(
       nodes,
       edges: edges.map((edge) => edge.id),
       message: classification === "ambiguous-algebraic-loop"
-        ? "control cycle requires explicit latch, delay, or feedback policy"
+        ? "immediate value cycle requires explicit latch, delay, or feedback policy"
         : "cycle requires explicit feedback policy"
     };
   }
@@ -1146,32 +1597,36 @@ function validateNodeDefinitionV01Semantics(definition: NodeDefinitionManifestV0
     `port id on ${definition.id}`
   );
 
+  if (isPayloadIdentityNodeKind(definition.id)) {
+    errors.push(`payload identity node definition id: ${definition.id}`);
+  }
+
   for (const port of definition.ports) {
-    if (isLegacyControlPortType(port.type)) {
-      errors.push(`legacy port type on ${definition.id}.${port.id}: ${port.type}`);
+    if (invalidPortValueType(port.type)) {
+      errors.push(`invalid value type on ${definition.id}.${port.id}: ${port.type}`);
     }
       for (const acceptedType of port.accepts ?? []) {
-        if (isLegacyControlPortType(acceptedType)) {
-          errors.push(`legacy accepted port type on ${definition.id}.${port.id}: ${acceptedType}`);
+        if (invalidPortValueType(acceptedType)) {
+          errors.push(`invalid accepted value type on ${definition.id}.${port.id}: ${acceptedType}`);
         }
       }
-      errors.push(...messageSelectorPolicyErrors(port, `port ${definition.id}.${port.id}`));
+      errors.push(...messageKeyPolicyErrors(port, `port ${definition.id}.${port.id}`));
   }
 
   for (const group of definition.portGroups ?? []) {
-    if (isLegacyControlPortType(group.type)) {
-      errors.push(`legacy port group type on ${definition.id}.${group.id}: ${group.type}`);
+    if (invalidPortValueType(group.type)) {
+      errors.push(`invalid port group type on ${definition.id}.${group.id}: ${group.type}`);
     }
-    if (isLegacyControlPortType(group.defaultPortSpec?.type ?? "")) {
-      errors.push(`legacy default port type on ${definition.id}.${group.id}: ${group.defaultPortSpec?.type}`);
+    if (invalidPortValueType(group.defaultPortSpec?.type ?? "")) {
+      errors.push(`invalid default value type on ${definition.id}.${group.id}: ${group.defaultPortSpec?.type}`);
     }
     for (const acceptedType of group.defaultPortSpec?.accepts ?? []) {
-      if (isLegacyControlPortType(acceptedType)) {
-        errors.push(`legacy default accepted port type on ${definition.id}.${group.id}: ${acceptedType}`);
+      if (invalidPortValueType(acceptedType)) {
+        errors.push(`invalid default accepted value type on ${definition.id}.${group.id}: ${acceptedType}`);
       }
     }
     if (group.defaultPortSpec) {
-      errors.push(...messageSelectorPolicyErrors(group.defaultPortSpec, `port group ${definition.id}.${group.id} defaultPortSpec`));
+      errors.push(...messageKeyPolicyErrors(group.defaultPortSpec, `port group ${definition.id}.${group.id} defaultPortSpec`));
     }
     if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
       errors.push(`port group ${definition.id}.${group.id} maxPorts is less than minPorts`);
@@ -1202,6 +1657,15 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
       diagnostic(diagnostics, "error", "duplicate-node-id", `duplicate node id: ${node.id}`, { nodes: [node.id] });
     }
     nodeIds.add(node.id);
+    if (isPayloadIdentityNodeKind(node.kind)) {
+      diagnostic(
+        diagnostics,
+        "error",
+        "payload-node-kind",
+        `node ${node.id} uses payload identity ${node.kind} as an executable kind`,
+        { nodes: [node.id] }
+      );
+    }
 
     const portIds = new Set<string>();
     for (const port of node.ports) {
@@ -1215,28 +1679,28 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
         );
       }
       portIds.add(port.id);
-      if (isLegacyControlPortType(port.type)) {
+      if (invalidPortValueType(port.type)) {
         diagnostic(
           diagnostics,
           "error",
-          "legacy-port-type",
-          `port ${node.id}.${port.id} uses legacy control port type ${port.type}`,
+          "invalid-value-type",
+          `port ${node.id}.${port.id} uses invalid value type ${port.type}`,
           { nodes: [node.id] }
         );
       }
       for (const acceptedType of port.accepts ?? []) {
-        if (isLegacyControlPortType(acceptedType)) {
+        if (invalidPortValueType(acceptedType)) {
           diagnostic(
             diagnostics,
             "error",
-            "legacy-port-type",
-            `port ${node.id}.${port.id} accepts legacy control port type ${acceptedType}`,
+            "invalid-value-type",
+            `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`,
             { nodes: [node.id] }
           );
         }
       }
-      for (const error of messageSelectorPolicyErrors(port, `port ${node.id}.${port.id}`)) {
-        diagnostic(diagnostics, "error", "message-selector-policy", error, { nodes: [node.id] });
+      for (const error of messageKeyPolicyErrors(port, `port ${node.id}.${port.id}`)) {
+        diagnostic(diagnostics, "error", "message-key-policy", error, { nodes: [node.id] });
       }
       const key = portSpecKey(node.id, port.id);
       ports.set(key, port);
@@ -1245,38 +1709,38 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
     }
 
     for (const group of node.portGroups ?? []) {
-      if (isLegacyControlPortType(group.type)) {
+      if (invalidPortValueType(group.type)) {
         diagnostic(
           diagnostics,
           "error",
-          "legacy-port-type",
-          `port group ${node.id}.${group.id} uses legacy control port type ${group.type}`,
+          "invalid-value-type",
+          `port group ${node.id}.${group.id} uses invalid value type ${group.type}`,
           { nodes: [node.id] }
         );
       }
-      if (isLegacyControlPortType(group.defaultPortSpec?.type ?? "")) {
+      if (invalidPortValueType(group.defaultPortSpec?.type ?? "")) {
         diagnostic(
           diagnostics,
           "error",
-          "legacy-port-type",
-          `port group ${node.id}.${group.id} default port uses legacy control port type ${group.defaultPortSpec?.type}`,
+          "invalid-value-type",
+          `port group ${node.id}.${group.id} default port uses invalid value type ${group.defaultPortSpec?.type}`,
           { nodes: [node.id] }
         );
       }
       for (const acceptedType of group.defaultPortSpec?.accepts ?? []) {
-        if (isLegacyControlPortType(acceptedType)) {
+        if (invalidPortValueType(acceptedType)) {
           diagnostic(
             diagnostics,
             "error",
-            "legacy-port-type",
-            `port group ${node.id}.${group.id} default port accepts legacy control port type ${acceptedType}`,
+            "invalid-value-type",
+            `port group ${node.id}.${group.id} default port accepts invalid value type ${acceptedType}`,
             { nodes: [node.id] }
           );
         }
       }
       if (group.defaultPortSpec) {
-        for (const error of messageSelectorPolicyErrors(group.defaultPortSpec, `port group ${node.id}.${group.id} defaultPortSpec`)) {
-          diagnostic(diagnostics, "error", "message-selector-policy", error, { nodes: [node.id] });
+        for (const error of messageKeyPolicyErrors(group.defaultPortSpec, `port group ${node.id}.${group.id} defaultPortSpec`)) {
+          diagnostic(diagnostics, "error", "message-key-policy", error, { nodes: [node.id] });
         }
       }
       if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
@@ -1307,12 +1771,12 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
     const targetKey = portSpecKey(edge.target.nodeId, edge.target.portId);
     const source = ports.get(sourceKey);
     const target = ports.get(targetKey);
-    if (edge.resolvedType !== undefined && isLegacyControlPortType(edge.resolvedType)) {
+    if (edge.resolvedType !== undefined && invalidPortValueType(edge.resolvedType)) {
       diagnostic(
         diagnostics,
         "error",
-        "legacy-port-type",
-        `edge ${edge.id} uses legacy resolvedType ${edge.resolvedType}`,
+        "invalid-value-type",
+        `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`,
         { edges: [edge.id] }
       );
     }
@@ -1430,12 +1894,43 @@ export function validateGraphFragmentV01(
   return { ok: true, value: fragment };
 }
 
-export function validateControlMessage(document: unknown): ValidationResult<ControlMessageV01> {
-  if (!controlMessageV01Validator(document)) {
-    return { ok: false, errors: schemaErrors(controlMessageV01Validator.errors as ErrorObject[]) };
+export function validateMessageValue(document: unknown): ValidationResult<MessageValueV01> {
+  if (!messageValueV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(messageValueV01Validator.errors as ErrorObject[]) };
   }
 
-  return { ok: true, value: document as ControlMessageV01 };
+  return { ok: true, value: document as MessageValueV01 };
+}
+
+export function validateValueFormatV01(document: unknown): ValidationResult<ValueFormatV01> {
+  const errors = validateValueFormatErrors(document);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: document as ValueFormatV01 };
+}
+
+export function validateEndpointBindingValueFormatV01(
+  document: unknown
+): ValidationResult<EndpointBindingValueFormatV01> {
+  const errors = validateEndpointBindingValueFormatErrors(document);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: document as EndpointBindingValueFormatV01 };
+}
+
+export function validateValueOccurrenceHeaderV01(
+  document: unknown
+): ValidationResult<ValueOccurrenceHeaderV01> {
+  const errors = validateValueOccurrenceHeaderErrors(document);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: document as ValueOccurrenceHeaderV01 };
 }
 
 export function validateObjectTextParseResult(
@@ -1825,496 +2320,123 @@ export function validateProjectDocument(document: unknown): ValidationResult<Pro
   return validateProjectDocumentV01(document);
 }
 
-function projectDocumentFromRuntimeProjectRequest(request: RuntimeProjectRequestV01): ProjectDocumentV01 {
-  const { nodes: _nodes, ...projectDocument } = request;
-  return projectDocument;
-}
-
-function requiresRuntimeNodeDefinition(kind: string): boolean {
-  return kind !== "core.inlet" && kind !== "core.outlet";
-}
-
-function validateRuntimeProjectRequestNodeDefinitions(request: RuntimeProjectRequestV01): string[] {
-  const errors = duplicateErrors(
-    request.nodes.map((definition) => `${definition.id}@${definition.version}`),
-    "runtime project node definition"
-  );
-  const definitionKeys = new Set<string>();
-  const versionsById = new Map<string, Set<string>>();
-
-  for (const definition of request.nodes) {
-    definitionKeys.add(`${definition.id}@${definition.version}`);
-    const versions = versionsById.get(definition.id) ?? new Set<string>();
-    versions.add(definition.version);
-    versionsById.set(definition.id, versions);
-  }
-
-  const validateGraphNodes = (graph: GraphDocumentV01, label: string) => {
-    for (const node of graph.nodes) {
-      if (!requiresRuntimeNodeDefinition(node.kind)) {
-        continue;
-      }
-      const requiredKey = `${node.kind}@${node.kindVersion}`;
-      if (definitionKeys.has(requiredKey)) {
-        continue;
-      }
-
-      const providedVersions = versionsById.get(node.kind);
-      if (providedVersions && providedVersions.size > 0) {
-        errors.push(
-          `node definition version mismatch: ${requiredKey} (${label} node ${node.id}; provided versions: ${[...providedVersions].sort().join(", ")})`
-        );
-      } else {
-        errors.push(`missing node definition: ${requiredKey} (${label} node ${node.id})`);
-      }
-    }
-  };
-
-  validateGraphNodes(request.graph, "root graph");
-  for (const patch of request.patchLibrary) {
-    validateGraphNodes(patch.graph, `patch ${patch.id}`);
-  }
-
-  return errors;
-}
-
-export function validateRuntimeProjectRequestV01(
-  document: unknown
-): ValidationResult<RuntimeProjectRequestV01> {
-  if (!runtimeProjectRequestV0Validator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeProjectRequestV0Validator.errors as ErrorObject[]) };
-  }
-
-  const request = document as RuntimeProjectRequestV01;
-  const projectResult = validateProjectDocumentV01(projectDocumentFromRuntimeProjectRequest(request));
-  if (!projectResult.ok) {
-    return { ok: false, errors: projectResult.errors };
-  }
-
-  const errors = [
-    ...request.nodes.flatMap((definition) =>
-      validateNodeDefinitionV01Semantics(definition).map(
-        (error) => `runtime project node ${definition.id}@${definition.version}: ${error}`
-      )
-    ),
-    ...validateRuntimeProjectRequestNodeDefinitions(request)
-  ];
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: request };
-}
-
-export function validateRuntimeProjectRequest(
-  document: unknown
-): ValidationResult<RuntimeProjectRequestV01> {
-  return validateRuntimeProjectRequestV01(document);
-}
-
-export function validateRuntimeOperationEnvelope(
-  document: unknown
-): ValidationResult<RuntimeOperationEnvelope> {
-  if (!runtimeOperationV0Validator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeOperationV0Validator.errors as ErrorObject[]) };
-  }
-
-  const envelope = document as RuntimeOperationEnvelope;
-  const requestResult = validatePasteGraphFragmentRequest(envelope.request);
-  if (!requestResult.ok) {
-    return { ok: false, errors: requestResult.errors };
-  }
-
-  return { ok: true, value: envelope };
-}
-
-export function validateRuntimeCollaborationOperationEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationEnvelope> {
-  if (!runtimeCollaborationOperationEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const envelope = document as RuntimeCollaborationOperationEnvelope;
-  const errors = validateRuntimeCollaborationOperationEnvelopeSemantics(envelope);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: envelope };
-}
-
-export function validateRuntimeCollaborationOperationBatch(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationBatch> {
-  if (!runtimeCollaborationOperationBatchValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationBatchValidator.errors as ErrorObject[])
-    };
-  }
-
-  const batch = document as RuntimeCollaborationOperationBatch;
-  const errors = validateRuntimeCollaborationOperationBatchSemantics(batch);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: batch };
-}
-
-export function validateRuntimeCollaborationOperationResult(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationResult> {
-  if (!runtimeCollaborationOperationResultValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationResultValidator.errors as ErrorObject[])
-    };
-  }
-
-  const result = document as RuntimeCollaborationOperationResult;
-  const errors = validateRuntimeCollaborationOperationResultSemantics(result);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: result };
-}
-
-export function validateRuntimeCollaborationOperationBatchResult(
-  document: unknown
-): ValidationResult<RuntimeCollaborationOperationBatchResult> {
-  if (!runtimeCollaborationOperationBatchResultValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationOperationBatchResultValidator.errors as ErrorObject[])
-    };
-  }
-
-  const result = document as RuntimeCollaborationOperationBatchResult;
-  const errors = validateRuntimeCollaborationOperationBatchResultSemantics(result);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: result };
-}
-
-export function validateRuntimeCollaborationPresenceEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationPresenceEnvelope> {
-  if (!runtimeCollaborationPresenceEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationPresenceEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const presence = document as RuntimeCollaborationPresenceEnvelope;
-  const errors = validateRuntimeCollaborationPresenceSemantics(presence);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: presence };
-}
-
-export function validateRuntimeCollaborationSelectionEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationSelectionEnvelope> {
-  if (!runtimeCollaborationSelectionEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationSelectionEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const selection = document as RuntimeCollaborationSelectionEnvelope;
-  const errors = validateRuntimeCollaborationSelectionSemantics(selection);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: selection };
-}
-
-export function validateRuntimeCollaborationEventEnvelope(
-  document: unknown
-): ValidationResult<RuntimeCollaborationEventEnvelope> {
-  if (!runtimeCollaborationEventEnvelopeValidator(document)) {
-    return {
-      ok: false,
-      errors: schemaErrors(runtimeCollaborationEventEnvelopeValidator.errors as ErrorObject[])
-    };
-  }
-
-  const event = document as RuntimeCollaborationEventEnvelope;
-  const errors = validateRuntimeCollaborationEventSemantics(event);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: event };
-}
-
-export function validateRuntimeSessionInfoResponse(
-  document: unknown
-): ValidationResult<RuntimeSessionInfoResponse> {
-  if (!runtimeSessionInfoResponseValidator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeSessionInfoResponseValidator.errors as ErrorObject[]) };
-  }
-
-  return { ok: true, value: document as RuntimeSessionInfoResponse };
-}
-
-export function validateRuntimeSessionEvent(
-  document: unknown
-): ValidationResult<RuntimeSessionEvent> {
-  if (!runtimeSessionEventValidator(document)) {
-    return { ok: false, errors: schemaErrors(runtimeSessionEventValidator.errors as ErrorObject[]) };
-  }
-
-  const event = document as RuntimeSessionEvent;
-  const errors = validateRuntimeSessionEventSemantics(event);
-  if (errors.length > 0) {
-    return { ok: false, errors };
-  }
-
-  return { ok: true, value: event };
-}
-
-function validateRuntimeSessionEventSemantics(event: RuntimeSessionEvent): string[] {
-  const errors: string[] = [];
-  if (event.replay.gap && event.replay.gap.expectedSequence >= event.replay.gap.actualSequence) {
-    errors.push("replay gap expectedSequence must be less than actualSequence");
-  }
-  if (event.sessionRevision !== event.snapshot.sessionRevision) {
-    errors.push("sessionRevision must match snapshot.sessionRevision");
-  }
-  return errors;
-}
-
-function validateRuntimeCollaborationCausality(
-  causal: RuntimeCollaborationCausalMetadata,
-  label: string
-): string[] {
-  const vectorValues = Object.values(causal.vector);
-  const maxVector = vectorValues.reduce((max, value) => Math.max(max, value), 0);
-  return causal.baseSequence < maxVector
-    ? [`${label} baseSequence must be greater than or equal to the causal vector maximum`]
-    : [];
-}
-
-function validateRuntimeCollaborationAuthSeparation(
-  participantId: string,
-  authSubject: RuntimeCollaborationAuthSubject | undefined,
-  label: string
-): string[] {
-  if (authSubject?.subjectId && authSubject.subjectId === participantId) {
-    return [`${label} participantId must not mirror auth subject id`];
-  }
-  return [];
-}
-
-function validateRuntimeCollaborationExpiry(
-  updatedAt: string,
-  expiresAt: string,
-  label: string
-): string[] {
-  return expiresAt <= updatedAt
-    ? [`${label} expiresAt must be later than updatedAt`]
-    : [];
-}
-
-function validateRuntimeCollaborationPayload(
-  payload: RuntimeCollaborationOperationPayload,
-  participantId: string
-): string[] {
-  if (payload.kind === "changeSet") {
-    return duplicateErrors(
-      payload.changes.map((change) => change.changeId),
-      "collaboration change id"
-    );
-  }
-
-  if (payload.kind === "pasteGraphFragment") {
-    const requestResult = validatePasteGraphFragmentRequest(payload.request);
-    return requestResult.ok ? [] : requestResult.errors;
-  }
-
-  if (payload.scope.participantId !== participantId) {
-    return ["undoRedo scope participantId must match operation participantId"];
-  }
-  return [];
-}
-
-function validateRuntimeCollaborationOperationEnvelopeSemantics(
-  envelope: RuntimeCollaborationOperationEnvelope
-): string[] {
-  const errors = [
-    ...validateRuntimeCollaborationCausality(envelope.causal, "operation causal"),
-    ...validateRuntimeCollaborationAuthSeparation(
-      envelope.participantId,
-      envelope.authSubject,
-      "operation"
-    ),
-    ...validateRuntimeCollaborationPayload(envelope.payload, envelope.participantId)
-  ];
-
-  if (!(envelope.participantId in envelope.causal.vector)) {
-    errors.push("operation causal vector must include participantId");
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationOperationBatchSemantics(
-  batch: RuntimeCollaborationOperationBatch
-): string[] {
-  const errors = duplicateErrors(
-    batch.operations.map((operation) => operation.idempotencyKey),
-    "collaboration idempotency key"
-  );
-
-  for (const operation of batch.operations) {
-    if (operation.sessionId !== batch.sessionId) {
-      errors.push("collaboration batch operation sessionId must match batch sessionId");
-    }
-    errors.push(...validateRuntimeCollaborationOperationEnvelopeSemantics(operation));
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationOperationResultSemantics(
-  result: RuntimeCollaborationOperationResult
-): string[] {
-  const errors = validateRuntimeCollaborationCausality(result.causal, "operation result causal");
-  const hasAck = result.ack !== undefined;
-  const hasNack = result.nack !== undefined;
-  const hasRebase = result.rebase !== undefined;
-
-  if ((result.status === "accepted" || result.status === "rebased") && !hasAck) {
-    errors.push("accepted or rebased collaboration result must include ack");
-  }
-  if (result.status === "accepted" && (hasNack || hasRebase)) {
-    errors.push("accepted collaboration result must not include nack or rebase");
-  }
-  if ((result.status === "duplicate" || result.status === "rejected") && !hasNack) {
-    errors.push("duplicate or rejected collaboration result must include nack");
-  }
-  if (result.status === "duplicate" && result.nack?.reason !== "duplicate-idempotency-key") {
-    errors.push("duplicate collaboration result nack reason must be duplicate-idempotency-key");
-  }
-  if (result.status === "rebased" && !hasRebase) {
-    errors.push("rebased collaboration result must include rebase metadata");
-  }
-  if (result.rebase) {
-    errors.push(
-      ...validateRuntimeCollaborationCausality(result.rebase.from, "rebase from causal"),
-      ...validateRuntimeCollaborationCausality(result.rebase.to, "rebase to causal")
-    );
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationOperationBatchResultSemantics(
-  result: RuntimeCollaborationOperationBatchResult
-): string[] {
-  const errors = duplicateErrors(
-    result.results.map((operationResult) => operationResult.idempotencyKey),
-    "collaboration batch result idempotency key"
-  );
-
-  for (const operationResult of result.results) {
-    if (operationResult.sessionId !== result.sessionId) {
-      errors.push("collaboration batch result operation sessionId must match batch result sessionId");
-    }
-    errors.push(...validateRuntimeCollaborationOperationResultSemantics(operationResult));
-  }
-
-  return errors;
-}
-
-function validateRuntimeCollaborationPresenceSemantics(
-  presence: RuntimeCollaborationPresenceEnvelope
-): string[] {
-  return [
-    ...validateRuntimeCollaborationAuthSeparation(
-      presence.participantId,
-      presence.authSubject,
-      "presence"
-    ),
-    ...validateRuntimeCollaborationExpiry(
-      presence.updatedAt,
-      presence.expiresAt,
-      "presence"
-    )
-  ];
-}
-
-function validateRuntimeCollaborationSelectionSemantics(
-  selection: RuntimeCollaborationSelectionEnvelope
-): string[] {
-  return validateRuntimeCollaborationExpiry(
-    selection.updatedAt,
-    selection.expiresAt,
-    "selection"
-  );
-}
-
-function validateRuntimeCollaborationEventSemantics(
-  event: RuntimeCollaborationEventEnvelope
-): string[] {
-  const errors = validateRuntimeCollaborationCausality(event.causal, "collaboration event causal");
-
-  if (event.replay.gap && event.replay.gap.expectedSequence >= event.replay.gap.actualSequence) {
-    errors.push("collaboration event replay gap expectedSequence must be less than actualSequence");
-  }
-
-  return errors;
-}
-
 export function validatePasteGraphFragmentRequest(
   document: unknown
 ): ValidationResult<PasteGraphFragmentRequest> {
-  if (!pasteGraphFragmentRequestValidator(document)) {
-    return { ok: false, errors: schemaErrors(pasteGraphFragmentRequestValidator.errors as ErrorObject[]) };
-  }
-
-  const request = document as PasteGraphFragmentRequest;
-  const fragmentResult = validateGraphFragmentV01(request.fragment, {
-    outsideEndpointPolicy: request.options?.outsideEndpointPolicy
-  });
-  if (!fragmentResult.ok) {
-    return { ok: false, errors: fragmentResult.errors };
-  }
-
-  return { ok: true, value: request };
-}
-
-export function validatePasteGraphFragmentResponse(
-  document: unknown
-): ValidationResult<PasteGraphFragmentResponse> {
-  if (!pasteGraphFragmentResponseValidator(document)) {
-    return { ok: false, errors: schemaErrors(pasteGraphFragmentResponseValidator.errors as ErrorObject[]) };
-  }
-
-  const response = document as PasteGraphFragmentResponse;
   const errors: string[] = [];
-  for (const diagnostic of response.diagnostics) {
-    if ((diagnostic.code === "interface-drift" || diagnostic.code === "invalid-incident-edge") && diagnostic.interfaceDetail === undefined) {
-      errors.push(`runtime operation diagnostic ${diagnostic.code} requires interfaceDetail`);
+
+  if (!isRecord(document)) {
+    return { ok: false, errors: ["/ must be object"] };
+  }
+
+  const target = document.target;
+  if (!isRecord(target)) {
+    errors.push("/target must be object");
+  } else {
+    if (!isGraphTargetPath(target.path)) {
+      errors.push("/target/path must be a supported graph target path");
+    }
+    if (typeof target.baseRevision !== "string" || target.baseRevision.length === 0) {
+      errors.push("/target/baseRevision must be a non-empty string");
+    }
+    if (
+      target.targetRevision !== undefined &&
+      (typeof target.targetRevision !== "string" || target.targetRevision.length === 0)
+    ) {
+      errors.push("/target/targetRevision must be a non-empty string when present");
     }
   }
+
+  if (
+    document.placement !== undefined &&
+    !(
+      isRecord(document.placement) &&
+      (
+        (document.placement.kind === "position" &&
+          typeof document.placement.x === "number" &&
+          typeof document.placement.y === "number") ||
+        (document.placement.kind === "anchor" &&
+          typeof document.placement.nodeId === "string" &&
+          (document.placement.offsetX === undefined || typeof document.placement.offsetX === "number") &&
+          (document.placement.offsetY === undefined || typeof document.placement.offsetY === "number"))
+      )
+    )
+  ) {
+    errors.push("/placement must be a supported paste placement");
+  }
+
+  const options = document.options;
+  if (
+    options !== undefined &&
+    !(
+      isRecord(options) &&
+      (options.outsideEndpointPolicy === undefined ||
+        options.outsideEndpointPolicy === "reject" ||
+        options.outsideEndpointPolicy === "omit") &&
+      (options.idConflictPolicy === undefined ||
+        options.idConflictPolicy === "remap" ||
+        options.idConflictPolicy === "reject") &&
+      (options.interfaceIncidentEdgePolicy === undefined ||
+        options.interfaceIncidentEdgePolicy === "drop" ||
+        options.interfaceIncidentEdgePolicy === "preserve-diagnostic" ||
+        options.interfaceIncidentEdgePolicy === "reject") &&
+      (options.preserveRelativePositions === undefined ||
+        typeof options.preserveRelativePositions === "boolean")
+    )
+  ) {
+    errors.push("/options must be supported paste graph fragment options");
+  }
+
+  const outsideEndpointPolicy = isRecord(options) &&
+    (options.outsideEndpointPolicy === "reject" || options.outsideEndpointPolicy === "omit")
+    ? options.outsideEndpointPolicy
+    : undefined;
+  const fragmentResult = validateGraphFragmentV01(document.fragment, { outsideEndpointPolicy });
+  if (!fragmentResult.ok) {
+    errors.push(...fragmentResult.errors);
+  }
+
   if (errors.length > 0) {
     return { ok: false, errors };
   }
 
-  return { ok: true, value: response };
+  return { ok: true, value: document as unknown as PasteGraphFragmentRequest };
+}
+
+function isGraphTargetPath(path: unknown): boolean {
+  if (!isRecord(path)) {
+    return false;
+  }
+  if (path.kind === "root") {
+    return Object.keys(path).length === 1;
+  }
+  if (path.kind === "project-patch-definition") {
+    return typeof path.patchId === "string" && path.patchId.length > 0;
+  }
+  if (path.kind === "package-patch-definition") {
+    return (
+      typeof path.packageId === "string" &&
+      path.packageId.length > 0 &&
+      typeof path.patchId === "string" &&
+      path.patchId.length > 0 &&
+      (path.version === undefined || typeof path.version === "string")
+    );
+  }
+  if (path.kind === "embedded-patch-instance") {
+    return (
+      Array.isArray(path.ownerPath) &&
+      path.ownerPath.every((entry) => typeof entry === "string") &&
+      typeof path.nodeId === "string" &&
+      path.nodeId.length > 0
+    );
+  }
+  if (path.kind === "help-working-copy") {
+    return (
+      typeof path.workingCopyId === "string" &&
+      path.workingCopyId.length > 0 &&
+      (path.sourcePackageId === undefined || typeof path.sourcePackageId === "string") &&
+      (path.sourcePatchId === undefined || typeof path.sourcePatchId === "string")
+    );
+  }
+  return false;
 }

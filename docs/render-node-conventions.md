@@ -1,31 +1,27 @@
 # Render Node Conventions v0.1
 
-This document records built-in render node conventions that are intentionally
-small and stable enough for examples, runtimes, and Studio tooling to share.
+This document records Runtime-owned render node convention examples that were
+used while exercising the v0.1 node-definition and graph contracts. Contracts
+does not publish these examples as the canonical first-party object inventory.
+Actual object availability and execution behavior come from Runtime/package
+registries.
 
-The graph schema is unchanged. Render node behavior is defined by node
-definition manifests plus graph node params.
+The graph schema is unchanged. Render node behavior is described by
+`NodeDefinitionManifestV01` documents plus graph node params. Consumers should
+discover the concrete definitions from Runtime/package surfaces, not from
+`@skenion/contracts`.
 
-Canonical built-in node manifests live under `builtins/v0.1/nodes`. This
-document explains behavior and ABI expectations; it is not the source of truth
-for manifest JSON. Consumers should import `builtinNodeDefinitionsV01` from
-`@skenion/contracts` or audit their local copies against the builtins directory.
+## `object.core.render.clear-color`
 
-## `render.clear-color`
+`object.core.render.clear-color` is the first built-in render node convention.
 
-`render.clear-color` is the first built-in render node convention.
-
-Canonical manifest:
-
-`builtins/v0.1/nodes/render.clear-color.node.json`
-
-Shape:
+Example definition shape:
 
 ```json
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.clear-color",
+  "id": "object.core.render.clear-color",
   "version": "0.1.0",
   "displayName": "Clear Color",
   "category": "Render",
@@ -34,7 +30,7 @@ Shape:
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": "gpu.texture2d"
+      "type": "value.core.tensor"
     }
   ],
   "execution": {
@@ -46,7 +42,7 @@ Shape:
   },
   "permissions": [],
   "capabilities": [
-    "render.output.clear-color"
+    "object.core.render.output.clear-color"
   ]
 }
 ```
@@ -59,7 +55,7 @@ Graph node params:
 }
 ```
 
-`color` is `[r, g, b, a]`.
+`value.core.color` is `[r, g, b, a]`.
 
 Rules:
 
@@ -70,18 +66,14 @@ Rules:
 - The color space is intentionally simple for v0.1; do not add color
   management fields to the graph schema for this node.
 
-`render.clear-color` is a frame-clocked GPU pass that produces a
-`gpu.texture2d` output. Starting in v0.13, preview output should be
-selected by wiring `render.clear-color:out` into `render.output:in`.
+`object.core.render.clear-color` is a frame-clocked GPU pass that produces a
+`value.core.tensor` output. Starting in v0.13, preview output should be
+selected by wiring `object.core.render.clear-color:out` into `object.core.render.output:in`.
 
-## `core.color`
+## `object.core.color`
 
-`core.color` is a value source convention used by render nodes that accept
-`control.color` controls.
-
-Canonical manifest:
-
-`builtins/v0.1/nodes/core.color.node.json`
+`object.core.color` is a value source convention used by render nodes that accept
+`value.core.color` controls.
 
 Graph node params:
 
@@ -100,25 +92,21 @@ Rules:
 - Runtimes may clamp out-of-range values.
 - Missing or invalid values should fall back to `[1.0, 1.0, 1.0, 1.0]`.
 
-## `render.fullscreen-shader`
+## `object.core.render.fullscreen-shader`
 
-`render.fullscreen-shader` is a built-in fullscreen shader pass convention. The
+`object.core.render.fullscreen-shader` is a built-in fullscreen shader pass convention. The
 node identity names the render pass concept, not a specific shader language.
 The current built-in shader path only supports WGSL through `params.language`.
 Uniform inputs are graph instance ports generated from source annotations, not
 fixed manifest ports.
 
-Canonical manifest:
-
-`builtins/v0.1/nodes/render.fullscreen-shader.node.json`
-
-Shape:
+Example definition shape:
 
 ```json
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.fullscreen-shader",
+  "id": "object.core.render.fullscreen-shader",
   "version": "0.1.0",
   "displayName": "Fullscreen Shader",
   "category": "Render",
@@ -127,7 +115,7 @@ Shape:
       "id": "out",
       "direction": "output",
       "label": "Out",
-      "type": "gpu.texture2d"
+      "type": "value.core.tensor"
     }
   ],
   "execution": {
@@ -139,7 +127,7 @@ Shape:
   },
   "permissions": [],
   "capabilities": [
-    "render.output.fullscreen-shader"
+    "object.core.render.output.fullscreen-shader"
   ]
 }
 ```
@@ -162,8 +150,8 @@ Rules:
   fullscreen triangle vertex entry point.
 - Uniform input ports are declared by line comments:
   `// @skenion.uniform <id> <dataKind> [attributes...]`.
-- Supported uniform data kinds are `number.float`, `number.int`,
-  `number.uint`, `bool`, and `color`.
+- Supported uniform data kinds are `value.core.float32`, `value.core.int32`,
+  `value.core.uint32`, `value.core.bool`, and `value.core.color`.
 - Uniform ids are port ids and WGSL field names. They are not types.
 - Reserved ids `out`, `in`, `set`, `bang`, and `value` are invalid.
 - `default`, `min`, `max`, `step`, and quoted `label` attributes may be used
@@ -177,9 +165,9 @@ Rules:
 - Shader compile or render errors should be surfaced through preview telemetry
   and Runtime diagnostics.
 
-`render.fullscreen-shader` is a frame-clocked GPU pass that produces a
-`gpu.texture2d` output. Starting in v0.13, preview output should be
-selected by wiring `render.fullscreen-shader:out` into `render.output:in`.
+`object.core.render.fullscreen-shader` is a frame-clocked GPU pass that produces a
+`value.core.tensor` output. Starting in v0.13, preview output should be
+selected by wiring `object.core.render.fullscreen-shader:out` into `object.core.render.output:in`.
 
 ### Dynamic Interface Sync
 
@@ -191,10 +179,10 @@ active graph mutation surface with invalid edges removed.
 Example:
 
 ```wgsl
-// @skenion.uniform speed number.float default=0.5 min=0 max=2 step=0.01 label="Speed"
-// @skenion.uniform enabled bool default=true label="Enabled"
-// @skenion.uniform iterations number.int default=8 min=1 max=32 step=1 label="Iterations"
-// @skenion.uniform tint color default=[1,0.2,0.1,1] label="Tint"
+// @skenion.uniform speed value.core.float32 default=0.5 min=0 max=2 step=0.01 label="Speed"
+// @skenion.uniform enabled value.core.bool default=true label="Enabled"
+// @skenion.uniform iterations value.core.int32 default=8 min=1 max=32 step=1 label="Iterations"
+// @skenion.uniform tint value.core.color default=[1,0.2,0.1,1] label="Tint"
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
   var pulse = 0.5;
@@ -208,11 +196,11 @@ fn fs_main() -> @location(0) vec4<f32> {
 Generated graph instance ports:
 
 ```text
-speed      control.number.float
-enabled    control.bool
-iterations control.number.int
-tint       control.color
-out        gpu.texture2d
+speed      value.core.float64
+enabled    value.core.bool
+iterations value.core.int64
+tint       value.core.color
+out        value.core.tensor
 ```
 
 ### WGSL ABI
@@ -242,18 +230,18 @@ fn sk_bool(value: u32) -> bool {
 
 Generated scalar layout rules:
 
-- `number.float`: `f32`, alignment 4, size 4.
-- `number.int`: `i32`, alignment 4, size 4.
-- `bool`: stored as `u32`; use `sk_bool`.
-- `color`: `vec4<f32>`, alignment 16, size 16.
+- `value.core.float32`: `f32`, alignment 4, size 4.
+- `value.core.int32`: `i32`, alignment 4, size 4.
+- `value.core.bool`: stored as `u32`; use `sk_bool`.
+- `value.core.color`: `vec4<f32>`, alignment 16, size 16.
 
 The ABI is still intentionally small. Do not add GLSL, texture inputs, video,
 audio, MIDI, asset-backed shader source, or multi-pass render graph semantics
 to this node convention yet.
 
-## `render.output`
+## `object.core.render.output`
 
-`render.output` is the explicit final preview output selector. It lets Studio
+`object.core.render.output` is the explicit final preview output key. It lets Studio
 and Runtime agree on which render node feeds the local preview surface instead
 of relying on first-matching render node scans.
 
@@ -263,7 +251,7 @@ Node definition:
 {
   "schema": "skenion.node.definition",
   "schemaVersion": "0.1.0",
-  "id": "render.output",
+  "id": "object.core.render.output",
   "version": "0.1.0",
   "displayName": "Render Output",
   "category": "Render",
@@ -272,7 +260,7 @@ Node definition:
       "id": "in",
       "direction": "input",
       "label": "In",
-      "type": "gpu.texture2d",
+      "type": "value.core.tensor",
       "required": true
     }
   ],
@@ -285,18 +273,18 @@ Node definition:
   },
   "permissions": [],
   "capabilities": [
-    "render.output.surface"
+    "object.core.render.output.surface"
   ]
 }
 ```
 
 Rules:
 
-- `render.output` selects the final local preview surface source.
-- `render.output:in` accepts `gpu.texture2d` render outputs.
-- v0.13 supports one effective output. If multiple `render.output` nodes exist,
+- `object.core.render.output` selects the final local preview surface source.
+- `object.core.render.output:in` accepts `value.core.tensor` render outputs.
+- v0.13 supports one effective output. If multiple `object.core.render.output` nodes exist,
   runtimes should select deterministically and report a diagnostic.
-- If no `render.output` node exists, runtimes must report that no active render
+- If no `object.core.render.output` node exists, runtimes must report that no active render
   output is available. They must not select an older render node shape as a
   fallback.
 

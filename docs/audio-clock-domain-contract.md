@@ -19,17 +19,18 @@ It does not implement a high-quality bridge or resampler.
 
 | Object | Meaning |
 | --- | --- |
-| `audio.input` | Input endpoint source, Pd-style `adc~` alias. |
-| `audio.output` | Output endpoint sink, Pd-style `dac~` alias. |
-| `audio.clock-bridge` | Explicit independent clock-domain crossing boundary. |
-| `audio.resample` | Explicit sample-rate/drift compensation boundary. |
+| `object.core.audio.input` | Input endpoint source, Pd-style `adc~` alias. |
+| `object.core.audio.output` | Output endpoint sink, Pd-style `dac~` alias. |
+| `object.core.audio.clock-bridge` | Explicit independent clock-domain crossing boundary. |
+| `object.core.audio.resample` | Explicit sample-rate/drift compensation boundary. |
 
 ## Rules
 
 - `device != stream != clock domain`.
 - The same numeric `sampleRate` does not imply the same `AudioClockDomain`.
-- Direct `signal.audio` routing is valid inside one clock domain.
-- Independent-domain routing requires `audio.clock-bridge` or `audio.resample`.
+- Direct audio-rate `value.core.float32` routing is valid inside one clock
+  domain.
+- Independent-domain routing requires `object.core.audio.clock-bridge` or `object.core.audio.resample`.
 - Audio callbacks must execute precompiled plans and must not access graph,
   session, UI, HTTP, file IO, allocation-heavy paths, or graph locks.
 

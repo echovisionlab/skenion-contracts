@@ -19,8 +19,8 @@ blocking IO, or unbounded allocation.
 ## First Builtin Surface
 
 The first contract baseline publishes definitions for audio arithmetic,
-`audio.osc`, `audio.phasor`, `audio.cos`, `audio.noise`, `audio.sig`, and
-`audio.snapshot`.
+`object.core.audio.osc`, `object.core.audio.phasor`, `object.core.audio.cos`, `object.core.audio.noise`, `object.core.audio.sig`, and
+`object.core.audio.snapshot`.
 
 These definitions make port shape and rate/domain classification visible to
 Studio and examples. They do not imply that live audio rendering is implemented.

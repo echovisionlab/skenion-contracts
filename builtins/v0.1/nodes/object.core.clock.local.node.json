@@ -1,0 +1,62 @@
+{
+  "schema": "skenion.node.definition",
+  "schemaVersion": "0.1.0",
+  "id": "object.core.clock.local",
+  "version": "0.1.0",
+  "displayName": "Local Clock",
+  "category": "Clock",
+  "ports": [
+    {
+      "id": "sync",
+      "direction": "input",
+      "label": "Sync",
+      "type": "clock.state",
+      "required": false
+    },
+    {
+      "id": "reset",
+      "direction": "input",
+      "label": "Reset",
+      "type": "value.core.bang",
+      "required": false
+    },
+    {
+      "id": "state",
+      "direction": "output",
+      "label": "State",
+      "type": "clock.state"
+    },
+    {
+      "id": "tick",
+      "direction": "output",
+      "label": "Tick",
+      "type": "value.core.bang"
+    },
+    {
+      "id": "phase",
+      "direction": "output",
+      "label": "Phase",
+      "type": "value.core.float64"
+    },
+    {
+      "id": "tempo",
+      "direction": "output",
+      "label": "Tempo",
+      "type": "value.core.float64"
+    }
+  ],
+  "execution": {
+    "model": "control",
+    "clock": "beat"
+  },
+  "state": {
+    "persistent": false
+  },
+  "permissions": [],
+  "capabilities": [
+    "clock.transport.v0.1"
+  ],
+  "surface": {
+    "palette": "direct"
+  }
+}

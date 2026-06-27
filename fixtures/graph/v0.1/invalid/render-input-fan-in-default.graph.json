@@ -6,42 +6,42 @@
   "nodes": [
     {
       "id": "clear_a",
-      "kind": "render.clear-color",
+      "kind": "object.core.render.clear-color",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "out",
           "direction": "output",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         }
       ]
     },
     {
       "id": "clear_b",
-      "kind": "render.clear-color",
+      "kind": "object.core.render.clear-color",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "out",
           "direction": "output",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         }
       ]
     },
     {
       "id": "output",
-      "kind": "render.output",
+      "kind": "object.core.render.output",
       "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
           "id": "in",
           "direction": "input",
-          "type": "render.frame",
+          "type": "value.core.tensor",
           "rate": "render"
         }
       ]
