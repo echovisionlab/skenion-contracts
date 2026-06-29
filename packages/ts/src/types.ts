@@ -1251,6 +1251,7 @@ export interface ProjectDocumentV01 {
   schema: "skenion.project";
   schemaVersion: "0.1.0";
   id: string;
+  documentId: string;
   revision: string;
   metadata?: ProjectMetadataV01;
   graph: GraphDocumentV01;
@@ -1262,6 +1263,22 @@ export interface ProjectDocumentV01 {
   objectBindings?: ProjectObjectBindingV01[];
   tutorial?: Record<string, unknown>;
   help?: Record<string, unknown>;
+}
+
+export type RuntimeSessionLoadModeV01 = "loadIfEmpty" | "replaceIfMatch" | "forceReplace";
+
+export interface RuntimeSessionLoadPreconditionV01 {
+  documentId?: string;
+  sessionRevision?: string;
+  graphRevision?: string;
+}
+
+export interface RuntimeSessionLoadRequestV01 {
+  schema: "skenion.runtime.session-load-request";
+  schemaVersion: "0.1.0";
+  project: ProjectDocumentV01;
+  mode: RuntimeSessionLoadModeV01;
+  precondition?: RuntimeSessionLoadPreconditionV01;
 }
 
 export interface GraphValidationDiagnosticV01 {

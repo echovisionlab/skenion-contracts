@@ -19,6 +19,7 @@ import {
   packageListingV01Schema,
   packageManifestV01Schema,
   projectV01Schema,
+  runtimeSessionLoadRequestV01Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
@@ -58,6 +59,7 @@ import type {
   PortSpecV01,
   ProjectDocumentV01,
   ProjectPackageLockEntryV01,
+  RuntimeSessionLoadRequestV01,
   ValueFormatV01,
   ValueOccurrenceHeaderV01,
   ShaderInterfaceV01,
@@ -82,6 +84,7 @@ ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(projectV01Schema);
+ajv.addSchema(runtimeSessionLoadRequestV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphFragmentV01Validator = ajv.compile(graphFragmentV01Schema);
@@ -92,6 +95,7 @@ const nodeCatalogV01Validator = ajv.compile(nodeCatalogV01Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
+const runtimeSessionLoadRequestV01Validator = ajv.compile(runtimeSessionLoadRequestV01Schema);
 const patchDefinitionV01Validator = ajv.compile({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://skenion.dev/schemas/project/v0.1/patch-definition.schema.json",
@@ -2495,6 +2499,44 @@ export function validateProjectDocumentV01(
   }
 
   return { ok: true, value: project };
+}
+
+function validateRuntimeSessionLoadRequestV01Semantics(
+  request: RuntimeSessionLoadRequestV01
+): string[] {
+  const errors: string[] = [];
+  const projectResult = validateProjectDocumentV01(request.project);
+
+  if (!projectResult.ok) {
+    errors.push(...projectResult.errors.map((error) => `project ${error}`));
+  }
+
+  return errors;
+}
+
+export function validateRuntimeSessionLoadRequestV01(
+  document: unknown
+): ValidationResult<RuntimeSessionLoadRequestV01> {
+  if (!runtimeSessionLoadRequestV01Validator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeSessionLoadRequestV01Validator.errors as ErrorObject[])
+    };
+  }
+
+  const request = document as RuntimeSessionLoadRequestV01;
+  const errors = validateRuntimeSessionLoadRequestV01Semantics(request);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: request };
+}
+
+export function isRuntimeSessionLoadRequestV01(
+  document: unknown
+): document is RuntimeSessionLoadRequestV01 {
+  return validateRuntimeSessionLoadRequestV01(document).ok;
 }
 
 function validateProjectObjectBindingStatusInvariants(document: unknown): string[] {

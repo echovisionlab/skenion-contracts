@@ -2,6 +2,7 @@
   "schema": "skenion.project",
   "schemaVersion": "0.1.0",
   "id": "project-resolved-project-patch-binding-missing-patch",
+  "documentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   "revision": "1",
   "graph": {
     "schema": "skenion.graph",

@@ -2,6 +2,7 @@
   "schema": "skenion.project",
   "schemaVersion": "0.1.0",
   "id": "project-package-dependency-version-out-of-range",
+  "documentId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
   "revision": "1",
   "graph": {
     "schema": "skenion.graph",

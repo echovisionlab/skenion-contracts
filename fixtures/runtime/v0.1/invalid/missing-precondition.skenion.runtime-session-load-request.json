@@ -1,0 +1,28 @@
+{
+  "schema": "skenion.runtime.session-load-request",
+  "schemaVersion": "0.1.0",
+  "project": {
+    "schema": "skenion.project",
+    "schemaVersion": "0.1.0",
+    "id": "project-runtime-missing-precondition",
+    "documentId": "00000000-0000-4000-8000-000000000103",
+    "revision": "1",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "runtime-missing-precondition-root",
+      "revision": "1",
+      "nodes": [],
+      "edges": []
+    },
+    "viewState": {
+      "schema": "skenion.view-state",
+      "schemaVersion": "0.1.0",
+      "canvas": {
+        "nodes": {}
+      }
+    },
+    "patchLibrary": []
+  },
+  "mode": "replaceIfMatch"
+}

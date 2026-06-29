@@ -2,6 +2,7 @@
   "schema": "skenion.project",
   "schemaVersion": "0.1.0",
   "id": "project-package-lock",
+  "documentId": "77777777-7777-4777-8777-777777777777",
   "revision": "1",
   "graph": {
     "schema": "skenion.graph",

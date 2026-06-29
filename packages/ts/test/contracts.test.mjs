@@ -31,6 +31,7 @@ import {
   planAudioClockBridgeV01,
   planConversion,
   projectV01Schema,
+  runtimeSessionLoadRequestV01Schema,
   parseObjectTextV01,
   projectPatchNodeDefinitionIdV01,
   representationForDataType,
@@ -66,6 +67,7 @@ import {
   validatePasteGraphFragmentRequest,
   validateProjectDocument,
   validateProjectDocumentV01,
+  validateRuntimeSessionLoadRequestV01,
   validateValueFormatV01,
   validateValueOccurrenceHeaderV01,
   validateNodeCatalogSnapshotV01,
@@ -78,6 +80,7 @@ import {
   isPackageInstallPlanRequestV01,
   isPackageInstallPlanResponseV01,
   isPackageListingV01,
+  isRuntimeSessionLoadRequestV01,
   isSameV0CompatibilityLine,
   satisfiesV0CompatibilityRange
 } from "../dist/index.js";
@@ -112,6 +115,7 @@ test("exports active schema contracts", () => {
   }
   assert.equal(graphV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(projectV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(projectV01Schema.properties.documentId.pattern, "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
   assert.equal(viewStateV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(nodeDefinitionV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(nodeCatalogV01Schema.properties.schema.const, "skenion.node-catalog.snapshot");
@@ -134,6 +138,9 @@ test("exports active schema contracts", () => {
   assert.equal(packageDiscoveryV01Schema.properties.schema.const, "skenion.package.discovery");
   assert.equal(packageInstallPlanRequestV01Schema.properties.schema.const, "skenion.package.install-plan.request");
   assert.equal(packageInstallPlanResponseV01Schema.properties.schema.const, "skenion.package.install-plan.response");
+  assert.equal(runtimeSessionLoadRequestV01Schema.properties.schema.const, "skenion.runtime.session-load-request");
+  assert.equal(Object.hasOwn(contracts, "validateRuntimeSessionLoadRequestV01"), true);
+  assert.equal(Object.hasOwn(contracts, "isRuntimeSessionLoadRequestV01"), true);
   assert.equal(SKENION_PACKAGE_MANIFEST_FILE_NAME, "skenion.package.json");
   assert.equal(compatibilityMatrixV01Schema.properties.schema.const, "skenion.compatibility-matrix");
   assert.equal(compatibilityMatrixV01Schema.properties["schema-version"].const, "0.1.0");
@@ -172,6 +179,38 @@ test("exports active schema contracts", () => {
   ]) {
     assert.equal(Object.hasOwn(contracts, runtimeExport), false, runtimeExport);
   }
+});
+
+test("validates runtime session load request contracts", async () => {
+  const loadIfEmpty = await readJson("fixtures/runtime/v0.1/valid/load-if-empty.skenion.runtime-session-load-request.json");
+  const replaceIfMatch = await readJson("fixtures/runtime/v0.1/valid/replace-if-match.skenion.runtime-session-load-request.json");
+  const malformedDocumentId = await readJson("fixtures/runtime/v0.1/invalid/malformed-document-id.skenion.runtime-session-load-request.json");
+  const missingPrecondition = await readJson("fixtures/runtime/v0.1/invalid/missing-precondition.skenion.runtime-session-load-request.json");
+  const rawProject = await readJson("fixtures/project/v0.1/valid/empty-root.project.json");
+  const semanticInvalidProject = await readJson("fixtures/project/v0.1/invalid/duplicate-boundary-port-id.project.json");
+
+  assert.equal(validateRuntimeSessionLoadRequestV01(loadIfEmpty).ok, true);
+  assert.equal(validateRuntimeSessionLoadRequestV01(replaceIfMatch).ok, true);
+  assert.equal(isRuntimeSessionLoadRequestV01(loadIfEmpty), true);
+  assert.equal(isRuntimeSessionLoadRequestV01(rawProject), false);
+
+  const rawProjectResult = validateRuntimeSessionLoadRequestV01(rawProject);
+  assert.equal(rawProjectResult.ok, false);
+  assert.match(rawProjectResult.errors.join("\n"), /schema/);
+
+  const malformedProjectResult = validateRuntimeSessionLoadRequestV01(malformedDocumentId);
+  assert.equal(malformedProjectResult.ok, false);
+  assert.match(malformedProjectResult.errors.join("\n"), /project.*documentId/);
+
+  const semanticInvalidProjectRequest = structuredClone(loadIfEmpty);
+  semanticInvalidProjectRequest.project = semanticInvalidProject;
+  const semanticInvalidProjectResult = validateRuntimeSessionLoadRequestV01(semanticInvalidProjectRequest);
+  assert.equal(semanticInvalidProjectResult.ok, false);
+  assert.match(semanticInvalidProjectResult.errors.join("\n"), /project duplicate boundary port id/);
+
+  const missingPreconditionResult = validateRuntimeSessionLoadRequestV01(missingPrecondition);
+  assert.equal(missingPreconditionResult.ok, false);
+  assert.match(missingPreconditionResult.errors.join("\n"), /required property 'precondition'/);
 });
 
 const zeroChecksumV01 = { algorithm: "sha256", value: "0".repeat(64) };
@@ -1604,6 +1643,7 @@ test("default graph project view and node validators are strict v0.1", async () 
     schema: "skenion.project",
     schemaVersion: "9.9.9",
     id: "unsupported-project",
+    documentId: "00000000-0000-4000-8000-000000000401",
     revision: "1",
     graph: unsupportedGraph,
     viewState: unsupportedViewState,
@@ -2466,7 +2506,9 @@ test("exports and validates v0.1 project patch library contracts", async () => {
     const result = validateProjectDocumentV01(project);
     assert.equal(validateProjectDocument(project).ok, true, fixture);
     assert.equal(result.ok, true, fixture);
-    assert.equal(validatePatchDefinitionV01(project.patchLibrary[0]).ok, true, fixture);
+    if (project.patchLibrary.length > 0) {
+      assert.equal(validatePatchDefinitionV01(project.patchLibrary[0]).ok, true, fixture);
+    }
   }
 
   for (const fixture of await fixtureFiles("fixtures/project/v0.1/invalid")) {

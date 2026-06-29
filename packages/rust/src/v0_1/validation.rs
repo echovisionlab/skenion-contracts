@@ -21,8 +21,9 @@ use super::types::{
     PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest, PatchDefinitionV01,
     PatchPath, PortDirectionV01, PortSpecV01, ProjectDocumentV01,
     ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
-    ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01,
-    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, compute_node_catalog_revision_v01,
+    ProjectObjectBindingTargetV01, RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01,
+    SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01, ValueOccurrenceHeaderV01,
+    ValuePayloadKindV01, ViewStateV01, compute_node_catalog_revision_v01,
     derive_patch_contract_v01, project_patch_node_definition_id_v01,
 };
 use super::version::{
@@ -2410,6 +2411,30 @@ fn graph_v01_semantic_errors(graph: &GraphDocumentV01, label: &str) -> Vec<Valid
     errors
 }
 
+fn is_uuid_format_v01(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    if bytes.len() != 36 {
+        return false;
+    }
+
+    for (index, byte) in bytes.iter().enumerate() {
+        match index {
+            8 | 13 | 18 | 23 => {
+                if *byte != b'-' {
+                    return false;
+                }
+            }
+            _ => {
+                if !byte.is_ascii_hexdigit() {
+                    return false;
+                }
+            }
+        }
+    }
+
+    true
+}
+
 fn view_state_node_reference_errors(
     view_state: &ViewStateV01,
     graph: &GraphDocumentV01,
@@ -2506,6 +2531,12 @@ pub fn validate_project_document_v01(
     if project.id.is_empty() {
         errors.push(ValidationErrorV01::new("project id must not be empty"));
     }
+    if !is_uuid_format_v01(&project.document_id) {
+        errors.push(ValidationErrorV01::new(format!(
+            "project documentId must be a UUID: {}",
+            project.document_id
+        )));
+    }
     if project.revision.is_empty() {
         errors.push(ValidationErrorV01::new(
             "project revision must not be empty",
@@ -2533,6 +2564,83 @@ pub fn validate_project_document_v01(
         }
     }
     errors.extend(project_package_reference_errors(project));
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_runtime_session_load_request_v01(
+    request: &RuntimeSessionLoadRequestV01,
+) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if request.schema != "skenion.runtime.session-load-request" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schema skenion.runtime.session-load-request, found {}",
+            request.schema
+        )));
+    }
+    if request.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            request.schema_version
+        )));
+    }
+
+    if let Err(report) = validate_project_document_v01(&request.project) {
+        errors.extend(
+            report
+                .errors()
+                .iter()
+                .map(|error| ValidationErrorV01::new(format!("project {}", error.message))),
+        );
+    }
+
+    if matches!(request.mode, RuntimeSessionLoadModeV01::ReplaceIfMatch)
+        && request.precondition.is_none()
+    {
+        errors.push(ValidationErrorV01::new(
+            "runtime session load replaceIfMatch requires precondition",
+        ));
+    }
+    if let Some(precondition) = &request.precondition {
+        if precondition.document_id.is_none()
+            && precondition.session_revision.is_none()
+            && precondition.graph_revision.is_none()
+        {
+            errors.push(ValidationErrorV01::new(
+                "runtime session load precondition must not be empty",
+            ));
+        }
+        if let Some(document_id) = &precondition.document_id
+            && !is_uuid_format_v01(document_id)
+        {
+            errors.push(ValidationErrorV01::new(format!(
+                "runtime session load precondition documentId must be a UUID: {document_id}"
+            )));
+        }
+        if precondition
+            .session_revision
+            .as_ref()
+            .is_some_and(|revision| revision.is_empty())
+        {
+            errors.push(ValidationErrorV01::new(
+                "runtime session load precondition sessionRevision must not be empty",
+            ));
+        }
+        if precondition
+            .graph_revision
+            .as_ref()
+            .is_some_and(|revision| revision.is_empty())
+        {
+            errors.push(ValidationErrorV01::new(
+                "runtime session load precondition graphRevision must not be empty",
+            ));
+        }
+    }
 
     if errors.is_empty() {
         Ok(())
@@ -4112,6 +4220,7 @@ mod tests {
             "schema": "skenion.project",
             "schemaVersion": "0.1.0",
             "id": "project-unit",
+            "documentId": "00000000-0000-4000-8000-000000000201",
             "revision": "1",
             "graph": graph.clone(),
             "viewState": {
@@ -4611,6 +4720,7 @@ mod tests {
               "schema": "skenion.project",
               "schemaVersion": "0.1.0",
               "id": "project-warning",
+              "documentId": "00000000-0000-4000-8000-000000000202",
               "revision": "1",
               "graph": {
                 "schema": "skenion.graph",
@@ -4707,6 +4817,7 @@ mod tests {
               "schema": "skenion.project",
               "schemaVersion": "0.1.0",
               "id": "project-invalid-patch",
+              "documentId": "00000000-0000-4000-8000-000000000203",
               "revision": "1",
               "graph": {
                 "schema": "skenion.graph",

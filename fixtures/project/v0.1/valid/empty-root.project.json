@@ -1,13 +1,13 @@
 {
   "schema": "skenion.project",
   "schemaVersion": "0.1.0",
-  "id": "project-resolved-binding-missing-target",
-  "documentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+  "id": "project-empty-root",
+  "documentId": "00000000-0000-4000-8000-000000000001",
   "revision": "1",
   "graph": {
     "schema": "skenion.graph",
     "schemaVersion": "0.1.0",
-    "id": "root-resolved-binding-missing-target",
+    "id": "root-empty",
     "revision": "1",
     "nodes": [],
     "edges": []
@@ -19,12 +19,5 @@
       "nodes": {}
     }
   },
-  "patchLibrary": [],
-  "objectBindings": [
-    {
-      "id": "binding-resolved-missing-target",
-      "objectText": "my-patcher",
-      "status": "resolved"
-    }
-  ]
+  "patchLibrary": []
 }

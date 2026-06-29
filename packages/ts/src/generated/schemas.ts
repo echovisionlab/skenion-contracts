@@ -663,6 +663,7 @@ export const projectV01Schema = {
     "schema",
     "schemaVersion",
     "id",
+    "documentId",
     "revision",
     "graph",
     "viewState",
@@ -678,6 +679,10 @@ export const projectV01Schema = {
     "id": {
       "type": "string",
       "minLength": 1
+    },
+    "documentId": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "revision": {
       "type": "string",
@@ -1426,6 +1431,85 @@ export const projectV01Schema = {
           },
           "minItems": 1,
           "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
+export const runtimeSessionLoadRequestV01Schema = {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/runtime/v0.1/session-load-request.schema.json",
+  "title": "skenion Runtime Session Load Request v0.1",
+  "description": "Request body for loading a project document into a Runtime session. This wrapper is distinct from a raw ProjectDocumentV01 body so callers must declare load mode and any replacement preconditions.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "project",
+    "mode"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.runtime.session-load-request"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "project": {
+      "$ref": "https://skenion.dev/schemas/project/v0.1/project.schema.json"
+    },
+    "mode": {
+      "enum": [
+        "loadIfEmpty",
+        "replaceIfMatch",
+        "forceReplace"
+      ]
+    },
+    "precondition": {
+      "$ref": "#/$defs/precondition"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "replaceIfMatch"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "precondition"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "precondition": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "documentId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "sessionRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "graphRevision": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false

@@ -17,6 +17,7 @@ use skenion_contracts::{
     PackageListingDiagnosticCodeV01, PackageListingTargetSupportKindV01, PackageListingV01,
     PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
     PatchDefinitionV01, PatchPath, ProjectDocumentV01, ProjectObjectBindingTargetV01,
+    RuntimeSessionLoadModeV01, RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
     SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, ValueFormatV01,
     ValueOccurrenceHeaderV01, ValuePayloadKindV01, analyze_graph_document_v01,
     analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
@@ -33,7 +34,8 @@ use skenion_contracts::{
     validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
     validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_project_document_v01,
-    validate_value_format_v01, validate_value_occurrence_header_v01,
+    validate_runtime_session_load_request_v01, validate_value_format_v01,
+    validate_value_occurrence_header_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -165,6 +167,101 @@ fn parses_public_compatibility_matrix_contract() {
     artifact_surface["verification"] = serde_json::json!({ "expected-checksums": {} });
     serde_json::from_value::<CompatibilityMatrixV01>(artifact_surface)
         .expect_err("release artifact verifier fields should not parse");
+}
+
+#[test]
+fn validates_public_runtime_session_load_request_contract() {
+    let load_if_empty: RuntimeSessionLoadRequestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/runtime/v0.1/valid/load-if-empty.skenion.runtime-session-load-request.json"
+    ))
+    .expect("loadIfEmpty request should parse");
+    validate_runtime_session_load_request_v01(&load_if_empty)
+        .expect("loadIfEmpty request should validate");
+    assert!(matches!(
+        load_if_empty.mode,
+        RuntimeSessionLoadModeV01::LoadIfEmpty
+    ));
+
+    let replace_if_match: RuntimeSessionLoadRequestV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/runtime/v0.1/valid/replace-if-match.skenion.runtime-session-load-request.json"
+    ))
+    .expect("replaceIfMatch request should parse");
+    validate_runtime_session_load_request_v01(&replace_if_match)
+        .expect("replaceIfMatch request should validate");
+    assert!(matches!(
+        replace_if_match.mode,
+        RuntimeSessionLoadModeV01::ReplaceIfMatch
+    ));
+    assert_eq!(
+        replace_if_match
+            .precondition
+            .as_ref()
+            .and_then(|precondition| precondition.document_id.as_deref()),
+        Some("00000000-0000-4000-8000-000000000101")
+    );
+
+    let invalid_project: ProjectDocumentV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/project/v0.1/invalid/duplicate-boundary-port-id.project.json"
+    ))
+    .expect("semantic invalid project should parse");
+    let mut invalid_request = load_if_empty.clone();
+    invalid_request.schema = "skenion.project".to_owned();
+    invalid_request.schema_version = "0.2.0".to_owned();
+    invalid_request.project = invalid_project;
+    invalid_request.mode = RuntimeSessionLoadModeV01::ReplaceIfMatch;
+    invalid_request.precondition = None;
+    let invalid_report = validate_runtime_session_load_request_v01(&invalid_request)
+        .expect_err("invalid request should fail");
+    let invalid_text = invalid_report.to_string();
+    assert!(invalid_text.contains("expected schema skenion.runtime.session-load-request"));
+    assert!(invalid_text.contains("expected schemaVersion 0.1.0"));
+    assert!(invalid_text.contains("project duplicate boundary port id"));
+    assert!(invalid_text.contains("replaceIfMatch requires precondition"));
+
+    let mut empty_precondition_request = load_if_empty.clone();
+    empty_precondition_request.precondition = Some(RuntimeSessionLoadPreconditionV01 {
+        document_id: None,
+        session_revision: None,
+        graph_revision: None,
+    });
+    let empty_precondition_report =
+        validate_runtime_session_load_request_v01(&empty_precondition_request)
+            .expect_err("empty precondition should fail");
+    assert!(
+        empty_precondition_report
+            .to_string()
+            .contains("precondition must not be empty")
+    );
+
+    let mut malformed_precondition_request = load_if_empty.clone();
+    malformed_precondition_request.mode = RuntimeSessionLoadModeV01::ForceReplace;
+    malformed_precondition_request.precondition = Some(RuntimeSessionLoadPreconditionV01 {
+        document_id: Some("00000000_0000-4000-8000-000000000101".to_owned()),
+        session_revision: Some(String::new()),
+        graph_revision: Some(String::new()),
+    });
+    let malformed_precondition_report =
+        validate_runtime_session_load_request_v01(&malformed_precondition_request)
+            .expect_err("malformed precondition should fail");
+    let malformed_precondition_text = malformed_precondition_report.to_string();
+    assert!(malformed_precondition_text.contains("documentId must be a UUID"));
+    assert!(malformed_precondition_text.contains("sessionRevision must not be empty"));
+    assert!(malformed_precondition_text.contains("graphRevision must not be empty"));
+
+    let mut non_hex_document_id_request = load_if_empty;
+    non_hex_document_id_request.precondition = Some(RuntimeSessionLoadPreconditionV01 {
+        document_id: Some("00000000-0000-4000-8000-00000000010z".to_owned()),
+        session_revision: None,
+        graph_revision: None,
+    });
+    let non_hex_document_id_report =
+        validate_runtime_session_load_request_v01(&non_hex_document_id_request)
+            .expect_err("non-hex documentId should fail");
+    assert!(
+        non_hex_document_id_report
+            .to_string()
+            .contains("documentId must be a UUID")
+    );
 }
 
 #[test]
@@ -2826,6 +2923,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
           "schema": "skenion.project",
           "schemaVersion": "0.1.0",
           "id": "project-fallback-boundaries",
+          "documentId": "00000000-0000-4000-8000-000000000301",
           "revision": "1",
           "graph": {
             "schema": "skenion.graph",
@@ -2918,6 +3016,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
         "schema": "wrong.project",
         "schemaVersion": "9.9.9",
         "id": "",
+        "documentId": "not-a-uuid",
         "revision": "",
         "graph": {
             "schema": "wrong.graph",
@@ -3029,6 +3128,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
         "expected schema skenion.project, found wrong.project",
         "expected schemaVersion 0.1.0, found 9.9.9",
         "project id must not be empty",
+        "project documentId must be a UUID: not-a-uuid",
         "project revision must not be empty",
         "root graph expected schema skenion.graph, found wrong.graph",
         "root graph expected schemaVersion 0.1.0, found 9.9.9",

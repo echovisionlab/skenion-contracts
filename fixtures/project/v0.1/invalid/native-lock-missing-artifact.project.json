@@ -2,6 +2,7 @@
   "schema": "skenion.project",
   "schemaVersion": "0.1.0",
   "id": "project-native-lock-missing-artifact",
+  "documentId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
   "revision": "1",
   "graph": {
     "schema": "skenion.graph",

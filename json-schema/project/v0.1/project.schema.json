@@ -3,7 +3,16 @@
   "$id": "https://skenion.dev/schemas/project/v0.1/project.schema.json",
   "title": "skenion Project Document v0.1",
   "type": "object",
-  "required": ["schema", "schemaVersion", "id", "revision", "graph", "viewState", "patchLibrary"],
+  "required": [
+    "schema",
+    "schemaVersion",
+    "id",
+    "documentId",
+    "revision",
+    "graph",
+    "viewState",
+    "patchLibrary"
+  ],
   "properties": {
     "schema": {
       "const": "skenion.project"
@@ -14,6 +23,10 @@
     "id": {
       "type": "string",
       "minLength": 1
+    },
+    "documentId": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "revision": {
       "type": "string",

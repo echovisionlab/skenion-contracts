@@ -1,0 +1,33 @@
+{
+  "schema": "skenion.runtime.session-load-request",
+  "schemaVersion": "0.1.0",
+  "project": {
+    "schema": "skenion.project",
+    "schemaVersion": "0.1.0",
+    "id": "project-runtime-replace",
+    "documentId": "00000000-0000-4000-8000-000000000102",
+    "revision": "2",
+    "graph": {
+      "schema": "skenion.graph",
+      "schemaVersion": "0.1.0",
+      "id": "runtime-replace-root",
+      "revision": "2",
+      "nodes": [],
+      "edges": []
+    },
+    "viewState": {
+      "schema": "skenion.view-state",
+      "schemaVersion": "0.1.0",
+      "canvas": {
+        "nodes": {}
+      }
+    },
+    "patchLibrary": []
+  },
+  "mode": "replaceIfMatch",
+  "precondition": {
+    "documentId": "00000000-0000-4000-8000-000000000101",
+    "sessionRevision": "session-1",
+    "graphRevision": "graph-1"
+  }
+}

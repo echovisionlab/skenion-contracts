@@ -1016,6 +1016,14 @@ function validateGraphV01Semantics(file, graph) {
   }
 }
 
+function validateRuntimeSessionLoadRequestV01Semantics(file, request) {
+  validateProjectV01Semantics(file, request.project);
+
+  if (request.mode === "replaceIfMatch" && request.precondition === undefined) {
+    fail(file, "runtime session load replaceIfMatch requires precondition");
+  }
+}
+
 function validateGraphFragmentV01Semantics(file, fragment) {
   duplicateCheck(
     file,
@@ -1237,6 +1245,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.package.install-plan.response" && document.schemaVersion === "0.1.0") {
     return validators.packageInstallPlanResponseV01;
   }
+  if (document.schema === "skenion.runtime.session-load-request" && document.schemaVersion === "0.1.0") {
+    return validators.runtimeSessionLoadRequestV01;
+  }
   if (document.schema === "skenion.compatibility-matrix" && document["schema-version"] === "0.1.0") {
     return validators.compatibilityMatrixV01;
   }
@@ -1264,6 +1275,9 @@ function validateDocument(file, document, validators) {
   }
   if (document.schema === "skenion.project" && document.schemaVersion === "0.1.0") {
     validateProjectV01Semantics(file, document);
+  }
+  if (document.schema === "skenion.runtime.session-load-request" && document.schemaVersion === "0.1.0") {
+    validateRuntimeSessionLoadRequestV01Semantics(file, document);
   }
   if (document.schema === "skenion.object-text.parse-result" && document.schemaVersion === "0.1.0") {
     validateObjectTextParseResultSemantics(file, document);
@@ -1508,6 +1522,7 @@ function isExplicitlyLoadedSchemaFile(file) {
     "json-schema/graph/v0.1/",
     "json-schema/node/v0.1/",
     "json-schema/project/v0.1/",
+    "json-schema/runtime/v0.1/",
     "json-schema/view/v0.1/"
   ].some((prefix) => normalized.startsWith(prefix));
 }
@@ -1524,6 +1539,7 @@ const graphV01Schema = await readJson("json-schema/graph/v0.1/graph.schema.json"
 const graphFragmentV01Schema = await readJson("json-schema/graph/v0.1/fragment.schema.json");
 const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.schema.json");
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
+const runtimeSessionLoadRequestV01Schema = await readJson("json-schema/runtime/v0.1/session-load-request.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
 const nodeCatalogV01Schema = await readJson("json-schema/node-catalog/v0.1/node-catalog.schema.json");
 const extensionManifestV01Schema = await readJson("json-schema/extension/v0.1/extension-manifest.schema.json");
@@ -1538,6 +1554,7 @@ ajv.addSchema(graphFragmentV01Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(projectV01Schema);
+ajv.addSchema(runtimeSessionLoadRequestV01Schema);
 ajv.addSchema(packageListingV01Schema);
 ajv.addSchema(packageInstallPlanRequestV01Schema);
 ajv.addSchema(compatibilityMatrixV01Schema);
@@ -1546,6 +1563,7 @@ const validators = {
   graphFragmentV01: ajv.compile(graphFragmentV01Schema),
   viewStateV01: ajv.compile(viewStateV01Schema),
   projectV01: ajv.compile(projectV01Schema),
+  runtimeSessionLoadRequestV01: ajv.compile(runtimeSessionLoadRequestV01Schema),
   nodeDefinitionV01: ajv.compile(nodeDefinitionV01Schema),
   nodeCatalogV01: ajv.compile(nodeCatalogV01Schema),
   shaderInterfaceV01: ajv.compile(

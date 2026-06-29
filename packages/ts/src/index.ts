@@ -13,6 +13,7 @@ export {
   packageListingV01Schema,
   packageManifestV01Schema,
   projectV01Schema,
+  runtimeSessionLoadRequestV01Schema,
   shaderDiagnosticV01Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema
@@ -204,6 +205,9 @@ export type {
   ProviderRefKindV01,
   RepresentationSpecV01,
   RepresentationV01,
+  RuntimeSessionLoadModeV01,
+  RuntimeSessionLoadPreconditionV01,
+  RuntimeSessionLoadRequestV01,
   SemanticDataKindV01,
   GeneratedShaderSourceMapV01,
   ShaderDiagnosticPhaseV01,
@@ -305,6 +309,7 @@ export {
   validatePasteGraphFragmentRequest,
   validateProjectDocument,
   validateProjectDocumentV01,
+  validateRuntimeSessionLoadRequestV01,
   validateViewState,
   validateViewStateV01,
   validateShaderInterface,
@@ -313,4 +318,5 @@ export {
   isPackageInstallPlanRequestV01,
   isPackageInstallPlanResponseV01,
   isPackageListingV01,
+  isRuntimeSessionLoadRequestV01,
 } from "./validate.js";

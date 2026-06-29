@@ -85,6 +85,7 @@ pub use types::{
     ProjectObjectBindingDiagnosticV01, ProjectObjectBindingStatusV01,
     ProjectObjectBindingTargetV01, ProjectObjectBindingV01, ProjectPackageDependencyV01,
     ProjectPackageLockEntryV01, ProjectResourceLockEntryV01, ProviderRefKindV01,
+    RuntimeSessionLoadModeV01, RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
     SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, TriggerModeV01, ValueClockV01,
     ValueContinuityFlagV01, ValueEndpointRefV01, ValueFormatV01, ValueLayoutV01,
     ValueOccurrenceHeaderV01, ValuePayloadKindV01, ValueResourceKindV01, ViewStateV01,
@@ -101,7 +102,8 @@ pub use validation::{
     validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
     validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_patch_definition_v01,
-    validate_project_document_v01, validate_value_format_v01, validate_value_occurrence_header_v01,
+    validate_project_document_v01, validate_runtime_session_load_request_v01,
+    validate_value_format_v01, validate_value_occurrence_header_v01,
 };
 pub use version::{
     CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,

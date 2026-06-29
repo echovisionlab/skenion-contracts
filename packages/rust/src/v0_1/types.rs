@@ -1723,6 +1723,7 @@ pub struct ProjectDocumentV01 {
     pub schema: String,
     pub schema_version: String,
     pub id: String,
+    pub document_id: String,
     pub revision: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<ProjectMetadataV01>,
@@ -1741,6 +1742,38 @@ pub struct ProjectDocumentV01 {
     pub tutorial: Option<serde_json::Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub help: Option<serde_json::Map<String, Value>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RuntimeSessionLoadModeV01 {
+    LoadIfEmpty,
+    ReplaceIfMatch,
+    ForceReplace,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSessionLoadPreconditionV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_revision: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSessionLoadRequestV01 {
+    pub schema: String,
+    pub schema_version: String,
+    pub project: ProjectDocumentV01,
+    pub mode: RuntimeSessionLoadModeV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precondition: Option<RuntimeSessionLoadPreconditionV01>,
 }
 
 fn string_param(node: &GraphNodeV01, key: &str) -> Option<String> {
