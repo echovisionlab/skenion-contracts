@@ -10,6 +10,7 @@ import {
   extensionManifestV01Schema,
   graphFragmentV01Schema,
   graphV01Schema,
+  nodeCatalogV01Schema,
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
   packageDiscoveryV01Schema,
@@ -21,6 +22,10 @@ import {
   shaderInterfaceV01Schema,
   viewStateV01Schema
 } from "./generated/schemas.js";
+import {
+  computeNodeCatalogRevisionV01,
+  projectPatchNodeDefinitionIdV01
+} from "./nodeCatalog.js";
 import { derivePatchContractV01 } from "./project.js";
 import type {
   CompatibilityMatrixV01,
@@ -36,6 +41,9 @@ import type {
   GraphValidationDiagnosticV01,
   GraphValidationResultV01,
   EndpointBindingValueFormatV01,
+  NodeCatalogDiagnosticTargetV01,
+  NodeCatalogDiagnosticV01,
+  NodeCatalogSnapshotV01,
   NodeDefinitionManifestV01,
   ObjectTextParseResultV01,
   PackageDiscoveryResponseV01,
@@ -74,11 +82,13 @@ ajv.addSchema(graphV01Schema);
 ajv.addSchema(graphFragmentV01Schema);
 ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(projectV01Schema);
+ajv.addSchema(nodeDefinitionV01Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphFragmentV01Validator = ajv.compile(graphFragmentV01Schema);
 const messageValueV01Validator = ajv.compile(messageValueV01Schema);
 const objectTextParseResultV01Validator = ajv.compile(objectTextParseResultV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
+const nodeCatalogV01Validator = ajv.compile(nodeCatalogV01Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
@@ -268,6 +278,204 @@ function validatePackageDiscoveryResponseV01Semantics(response: PackageDiscovery
 
   for (const listing of response.listings) {
     errors.push(...validatePackageListingV01Semantics(listing));
+  }
+
+  return errors;
+}
+
+function compareUnicodeCodePoint(left: string, right: string): number {
+  const leftCodePoints = Array.from(left);
+  const rightCodePoints = Array.from(right);
+  const count = Math.min(leftCodePoints.length, rightCodePoints.length);
+
+  for (let index = 0; index < count; index += 1) {
+    const leftCodePoint = leftCodePoints[index].codePointAt(0) as number;
+    const rightCodePoint = rightCodePoints[index].codePointAt(0) as number;
+    if (leftCodePoint !== rightCodePoint) {
+      return leftCodePoint - rightCodePoint;
+    }
+  }
+
+  return leftCodePoints.length - rightCodePoints.length;
+}
+
+function sortedErrors(values: string[], label: string): string[] {
+  const sorted = [...values].sort(compareUnicodeCodePoint);
+  return values.every((value, index) => value === sorted[index])
+    ? []
+    : [`${label} must be sorted by Unicode code point`];
+}
+
+function checksumEquals(left: { algorithm: string; value: string }, right: { algorithm: string; value: string }): boolean {
+  return left.algorithm === right.algorithm && left.value === right.value;
+}
+
+function validateNodeCatalogDiagnosticTargetV01(
+  target: NodeCatalogDiagnosticTargetV01,
+  entryIds: ReadonlySet<string>,
+  diagnosticIds: ReadonlySet<string>,
+  label: string
+): string[] {
+  if (target.kind === "catalog") {
+    return [];
+  }
+  if (target.kind === "entry" && !entryIds.has(target.catalogId)) {
+    return [`${label} references missing entry catalogId: ${target.catalogId}`];
+  }
+  if (target.kind === "diagnosticNodeDefinition" && !diagnosticIds.has(target.diagnosticId)) {
+    return [`${label} references missing diagnosticId: ${target.diagnosticId}`];
+  }
+  return [];
+}
+
+function validateNodeCatalogDiagnosticV01Semantics(
+  diagnostic: NodeCatalogDiagnosticV01,
+  entryIds: ReadonlySet<string>,
+  diagnosticIds: ReadonlySet<string>,
+  label: string
+): string[] {
+  const errors = validateNodeCatalogDiagnosticTargetV01(
+    diagnostic.target,
+    entryIds,
+    diagnosticIds,
+    `${label} target`
+  );
+  if (diagnostic.severity === "error") {
+    errors.push(`${label} must not use error severity in a valid catalog snapshot`);
+  }
+  return errors;
+}
+
+function validateNodeCatalogObjectTextV01Semantics(
+  canonicalObjectText: string,
+  aliases: string[] | undefined,
+  label: string,
+  objectTextOwners: Map<string, string>,
+  canonicalObjectTexts: Set<string>
+): string[] {
+  const errors: string[] = [];
+  if (canonicalObjectTexts.has(canonicalObjectText)) {
+    errors.push(`duplicate canonicalObjectText: ${canonicalObjectText}`);
+  }
+  canonicalObjectTexts.add(canonicalObjectText);
+
+  const existingCanonicalOwner = objectTextOwners.get(canonicalObjectText);
+  if (existingCanonicalOwner !== undefined) {
+    errors.push(`${label} canonicalObjectText collides with ${existingCanonicalOwner}: ${canonicalObjectText}`);
+  } else {
+    objectTextOwners.set(canonicalObjectText, `${label} canonicalObjectText`);
+  }
+
+  if (aliases === undefined) {
+    return errors;
+  }
+
+  errors.push(...sortedErrors(aliases, `${label} aliases`));
+  errors.push(...duplicateErrors(aliases, `${label} alias`));
+
+  for (const alias of aliases) {
+    const owner = objectTextOwners.get(alias);
+    if (owner !== undefined) {
+      errors.push(`${label} alias collides with ${owner}: ${alias}`);
+    } else {
+      objectTextOwners.set(alias, `${label} alias`);
+    }
+  }
+
+  return errors;
+}
+
+function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV01): string[] {
+  const errors: string[] = [];
+  const entryIds = new Set(snapshot.entries.map((entry) => entry.catalogId));
+  const diagnosticIds = new Set(
+    snapshot.diagnosticNodeDefinitions.map((definition) => definition.diagnosticId)
+  );
+
+  errors.push(...duplicateErrors(snapshot.entries.map((entry) => entry.catalogId), "catalogId"));
+  errors.push(...duplicateErrors(
+    snapshot.diagnosticNodeDefinitions.map((definition) => definition.diagnosticId),
+    "diagnosticId"
+  ));
+  errors.push(...sortedErrors(snapshot.entries.map((entry) => entry.catalogId), "catalog entries"));
+  errors.push(...sortedErrors(
+    snapshot.diagnosticNodeDefinitions.map((definition) => definition.diagnosticId),
+    "diagnostic node definitions"
+  ));
+  errors.push(...duplicateErrors(
+    [
+      ...snapshot.entries.map((entry) => `${entry.definition.id}@${entry.definition.version}`),
+      ...snapshot.diagnosticNodeDefinitions.map((definition) => (
+        `${definition.definition.id}@${definition.definition.version}`
+      ))
+    ],
+    "node definition id/version"
+  ));
+
+  const objectTextOwners = new Map<string, string>();
+  const canonicalObjectTexts = new Set<string>();
+
+  for (const entry of snapshot.entries) {
+    const definitionResult = validateNodeDefinitionV01(entry.definition);
+    if (!definitionResult.ok) {
+      errors.push(
+        ...definitionResult.errors.map((error) => `catalog entry ${entry.catalogId} definition: ${error}`)
+      );
+    }
+
+    errors.push(...validateNodeCatalogObjectTextV01Semantics(
+      entry.canonicalObjectText,
+      entry.aliases,
+      `catalog entry ${entry.catalogId}`,
+      objectTextOwners,
+      canonicalObjectTexts
+    ));
+
+    for (const diagnostic of entry.diagnostics ?? []) {
+      errors.push(...validateNodeCatalogDiagnosticV01Semantics(
+        diagnostic,
+        entryIds,
+        diagnosticIds,
+        `catalog entry ${entry.catalogId} diagnostic`
+      ));
+    }
+
+    if (entry.source.kind === "projectPatch") {
+      const expectedDefinitionId = projectPatchNodeDefinitionIdV01(
+        entry.source.patchId,
+        entry.source.interfaceDigest
+      );
+      if (entry.definition.id !== expectedDefinitionId) {
+        errors.push(
+          `projectPatch catalog entry ${entry.catalogId} definition.id must be ${expectedDefinitionId}`
+        );
+      }
+    }
+  }
+
+  for (const definition of snapshot.diagnosticNodeDefinitions) {
+    const definitionResult = validateNodeDefinitionV01(definition.definition);
+    if (!definitionResult.ok) {
+      errors.push(
+        ...definitionResult.errors.map((error) => (
+          `diagnostic node definition ${definition.diagnosticId}: ${error}`
+        ))
+      );
+    }
+  }
+
+  for (const [index, diagnostic] of (snapshot.diagnostics ?? []).entries()) {
+    errors.push(...validateNodeCatalogDiagnosticV01Semantics(
+      diagnostic,
+      entryIds,
+      diagnosticIds,
+      `catalog diagnostic ${index}`
+    ));
+  }
+
+  const expectedRevision = computeNodeCatalogRevisionV01(snapshot);
+  if (!checksumEquals(snapshot.catalogRevision, expectedRevision)) {
+    errors.push(`catalogRevision mismatch: expected ${expectedRevision.value}`);
   }
 
   return errors;
@@ -1974,6 +2182,22 @@ export function validateNodeDefinition(
   return validateNodeDefinitionV01(document);
 }
 
+export function validateNodeCatalogSnapshotV01(
+  document: unknown
+): ValidationResult<NodeCatalogSnapshotV01> {
+  if (!nodeCatalogV01Validator(document)) {
+    return { ok: false, errors: schemaErrors(nodeCatalogV01Validator.errors as ErrorObject[]) };
+  }
+
+  const snapshot = document as NodeCatalogSnapshotV01;
+  const errors = validateNodeCatalogSnapshotV01Semantics(snapshot);
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, value: snapshot };
+}
+
 export function validateExtensionManifestV01(
   document: unknown
 ): ValidationResult<ExtensionManifestV01> {
@@ -2320,6 +2544,25 @@ export function validateProjectDocument(document: unknown): ValidationResult<Pro
   return validateProjectDocumentV01(document);
 }
 
+function validateGraphTargetRefFields(errors: string[], target: unknown, label: string): void {
+  if (!isRecord(target)) {
+    errors.push(`${label} must be object`);
+    return;
+  }
+  if (!isGraphTargetPath(target.path)) {
+    errors.push(`${label}/path must be a supported graph target path`);
+  }
+  if (typeof target.baseRevision !== "string" || target.baseRevision.length === 0) {
+    errors.push(`${label}/baseRevision must be a non-empty string`);
+  }
+  if (
+    target.targetRevision !== undefined &&
+    (typeof target.targetRevision !== "string" || target.targetRevision.length === 0)
+  ) {
+    errors.push(`${label}/targetRevision must be a non-empty string when present`);
+  }
+}
+
 export function validatePasteGraphFragmentRequest(
   document: unknown
 ): ValidationResult<PasteGraphFragmentRequest> {
@@ -2329,23 +2572,7 @@ export function validatePasteGraphFragmentRequest(
     return { ok: false, errors: ["/ must be object"] };
   }
 
-  const target = document.target;
-  if (!isRecord(target)) {
-    errors.push("/target must be object");
-  } else {
-    if (!isGraphTargetPath(target.path)) {
-      errors.push("/target/path must be a supported graph target path");
-    }
-    if (typeof target.baseRevision !== "string" || target.baseRevision.length === 0) {
-      errors.push("/target/baseRevision must be a non-empty string");
-    }
-    if (
-      target.targetRevision !== undefined &&
-      (typeof target.targetRevision !== "string" || target.targetRevision.length === 0)
-    ) {
-      errors.push("/target/targetRevision must be a non-empty string when present");
-    }
-  }
+  validateGraphTargetRefFields(errors, document.target, "/target");
 
   if (
     document.placement !== undefined &&
@@ -2419,13 +2646,13 @@ function isGraphTargetPath(path: unknown): boolean {
       path.packageId.length > 0 &&
       typeof path.patchId === "string" &&
       path.patchId.length > 0 &&
-      (path.version === undefined || typeof path.version === "string")
+      (path.version === undefined || (typeof path.version === "string" && path.version.length > 0))
     );
   }
   if (path.kind === "embedded-patch-instance") {
     return (
       Array.isArray(path.ownerPath) &&
-      path.ownerPath.every((entry) => typeof entry === "string") &&
+      path.ownerPath.every((entry) => typeof entry === "string" && entry.length > 0) &&
       typeof path.nodeId === "string" &&
       path.nodeId.length > 0
     );
@@ -2434,8 +2661,10 @@ function isGraphTargetPath(path: unknown): boolean {
     return (
       typeof path.workingCopyId === "string" &&
       path.workingCopyId.length > 0 &&
-      (path.sourcePackageId === undefined || typeof path.sourcePackageId === "string") &&
-      (path.sourcePatchId === undefined || typeof path.sourcePatchId === "string")
+      (path.sourcePackageId === undefined ||
+        (typeof path.sourcePackageId === "string" && path.sourcePackageId.length > 0)) &&
+      (path.sourcePatchId === undefined ||
+        (typeof path.sourcePatchId === "string" && path.sourcePatchId.length > 0))
     );
   }
   return false;

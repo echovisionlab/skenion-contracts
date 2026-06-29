@@ -4,7 +4,11 @@ use skenion_contracts::{
     ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, CompatibilityMatrixV01,
     DataFlowV01, DataTypeV01, EndpointBindingValueFormatV01, ExtensionKindV01,
     ExtensionManifestV01, GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01,
-    GraphFragmentV01, MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01,
+    GraphFragmentV01, GraphTargetRef, MidiClockMessageKindV01, MidiClockMessageV01,
+    MidiClockSnapshotV01, NodeCatalogDiagnosticNodeDefinitionReasonV01,
+    NodeCatalogDiagnosticNodeDefinitionV01, NodeCatalogDiagnosticSeverityV01,
+    NodeCatalogDiagnosticTargetV01, NodeCatalogDiagnosticV01, NodeCatalogDisplayPaletteV01,
+    NodeCatalogDisplayV01, NodeCatalogEntryV01, NodeCatalogSnapshotV01, NodeCatalogSourceV01,
     NodeDefinitionManifestV01, NumberRangeV01, ObjectTextAtomV01, ObjectTextParseResultV01,
     PackageCategoryV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
     PackageInstallPlanCheckStatusV01, PackageInstallPlanDiagnosticCodeV01,
@@ -12,19 +16,22 @@ use skenion_contracts::{
     PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageListingArtifactKindV01,
     PackageListingDiagnosticCodeV01, PackageListingTargetSupportKindV01, PackageListingV01,
     PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
-    ProjectDocumentV01, ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME,
-    StringOrStringsV01, ValueFormatV01, ValueOccurrenceHeaderV01, ValuePayloadKindV01,
-    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
-    compatible_data_types_v01, derive_patch_contract_v01, derive_patch_contracts_v01,
-    derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
+    PatchDefinitionV01, PatchPath, ProjectDocumentV01, ProjectObjectBindingTargetV01,
+    SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, ValueFormatV01,
+    ValueOccurrenceHeaderV01, ValuePayloadKindV01, analyze_graph_document_v01,
+    analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
+    compute_node_catalog_revision_v01, compute_patch_interface_digest_v01,
+    derive_patch_contract_v01, derive_patch_contracts_v01, derive_v0_compatibility_line,
+    derive_v0_compatibility_range, is_same_v0_compatibility_line,
     midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
-    plan_audio_clock_bridge_v01, satisfies_v0_compatibility_range, type_label_v01,
+    plan_audio_clock_bridge_v01, project_patch_node_definition_id_v01,
+    sanitize_project_patch_id_v01, satisfies_v0_compatibility_range, type_label_v01,
     validate_compatibility_matrix_v01, validate_endpoint_binding_value_format_v01,
     validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_definition_v01, validate_object_text_parse_result_v01,
-    validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
-    validate_package_install_plan_response_v01, validate_package_listing_v01,
-    validate_package_manifest_v01, validate_package_root_v01,
+    validate_node_catalog_snapshot_v01, validate_node_definition_v01,
+    validate_object_text_parse_result_v01, validate_package_discovery_response_v01,
+    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
+    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_project_document_v01,
     validate_value_format_v01, validate_value_occurrence_header_v01,
 };
@@ -322,6 +329,64 @@ fn parses_public_graph_fragment_paste_request_payload() {
 
     validate_paste_graph_fragment_request(&request).expect("paste request should validate");
     assert_eq!(request.target.base_revision, "1");
+
+    let mut invalid_base_revision = request.clone();
+    invalid_base_revision.target.base_revision = String::new();
+    let invalid_base_revision_report =
+        validate_paste_graph_fragment_request(&invalid_base_revision)
+            .expect_err("empty paste target baseRevision should fail validation");
+    assert!(
+        invalid_base_revision_report
+            .to_string()
+            .contains("target.baseRevision")
+    );
+
+    let mut invalid_path_version = request.clone();
+    invalid_path_version.target = GraphTargetRef {
+        path: PatchPath::PackagePatchDefinition {
+            package_id: "example.package".to_owned(),
+            patch_id: "main".to_owned(),
+            version: Some(String::new()),
+        },
+        base_revision: "1".to_owned(),
+        target_revision: None,
+    };
+    let invalid_path_version_report = validate_paste_graph_fragment_request(&invalid_path_version)
+        .expect_err("empty paste target optional path field should fail validation");
+    assert!(
+        invalid_path_version_report
+            .to_string()
+            .contains("target.path.version")
+    );
+
+    for path in [
+        PatchPath::ProjectPatchDefinition {
+            patch_id: "project-patch".to_owned(),
+        },
+        PatchPath::PackagePatchDefinition {
+            package_id: "example/package".to_owned(),
+            patch_id: "main".to_owned(),
+            version: Some("0.1.0".to_owned()),
+        },
+        PatchPath::EmbeddedPatchInstance {
+            owner_path: vec!["root".to_owned(), "parent".to_owned()],
+            node_id: "subpatch_1".to_owned(),
+        },
+        PatchPath::HelpWorkingCopy {
+            working_copy_id: "help-copy-1".to_owned(),
+            source_package_id: Some("skenion/core".to_owned()),
+            source_patch_id: Some("object.core.float.help".to_owned()),
+        },
+    ] {
+        let mut variant_request = request.clone();
+        variant_request.target = GraphTargetRef {
+            path,
+            base_revision: "1".to_owned(),
+            target_revision: Some("2".to_owned()),
+        };
+        validate_paste_graph_fragment_request(&variant_request)
+            .expect("paste target path variant should validate");
+    }
 
     let fragment: &GraphFragmentV01 = &request.fragment;
     let analysis =
@@ -1735,6 +1800,566 @@ fn validates_public_object_text_parse_results() {
     policy.emit = None;
     validate_object_text_parse_result_v01(&set_as_store)
         .expect("set should be valid as store key behavior");
+}
+
+fn zero_checksum_v01() -> serde_json::Value {
+    serde_json::json!({ "algorithm": "sha256", "value": "0".repeat(64) })
+}
+
+fn minimal_node_definition_value(id: &str, display_name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": id,
+        "version": "0.1.0",
+        "displayName": display_name,
+        "category": "Core",
+        "ports": [],
+        "execution": { "model": "control" },
+        "state": { "persistent": false },
+        "permissions": [],
+        "capabilities": []
+    })
+}
+
+fn with_catalog_revision(mut snapshot: NodeCatalogSnapshotV01) -> NodeCatalogSnapshotV01 {
+    snapshot.catalog_revision = compute_node_catalog_revision_v01(&snapshot);
+    snapshot
+}
+
+fn valid_core_catalog_snapshot() -> NodeCatalogSnapshotV01 {
+    let snapshot: NodeCatalogSnapshotV01 = serde_json::from_value(serde_json::json!({
+        "schema": "skenion.node-catalog.snapshot",
+        "schemaVersion": "0.1.0",
+        "catalogRevision": zero_checksum_v01(),
+        "entries": [
+            {
+                "catalogId": "core.float",
+                "canonicalObjectText": "float",
+                "aliases": ["float64", "number"],
+                "source": { "kind": "core" },
+                "definition": minimal_node_definition_value("object.core.float", "Float"),
+                "creatable": true,
+                "display": {
+                    "title": "Float",
+                    "category": "Core",
+                    "palette": "text",
+                    "description": "Core scalar node.",
+                    "helpId": "object.core.float"
+                },
+                "diagnostics": [
+                    {
+                        "severity": "info",
+                        "code": "catalog.note",
+                        "message": "Core scalar node.",
+                        "target": { "kind": "entry", "catalogId": "core.float" }
+                    }
+                ]
+            },
+            {
+                "catalogId": "core.message",
+                "canonicalObjectText": "message",
+                "aliases": ["msg"],
+                "source": { "kind": "core" },
+                "definition": minimal_node_definition_value("object.core.message", "Message"),
+                "creatable": true,
+                "display": {
+                    "title": "Message",
+                    "category": "Core"
+                }
+            }
+        ],
+        "diagnosticNodeDefinitions": [
+            {
+                "diagnosticId": "diag.unresolved",
+                "reason": "unresolvedObject",
+                "definition": minimal_node_definition_value("object.diagnostic.unresolved", "Unresolved Object")
+            }
+        ],
+        "diagnostics": [
+            {
+                "severity": "warning",
+                "code": "catalog.generated",
+                "message": "Generated with non-fatal catalog diagnostics.",
+                "target": { "kind": "diagnosticNodeDefinition", "diagnosticId": "diag.unresolved" }
+            }
+        ]
+    }))
+    .expect("catalog should parse");
+
+    with_catalog_revision(snapshot)
+}
+
+fn valid_project_patch() -> PatchDefinitionV01 {
+    serde_json::from_value(serde_json::json!({
+        "id": "Folder/My Patch?",
+        "revision": "rev-with-metadata-excluded",
+        "metadata": { "title": "Ignored for interface digest" },
+        "graph": {
+            "schema": "skenion.graph",
+            "schemaVersion": "0.1.0",
+            "id": "patch-project-node",
+            "revision": "graph-rev",
+            "nodes": [
+                {
+                    "id": "value_in",
+                    "kind": "object.core.inlet",
+                    "kindVersion": "0.1.0",
+                    "params": { "portId": "value", "label": "Value" },
+                    "ports": [
+                        { "id": "out", "direction": "output", "type": "value.core.float64", "rate": "control" }
+                    ]
+                },
+                {
+                    "id": "value_out",
+                    "kind": "object.core.outlet",
+                    "kindVersion": "0.1.0",
+                    "params": { "portId": "result", "label": "Result" },
+                    "ports": [
+                        { "id": "in", "direction": "input", "type": "value.core.float64", "rate": "control" }
+                    ]
+                }
+            ],
+            "edges": []
+        }
+    }))
+    .expect("patch should parse")
+}
+
+fn valid_project_patch_catalog_snapshot() -> NodeCatalogSnapshotV01 {
+    let patch = valid_project_patch();
+    let interface_digest = compute_patch_interface_digest_v01(&patch);
+    let definition_id = project_patch_node_definition_id_v01(&patch.id, &interface_digest);
+    let ports = serde_json::to_value(
+        derive_patch_contract_v01(&patch)
+            .ports
+            .iter()
+            .map(|port| &port.port)
+            .collect::<Vec<_>>(),
+    )
+    .expect("ports should serialize");
+    let snapshot: NodeCatalogSnapshotV01 = serde_json::from_value(serde_json::json!({
+        "schema": "skenion.node-catalog.snapshot",
+        "schemaVersion": "0.1.0",
+        "catalogRevision": zero_checksum_v01(),
+        "entries": [
+            {
+                "catalogId": "project.folder-my-patch",
+                "source": {
+                    "kind": "projectPatch",
+                    "patchId": patch.id,
+                    "patchRevision": patch.revision,
+                    "interfaceDigest": interface_digest
+                },
+                "canonicalObjectText": "Folder/My Patch?",
+                "aliases": ["Folder.My-Patch"],
+                "definition": {
+                    "schema": "skenion.node.definition",
+                    "schemaVersion": "0.1.0",
+                    "id": definition_id,
+                    "version": "0.1.0",
+                    "displayName": "Folder/My Patch?",
+                    "category": "Project Patch",
+                    "ports": ports,
+                    "execution": { "model": "control" },
+                    "state": { "persistent": false },
+                    "permissions": [],
+                    "capabilities": []
+                },
+                "creatable": true,
+                "display": {
+                    "title": "Folder/My Patch?",
+                    "category": "Project Patch",
+                    "palette": "direct"
+                }
+            }
+        ],
+        "diagnosticNodeDefinitions": []
+    }))
+    .expect("project patch catalog should parse");
+
+    with_catalog_revision(snapshot)
+}
+
+#[test]
+fn validates_public_node_catalog_contracts() {
+    let public_display: NodeCatalogDisplayV01 =
+        serde_json::from_value(serde_json::json!({ "title": "Float", "palette": "direct" }))
+            .expect("display should parse");
+    assert_eq!(
+        public_display.palette,
+        Some(NodeCatalogDisplayPaletteV01::Direct)
+    );
+    assert_eq!(
+        serde_json::to_value(&public_display).expect("display should serialize")["palette"],
+        serde_json::json!("direct")
+    );
+    let _public_source: NodeCatalogSourceV01 =
+        serde_json::from_value(serde_json::json!({ "kind": "core" })).expect("source should parse");
+    let _public_target: NodeCatalogDiagnosticTargetV01 =
+        serde_json::from_value(serde_json::json!({ "kind": "entry", "catalogId": "core.float" }))
+            .expect("target should parse");
+    let _public_severity = NodeCatalogDiagnosticSeverityV01::Warning;
+    let _public_diagnostic: NodeCatalogDiagnosticV01 = serde_json::from_value(serde_json::json!({
+        "severity": "warning",
+        "code": "catalog.generated",
+        "message": "Generated.",
+        "target": { "kind": "entry", "catalogId": "core.float" }
+    }))
+    .expect("diagnostic should parse");
+    let _public_entry: NodeCatalogEntryV01 = valid_core_catalog_snapshot().entries[0].clone();
+    let _public_diagnostic_node_definition: NodeCatalogDiagnosticNodeDefinitionV01 =
+        valid_core_catalog_snapshot().diagnostic_node_definitions[0].clone();
+    let _public_reason = NodeCatalogDiagnosticNodeDefinitionReasonV01::UnresolvedObject;
+    assert_eq!(
+        serde_json::to_value(_public_reason).expect("reason should serialize"),
+        serde_json::json!("unresolvedObject")
+    );
+
+    let core_catalog = valid_core_catalog_snapshot();
+    let project_catalog = valid_project_patch_catalog_snapshot();
+    let project_patch = valid_project_patch();
+
+    validate_node_catalog_snapshot_v01(&core_catalog).expect("core catalog should validate");
+    validate_node_catalog_snapshot_v01(&project_catalog)
+        .expect("project patch catalog should validate");
+    assert_eq!(
+        sanitize_project_patch_id_v01("Folder/My Patch?"),
+        "Folder-My-Patch-"
+    );
+    assert_eq!(sanitize_project_patch_id_v01(""), "patch");
+    assert_eq!(
+        compute_patch_interface_digest_v01(&project_patch).value,
+        "90548cb698af40b559a9538a7d07ba64839c09170857f2949cf792081fa0c33a"
+    );
+    assert_eq!(
+        project_catalog.catalog_revision.value,
+        "9c0a843d107801006d7b931f733ba29dc62a60e0ffaa46977f5b9a06eb72e67a"
+    );
+    assert_eq!(
+        core_catalog.catalog_revision.value,
+        "42d4e882b0a0874e42d01faa99414f73ac07aa85e98c14239ad268495b57f2c8"
+    );
+
+    let mut changed_patch = valid_project_patch();
+    changed_patch.revision = "changed".to_owned();
+    changed_patch.metadata = Some(
+        serde_json::from_value(serde_json::json!({ "title": "Changed metadata" }))
+            .expect("metadata should parse"),
+    );
+    assert_eq!(
+        compute_patch_interface_digest_v01(&changed_patch),
+        compute_patch_interface_digest_v01(&project_patch)
+    );
+
+    let mut patch_with_canonical_edge_values = valid_project_patch();
+    patch_with_canonical_edge_values.graph.nodes[0].ports[0].accepts = Some(vec![
+        "value.core.bang".to_owned(),
+        "value.core.float64".to_owned(),
+    ]);
+    patch_with_canonical_edge_values.graph.nodes[0].ports[0].default_value =
+        Some(serde_json::json!([null, 1, true, "ready"]));
+    assert_eq!(
+        compute_patch_interface_digest_v01(&patch_with_canonical_edge_values)
+            .value
+            .len(),
+        64
+    );
+
+    let mut no_alias_entry = core_catalog.clone();
+    no_alias_entry.entries[1].aliases = None;
+    no_alias_entry = with_catalog_revision(no_alias_entry);
+    validate_node_catalog_snapshot_v01(&no_alias_entry)
+        .expect("catalog entries without aliases should validate");
+
+    let mut catalog_scoped_diagnostic = core_catalog.clone();
+    catalog_scoped_diagnostic
+        .diagnostics
+        .as_mut()
+        .expect("diagnostics")[0]
+        .target = NodeCatalogDiagnosticTargetV01::Catalog;
+    validate_node_catalog_snapshot_v01(&catalog_scoped_diagnostic)
+        .expect("catalog-scoped diagnostics should validate");
+
+    let mut revision_ignores_diagnostics = core_catalog.clone();
+    revision_ignores_diagnostics.diagnostics = Some(vec![
+        serde_json::from_value(serde_json::json!({
+            "severity": "warning",
+            "code": "catalog.changed",
+            "message": "This warning is excluded from the revision preimage.",
+            "target": { "kind": "catalog" }
+        }))
+        .expect("diagnostic should parse"),
+    ]);
+    revision_ignores_diagnostics.entries[0].diagnostics = Some(vec![
+        serde_json::from_value(serde_json::json!({
+            "severity": "warning",
+            "code": "entry.changed",
+            "message": "This warning is also excluded from the revision preimage.",
+            "target": { "kind": "entry", "catalogId": "core.float" }
+        }))
+        .expect("diagnostic should parse"),
+    ]);
+    assert_eq!(
+        compute_node_catalog_revision_v01(&revision_ignores_diagnostics),
+        core_catalog.catalog_revision
+    );
+}
+
+#[test]
+fn reports_public_node_catalog_errors() {
+    let mut duplicate_catalog_id = valid_core_catalog_snapshot();
+    let mut duplicate_entry = duplicate_catalog_id.entries[1].clone();
+    duplicate_entry.catalog_id = "core.float".to_owned();
+    duplicate_entry.definition.id = "object.core.duplicate".to_owned();
+    duplicate_entry.canonical_object_text = "duplicate".to_owned();
+    duplicate_catalog_id.entries.push(duplicate_entry);
+    duplicate_catalog_id = with_catalog_revision(duplicate_catalog_id);
+    let report = validate_node_catalog_snapshot_v01(&duplicate_catalog_id)
+        .expect_err("duplicate catalog id should fail");
+    assert!(report.to_string().contains("duplicate catalogId"));
+
+    let mut duplicate_definition = valid_core_catalog_snapshot();
+    duplicate_definition.diagnostic_node_definitions[0].definition =
+        duplicate_definition.entries[0].definition.clone();
+    duplicate_definition = with_catalog_revision(duplicate_definition);
+    let report = validate_node_catalog_snapshot_v01(&duplicate_definition)
+        .expect_err("duplicate definition should fail");
+    assert!(
+        report
+            .to_string()
+            .contains("duplicate node definition id/version")
+    );
+
+    let mut alias_collision = valid_core_catalog_snapshot();
+    alias_collision.entries[1].aliases = Some(vec!["float".to_owned()]);
+    alias_collision = with_catalog_revision(alias_collision);
+    let report = validate_node_catalog_snapshot_v01(&alias_collision)
+        .expect_err("alias collision should fail");
+    assert!(report.to_string().contains("alias collides"));
+
+    let mut unsorted_aliases = valid_core_catalog_snapshot();
+    unsorted_aliases.entries[0].aliases = Some(vec!["zeta".to_owned(), "alpha".to_owned()]);
+    unsorted_aliases = with_catalog_revision(unsorted_aliases);
+    let report = validate_node_catalog_snapshot_v01(&unsorted_aliases)
+        .expect_err("unsorted aliases should fail");
+    assert!(report.to_string().contains("aliases must be sorted"));
+
+    let mut bad_target = valid_core_catalog_snapshot();
+    bad_target.diagnostics.as_mut().expect("diagnostics")[0].target =
+        NodeCatalogDiagnosticTargetV01::Entry {
+            catalog_id: "missing.entry".to_owned(),
+        };
+    bad_target = with_catalog_revision(bad_target);
+    let report =
+        validate_node_catalog_snapshot_v01(&bad_target).expect_err("bad target should fail");
+    assert!(report.to_string().contains("missing entry catalogId"));
+
+    let mut error_diagnostic = valid_core_catalog_snapshot();
+    error_diagnostic.diagnostics.as_mut().expect("diagnostics")[0].severity =
+        NodeCatalogDiagnosticSeverityV01::Error;
+    error_diagnostic = with_catalog_revision(error_diagnostic);
+    let report = validate_node_catalog_snapshot_v01(&error_diagnostic)
+        .expect_err("error diagnostic should fail");
+    assert!(report.to_string().contains("must not use error severity"));
+
+    let mut invalid_definition = valid_core_catalog_snapshot();
+    invalid_definition.entries[0].definition.ports = serde_json::from_value(serde_json::json!([
+        { "id": "dup", "direction": "input", "type": "value.core.float64" },
+        { "id": "dup", "direction": "output", "type": "value.core.float64" }
+    ]))
+    .expect("ports should parse");
+    invalid_definition = with_catalog_revision(invalid_definition);
+    let report = validate_node_catalog_snapshot_v01(&invalid_definition)
+        .expect_err("invalid nested definition should fail");
+    assert!(report.to_string().contains("duplicate port id"));
+
+    let mut empty_display_title = valid_core_catalog_snapshot();
+    empty_display_title.entries[0].display.title.clear();
+    empty_display_title = with_catalog_revision(empty_display_title);
+    let report = validate_node_catalog_snapshot_v01(&empty_display_title)
+        .expect_err("empty display title should fail");
+    assert!(
+        report
+            .to_string()
+            .contains("display.title must be a non-empty string")
+    );
+
+    let mut invalid_palette_value =
+        serde_json::to_value(valid_core_catalog_snapshot()).expect("catalog should serialize");
+    invalid_palette_value["entries"][0]["display"]["palette"] = serde_json::json!("neon");
+    let invalid_palette_error =
+        serde_json::from_value::<NodeCatalogSnapshotV01>(invalid_palette_value)
+            .expect_err("invalid display palette should fail parsing");
+    assert!(
+        invalid_palette_error
+            .to_string()
+            .contains("unknown variant")
+            && invalid_palette_error.to_string().contains("direct")
+            && invalid_palette_error.to_string().contains("text")
+    );
+
+    let mut duplicate_canonical = valid_core_catalog_snapshot();
+    duplicate_canonical.entries[1].canonical_object_text = "float".to_owned();
+    duplicate_canonical = with_catalog_revision(duplicate_canonical);
+    let report = validate_node_catalog_snapshot_v01(&duplicate_canonical)
+        .expect_err("duplicate canonical text should fail");
+    assert!(report.to_string().contains("duplicate canonicalObjectText"));
+
+    let mut duplicate_alias = valid_core_catalog_snapshot();
+    duplicate_alias.entries[1].aliases = Some(vec!["dup".to_owned(), "dup".to_owned()]);
+    duplicate_alias = with_catalog_revision(duplicate_alias);
+    let report = validate_node_catalog_snapshot_v01(&duplicate_alias)
+        .expect_err("duplicate alias should fail");
+    assert!(
+        report
+            .to_string()
+            .contains("duplicate catalog entry core.message alias")
+    );
+
+    let missing_diagnostic_definition_target =
+        NodeCatalogDiagnosticTargetV01::DiagnosticNodeDefinition {
+            diagnostic_id: "missing.diagnostic".to_owned(),
+        };
+    let mut missing_diagnostic_target = valid_core_catalog_snapshot();
+    missing_diagnostic_target
+        .diagnostics
+        .as_mut()
+        .expect("diagnostics")[0]
+        .target = missing_diagnostic_definition_target;
+    missing_diagnostic_target = with_catalog_revision(missing_diagnostic_target);
+    let report = validate_node_catalog_snapshot_v01(&missing_diagnostic_target)
+        .expect_err("missing diagnostic target should fail");
+    assert!(report.to_string().contains("missing diagnosticId"));
+
+    let mut uppercase_checksum = valid_project_patch_catalog_snapshot();
+    if let NodeCatalogSourceV01::ProjectPatch {
+        interface_digest, ..
+    } = &mut uppercase_checksum.entries[0].source
+    {
+        interface_digest.value = interface_digest.value.to_uppercase();
+    }
+    let report = validate_node_catalog_snapshot_v01(&uppercase_checksum)
+        .expect_err("uppercase checksum should fail");
+    assert!(report.to_string().contains("sha256 hex value"));
+
+    let mut revision_mismatch = valid_core_catalog_snapshot();
+    revision_mismatch.catalog_revision.value = "f".repeat(64);
+    let report = validate_node_catalog_snapshot_v01(&revision_mismatch)
+        .expect_err("revision mismatch should fail");
+    assert!(report.to_string().contains("catalogRevision mismatch"));
+
+    let removed_field_snapshot_value =
+        || serde_json::to_value(valid_core_catalog_snapshot()).expect("catalog should serialize");
+    for (label, value, expected) in [
+        (
+            "package source",
+            {
+                let mut value = removed_field_snapshot_value();
+                value["entries"][0]["source"] = serde_json::json!({
+                    "kind": "package",
+                    "packageId": "skenion/examples",
+                    "packageVersion": "0.1.0",
+                    "providerId": "example.float"
+                });
+                value
+            },
+            "unknown variant",
+        ),
+        (
+            "generatedAt",
+            {
+                let mut value = removed_field_snapshot_value();
+                value["generatedAt"] = serde_json::json!("2026-06-28T00:00:00Z");
+                value
+            },
+            "unknown field",
+        ),
+        (
+            "display object text",
+            {
+                let mut value = removed_field_snapshot_value();
+                value["entries"][0]["display"]["canonicalObjectText"] = serde_json::json!("float");
+                value["entries"][0]["display"]["aliases"] = serde_json::json!(["float64"]);
+                value
+            },
+            "unknown field",
+        ),
+        (
+            "diagnostic id",
+            {
+                let mut value = removed_field_snapshot_value();
+                value["diagnostics"][0]["id"] = serde_json::json!("catalog.generated");
+                value
+            },
+            "unknown field",
+        ),
+        (
+            "diagnostic node display and target",
+            {
+                let mut value = removed_field_snapshot_value();
+                value["diagnosticNodeDefinitions"][0]["target"] =
+                    serde_json::json!({ "kind": "entry", "catalogId": "core.float" });
+                value["diagnosticNodeDefinitions"][0]["display"] =
+                    serde_json::json!({ "title": "Unresolved Object" });
+                value
+            },
+            "unknown field",
+        ),
+        (
+            "missing creatable",
+            {
+                let mut value = removed_field_snapshot_value();
+                value["entries"][0]
+                    .as_object_mut()
+                    .expect("entry should be object")
+                    .remove("creatable");
+                value
+            },
+            "missing field",
+        ),
+    ] {
+        let error = serde_json::from_value::<NodeCatalogSnapshotV01>(value)
+            .expect_err(&format!("{label} should fail parsing"));
+        assert!(
+            error.to_string().contains(expected),
+            "{label} parse error should contain {expected}: {error}"
+        );
+    }
+
+    let mut creatable_false: NodeCatalogSnapshotV01 = serde_json::from_value({
+        let mut value = removed_field_snapshot_value();
+        value["entries"][0]["creatable"] = serde_json::json!(false);
+        value
+    })
+    .expect("creatable false should parse before semantic validation");
+    creatable_false = with_catalog_revision(creatable_false);
+    let report = validate_node_catalog_snapshot_v01(&creatable_false)
+        .expect_err("creatable false should fail validation");
+    assert!(report.to_string().contains("creatable must be true"));
+
+    let mut bad_project_definition_id = valid_project_patch_catalog_snapshot();
+    bad_project_definition_id.entries[0].definition.id = "object.project.patch.bad".to_owned();
+    bad_project_definition_id = with_catalog_revision(bad_project_definition_id);
+    let report = validate_node_catalog_snapshot_v01(&bad_project_definition_id)
+        .expect_err("bad project patch id should fail");
+    assert!(report.to_string().contains("projectPatch catalog entry"));
+
+    let mut wrong_schema = valid_core_catalog_snapshot();
+    wrong_schema.schema = "skenion.node-catalog".to_owned();
+    let report =
+        validate_node_catalog_snapshot_v01(&wrong_schema).expect_err("wrong schema should fail");
+    assert!(
+        report
+            .to_string()
+            .contains("expected schema skenion.node-catalog.snapshot")
+    );
+
+    let mut wrong_schema_version = valid_core_catalog_snapshot();
+    wrong_schema_version.schema_version = "0.2.0".to_owned();
+    let report = validate_node_catalog_snapshot_v01(&wrong_schema_version)
+        .expect_err("wrong schema version should fail");
+    assert!(report.to_string().contains("expected schemaVersion 0.1.0"));
 }
 
 #[test]

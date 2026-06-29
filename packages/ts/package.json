@@ -40,6 +40,10 @@
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
+    "./node-catalog/v0.1/schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
+    },
     "./shader/v0.1/interface-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"

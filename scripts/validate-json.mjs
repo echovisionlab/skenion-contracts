@@ -1210,6 +1210,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.node.definition" && document.schemaVersion === "0.1.0") {
     return validators.nodeDefinitionV01;
   }
+  if (document.schema === "skenion.node-catalog.snapshot" && document.schemaVersion === "0.1.0") {
+    return validators.nodeCatalogV01;
+  }
   if (document.schema === "skenion.shader.interface" && document.schemaVersion === "0.1.0") {
     return validators.shaderInterfaceV01;
   }
@@ -1522,6 +1525,7 @@ const graphFragmentV01Schema = await readJson("json-schema/graph/v0.1/fragment.s
 const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.schema.json");
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
+const nodeCatalogV01Schema = await readJson("json-schema/node-catalog/v0.1/node-catalog.schema.json");
 const extensionManifestV01Schema = await readJson("json-schema/extension/v0.1/extension-manifest.schema.json");
 const packageManifestV01Schema = await readJson("json-schema/package/v0.1/package-manifest.schema.json");
 const packageListingV01Schema = await readJson("json-schema/package/v0.1/package-listing.schema.json");
@@ -1543,6 +1547,7 @@ const validators = {
   viewStateV01: ajv.compile(viewStateV01Schema),
   projectV01: ajv.compile(projectV01Schema),
   nodeDefinitionV01: ajv.compile(nodeDefinitionV01Schema),
+  nodeCatalogV01: ajv.compile(nodeCatalogV01Schema),
   shaderInterfaceV01: ajv.compile(
     await readJson("json-schema/shader/v0.1/shader-interface.schema.json")
   ),

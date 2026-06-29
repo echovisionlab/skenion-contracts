@@ -1779,6 +1779,315 @@ export const nodeDefinitionV01Schema = {
   }
 } as const;
 
+export const nodeCatalogV01Schema = {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/node-catalog/v0.1/node-catalog.schema.json",
+  "title": "skenion Node Catalog Snapshot v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "catalogRevision",
+    "entries",
+    "diagnosticNodeDefinitions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.node-catalog.snapshot"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "catalogRevision": {
+      "$ref": "#/$defs/checksum"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    },
+    "diagnosticNodeDefinitions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnosticNodeDefinition"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "checksum": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "display": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "palette": {
+          "oneOf": [
+            {
+              "enum": [
+                "direct",
+                "text"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "helpId": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "core"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "patchId",
+            "interfaceDigest"
+          ],
+          "properties": {
+            "kind": {
+              "const": "projectPatch"
+            },
+            "patchId": {
+              "type": "string"
+            },
+            "patchRevision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "interfaceDigest": {
+              "$ref": "#/$defs/checksum"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "diagnosticTarget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "catalog"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "catalogId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "entry"
+            },
+            "catalogId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "diagnosticId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "diagnosticNodeDefinition"
+            },
+            "diagnosticId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": [
+        "severity",
+        "code",
+        "message",
+        "target"
+      ],
+      "properties": {
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/diagnosticTarget"
+        },
+        "details": true
+      },
+      "additionalProperties": false
+    },
+    "entry": {
+      "type": "object",
+      "required": [
+        "catalogId",
+        "canonicalObjectText",
+        "source",
+        "definition",
+        "creatable",
+        "display"
+      ],
+      "properties": {
+        "catalogId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonicalObjectText": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "definition": {
+          "$ref": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json"
+        },
+        "creatable": {
+          "const": true
+        },
+        "display": {
+          "$ref": "#/$defs/display"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/diagnostic"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnosticNodeDefinition": {
+      "type": "object",
+      "required": [
+        "diagnosticId",
+        "reason",
+        "definition"
+      ],
+      "properties": {
+        "diagnosticId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "const": "unresolvedObject"
+        },
+        "definition": {
+          "$ref": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
 export const shaderInterfaceV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/shader/v0.1/shader-interface.schema.json",

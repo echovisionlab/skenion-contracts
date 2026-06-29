@@ -28,6 +28,9 @@ const projectV01Schema = await readSchema("json-schema/project/v0.1/project.sche
 const nodeDefinitionV01Schema = await readSchema(
   "json-schema/node/v0.1/node-definition.schema.json"
 );
+const nodeCatalogV01Schema = await readSchema(
+  "json-schema/node-catalog/v0.1/node-catalog.schema.json"
+);
 const shaderInterfaceV01Schema = await readSchema(
   "json-schema/shader/v0.1/shader-interface.schema.json"
 );
@@ -77,6 +80,8 @@ await writeFile(
     `export const projectV01Schema = ${JSON.stringify(projectV01Schema, null, 2)} as const;`,
     "",
     `export const nodeDefinitionV01Schema = ${JSON.stringify(nodeDefinitionV01Schema, null, 2)} as const;`,
+    "",
+    `export const nodeCatalogV01Schema = ${JSON.stringify(nodeCatalogV01Schema, null, 2)} as const;`,
     "",
     `export const shaderInterfaceV01Schema = ${JSON.stringify(shaderInterfaceV01Schema, null, 2)} as const;`,
     "",

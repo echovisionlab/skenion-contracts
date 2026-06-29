@@ -1078,6 +1078,66 @@ export interface PasteGraphFragmentRequest {
   options?: PasteGraphFragmentOptions;
 }
 
+export interface NodeCatalogDisplayV01 {
+  title: string;
+  category?: string | null;
+  palette?: "direct" | "text" | null;
+  description?: string | null;
+  helpId?: string | null;
+}
+
+export type NodeCatalogSourceV01 =
+  | {
+      kind: "core";
+    }
+  | {
+      kind: "projectPatch";
+      patchId: string;
+      patchRevision?: string;
+      interfaceDigest: PackageChecksumV01;
+    };
+
+export type NodeCatalogDiagnosticSeverityV01 = "info" | "warning" | "error";
+
+export type NodeCatalogDiagnosticTargetV01 =
+  | { kind: "catalog" }
+  | { kind: "entry"; catalogId: string }
+  | { kind: "diagnosticNodeDefinition"; diagnosticId: string };
+
+export interface NodeCatalogDiagnosticV01 {
+  severity: NodeCatalogDiagnosticSeverityV01;
+  code: string;
+  message: string;
+  target: NodeCatalogDiagnosticTargetV01;
+  details?: JsonValueV01;
+}
+
+export interface NodeCatalogEntryV01 {
+  catalogId: string;
+  canonicalObjectText: string;
+  aliases?: string[];
+  source: NodeCatalogSourceV01;
+  definition: NodeDefinitionManifestV01;
+  creatable: true;
+  display: NodeCatalogDisplayV01;
+  diagnostics?: NodeCatalogDiagnosticV01[];
+}
+
+export interface NodeCatalogDiagnosticNodeDefinitionV01 {
+  diagnosticId: string;
+  reason: "unresolvedObject";
+  definition: NodeDefinitionManifestV01;
+}
+
+export interface NodeCatalogSnapshotV01 {
+  schema: "skenion.node-catalog.snapshot";
+  schemaVersion: "0.1.0";
+  catalogRevision: PackageChecksumV01;
+  entries: NodeCatalogEntryV01[];
+  diagnosticNodeDefinitions: NodeCatalogDiagnosticNodeDefinitionV01[];
+  diagnostics?: NodeCatalogDiagnosticV01[];
+}
+
 export interface ProjectMetadataV01 {
   title?: string;
   description?: string;

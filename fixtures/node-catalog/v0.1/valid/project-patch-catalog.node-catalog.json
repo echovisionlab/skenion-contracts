@@ -1,0 +1,63 @@
+{
+  "schema": "skenion.node-catalog.snapshot",
+  "schemaVersion": "0.1.0",
+  "catalogRevision": {
+    "algorithm": "sha256",
+    "value": "9c0a843d107801006d7b931f733ba29dc62a60e0ffaa46977f5b9a06eb72e67a"
+  },
+  "entries": [
+    {
+      "catalogId": "project.folder-my-patch",
+      "canonicalObjectText": "Folder/My Patch?",
+      "aliases": ["Folder.My-Patch"],
+      "source": {
+        "kind": "projectPatch",
+        "patchId": "Folder/My Patch?",
+        "patchRevision": "rev-with-metadata-excluded",
+        "interfaceDigest": {
+          "algorithm": "sha256",
+          "value": "90548cb698af40b559a9538a7d07ba64839c09170857f2949cf792081fa0c33a"
+        }
+      },
+      "definition": {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": "object.project.patch.Folder-My-Patch-.90548cb698af40b559a9538a7d07ba64839c09170857f2949cf792081fa0c33a",
+        "version": "0.1.0",
+        "displayName": "Folder/My Patch?",
+        "category": "Project Patch",
+        "ports": [
+          {
+            "id": "value",
+            "direction": "input",
+            "type": "value.core.float64",
+            "label": "Value",
+            "rate": "control"
+          },
+          {
+            "id": "result",
+            "direction": "output",
+            "type": "value.core.float64",
+            "label": "Result",
+            "rate": "control"
+          }
+        ],
+        "execution": {
+          "model": "control"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": []
+      },
+      "creatable": true,
+      "display": {
+        "title": "Folder/My Patch?",
+        "category": "Project Patch",
+        "palette": "direct"
+      }
+    }
+  ],
+  "diagnosticNodeDefinitions": []
+}

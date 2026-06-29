@@ -16,4 +16,5 @@ name = "skenion_contracts"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 thiserror = "2"

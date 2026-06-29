@@ -1,0 +1,118 @@
+{
+  "schema": "skenion.node-catalog.snapshot",
+  "schemaVersion": "0.1.0",
+  "catalogRevision": {
+    "algorithm": "sha256",
+    "value": "42d4e882b0a0874e42d01faa99414f73ac07aa85e98c14239ad268495b57f2c8"
+  },
+  "entries": [
+    {
+      "catalogId": "core.float",
+      "canonicalObjectText": "float",
+      "aliases": ["float64", "number"],
+      "source": {
+        "kind": "core"
+      },
+      "definition": {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": "object.core.float",
+        "version": "0.1.0",
+        "displayName": "Float",
+        "category": "Core",
+        "ports": [],
+        "execution": {
+          "model": "control"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": []
+      },
+      "creatable": true,
+      "display": {
+        "title": "Float",
+        "category": "Core",
+        "palette": "text",
+        "description": "Core scalar node.",
+        "helpId": "object.core.float"
+      },
+      "diagnostics": [
+        {
+          "severity": "info",
+          "code": "catalog.note",
+          "message": "Core scalar node.",
+          "target": {
+            "kind": "entry",
+            "catalogId": "core.float"
+          }
+        }
+      ]
+    },
+    {
+      "catalogId": "core.message",
+      "canonicalObjectText": "message",
+      "aliases": ["msg"],
+      "source": {
+        "kind": "core"
+      },
+      "definition": {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": "object.core.message",
+        "version": "0.1.0",
+        "displayName": "Message",
+        "category": "Core",
+        "ports": [],
+        "execution": {
+          "model": "control"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": []
+      },
+      "creatable": true,
+      "display": {
+        "title": "Message",
+        "category": "Core"
+      }
+    }
+  ],
+  "diagnosticNodeDefinitions": [
+    {
+      "diagnosticId": "diag.unresolved",
+      "reason": "unresolvedObject",
+      "definition": {
+        "schema": "skenion.node.definition",
+        "schemaVersion": "0.1.0",
+        "id": "object.diagnostic.unresolved",
+        "version": "0.1.0",
+        "displayName": "Unresolved Object",
+        "category": "Core",
+        "ports": [],
+        "execution": {
+          "model": "control"
+        },
+        "state": {
+          "persistent": false
+        },
+        "permissions": [],
+        "capabilities": []
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "catalog.generated",
+      "message": "Generated with non-fatal catalog diagnostics.",
+      "target": {
+        "kind": "diagnosticNodeDefinition",
+        "diagnosticId": "diag.unresolved"
+      }
+    }
+  ]
+}

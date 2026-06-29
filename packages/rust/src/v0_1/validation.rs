@@ -8,17 +8,22 @@ use super::types::{
     CycleValidationV01, DataFlowV01, DataTypeV01, EdgeSpecV01, EndpointBindingValueFormatV01,
     ExtensionKindV01, ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01,
     GraphDocumentV01, GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01,
-    GraphFragmentV01, GraphFragmentValidationResultV01, GraphValidationDiagnosticV01,
-    GraphValidationResultV01, MergePolicyV01, NodeDefinitionManifestV01, PackageCategoryV01,
-    PackageDiagnosticSeverityV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
-    PackageInstallPlanCheckStatusV01, PackageInstallPlanIntentV01, PackageInstallPlanRequestV01,
-    PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01,
-    PackageInstallPlanTargetV01, PackageListingArtifactKindV01, PackageListingTargetSupportKindV01,
-    PackageListingV01, PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01,
-    PasteGraphFragmentRequest, PatchDefinitionV01, PortDirectionV01, PortSpecV01,
-    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
+    GraphFragmentV01, GraphFragmentValidationResultV01, GraphTargetRef,
+    GraphValidationDiagnosticV01, GraphValidationResultV01, MergePolicyV01,
+    NodeCatalogDiagnosticNodeDefinitionReasonV01, NodeCatalogDiagnosticSeverityV01,
+    NodeCatalogDiagnosticTargetV01, NodeCatalogDiagnosticV01, NodeCatalogDisplayPaletteV01,
+    NodeCatalogDisplayV01, NodeCatalogSnapshotV01, NodeCatalogSourceV01, NodeDefinitionManifestV01,
+    PackageCategoryV01, PackageDiagnosticSeverityV01, PackageDiscoveryResponseV01,
+    PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01, PackageInstallPlanIntentV01,
+    PackageInstallPlanRequestV01, PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01,
+    PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01, PackageListingArtifactKindV01,
+    PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
+    PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest, PatchDefinitionV01,
+    PatchPath, PortDirectionV01, PortSpecV01, ProjectDocumentV01,
+    ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
     ProjectObjectBindingTargetV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01,
-    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, derive_patch_contract_v01,
+    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, compute_node_catalog_revision_v01,
+    derive_patch_contract_v01, project_patch_node_definition_id_v01,
 };
 use super::version::{
     derive_v0_compatibility_line, derive_v0_compatibility_range, satisfies_v0_compatibility_range,
@@ -205,7 +210,10 @@ fn is_relative_path_v01(value: &str) -> bool {
 }
 
 fn is_sha256_hex_v01(value: &str) -> bool {
-    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 fn validate_shape_v01(errors: &mut Vec<ValidationErrorV01>, label: &str, shape: Option<&[u64]>) {
@@ -1759,12 +1767,108 @@ pub fn validate_graph_fragment_v01(
 pub fn validate_paste_graph_fragment_request(
     request: &PasteGraphFragmentRequest,
 ) -> Result<GraphFragmentValidationResultV01, ValidationReportV01> {
+    let mut errors = Vec::new();
+    validate_graph_target_ref_v01(&mut errors, &request.target, "target");
+    if !errors.is_empty() {
+        return Err(ValidationReportV01::new(errors));
+    }
+
     let outside_endpoint_policy = request
         .options
         .as_ref()
         .and_then(|options| options.outside_endpoint_policy)
         .unwrap_or_default();
     validate_graph_fragment_with_policy(&request.fragment, outside_endpoint_policy)
+}
+
+fn push_non_empty_string_error(errors: &mut Vec<ValidationErrorV01>, label: &str, value: &str) {
+    if value.is_empty() {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label} must be a non-empty string"
+        )));
+    }
+}
+
+fn push_optional_non_empty_string_error(
+    errors: &mut Vec<ValidationErrorV01>,
+    label: &str,
+    value: Option<&str>,
+) {
+    if value.is_some_and(str::is_empty) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label} must be a non-empty string when present"
+        )));
+    }
+}
+
+fn validate_graph_target_ref_v01(
+    errors: &mut Vec<ValidationErrorV01>,
+    target: &GraphTargetRef,
+    label: &str,
+) {
+    match &target.path {
+        PatchPath::Root => {}
+        PatchPath::ProjectPatchDefinition { patch_id } => {
+            push_non_empty_string_error(errors, &format!("{label}.path.patchId"), patch_id);
+        }
+        PatchPath::PackagePatchDefinition {
+            package_id,
+            patch_id,
+            version,
+        } => {
+            push_non_empty_string_error(errors, &format!("{label}.path.packageId"), package_id);
+            push_non_empty_string_error(errors, &format!("{label}.path.patchId"), patch_id);
+            push_optional_non_empty_string_error(
+                errors,
+                &format!("{label}.path.version"),
+                version.as_deref(),
+            );
+        }
+        PatchPath::EmbeddedPatchInstance {
+            owner_path,
+            node_id,
+        } => {
+            for (index, entry) in owner_path.iter().enumerate() {
+                push_non_empty_string_error(
+                    errors,
+                    &format!("{label}.path.ownerPath[{index}]"),
+                    entry,
+                );
+            }
+            push_non_empty_string_error(errors, &format!("{label}.path.nodeId"), node_id);
+        }
+        PatchPath::HelpWorkingCopy {
+            working_copy_id,
+            source_package_id,
+            source_patch_id,
+        } => {
+            push_non_empty_string_error(
+                errors,
+                &format!("{label}.path.workingCopyId"),
+                working_copy_id,
+            );
+            push_optional_non_empty_string_error(
+                errors,
+                &format!("{label}.path.sourcePackageId"),
+                source_package_id.as_deref(),
+            );
+            push_optional_non_empty_string_error(
+                errors,
+                &format!("{label}.path.sourcePatchId"),
+                source_patch_id.as_deref(),
+            );
+        }
+    }
+    push_non_empty_string_error(
+        errors,
+        &format!("{label}.baseRevision"),
+        &target.base_revision,
+    );
+    push_optional_non_empty_string_error(
+        errors,
+        &format!("{label}.targetRevision"),
+        target.target_revision.as_deref(),
+    );
 }
 
 pub fn validate_node_definition_v01(
@@ -1864,6 +1968,346 @@ pub fn validate_node_definition_v01(
     for permission in &definition.permissions {
         errors.push(ValidationErrorV01::new(format!(
             "unsupported permission: {permission}"
+        )));
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+fn sorted_string_errors(values: &[String], label: &str) -> Vec<ValidationErrorV01> {
+    let mut sorted = values.to_vec();
+    sorted.sort_by(|left, right| left.chars().cmp(right.chars()));
+    if values == sorted.as_slice() {
+        Vec::new()
+    } else {
+        vec![ValidationErrorV01::new(format!(
+            "{label} must be sorted by Unicode code point"
+        ))]
+    }
+}
+
+fn validate_node_catalog_diagnostic_target_v01(
+    errors: &mut Vec<ValidationErrorV01>,
+    target: &NodeCatalogDiagnosticTargetV01,
+    entry_ids: &HashSet<&str>,
+    diagnostic_ids: &HashSet<&str>,
+    label: &str,
+) {
+    match target {
+        NodeCatalogDiagnosticTargetV01::Catalog => {}
+        NodeCatalogDiagnosticTargetV01::Entry { catalog_id } => {
+            if !entry_ids.contains(catalog_id.as_str()) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label} references missing entry catalogId: {catalog_id}"
+                )));
+            }
+        }
+        NodeCatalogDiagnosticTargetV01::DiagnosticNodeDefinition { diagnostic_id } => {
+            if !diagnostic_ids.contains(diagnostic_id.as_str()) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label} references missing diagnosticId: {diagnostic_id}"
+                )));
+            }
+        }
+    }
+}
+
+fn validate_node_catalog_diagnostic_v01(
+    errors: &mut Vec<ValidationErrorV01>,
+    diagnostic: &NodeCatalogDiagnosticV01,
+    entry_ids: &HashSet<&str>,
+    diagnostic_ids: &HashSet<&str>,
+    label: &str,
+) {
+    push_non_empty_string_error(errors, &format!("{label}.code"), &diagnostic.code);
+    push_non_empty_string_error(errors, &format!("{label}.message"), &diagnostic.message);
+    validate_node_catalog_diagnostic_target_v01(
+        errors,
+        &diagnostic.target,
+        entry_ids,
+        diagnostic_ids,
+        &format!("{label}.target"),
+    );
+    if diagnostic.severity == NodeCatalogDiagnosticSeverityV01::Error {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label} must not use error severity in a valid catalog snapshot"
+        )));
+    }
+}
+
+fn validate_node_catalog_display_schema_v01(
+    errors: &mut Vec<ValidationErrorV01>,
+    display: &NodeCatalogDisplayV01,
+    label: &str,
+) {
+    push_non_empty_string_error(errors, &format!("{label}.display.title"), &display.title);
+    if let Some(palette) = display.palette {
+        match palette {
+            NodeCatalogDisplayPaletteV01::Direct | NodeCatalogDisplayPaletteV01::Text => {}
+        }
+    }
+}
+
+fn validate_node_catalog_display_v01(
+    errors: &mut Vec<ValidationErrorV01>,
+    canonical_object_text: &str,
+    aliases: Option<&[String]>,
+    label: &str,
+    object_text_owners: &mut HashMap<String, String>,
+    canonical_object_texts: &mut HashSet<String>,
+) {
+    push_non_empty_string_error(
+        errors,
+        &format!("{label}.canonicalObjectText"),
+        canonical_object_text,
+    );
+    if !canonical_object_texts.insert(canonical_object_text.to_owned()) {
+        errors.push(ValidationErrorV01::new(format!(
+            "duplicate canonicalObjectText: {canonical_object_text}"
+        )));
+    }
+
+    if let Some(owner) = object_text_owners.get(canonical_object_text) {
+        errors.push(ValidationErrorV01::new(format!(
+            "{label} canonicalObjectText collides with {owner}: {canonical_object_text}"
+        )));
+    } else {
+        object_text_owners.insert(
+            canonical_object_text.to_owned(),
+            format!("{label} canonicalObjectText"),
+        );
+    }
+
+    let Some(aliases) = aliases else {
+        return;
+    };
+
+    errors.extend(sorted_string_errors(aliases, &format!("{label} aliases")));
+    errors.extend(duplicate_errors(
+        aliases.iter().map(|alias| alias.as_str()).collect(),
+        &format!("{label} alias"),
+    ));
+    for alias in aliases {
+        push_non_empty_string_error(errors, &format!("{label}.alias"), alias);
+        if let Some(owner) = object_text_owners.get(alias) {
+            errors.push(ValidationErrorV01::new(format!(
+                "{label} alias collides with {owner}: {alias}"
+            )));
+        } else {
+            object_text_owners.insert(alias.to_owned(), format!("{label} alias"));
+        }
+    }
+}
+
+pub fn validate_node_catalog_snapshot_v01(
+    snapshot: &NodeCatalogSnapshotV01,
+) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if snapshot.schema != "skenion.node-catalog.snapshot" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schema skenion.node-catalog.snapshot, found {}",
+            snapshot.schema
+        )));
+    }
+    if snapshot.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            snapshot.schema_version
+        )));
+    }
+    validate_package_checksum_v01(&mut errors, "catalogRevision", &snapshot.catalog_revision);
+
+    errors.extend(duplicate_errors(
+        snapshot
+            .entries
+            .iter()
+            .map(|entry| entry.catalog_id.as_str())
+            .collect(),
+        "catalogId",
+    ));
+    errors.extend(duplicate_errors(
+        snapshot
+            .diagnostic_node_definitions
+            .iter()
+            .map(|definition| definition.diagnostic_id.as_str())
+            .collect(),
+        "diagnosticId",
+    ));
+    errors.extend(sorted_string_errors(
+        &snapshot
+            .entries
+            .iter()
+            .map(|entry| entry.catalog_id.clone())
+            .collect::<Vec<_>>(),
+        "catalog entries",
+    ));
+    errors.extend(sorted_string_errors(
+        &snapshot
+            .diagnostic_node_definitions
+            .iter()
+            .map(|definition| definition.diagnostic_id.clone())
+            .collect::<Vec<_>>(),
+        "diagnostic node definitions",
+    ));
+
+    let entry_ids = snapshot
+        .entries
+        .iter()
+        .map(|entry| entry.catalog_id.as_str())
+        .collect::<HashSet<_>>();
+    let diagnostic_ids = snapshot
+        .diagnostic_node_definitions
+        .iter()
+        .map(|definition| definition.diagnostic_id.as_str())
+        .collect::<HashSet<_>>();
+
+    let mut definition_keys = HashSet::new();
+    for (label, definition) in snapshot
+        .entries
+        .iter()
+        .map(|entry| {
+            (
+                format!("catalog entry {}", entry.catalog_id),
+                &entry.definition,
+            )
+        })
+        .chain(
+            snapshot
+                .diagnostic_node_definitions
+                .iter()
+                .map(|definition| {
+                    (
+                        format!("diagnostic node definition {}", definition.diagnostic_id),
+                        &definition.definition,
+                    )
+                }),
+        )
+    {
+        let key = format!("{}@{}", definition.id, definition.version);
+        if !definition_keys.insert(key.clone()) {
+            errors.push(ValidationErrorV01::new(format!(
+                "duplicate node definition id/version: {key}"
+            )));
+        }
+        if let Err(report) = validate_node_definition_v01(definition) {
+            for error in report.errors() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "{label} definition: {}",
+                    error.message
+                )));
+            }
+        }
+    }
+
+    let mut object_text_owners = HashMap::new();
+    let mut canonical_object_texts = HashSet::new();
+
+    for entry in &snapshot.entries {
+        push_non_empty_string_error(
+            &mut errors,
+            &format!("catalog entry {} catalogId", entry.catalog_id),
+            &entry.catalog_id,
+        );
+        validate_node_catalog_display_v01(
+            &mut errors,
+            &entry.canonical_object_text,
+            entry.aliases.as_deref(),
+            &format!("catalog entry {}", entry.catalog_id),
+            &mut object_text_owners,
+            &mut canonical_object_texts,
+        );
+        validate_node_catalog_display_schema_v01(
+            &mut errors,
+            &entry.display,
+            &format!("catalog entry {}", entry.catalog_id),
+        );
+
+        if !entry.creatable {
+            errors.push(ValidationErrorV01::new(format!(
+                "catalog entry {} creatable must be true",
+                entry.catalog_id
+            )));
+        }
+
+        match &entry.source {
+            NodeCatalogSourceV01::Core => {}
+            NodeCatalogSourceV01::ProjectPatch {
+                patch_id,
+                patch_revision,
+                interface_digest,
+            } => {
+                push_optional_non_empty_string_error(
+                    &mut errors,
+                    "source.patchRevision",
+                    patch_revision.as_deref(),
+                );
+                validate_package_checksum_v01(
+                    &mut errors,
+                    "source.interfaceDigest",
+                    interface_digest,
+                );
+                let expected_definition_id =
+                    project_patch_node_definition_id_v01(patch_id, interface_digest);
+                if entry.definition.id != expected_definition_id {
+                    errors.push(ValidationErrorV01::new(format!(
+                        "projectPatch catalog entry {} definition.id must be {}",
+                        entry.catalog_id, expected_definition_id
+                    )));
+                }
+            }
+        }
+
+        for diagnostic in entry.diagnostics.as_deref().unwrap_or_default() {
+            validate_node_catalog_diagnostic_v01(
+                &mut errors,
+                diagnostic,
+                &entry_ids,
+                &diagnostic_ids,
+                &format!("catalog entry {} diagnostic", entry.catalog_id),
+            );
+        }
+    }
+
+    for definition in &snapshot.diagnostic_node_definitions {
+        push_non_empty_string_error(
+            &mut errors,
+            &format!(
+                "diagnostic node definition {} diagnosticId",
+                definition.diagnostic_id
+            ),
+            &definition.diagnostic_id,
+        );
+        match definition.reason {
+            NodeCatalogDiagnosticNodeDefinitionReasonV01::UnresolvedObject => {}
+        }
+    }
+
+    for (index, diagnostic) in snapshot
+        .diagnostics
+        .as_deref()
+        .unwrap_or_default()
+        .iter()
+        .enumerate()
+    {
+        validate_node_catalog_diagnostic_v01(
+            &mut errors,
+            diagnostic,
+            &entry_ids,
+            &diagnostic_ids,
+            &format!("catalog diagnostic {index}"),
+        );
+    }
+
+    let expected_revision = compute_node_catalog_revision_v01(snapshot);
+    if snapshot.catalog_revision != expected_revision {
+        errors.push(ValidationErrorV01::new(format!(
+            "catalogRevision mismatch: expected {}",
+            expected_revision.value
         )));
     }
 

@@ -4,6 +4,7 @@ export {
   extensionManifestV01Schema,
   graphFragmentV01Schema,
   graphV01Schema,
+  nodeCatalogV01Schema,
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
   packageDiscoveryV01Schema,
@@ -107,6 +108,14 @@ export type {
   IntRepresentationV01,
   JsonValueV01,
   MergePolicyV01,
+  NodeCatalogDiagnosticNodeDefinitionV01,
+  NodeCatalogDiagnosticSeverityV01,
+  NodeCatalogDiagnosticTargetV01,
+  NodeCatalogDiagnosticV01,
+  NodeCatalogDisplayV01,
+  NodeCatalogEntryV01,
+  NodeCatalogSnapshotV01,
+  NodeCatalogSourceV01,
   NodeDefinitionManifestV01,
   NodeExecutionV01,
   NodeStateV01,
@@ -250,6 +259,12 @@ export type {
 } from "./clock.js";
 export { parseObjectTextV01 } from "./objectText.js";
 export {
+  computeNodeCatalogRevisionV01,
+  computePatchInterfaceDigestV01,
+  projectPatchNodeDefinitionIdV01,
+  sanitizeProjectPatchIdV01
+} from "./nodeCatalog.js";
+export {
   createDefaultViewStateForGraph,
   derivePatchContractV01,
   derivePatchContractsV01
@@ -276,6 +291,7 @@ export {
   validateValueFormatV01,
   validateEndpointBindingValueFormatV01,
   validateValueOccurrenceHeaderV01,
+  validateNodeCatalogSnapshotV01,
   validateObjectTextParseResult,
   validateNodeDefinition,
   validateNodeDefinitionV01,

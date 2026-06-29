@@ -10,6 +10,8 @@ import {
   compatibilityMatrixV01Schema,
   SKENION_PACKAGE_MANIFEST_FILE_NAME,
   createDefaultViewStateForGraph,
+  computeNodeCatalogRevisionV01,
+  computePatchInterfaceDigestV01,
   derivePatchContractV01,
   derivePatchContractsV01,
   deriveV0CompatibilityLine,
@@ -18,6 +20,7 @@ import {
   extensionManifestV01Schema,
   graphFragmentV01Schema,
   graphV01Schema,
+  nodeCatalogV01Schema,
   nodeDefinitionV01Schema,
   objectTextParseResultV01Schema,
   packageDiscoveryV01Schema,
@@ -29,6 +32,7 @@ import {
   planConversion,
   projectV01Schema,
   parseObjectTextV01,
+  projectPatchNodeDefinitionIdV01,
   representationForDataType,
   representationRegistryV01,
   shaderDiagnosticV01Schema,
@@ -36,6 +40,7 @@ import {
   viewStateV01Schema,
   analyzeShaderInterfaceV01,
   shaderInterfaceToPortsV01,
+  sanitizeProjectPatchIdV01,
   analyzeGraphDocumentV01,
   analyzeGraphFragmentV01,
   applyMidiClockMessageV01,
@@ -63,6 +68,7 @@ import {
   validateProjectDocumentV01,
   validateValueFormatV01,
   validateValueOccurrenceHeaderV01,
+  validateNodeCatalogSnapshotV01,
   validateCompatibilityMatrixV01,
   validateViewState,
   validateViewStateV01,
@@ -108,6 +114,19 @@ test("exports active schema contracts", () => {
   assert.equal(projectV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(viewStateV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(nodeDefinitionV01Schema.properties.schemaVersion.const, "0.1.0");
+  assert.equal(nodeCatalogV01Schema.properties.schema.const, "skenion.node-catalog.snapshot");
+  assert.equal(Object.hasOwn(contracts, "validateNodeCatalogSnapshotV01"), true);
+  assert.equal(Object.hasOwn(contracts, "computeNodeCatalogRevisionV01"), true);
+  assert.equal(Object.hasOwn(contracts, "computePatchInterfaceDigestV01"), true);
+  for (const removedCommandExport of [
+    "NodeGraphCommandKindV01",
+    "NodeGraphCommandPayloadV01",
+    "NodeGraphCommandResultV01",
+    "validateNodeGraphCommandPayloadV01",
+    "validateNodeGraphCommandResultV01"
+  ]) {
+    assert.equal(Object.hasOwn(contracts, removedCommandExport), false, removedCommandExport);
+  }
   assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
   assert.equal(extensionManifestV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(packageManifestV01Schema.properties.schema.const, "skenion.package.manifest");
@@ -153,6 +172,440 @@ test("exports active schema contracts", () => {
   ]) {
     assert.equal(Object.hasOwn(contracts, runtimeExport), false, runtimeExport);
   }
+});
+
+const zeroChecksumV01 = { algorithm: "sha256", value: "0".repeat(64) };
+
+function minimalNodeDefinition(id, displayName = id) {
+  return {
+    schema: "skenion.node.definition",
+    schemaVersion: "0.1.0",
+    id,
+    version: "0.1.0",
+    displayName,
+    category: "Core",
+    ports: [],
+    execution: { model: "control" },
+    state: { persistent: false },
+    permissions: [],
+    capabilities: []
+  };
+}
+
+function withCatalogRevision(snapshot) {
+  snapshot.catalogRevision = computeNodeCatalogRevisionV01(snapshot);
+  return snapshot;
+}
+
+function validCoreCatalogSnapshot() {
+  return withCatalogRevision({
+    schema: "skenion.node-catalog.snapshot",
+    schemaVersion: "0.1.0",
+    catalogRevision: zeroChecksumV01,
+    entries: [
+      {
+        catalogId: "core.float",
+        canonicalObjectText: "float",
+        aliases: ["float64", "number"],
+        source: { kind: "core" },
+        definition: minimalNodeDefinition("object.core.float", "Float"),
+        creatable: true,
+        display: {
+          title: "Float",
+          category: "Core",
+          palette: "text",
+          description: "Core scalar node.",
+          helpId: "object.core.float"
+        },
+        diagnostics: [
+          {
+            severity: "info",
+            code: "catalog.note",
+            message: "Core scalar node.",
+            target: { kind: "entry", catalogId: "core.float" }
+          }
+        ]
+      },
+      {
+        catalogId: "core.message",
+        canonicalObjectText: "message",
+        aliases: ["msg"],
+        source: { kind: "core" },
+        definition: minimalNodeDefinition("object.core.message", "Message"),
+        creatable: true,
+        display: {
+          title: "Message",
+          category: "Core"
+        }
+      }
+    ],
+    diagnosticNodeDefinitions: [
+      {
+        diagnosticId: "diag.unresolved",
+        reason: "unresolvedObject",
+        definition: minimalNodeDefinition("object.diagnostic.unresolved", "Unresolved Object")
+      }
+    ],
+    diagnostics: [
+      {
+        severity: "warning",
+        code: "catalog.generated",
+        message: "Generated with non-fatal catalog diagnostics.",
+        target: { kind: "diagnosticNodeDefinition", diagnosticId: "diag.unresolved" }
+      }
+    ]
+  });
+}
+
+function validProjectPatch() {
+  return {
+    id: "Folder/My Patch?",
+    revision: "rev-with-metadata-excluded",
+    metadata: { title: "Ignored for interface digest" },
+    graph: {
+      schema: "skenion.graph",
+      schemaVersion: "0.1.0",
+      id: "patch-project-node",
+      revision: "graph-rev",
+      nodes: [
+        {
+          id: "value_in",
+          kind: "object.core.inlet",
+          kindVersion: "0.1.0",
+          params: { portId: "value", label: "Value" },
+          ports: [
+            { id: "out", direction: "output", type: "value.core.float64", rate: "control" }
+          ]
+        },
+        {
+          id: "value_out",
+          kind: "object.core.outlet",
+          kindVersion: "0.1.0",
+          params: { portId: "result", label: "Result" },
+          ports: [
+            { id: "in", direction: "input", type: "value.core.float64", rate: "control" }
+          ]
+        }
+      ],
+      edges: []
+    }
+  };
+}
+
+function validProjectPatchCatalogSnapshot() {
+  const patch = validProjectPatch();
+  const interfaceDigest = computePatchInterfaceDigestV01(patch);
+  const definitionId = projectPatchNodeDefinitionIdV01(patch.id, interfaceDigest);
+
+  return withCatalogRevision({
+    schema: "skenion.node-catalog.snapshot",
+    schemaVersion: "0.1.0",
+    catalogRevision: zeroChecksumV01,
+    entries: [
+      {
+        catalogId: "project.folder-my-patch",
+        source: {
+          kind: "projectPatch",
+          patchId: patch.id,
+          patchRevision: patch.revision,
+          interfaceDigest
+        },
+        definition: {
+          ...minimalNodeDefinition(definitionId, "Folder/My Patch?"),
+          category: "Project Patch",
+          ports: derivePatchContractV01(patch).ports.map((port) => {
+            const { boundaryNodeId: _boundaryNodeId, boundaryPortId: _boundaryPortId, ...definitionPort } = port;
+            return definitionPort;
+          })
+        },
+        creatable: true,
+        canonicalObjectText: "Folder/My Patch?",
+        aliases: ["Folder.My-Patch"],
+        display: {
+          title: "Folder/My Patch?",
+          category: "Project Patch",
+          palette: "direct"
+        }
+      }
+    ],
+    diagnosticNodeDefinitions: []
+  });
+}
+
+test("validates node catalog snapshots and digest helpers", () => {
+  const coreCatalog = validCoreCatalogSnapshot();
+  const projectCatalog = validProjectPatchCatalogSnapshot();
+  const projectPatch = validProjectPatch();
+
+  assert.equal(validateNodeCatalogSnapshotV01(coreCatalog).ok, true);
+  assert.equal(validateNodeCatalogSnapshotV01(projectCatalog).ok, true);
+  assert.equal(sanitizeProjectPatchIdV01("Folder/My Patch?"), "Folder-My-Patch-");
+  assert.equal(sanitizeProjectPatchIdV01(""), "patch");
+  assert.equal(
+    computePatchInterfaceDigestV01(projectPatch).value,
+    "90548cb698af40b559a9538a7d07ba64839c09170857f2949cf792081fa0c33a"
+  );
+  assert.equal(
+    projectCatalog.catalogRevision.value,
+    "9c0a843d107801006d7b931f733ba29dc62a60e0ffaa46977f5b9a06eb72e67a"
+  );
+  assert.equal(
+    coreCatalog.catalogRevision.value,
+    "42d4e882b0a0874e42d01faa99414f73ac07aa85e98c14239ad268495b57f2c8"
+  );
+
+  const withDifferentPatchRevision = structuredClone(projectPatch);
+  withDifferentPatchRevision.revision = "changed";
+  withDifferentPatchRevision.metadata = { title: "Changed metadata" };
+  assert.deepEqual(
+    computePatchInterfaceDigestV01(withDifferentPatchRevision),
+    computePatchInterfaceDigestV01(projectPatch)
+  );
+
+  const patchWithCanonicalEdgeValues = structuredClone(projectPatch);
+  patchWithCanonicalEdgeValues.graph.nodes[0].ports[0].accepts = [
+    "value.core.bang",
+    "value.core.float64"
+  ];
+  patchWithCanonicalEdgeValues.graph.nodes[0].ports[0].defaultValue = [
+    null,
+    1,
+    true,
+    "ready"
+  ];
+  assert.match(
+    computePatchInterfaceDigestV01(patchWithCanonicalEdgeValues).value,
+    /^[0-9a-f]{64}$/
+  );
+
+  const patchWithNonFiniteNumber = structuredClone(projectPatch);
+  patchWithNonFiniteNumber.graph.nodes[0].ports[0].defaultValue = Number.NaN;
+  assert.throws(
+    () => computePatchInterfaceDigestV01(patchWithNonFiniteNumber),
+    /non-finite numbers/
+  );
+
+  const patchWithUnsupportedValue = structuredClone(projectPatch);
+  patchWithUnsupportedValue.graph.nodes[0].ports[0].defaultValue = Symbol("unsupported");
+  assert.throws(
+    () => computePatchInterfaceDigestV01(patchWithUnsupportedValue),
+    /cannot encode symbol/
+  );
+
+  const revisionIgnoresDiagnostics = structuredClone(coreCatalog);
+  revisionIgnoresDiagnostics.diagnostics = [
+    {
+      severity: "warning",
+      code: "catalog.changed",
+      message: "This warning is excluded from the revision preimage.",
+      target: { kind: "catalog" }
+    }
+  ];
+  revisionIgnoresDiagnostics.entries[0].diagnostics = [
+    {
+      severity: "warning",
+      code: "entry.changed",
+      message: "This warning is also excluded from the revision preimage.",
+      target: { kind: "entry", catalogId: "core.float" }
+    }
+  ];
+  assert.deepEqual(
+    computeNodeCatalogRevisionV01(revisionIgnoresDiagnostics),
+    coreCatalog.catalogRevision
+  );
+});
+
+test("rejects invalid node catalog snapshots", () => {
+  const cases = [
+    [
+      "duplicate catalogId",
+      (snapshot) => {
+        snapshot.entries.push({
+          ...structuredClone(snapshot.entries[1]),
+          definition: minimalNodeDefinition("object.core.duplicate", "Duplicate"),
+          canonicalObjectText: "duplicate",
+          aliases: undefined,
+          display: { title: "Duplicate" },
+          catalogId: "core.float"
+        });
+      },
+      /duplicate catalogId/
+    ],
+    [
+      "duplicate definition id version",
+      (snapshot) => {
+        snapshot.diagnosticNodeDefinitions[0].definition = structuredClone(snapshot.entries[0].definition);
+      },
+      /duplicate node definition id\/version/
+    ],
+    [
+      "duplicate canonical text",
+      (snapshot) => {
+        snapshot.entries[1].canonicalObjectText = "float";
+      },
+      /duplicate canonicalObjectText/
+    ],
+    [
+      "alias collides with canonical",
+      (snapshot) => {
+        snapshot.entries[1].aliases = ["float"];
+      },
+      /alias collides/
+    ],
+    [
+      "duplicate alias",
+      (snapshot) => {
+        snapshot.entries[1].aliases = ["dup", "dup"];
+      },
+      /duplicate items|duplicate .*alias/
+    ],
+    [
+      "unsorted aliases",
+      (snapshot) => {
+        snapshot.entries[0].aliases = ["zeta", "alpha"];
+      },
+      /aliases must be sorted/
+    ],
+    [
+      "bad diagnostic target",
+      (snapshot) => {
+        snapshot.diagnostics[0].target = { kind: "entry", catalogId: "missing.entry" };
+      },
+      /missing entry catalogId/
+    ],
+    [
+      "error diagnostic",
+      (snapshot) => {
+        snapshot.diagnostics[0].severity = "error";
+      },
+      /must not use error severity/
+    ],
+    [
+      "invalid nested node definition",
+      (snapshot) => {
+        snapshot.entries[0].definition.ports = [
+          { id: "dup", direction: "input", type: "value.core.float64" },
+          { id: "dup", direction: "output", type: "value.core.float64" }
+        ];
+      },
+      /duplicate port id/
+    ],
+    [
+      "package source removed",
+      (snapshot) => {
+        snapshot.entries[0].source = {
+          kind: "package",
+          packageId: "skenion/examples",
+          packageVersion: "0.1.0",
+          providerId: "example.float"
+        };
+      },
+      /must match exactly one schema|must be equal to constant|additional properties/
+    ],
+    [
+      "generatedAt removed",
+      (snapshot) => {
+        snapshot.generatedAt = "2026-06-28T00:00:00Z";
+      },
+      /must NOT have additional properties/
+    ],
+    [
+      "display object text removed",
+      (snapshot) => {
+        snapshot.entries[0].display.canonicalObjectText = "float";
+        snapshot.entries[0].display.aliases = ["float64"];
+      },
+      /must NOT have additional properties/
+    ],
+    [
+      "diagnostic id removed",
+      (snapshot) => {
+        snapshot.diagnostics[0].id = "catalog.generated";
+      },
+      /must NOT have additional properties/
+    ],
+    [
+      "diagnostic node display and target removed",
+      (snapshot) => {
+        snapshot.diagnosticNodeDefinitions[0].target = { kind: "entry", catalogId: "core.float" };
+        snapshot.diagnosticNodeDefinitions[0].display = { title: "Unresolved Object" };
+      },
+      /must NOT have additional properties/
+    ],
+    [
+      "missing creatable",
+      (snapshot) => {
+        delete snapshot.entries[0].creatable;
+      },
+      /must have required property 'creatable'/
+    ],
+    [
+      "creatable false",
+      (snapshot) => {
+        snapshot.entries[0].creatable = false;
+      },
+      /must be equal to constant|creatable must be true/
+    ]
+  ];
+
+  for (const [name, mutate, expected] of cases) {
+    const snapshot = structuredClone(validCoreCatalogSnapshot());
+    mutate(snapshot);
+    withCatalogRevision(snapshot);
+    const result = validateNodeCatalogSnapshotV01(snapshot);
+    assert.equal(result.ok, false, name);
+    assert.match(result.errors.join("\n"), expected, name);
+  }
+
+  const uppercaseChecksum = structuredClone(validProjectPatchCatalogSnapshot());
+  uppercaseChecksum.entries[0].source.interfaceDigest.value =
+    uppercaseChecksum.entries[0].source.interfaceDigest.value.toUpperCase();
+  const uppercaseChecksumResult = validateNodeCatalogSnapshotV01(uppercaseChecksum);
+  assert.equal(uppercaseChecksumResult.ok, false);
+  assert.match(uppercaseChecksumResult.errors.join("\n"), /pattern/);
+
+  const revisionMismatch = structuredClone(validCoreCatalogSnapshot());
+  revisionMismatch.catalogRevision = { algorithm: "sha256", value: "f".repeat(64) };
+  const revisionMismatchResult = validateNodeCatalogSnapshotV01(revisionMismatch);
+  assert.equal(revisionMismatchResult.ok, false);
+  assert.match(revisionMismatchResult.errors.join("\n"), /catalogRevision mismatch/);
+
+  const diagnosticNodeDefinitionWithDiagnostics = structuredClone(validCoreCatalogSnapshot());
+  diagnosticNodeDefinitionWithDiagnostics.diagnosticNodeDefinitions[0].diagnostics = [];
+  const diagnosticNodeDefinitionResult = validateNodeCatalogSnapshotV01(diagnosticNodeDefinitionWithDiagnostics);
+  assert.equal(diagnosticNodeDefinitionResult.ok, false);
+  assert.match(diagnosticNodeDefinitionResult.errors.join("\n"), /must NOT have additional properties/);
+
+  const badProjectPatchDefinitionId = structuredClone(validProjectPatchCatalogSnapshot());
+  badProjectPatchDefinitionId.entries[0].definition.id = "object.project.patch.bad";
+  withCatalogRevision(badProjectPatchDefinitionId);
+  const badProjectPatchDefinitionIdResult = validateNodeCatalogSnapshotV01(badProjectPatchDefinitionId);
+  assert.equal(badProjectPatchDefinitionIdResult.ok, false);
+  assert.match(badProjectPatchDefinitionIdResult.errors.join("\n"), /projectPatch catalog entry/);
+
+  const catalogScopedDiagnostic = structuredClone(validCoreCatalogSnapshot());
+  catalogScopedDiagnostic.diagnostics[0].target = { kind: "catalog" };
+  const catalogScopedDiagnosticResult = validateNodeCatalogSnapshotV01(catalogScopedDiagnostic);
+  assert.equal(catalogScopedDiagnosticResult.ok, true);
+
+  const missingDiagnosticTarget = structuredClone(validCoreCatalogSnapshot());
+  missingDiagnosticTarget.diagnostics[0].target = {
+    kind: "diagnosticNodeDefinition",
+    diagnosticId: "missing.diagnostic"
+  };
+  const missingDiagnosticTargetResult = validateNodeCatalogSnapshotV01(missingDiagnosticTarget);
+  assert.equal(missingDiagnosticTargetResult.ok, false);
+  assert.match(missingDiagnosticTargetResult.errors.join("\n"), /missing diagnosticId/);
+
+  const badDiagnosticNodeDefinition = structuredClone(validCoreCatalogSnapshot());
+  badDiagnosticNodeDefinition.diagnosticNodeDefinitions[0].definition.ports = [
+    { id: "dup", direction: "input", type: "value.core.float64" },
+    { id: "dup", direction: "output", type: "value.core.float64" }
+  ];
+  withCatalogRevision(badDiagnosticNodeDefinition);
+  const badDiagnosticNodeDefinitionResult = validateNodeCatalogSnapshotV01(badDiagnosticNodeDefinition);
+  assert.equal(badDiagnosticNodeDefinitionResult.ok, false);
+  assert.match(badDiagnosticNodeDefinitionResult.errors.join("\n"), /diagnostic node definition .*duplicate port id/);
 });
 
 test("node definition schema validates message key policy shape", () => {

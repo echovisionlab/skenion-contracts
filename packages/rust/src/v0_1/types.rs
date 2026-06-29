@@ -1,5 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -791,6 +792,122 @@ pub struct PasteGraphFragmentRequest {
     pub placement: Option<PastePlacement>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<PasteGraphFragmentOptions>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum NodeCatalogDisplayPaletteV01 {
+    Direct,
+    Text,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeCatalogDisplayV01 {
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub palette: Option<NodeCatalogDisplayPaletteV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub help_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum NodeCatalogSourceV01 {
+    Core,
+    ProjectPatch {
+        patch_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        patch_revision: Option<String>,
+        interface_digest: PackageChecksumV01,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NodeCatalogDiagnosticSeverityV01 {
+    Info,
+    Warning,
+    Error,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum NodeCatalogDiagnosticTargetV01 {
+    Catalog,
+    Entry { catalog_id: String },
+    DiagnosticNodeDefinition { diagnostic_id: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeCatalogDiagnosticV01 {
+    pub severity: NodeCatalogDiagnosticSeverityV01,
+    pub code: String,
+    pub message: String,
+    pub target: NodeCatalogDiagnosticTargetV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeCatalogEntryV01 {
+    pub catalog_id: String,
+    pub canonical_object_text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub aliases: Option<Vec<String>>,
+    pub source: NodeCatalogSourceV01,
+    pub definition: NodeDefinitionManifestV01,
+    pub creatable: bool,
+    pub display: NodeCatalogDisplayV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostics: Option<Vec<NodeCatalogDiagnosticV01>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeCatalogDiagnosticNodeDefinitionV01 {
+    pub diagnostic_id: String,
+    pub reason: NodeCatalogDiagnosticNodeDefinitionReasonV01,
+    pub definition: NodeDefinitionManifestV01,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum NodeCatalogDiagnosticNodeDefinitionReasonV01 {
+    UnresolvedObject,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeCatalogSnapshotV01 {
+    pub schema: String,
+    pub schema_version: String,
+    pub catalog_revision: PackageChecksumV01,
+    pub entries: Vec<NodeCatalogEntryV01>,
+    pub diagnostic_node_definitions: Vec<NodeCatalogDiagnosticNodeDefinitionV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostics: Option<Vec<NodeCatalogDiagnosticV01>>,
 }
 
 pub const SKENION_PACKAGE_MANIFEST_FILE_NAME: &str = "skenion.package.json";
@@ -1709,6 +1826,115 @@ pub fn derive_patch_contracts_v01(project: &ProjectDocumentV01) -> Vec<PatchCont
         .iter()
         .map(derive_patch_contract_v01)
         .collect()
+}
+
+fn canonical_json_v01(value: &Value) -> String {
+    match value {
+        Value::Null => "null".to_owned(),
+        Value::Bool(value) => value.to_string(),
+        Value::Number(value) => value.to_string(),
+        Value::String(value) => serde_json::to_string(value).expect("string should serialize"),
+        Value::Array(values) => {
+            let entries = values
+                .iter()
+                .map(canonical_json_v01)
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("[{entries}]")
+        }
+        Value::Object(map) => {
+            let mut keys = map.keys().collect::<Vec<_>>();
+            keys.sort_by(|left, right| left.chars().cmp(right.chars()));
+            let entries = keys
+                .into_iter()
+                .map(|key| {
+                    format!(
+                        "{}:{}",
+                        serde_json::to_string(key).expect("key should serialize"),
+                        canonical_json_v01(&map[key])
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("{{{entries}}}")
+        }
+    }
+}
+
+fn sha256_canonical_digest_v01(value: &Value) -> PackageChecksumV01 {
+    let canonical_json = canonical_json_v01(value);
+    let mut hasher = Sha256::new();
+    hasher.update(canonical_json.as_bytes());
+    let digest = hasher.finalize();
+    PackageChecksumV01 {
+        algorithm: PackageChecksumAlgorithmV01::Sha256,
+        value: digest
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+    }
+}
+
+pub fn compute_patch_interface_digest_v01(patch: &PatchDefinitionV01) -> PackageChecksumV01 {
+    let contract = derive_patch_contract_v01(patch);
+    sha256_canonical_digest_v01(&serde_json::json!({
+        "id": &patch.id,
+        "ports": &contract.ports,
+    }))
+}
+
+fn node_catalog_revision_preimage_v01(snapshot: &NodeCatalogSnapshotV01) -> Value {
+    let mut value = serde_json::to_value(snapshot).expect("node catalog snapshot should serialize");
+    let snapshot_object = value
+        .as_object_mut()
+        .expect("node catalog snapshot should serialize as object");
+    snapshot_object.remove("catalogRevision");
+    snapshot_object.remove("diagnostics");
+    let entries = snapshot_object
+        .get_mut("entries")
+        .and_then(Value::as_array_mut)
+        .expect("node catalog entries should serialize as array");
+    for entry in entries {
+        let entry_object = entry
+            .as_object_mut()
+            .expect("node catalog entry should serialize as object");
+        entry_object.remove("diagnostics");
+    }
+    value
+}
+
+pub fn compute_node_catalog_revision_v01(snapshot: &NodeCatalogSnapshotV01) -> PackageChecksumV01 {
+    sha256_canonical_digest_v01(&node_catalog_revision_preimage_v01(snapshot))
+}
+
+pub fn sanitize_project_patch_id_v01(patch_id: &str) -> String {
+    let sanitized = patch_id
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || character == '.' || character == '-' {
+                character
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>();
+
+    if sanitized.is_empty() {
+        "patch".to_owned()
+    } else {
+        sanitized
+    }
+}
+
+pub fn project_patch_node_definition_id_v01(
+    patch_id: &str,
+    interface_digest: &PackageChecksumV01,
+) -> String {
+    format!(
+        "object.project.patch.{}.{}",
+        sanitize_project_patch_id_v01(patch_id),
+        interface_digest.value
+    )
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
