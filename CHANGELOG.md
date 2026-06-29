@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.54.0](https://github.com/skenion/skenion-contracts/compare/v0.53.0...v0.54.0) (2026-06-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* add document identity and session load contracts
+
+### Features
+
+* add document identity and session load contracts ([d0ee900](https://github.com/skenion/skenion-contracts/commit/d0ee9009f4e23ac96a3eb30d43e7cc883a45b5fb))
+
+
+### Bug Fixes
+
+* **ci:** keep pre-1.0 breaking releases on minor line ([f916440](https://github.com/skenion/skenion-contracts/commit/f9164406be83f9b2a5ee82bc4e05acfebb49932a))
+
 ## [0.53.0](https://github.com/skenion/skenion-contracts/compare/v0.52.0...v0.53.0) (2026-06-29)
 
 
