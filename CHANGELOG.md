@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.53.0](https://github.com/skenion/skenion-contracts/compare/v0.52.0...v0.53.0) (2026-06-29)
+
+
+### Features
+
+* **contracts:** add node catalog snapshot contract ([67f4b7a](https://github.com/skenion/skenion-contracts/commit/67f4b7acda2d23380a80e1d8ffcf6e4aac76dd33)), closes [#178](https://github.com/skenion/skenion-contracts/issues/178)
+
 ## [0.52.0](https://github.com/skenion/skenion-contracts/compare/v0.51.0...v0.52.0) (2026-06-27)
 
 
