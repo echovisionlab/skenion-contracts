@@ -75,12 +75,16 @@ function deriveBoundaryPorts(
   }));
 }
 
+function isCoreImplementation(node: GraphNodeV01, objectId: string): boolean {
+  return node.implementation?.provider.kind === "core" && node.implementation.objectId === objectId;
+}
+
 export function derivePatchContractV01(patch: PatchDefinitionV01): PatchContractV01 {
   const ports = patch.graph.nodes.flatMap((node): PatchContractPortV01[] => {
-    if (node.kind === "object.core.inlet") {
+    if (isCoreImplementation(node, "inlet")) {
       return deriveBoundaryPorts(node, "output", "input");
     }
-    if (node.kind === "object.core.outlet") {
+    if (isCoreImplementation(node, "outlet")) {
       return deriveBoundaryPorts(node, "input", "output");
     }
     return [];

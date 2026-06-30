@@ -34,8 +34,6 @@
         "nodes": [
           {
             "id": "frequency_in",
-            "kind": "object.core.inlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "frequency",
               "label": "Frequency"
@@ -48,7 +46,14 @@
                 "rate": "control",
                 "description": "Frequency value entering the patch."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "inlet",
+              "version": "0.1.0"
+            }
           }
         ],
         "edges": []

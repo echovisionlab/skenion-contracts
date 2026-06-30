@@ -19,6 +19,12 @@ Canonical control port types describe the meaning of a value:
 Representation-specific names such as `number.f32`, `number.i32`, or
 `color.rgba` are not canonical data kinds.
 
+These names are payload/port semantics, not object-box names. A user may type a
+short object spec such as `+~`, `osc~`, or a project/package alias; the resolver
+maps that authoring text to provider-scoped implementation identity. Port types
+stay namespaced because graph edge compatibility needs stable cross-provider
+payload semantics.
+
 ## Representations
 
 Representations describe how a semantic value is stored or delivered:

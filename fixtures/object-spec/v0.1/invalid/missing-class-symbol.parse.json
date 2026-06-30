@@ -4,10 +4,19 @@
   "input": "example.gain 1",
   "ok": true,
   "creationArgs": [],
-  "resolvedKind": "example.package.gain",
-  "resolvedKindVersion": "0.1.0",
   "params": {},
   "instancePorts": [],
   "displayText": "example.gain 1",
-  "diagnostics": []
+  "diagnostics": [],
+  "implementation": {
+    "provider": {
+      "kind": "core"
+    },
+    "objectId": "example.package.gain",
+    "version": "0.1.0"
+  },
+  "objectResolution": {
+    "status": "resolved",
+    "selectedSpec": "example.gain 1"
+  }
 }

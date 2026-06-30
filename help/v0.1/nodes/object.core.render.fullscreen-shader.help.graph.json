@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "speed_1",
-      "kind": "object.core.float",
-      "kindVersion": "0.1.0",
       "params": {
         "value": 0.35,
         "representation": "f32"
@@ -67,12 +65,17 @@
           "label": "Value",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "float",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "tint_1",
-      "kind": "object.core.color",
-      "kindVersion": "0.1.0",
       "params": {
         "value": [
           0.2,
@@ -126,12 +129,17 @@
           "label": "Color",
           "type": "value.core.color"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "color",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "shader_1",
-      "kind": "object.core.render.fullscreen-shader",
-      "kindVersion": "0.1.0",
       "params": {
         "language": "wgsl",
         "source": "// @skenion.uniform speed value.core.float32 default=0.35\n// @skenion.uniform tint value.core.color default=[0.2,0.6,1,1]\nfn fs_main() -> @location(0) vec4<f32> { return skenion_uniforms.tint * skenion_uniforms.speed; }"
@@ -155,12 +163,17 @@
           "label": "Out",
           "type": "value.core.tensor"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "render.fullscreen-shader",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "output_1",
-      "kind": "object.core.render.output",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -169,7 +182,14 @@
           "label": "In",
           "type": "value.core.tensor"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "render.output",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

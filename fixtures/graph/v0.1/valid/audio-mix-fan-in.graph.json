@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "osc_a",
-      "kind": "object.core.audio.oscillator",
-      "kindVersion": "0.1.0",
       "params": {
         "frequency": 220
       },
@@ -18,12 +16,17 @@
           "type": "value.core.float32",
           "rate": "audio"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "audio.oscillator",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "osc_b",
-      "kind": "object.core.audio.oscillator",
-      "kindVersion": "0.1.0",
       "params": {
         "frequency": 440
       },
@@ -34,12 +37,17 @@
           "type": "value.core.float32",
           "rate": "audio"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "audio.oscillator",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "mixer",
-      "kind": "object.core.audio.mixer",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -50,7 +58,14 @@
           "maxConnections": 2,
           "mergePolicy": "mix"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "audio.mixer",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

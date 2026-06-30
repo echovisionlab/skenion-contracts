@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "feedback_pass",
-      "kind": "object.core.render.feedback-composite",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -22,12 +20,17 @@
           "type": "value.core.tensor",
           "rate": "render"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "render.feedback-composite",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "output",
-      "kind": "object.core.render.output",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -36,7 +39,14 @@
           "type": "value.core.tensor",
           "rate": "render"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "render.output",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

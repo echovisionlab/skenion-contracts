@@ -6,16 +6,20 @@
   "nodes": [
     {
       "id": "note_1",
-      "kind": "object.core.comment",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "UInt stores non-negative integer values such as counts or modes."
       },
-      "ports": []
+      "ports": [],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "comment",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "bang_1",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -62,12 +66,16 @@
           "type": "value.core.bang"
         }
       ],
-      "kind": "object.core.bang"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "bang",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "uint_1",
-      "kind": "object.core.uint",
-      "kindVersion": "0.1.0",
       "params": {
         "value": 8,
         "representation": "u32"
@@ -134,7 +142,14 @@
           "label": "Value",
           "type": "value.core.uint64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "uint",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

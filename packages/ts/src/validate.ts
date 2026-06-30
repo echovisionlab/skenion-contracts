@@ -46,6 +46,7 @@ import type {
   NodeCatalogDiagnosticV01,
   NodeCatalogSnapshotV01,
   NodeDefinitionManifestV01,
+  ObjectProviderRefV01,
   ObjectSpecParseResultV01,
   PackageDiscoveryResponseV01,
   PackageInstallPlanRequestV01,
@@ -350,24 +351,34 @@ function validateNodeCatalogDiagnosticV01Semantics(
   return errors;
 }
 
+function providerKey(provider: ObjectProviderRefV01): string {
+  if (provider.kind === "core") {
+    return "core";
+  }
+  if (provider.kind === "projectPatch") {
+    return `projectPatch:${provider.patchId}`;
+  }
+  return `package:${provider.packageId}:${provider.lockEntryId ?? ""}`;
+}
+
 function validateNodeCatalogObjectSpecV01Semantics(
-  canonicalObjectSpec: string,
+  primaryObjectSpec: string,
   aliases: string[] | undefined,
   label: string,
   objectSpecOwners: Map<string, string>,
-  canonicalObjectSpecs: Set<string>
+  primaryObjectSpecs: Set<string>
 ): string[] {
   const errors: string[] = [];
-  if (canonicalObjectSpecs.has(canonicalObjectSpec)) {
-    errors.push(`duplicate canonicalObjectSpec: ${canonicalObjectSpec}`);
+  if (primaryObjectSpecs.has(primaryObjectSpec)) {
+    errors.push(`duplicate primaryObjectSpec: ${primaryObjectSpec}`);
   }
-  canonicalObjectSpecs.add(canonicalObjectSpec);
+  primaryObjectSpecs.add(primaryObjectSpec);
 
-  const existingCanonicalOwner = objectSpecOwners.get(canonicalObjectSpec);
+  const existingCanonicalOwner = objectSpecOwners.get(primaryObjectSpec);
   if (existingCanonicalOwner !== undefined) {
-    errors.push(`${label} canonicalObjectSpec collides with ${existingCanonicalOwner}: ${canonicalObjectSpec}`);
+    errors.push(`${label} primaryObjectSpec collides with ${existingCanonicalOwner}: ${primaryObjectSpec}`);
   } else {
-    objectSpecOwners.set(canonicalObjectSpec, `${label} canonicalObjectSpec`);
+    objectSpecOwners.set(primaryObjectSpec, `${label} primaryObjectSpec`);
   }
 
   if (aliases === undefined) {
@@ -417,7 +428,8 @@ function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV0
   ));
 
   const objectSpecOwners = new Map<string, string>();
-  const canonicalObjectSpecs = new Set<string>();
+  const primaryObjectSpecs = new Set<string>();
+  const implementationIds = new Set<string>();
 
   for (const entry of snapshot.entries) {
     const definitionResult = validateNodeDefinitionV01(entry.definition);
@@ -427,12 +439,18 @@ function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV0
       );
     }
 
+    const implementationId = `${providerKey(entry.provider)}:${entry.objectId}`;
+    if (implementationIds.has(implementationId)) {
+      errors.push(`duplicate catalog implementation: ${implementationId}`);
+    }
+    implementationIds.add(implementationId);
+
     errors.push(...validateNodeCatalogObjectSpecV01Semantics(
-      entry.canonicalObjectSpec,
+      entry.primaryObjectSpec,
       entry.aliases,
       `catalog entry ${entry.catalogId}`,
       objectSpecOwners,
-      canonicalObjectSpecs
+      primaryObjectSpecs
     ));
 
     for (const diagnostic of entry.diagnostics ?? []) {
@@ -444,10 +462,10 @@ function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV0
       ));
     }
 
-    if (entry.source.kind === "projectPatch") {
+    if (entry.provider.kind === "projectPatch" && entry.provider.interfaceDigest !== undefined) {
       const expectedDefinitionId = projectPatchNodeDefinitionIdV01(
-        entry.source.patchId,
-        entry.source.interfaceDigest
+        entry.provider.patchId,
+        entry.provider.interfaceDigest
       );
       if (entry.definition.id !== expectedDefinitionId) {
         errors.push(
@@ -701,8 +719,13 @@ function validatePackageInstallPlanRequestV01Semantics(
   }
 
   for (const binding of request.current.objectBindings) {
-    if (binding.target?.kind === "packageProvider" && !packageLockIds.has(binding.target.lockEntryId)) {
-      errors.push(`package install plan object binding ${binding.id} references missing lockEntryId: ${binding.target.lockEntryId}`);
+    const provider = binding.implementation?.provider;
+    if (provider?.kind === "package") {
+      if (provider.lockEntryId === undefined) {
+        errors.push(`package install plan object binding ${binding.id} package implementation requires lockEntryId`);
+      } else if (!packageLockIds.has(provider.lockEntryId)) {
+        errors.push(`package install plan object binding ${binding.id} references missing lockEntryId: ${provider.lockEntryId}`);
+      }
     }
   }
 
@@ -811,8 +834,9 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
   }
 
   for (const binding of project.objectBindings ?? []) {
-    if (binding.target?.kind === "projectPatch") {
-      const target = binding.target;
+    const implementation = binding.implementation;
+    if (implementation?.provider.kind === "projectPatch") {
+      const target = implementation.provider;
       const patch = patchById.get(target.patchId);
       if (!patch) {
         if (binding.status === "resolved") {
@@ -832,11 +856,15 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
       continue;
     }
 
-    if (binding.target?.kind !== "packageProvider") {
+    if (implementation?.provider.kind !== "package") {
       continue;
     }
 
-    const providerRef = binding.target;
+    const providerRef = implementation.provider;
+    if (providerRef.lockEntryId === undefined) {
+      errors.push(`object binding ${binding.id} package implementation requires lockEntryId`);
+      continue;
+    }
     const lockEntry = packageLockById.get(providerRef.lockEntryId);
     if (!lockEntry) {
       if (binding.status === "resolved") {
@@ -1443,6 +1471,30 @@ function isPayloadIdentityNodeKind(kind: string): boolean {
     kind.startsWith("control.");
 }
 
+function graphNodeResolutionDiagnostics(
+  node: { id: string; implementation?: { objectId: string }; objectResolution?: { status: string } }
+): GraphValidationDiagnosticV01[] {
+  const diagnostics: GraphValidationDiagnosticV01[] = [];
+  const objectId = node.implementation?.objectId;
+  if (objectId !== undefined && isPayloadIdentityNodeKind(objectId)) {
+    diagnostics.push({
+      severity: "error",
+      code: "payload-implementation-id",
+      message: `node ${node.id} uses payload identity ${objectId} as an executable implementation`,
+      nodes: [node.id]
+    });
+  }
+  if (node.objectResolution?.status === "resolved" && node.implementation === undefined) {
+    diagnostics.push({
+      severity: "error",
+      code: "resolved-object-missing-implementation",
+      message: `node ${node.id} has resolved objectResolution without implementation`,
+      nodes: [node.id]
+    });
+  }
+  return diagnostics;
+}
+
 type MessageKeyPolicyPortV01 = Pick<PortSpecV01, "direction" | "type" | "accepts" | "messageKeys">;
 
 function isKeyAwareInputPort(port: MessageKeyPolicyPortV01): boolean {
@@ -1500,9 +1552,11 @@ function messageKeyPolicyErrors(port: MessageKeyPolicyPortV01, label: string): s
 }
 
 function validateObjectSpecParseResultV01Semantics(result: ObjectSpecParseResultV01): string[] {
-  return result.instancePorts.flatMap((port) =>
+  const errors: string[] = [];
+  errors.push(...result.instancePorts.flatMap((port) =>
     messageKeyPolicyErrors(port, `objectSpec instancePort ${result.className}.${port.id}`)
-  );
+  ));
+  return errors;
 }
 
 function fragmentDiagnostic(
@@ -1537,13 +1591,13 @@ function analyzeFragmentSemantics(
       );
     }
     nodeIds.add(node.id);
-    if (isPayloadIdentityNodeKind(node.kind)) {
+    for (const resolutionDiagnostic of graphNodeResolutionDiagnostics(node)) {
       fragmentDiagnostic(
         diagnostics,
-        "error",
-        "payload-node-kind",
-        `node ${node.id} uses payload identity ${node.kind} as an executable kind`,
-        { nodes: [node.id] }
+        resolutionDiagnostic.severity,
+        resolutionDiagnostic.code,
+        resolutionDiagnostic.message,
+        { nodes: resolutionDiagnostic.nodes }
       );
     }
 
@@ -1869,15 +1923,7 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
       diagnostic(diagnostics, "error", "duplicate-node-id", `duplicate node id: ${node.id}`, { nodes: [node.id] });
     }
     nodeIds.add(node.id);
-    if (isPayloadIdentityNodeKind(node.kind)) {
-      diagnostic(
-        diagnostics,
-        "error",
-        "payload-node-kind",
-        `node ${node.id} uses payload identity ${node.kind} as an executable kind`,
-        { nodes: [node.id] }
-      );
-    }
+    diagnostics.push(...graphNodeResolutionDiagnostics(node));
 
     const portIds = new Set<string>();
     for (const port of node.ports) {
@@ -2546,20 +2592,20 @@ function validateProjectObjectBindingStatusInvariants(document: unknown): string
 
   const errors: string[] = [];
   const requiredDiagnosticByStatus = new Map([
-    ["missing", ["binding-target-missing"]],
-    ["stale", ["binding-target-stale", "binding-interface-drift"]],
-    ["unresolved", ["binding-unresolved"]],
-    ["ambiguous", ["binding-ambiguous"]]
+    ["missing", ["implementation-missing"]],
+    ["stale", ["implementation-stale", "interface-drift"]],
+    ["unresolved", ["resolution-unresolved"]],
+    ["ambiguous", ["resolution-ambiguous"]]
   ]);
 
   for (const binding of (document as { objectBindings: unknown[] }).objectBindings) {
     if (typeof binding !== "object" || binding === null) {
       continue;
     }
-    const record = binding as { id?: unknown; status?: unknown; target?: unknown; diagnostics?: unknown };
+    const record = binding as { id?: unknown; status?: unknown; implementation?: unknown; diagnostics?: unknown };
     const id = typeof record.id === "string" ? record.id : "<unknown>";
-    if (record.status === "resolved" && record.target === undefined) {
-      errors.push(`resolved object binding ${id} requires target`);
+    if (record.status === "resolved" && record.implementation === undefined) {
+      errors.push(`resolved object binding ${id} requires implementation`);
       continue;
     }
     if (typeof record.status !== "string" || !requiredDiagnosticByStatus.has(record.status)) {

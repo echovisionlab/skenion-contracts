@@ -353,6 +353,107 @@
       },
       "additionalProperties": false
     },
+    "objectProvider": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "core"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "patchId"],
+          "properties": {
+            "kind": {
+              "const": "projectPatch"
+            },
+            "patchId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "interfaceRevision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "interfaceDigest": {
+              "$ref": "#/$defs/checksum"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "packageId"],
+          "properties": {
+            "kind": {
+              "const": "package"
+            },
+            "packageId": {
+              "$ref": "#/$defs/packageId"
+            },
+            "lockEntryId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "$ref": "#/$defs/semver"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "objectImplementation": {
+      "type": "object",
+      "required": ["provider", "objectId"],
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/objectProvider"
+        },
+        "objectId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "interfaceDigest": {
+          "$ref": "#/$defs/checksum"
+        }
+      },
+      "additionalProperties": false
+    },
+    "objectResolutionCandidate": {
+      "type": "object",
+      "required": ["implementation"],
+      "properties": {
+        "implementation": {
+          "$ref": "#/$defs/objectImplementation"
+        },
+        "objectSpec": {
+          "type": "string",
+          "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
     "objectBinding": {
       "type": "object",
       "required": ["id", "objectSpec", "status"],
@@ -368,8 +469,14 @@
         "status": {
           "enum": ["resolved", "unresolved", "ambiguous", "stale", "missing"]
         },
-        "target": {
-          "$ref": "#/$defs/objectBindingTarget"
+        "implementation": {
+          "$ref": "#/$defs/objectImplementation"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/objectResolutionCandidate"
+          }
         },
         "diagnostics": {
           "type": "array",
@@ -390,7 +497,7 @@
             "required": ["status"]
           },
           "then": {
-            "required": ["target"]
+            "required": ["implementation"]
           }
         },
         {
@@ -403,7 +510,7 @@
             "required": ["status"]
           },
           "then": {
-            "required": ["target", "diagnostics"],
+            "required": ["implementation", "diagnostics"],
             "properties": {
               "diagnostics": {
                 "type": "array",
@@ -415,7 +522,7 @@
                   "type": "object",
                   "properties": {
                     "code": {
-                      "const": "binding-target-missing"
+                      "const": "implementation-missing"
                     }
                   },
                   "required": ["code"]
@@ -434,7 +541,7 @@
             "required": ["status"]
           },
           "then": {
-            "required": ["target", "diagnostics"],
+            "required": ["implementation", "diagnostics"],
             "properties": {
               "diagnostics": {
                 "type": "array",
@@ -446,7 +553,7 @@
                   "type": "object",
                   "properties": {
                     "code": {
-                      "enum": ["binding-target-stale", "binding-interface-drift"]
+                      "enum": ["implementation-stale", "interface-drift"]
                     }
                   },
                   "required": ["code"]
@@ -477,7 +584,7 @@
                   "type": "object",
                   "properties": {
                     "code": {
-                      "const": "binding-unresolved"
+                      "const": "resolution-unresolved"
                     }
                   },
                   "required": ["code"]
@@ -508,7 +615,7 @@
                   "type": "object",
                   "properties": {
                     "code": {
-                      "const": "binding-ambiguous"
+                      "const": "resolution-ambiguous"
                     }
                   },
                   "required": ["code"]
@@ -520,72 +627,6 @@
       ],
       "additionalProperties": false
     },
-    "objectBindingTarget": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/projectPatchBindingTarget"
-        },
-        {
-          "$ref": "#/$defs/packageProviderBindingTarget"
-        }
-      ]
-    },
-    "projectPatchBindingTarget": {
-      "type": "object",
-      "required": ["kind", "patchId"],
-      "properties": {
-        "kind": {
-          "const": "projectPatch"
-        },
-        "patchId": {
-          "type": "string",
-          "minLength": 1
-        },
-        "revision": {
-          "type": "string",
-          "minLength": 1
-        },
-        "interfaceRevision": {
-          "type": "string",
-          "minLength": 1
-        },
-        "interfaceDigest": {
-          "$ref": "#/$defs/checksum"
-        }
-      },
-      "additionalProperties": false
-    },
-    "packageProviderBindingTarget": {
-      "type": "object",
-      "required": ["kind", "lockEntryId", "packageId", "capabilityKind", "providedId"],
-      "properties": {
-        "kind": {
-          "const": "packageProvider"
-        },
-        "lockEntryId": {
-          "type": "string",
-          "minLength": 1
-        },
-        "packageId": {
-          "$ref": "#/$defs/packageId"
-        },
-        "capabilityKind": {
-          "enum": ["patch", "node", "resource", "native-object", "codec", "help"]
-        },
-        "providedId": {
-          "$ref": "#/$defs/providedId"
-        },
-        "alias": {
-          "type": "string",
-          "minLength": 1
-        },
-        "displayName": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false
-    },
     "objectBindingDiagnostic": {
       "type": "object",
       "required": ["severity", "code", "message"],
@@ -595,12 +636,12 @@
         },
         "code": {
           "enum": [
-            "binding-unresolved",
-            "binding-ambiguous",
-            "binding-target-missing",
-            "binding-target-stale",
-            "binding-lock-mismatch",
-            "binding-interface-drift"
+            "resolution-unresolved",
+            "resolution-ambiguous",
+            "implementation-missing",
+            "implementation-stale",
+            "implementation-lock-mismatch",
+            "interface-drift"
           ]
         },
         "message": {

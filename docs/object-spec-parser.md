@@ -12,12 +12,13 @@ For design intent, see the skenion Docs
 ## Parse Result
 
 A parser result records original input text, class name, creation arguments,
-the resolved implementation kind when a Runtime/package resolver supplies one,
-params, specialized instance ports, display text, and diagnostics.
+an optional resolved implementation reference when a Runtime/package resolver
+supplies one, optional resolution state, params, specialized instance ports,
+display text, and diagnostics.
 
 Contracts exports a pure lexical helper for this shape. The helper normalizes
 optional brackets, tokenizes the class name and creation arguments, and leaves
-`resolvedKind`, `resolvedKindVersion`, `params`, and `instancePorts` empty.
+`implementation`, `objectResolution`, `params`, and `instancePorts` empty.
 Concrete object availability, alias mapping, argument arity/type checks, and
 implementation-port specialization belong to Runtime/package registries.
 
@@ -27,9 +28,11 @@ approximate node.
 
 The v0 object-box target is that typed object boxes preserve `objectSpec` as the
 source of truth and carry resolution state separately. A resolved object spec
-may point at a Runtime/package implementation kind; an unresolved object spec
-remains the same editable object box with diagnostics. Resolution failure is not
-a separate user-facing node class.
+may point at a Runtime/package implementation reference. That reference is
+provider-scoped identity such as core, project patch, or package plus `objectId`
+and optional version/interface data. An unresolved object spec remains the same
+editable object box with diagnostics. Resolution failure is not a separate
+user-facing node class.
 
 ## Lexical Baseline
 
@@ -40,6 +43,6 @@ object availability or runtime semantics.
 
 Object spec is an authoring surface and the visible source for typed object
 boxes. Current v0 object boxes must use the active `0.1` graph shape and may
-carry resolution state that points at the Runtime implementation kind.
+carry resolution state that points at the Runtime implementation reference.
 Unsupported old import or migration-only object-box shapes are rejected with
 diagnostics by the validator or resolver that owns that surface.

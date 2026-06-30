@@ -11,8 +11,6 @@
       "representation": "i32"
     }
   ],
-  "resolvedKind": null,
-  "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
   "displayText": "phasor~ 1",

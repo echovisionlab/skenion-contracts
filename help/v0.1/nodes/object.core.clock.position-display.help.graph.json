@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "clock_1",
-      "kind": "object.core.clock.local",
-      "kindVersion": "0.1.0",
       "params": {
         "tempoBpm": 120,
         "running": true
@@ -19,12 +17,17 @@
           "label": "State",
           "type": "clock.state"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "clock.local",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "display_1",
-      "kind": "object.core.clock.position-display",
-      "kindVersion": "0.1.0",
       "params": {
         "fields": [
           "bar",
@@ -42,7 +45,14 @@
           "type": "clock.state",
           "required": false
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "clock.position-display",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

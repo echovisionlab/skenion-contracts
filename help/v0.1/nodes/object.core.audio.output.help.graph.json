@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "osc",
-      "kind": "object.core.audio.osc",
-      "kindVersion": "0.1.0",
       "params": {
         "frequency": 440
       },
@@ -23,12 +21,17 @@
           "type": "value.core.float32",
           "rate": "audio"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "audio.osc",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "output",
-      "kind": "object.core.audio.output",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -43,7 +46,14 @@
           "type": "value.core.float32",
           "rate": "audio"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "audio.output",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

@@ -12,12 +12,17 @@ render, and GPU domains, see the
 
 There are two related contracts:
 
-- `skenion.graph` describes node instances, ports, and edges in a saved patch.
-- `skenion.node.definition` describes a node kind that a runtime, plugin, or
-  script module can provide.
+- `skenion.graph` describes object instances, ports, and edges in a saved patch.
+- `skenion.node.definition` describes the static executable interface that a
+  runtime, plugin, or script module can provide.
 
-Graph documents reference node definitions by `kind` and `kindVersion`. They do
-not persist a scheduler plan, GPU pass order, script lifecycle, or permissions.
+Graph documents preserve the user-facing `objectSpec` separately from optional
+resolver output. A resolved graph node may carry an `implementation` reference:
+provider identity such as core, project patch, or package plus `objectId` and
+optional version/interface data. User-authored names do not need to be globally
+namespaced; provider-scoped implementation identity is the stable contract
+surface after resolution. Graph documents do not persist a scheduler plan, GPU
+pass order, script lifecycle, or permissions.
 
 ## Port Type Model
 
@@ -166,9 +171,10 @@ those nodes explicitly.
 
 ## Runtime Scheduling
 
-The runtime resolves `node.kind` and `kindVersion` through a node registry or
-manifest. That resolved node definition supplies execution model, clock
-affinity, state behavior, permissions, and failure policy.
+The runtime resolves a node's `objectSpec` and optional `bindingRef` through the
+active core, project, and package registries. The selected implementation's node
+definition supplies execution model, clock affinity, state behavior,
+permissions, and failure policy.
 
 The graph document itself remains a typed wiring document. It should not store:
 

@@ -5,8 +5,6 @@
   "ok": true,
   "className": "sqrt~",
   "creationArgs": [],
-  "resolvedKind": null,
-  "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
   "displayText": "sqrt~",

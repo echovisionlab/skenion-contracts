@@ -11,8 +11,6 @@
       "representation": "f32"
     }
   ],
-  "resolvedKind": null,
-  "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
   "displayText": "+ 1.",

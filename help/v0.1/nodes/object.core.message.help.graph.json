@@ -6,16 +6,20 @@
   "nodes": [
     {
       "id": "note_1",
-      "kind": "object.core.comment",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "Message emits its saved text when clicked, banged, or triggered. set updates the runtime message silently."
       },
-      "ports": []
+      "ports": [],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "comment",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "bang_1",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -79,12 +83,16 @@
           "type": "value.core.bang"
         }
       ],
-      "kind": "object.core.bang"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "bang",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "message_1",
-      "kind": "object.core.message",
-      "kindVersion": "0.1.0",
       "params": {
         "value": "render now"
       },
@@ -156,7 +164,14 @@
           "label": "Message",
           "type": "value.core.message"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "message",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

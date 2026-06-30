@@ -62,14 +62,13 @@
         "id": "binding-sensor-reading",
         "objectSpec": "sensor-reading",
         "status": "resolved",
-        "target": {
-          "kind": "packageProvider",
-          "lockEntryId": "pkg-example-native-sensor-0.45.0",
-          "packageId": "example/native-sensor",
-          "capabilityKind": "node",
-          "providedId": "example.sensor-reading",
-          "alias": "sensor-reading",
-          "displayName": "Sensor Reading"
+        "implementation": {
+          "provider": {
+            "kind": "package",
+            "packageId": "example/native-sensor",
+            "lockEntryId": "pkg-example-native-sensor-0.45.0"
+          },
+          "objectId": "example.sensor-reading"
         }
       }
     ]

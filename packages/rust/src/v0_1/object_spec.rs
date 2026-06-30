@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use thiserror::Error;
 
-use super::types::MessageKeyPolicyV01;
+use super::types::{
+    MessageKeyPolicyV01, ObjectImplementationRefV01, ObjectResolutionStatusV01, ObjectResolutionV01,
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type")]
@@ -109,8 +111,10 @@ pub struct ObjectSpecParseResultV01 {
     pub ok: bool,
     pub class_name: String,
     pub creation_args: Vec<ObjectSpecAtomV01>,
-    pub resolved_kind: Option<String>,
-    pub resolved_kind_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub implementation: Option<ObjectImplementationRefV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub object_resolution: Option<ObjectResolutionV01>,
     pub params: Map<String, Value>,
     pub instance_ports: Vec<ObjectSpecPortV01>,
     pub display_text: String,
@@ -220,16 +224,22 @@ fn object_spec_message_key_policy_errors(port: &ObjectSpecPortV01, label: &str) 
 }
 
 fn object_spec_parse_result_semantic_errors(result: &ObjectSpecParseResultV01) -> Vec<String> {
-    result
-        .instance_ports
-        .iter()
-        .flat_map(|port| {
-            object_spec_message_key_policy_errors(
-                port,
-                &format!("objectSpec instancePort {}.{}", result.class_name, port.id),
-            )
-        })
-        .collect()
+    let mut errors = Vec::new();
+    if result
+        .object_resolution
+        .as_ref()
+        .is_some_and(|resolution| resolution.status == ObjectResolutionStatusV01::Resolved)
+        && result.implementation.is_none()
+    {
+        errors.push("resolved object spec parse result requires implementation".to_owned());
+    }
+    errors.extend(result.instance_ports.iter().flat_map(|port| {
+        object_spec_message_key_policy_errors(
+            port,
+            &format!("objectSpec instancePort {}.{}", result.class_name, port.id),
+        )
+    }));
+    errors
 }
 
 fn diagnostic(code: &str, message: impl Into<String>) -> ObjectSpecDiagnosticV01 {
@@ -253,8 +263,8 @@ fn success(
         ok: true,
         class_name: class_name.to_owned(),
         creation_args,
-        resolved_kind: None,
-        resolved_kind_version: None,
+        implementation: None,
+        object_resolution: None,
         params: Map::new(),
         instance_ports: Vec::new(),
         display_text: display_text.to_owned(),
@@ -277,8 +287,8 @@ fn failure(
         ok: false,
         class_name: class_name.to_owned(),
         creation_args,
-        resolved_kind: None,
-        resolved_kind_version: None,
+        implementation: None,
+        object_resolution: None,
         params: Map::new(),
         instance_ports: Vec::new(),
         display_text: display_text.to_owned(),
@@ -399,8 +409,8 @@ mod tests {
                 representation: Some("i32".to_owned())
             }]
         );
-        assert_eq!(raw.resolved_kind, None);
-        assert_eq!(raw.resolved_kind_version, None);
+        assert_eq!(raw.implementation, None);
+        assert_eq!(raw.object_resolution, None);
         assert!(raw.params.is_empty());
         assert!(raw.instance_ports.is_empty());
 
@@ -415,7 +425,7 @@ mod tests {
                 representation: Some("f32".to_owned())
             }]
         );
-        assert_eq!(bracketed.resolved_kind, None);
+        assert_eq!(bracketed.implementation, None);
     }
 
     #[test]
@@ -434,7 +444,7 @@ mod tests {
                 result.diagnostics.is_empty(),
                 "{input} should not resolve in Contracts"
             );
-            assert_eq!(result.resolved_kind, None);
+            assert_eq!(result.implementation, None);
         }
     }
 

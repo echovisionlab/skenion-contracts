@@ -8,9 +8,13 @@
   "entries": [
     {
       "catalogId": "core.float",
-      "canonicalObjectSpec": "float",
-      "aliases": ["float64", "number"],
-      "source": {
+      "objectId": "float",
+      "primaryObjectSpec": "float",
+      "aliases": [
+        "float64",
+        "number"
+      ],
+      "provider": {
         "kind": "core"
       },
       "definition": {
@@ -52,9 +56,12 @@
     },
     {
       "catalogId": "core.message",
-      "canonicalObjectSpec": "message",
-      "aliases": ["msg"],
-      "source": {
+      "objectId": "message",
+      "primaryObjectSpec": "message",
+      "aliases": [
+        "msg"
+      ],
+      "provider": {
         "kind": "core"
       },
       "definition": {

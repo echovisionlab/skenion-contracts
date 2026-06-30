@@ -6,7 +6,6 @@
   "nodes": [
     {
       "id": "button_a",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -16,11 +15,16 @@
           "rate": "event"
         }
       ],
-      "kind": "object.core.bang"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "bang",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "button_b",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -30,11 +34,16 @@
           "rate": "event"
         }
       ],
-      "kind": "object.core.bang"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "bang",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "event_log",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -47,7 +56,13 @@
           "triggerMode": "trigger"
         }
       ],
-      "kind": "object.core.message"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "message",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

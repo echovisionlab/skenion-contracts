@@ -12,19 +12,19 @@ use super::types::{
     GraphValidationDiagnosticV01, GraphValidationResultV01, MergePolicyV01,
     NodeCatalogDiagnosticNodeDefinitionReasonV01, NodeCatalogDiagnosticSeverityV01,
     NodeCatalogDiagnosticTargetV01, NodeCatalogDiagnosticV01, NodeCatalogDisplayPaletteV01,
-    NodeCatalogDisplayV01, NodeCatalogSnapshotV01, NodeCatalogSourceV01, NodeDefinitionManifestV01,
-    PackageCategoryV01, PackageDiagnosticSeverityV01, PackageDiscoveryResponseV01,
-    PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01, PackageInstallPlanIntentV01,
-    PackageInstallPlanRequestV01, PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01,
-    PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01, PackageListingArtifactKindV01,
-    PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
-    PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest, PatchDefinitionV01,
-    PatchPath, PortDirectionV01, PortSpecV01, ProjectDocumentV01,
+    NodeCatalogDisplayV01, NodeCatalogEntryV01, NodeCatalogSnapshotV01, NodeDefinitionManifestV01,
+    ObjectProviderRefV01, PackageCategoryV01, PackageChecksumV01, PackageDiagnosticSeverityV01,
+    PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
+    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
+    PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01,
+    PackageListingArtifactKindV01, PackageListingTargetSupportKindV01, PackageListingV01,
+    PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
+    PatchDefinitionV01, PatchPath, PortDirectionV01, PortSpecV01, ProjectDocumentV01,
     ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
-    ProjectObjectBindingTargetV01, RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01,
-    SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01, ValueOccurrenceHeaderV01,
-    ValuePayloadKindV01, ViewStateV01, compute_node_catalog_revision_v01,
-    derive_patch_contract_v01, project_patch_node_definition_id_v01,
+    RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01, SKENION_PACKAGE_MANIFEST_FILE_NAME,
+    ValueFormatV01, ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01,
+    compute_node_catalog_revision_v01, derive_patch_contract_v01,
+    project_patch_node_definition_id_v01,
 };
 use super::version::{
     derive_v0_compatibility_line, derive_v0_compatibility_range, satisfies_v0_compatibility_range,
@@ -906,14 +906,35 @@ pub fn analyze_graph_fragment_v01(
                 None,
             );
         }
-        if is_payload_identity_node_kind(&node.kind) {
+        if let Some(object_id) = node
+            .implementation
+            .as_ref()
+            .map(|implementation| &implementation.object_id)
+            && is_payload_identity_node_kind(object_id)
+        {
             fragment_diagnostic(
                 &mut diagnostics,
                 "error",
-                "payload-node-kind",
+                "payload-implementation-id",
                 format!(
-                    "node {} uses payload identity {} as an executable kind",
-                    node.id, node.kind
+                    "node {} uses payload identity {} as an executable implementation",
+                    node.id, object_id
+                ),
+                Some(vec![node.id.clone()]),
+                None,
+            );
+        }
+        if node.object_resolution.as_ref().is_some_and(|resolution| {
+            resolution.status == super::types::ObjectResolutionStatusV01::Resolved
+        }) && node.implementation.is_none()
+        {
+            fragment_diagnostic(
+                &mut diagnostics,
+                "error",
+                "resolved-object-missing-implementation",
+                format!(
+                    "node {} has resolved objectResolution without implementation",
+                    node.id
                 ),
                 Some(vec![node.id.clone()]),
                 None,
@@ -1293,14 +1314,35 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 None,
             );
         }
-        if is_payload_identity_node_kind(&node.kind) {
+        if let Some(object_id) = node
+            .implementation
+            .as_ref()
+            .map(|implementation| &implementation.object_id)
+            && is_payload_identity_node_kind(object_id)
+        {
             diagnostic(
                 &mut diagnostics,
                 "error",
-                "payload-node-kind",
+                "payload-implementation-id",
                 format!(
-                    "node {} uses payload identity {} as an executable kind",
-                    node.id, node.kind
+                    "node {} uses payload identity {} as an executable implementation",
+                    node.id, object_id
+                ),
+                Some(vec![node.id.clone()]),
+                None,
+            );
+        }
+        if node.object_resolution.as_ref().is_some_and(|resolution| {
+            resolution.status == super::types::ObjectResolutionStatusV01::Resolved
+        }) && node.implementation.is_none()
+        {
+            diagnostic(
+                &mut diagnostics,
+                "error",
+                "resolved-object-missing-implementation",
+                format!(
+                    "node {} has resolved objectResolution without implementation",
+                    node.id
                 ),
                 Some(vec![node.id.clone()]),
                 None,
@@ -2055,31 +2097,31 @@ fn validate_node_catalog_display_schema_v01(
 
 fn validate_node_catalog_display_v01(
     errors: &mut Vec<ValidationErrorV01>,
-    canonical_object_spec: &str,
+    primary_object_spec: &str,
     aliases: Option<&[String]>,
     label: &str,
     object_spec_owners: &mut HashMap<String, String>,
-    canonical_object_specs: &mut HashSet<String>,
+    primary_object_specs: &mut HashSet<String>,
 ) {
     push_non_empty_string_error(
         errors,
-        &format!("{label}.canonicalObjectSpec"),
-        canonical_object_spec,
+        &format!("{label}.primaryObjectSpec"),
+        primary_object_spec,
     );
-    if !canonical_object_specs.insert(canonical_object_spec.to_owned()) {
+    if !primary_object_specs.insert(primary_object_spec.to_owned()) {
         errors.push(ValidationErrorV01::new(format!(
-            "duplicate canonicalObjectSpec: {canonical_object_spec}"
+            "duplicate primaryObjectSpec: {primary_object_spec}"
         )));
     }
 
-    if let Some(owner) = object_spec_owners.get(canonical_object_spec) {
+    if let Some(owner) = object_spec_owners.get(primary_object_spec) {
         errors.push(ValidationErrorV01::new(format!(
-            "{label} canonicalObjectSpec collides with {owner}: {canonical_object_spec}"
+            "{label} primaryObjectSpec collides with {owner}: {primary_object_spec}"
         )));
     } else {
         object_spec_owners.insert(
-            canonical_object_spec.to_owned(),
-            format!("{label} canonicalObjectSpec"),
+            primary_object_spec.to_owned(),
+            format!("{label} primaryObjectSpec"),
         );
     }
 
@@ -2102,6 +2144,39 @@ fn validate_node_catalog_display_v01(
             object_spec_owners.insert(alias.to_owned(), format!("{label} alias"));
         }
     }
+}
+
+fn object_provider_key(provider: &ObjectProviderRefV01) -> String {
+    match provider {
+        ObjectProviderRefV01::Core => "core".to_owned(),
+        ObjectProviderRefV01::ProjectPatch { patch_id, .. } => format!("projectPatch:{patch_id}"),
+        ObjectProviderRefV01::Package {
+            package_id,
+            lock_entry_id,
+            ..
+        } => format!(
+            "package:{package_id}:{}",
+            lock_entry_id.as_deref().unwrap_or_default()
+        ),
+    }
+}
+
+fn validate_project_patch_catalog_provider_v01(
+    errors: &mut Vec<ValidationErrorV01>,
+    entry: &NodeCatalogEntryV01,
+    patch_id: &str,
+    interface_digest: &PackageChecksumV01,
+) {
+    validate_package_checksum_v01(errors, "provider.interfaceDigest", interface_digest);
+    let expected_definition_id = project_patch_node_definition_id_v01(patch_id, interface_digest);
+    if entry.definition.id == expected_definition_id {
+        return;
+    }
+
+    errors.push(ValidationErrorV01::new(format!(
+        "projectPatch catalog entry {} definition.id must be {}",
+        entry.catalog_id, expected_definition_id
+    )));
 }
 
 pub fn validate_node_catalog_snapshot_v01(
@@ -2206,7 +2281,8 @@ pub fn validate_node_catalog_snapshot_v01(
     }
 
     let mut object_spec_owners = HashMap::new();
-    let mut canonical_object_specs = HashSet::new();
+    let mut primary_object_specs = HashSet::new();
+    let mut implementation_ids = HashSet::new();
 
     for entry in &snapshot.entries {
         push_non_empty_string_error(
@@ -2214,13 +2290,28 @@ pub fn validate_node_catalog_snapshot_v01(
             &format!("catalog entry {} catalogId", entry.catalog_id),
             &entry.catalog_id,
         );
+        push_non_empty_string_error(
+            &mut errors,
+            &format!("catalog entry {} objectId", entry.catalog_id),
+            &entry.object_id,
+        );
+        let implementation_id = format!(
+            "{}:{}",
+            object_provider_key(&entry.provider),
+            entry.object_id
+        );
+        if !implementation_ids.insert(implementation_id.clone()) {
+            errors.push(ValidationErrorV01::new(format!(
+                "duplicate catalog implementation: {implementation_id}"
+            )));
+        }
         validate_node_catalog_display_v01(
             &mut errors,
-            &entry.canonical_object_spec,
+            &entry.primary_object_spec,
             entry.aliases.as_deref(),
             &format!("catalog entry {}", entry.catalog_id),
             &mut object_spec_owners,
-            &mut canonical_object_specs,
+            &mut primary_object_specs,
         );
         validate_node_catalog_display_schema_v01(
             &mut errors,
@@ -2235,32 +2326,30 @@ pub fn validate_node_catalog_snapshot_v01(
             )));
         }
 
-        match &entry.source {
-            NodeCatalogSourceV01::Core => {}
-            NodeCatalogSourceV01::ProjectPatch {
+        match &entry.provider {
+            ObjectProviderRefV01::Core => {}
+            ObjectProviderRefV01::ProjectPatch {
                 patch_id,
-                patch_revision,
+                revision,
                 interface_digest,
+                ..
             } => {
+                push_non_empty_string_error(&mut errors, "provider.patchId", patch_id);
                 push_optional_non_empty_string_error(
                     &mut errors,
-                    "source.patchRevision",
-                    patch_revision.as_deref(),
+                    "provider.revision",
+                    revision.as_deref(),
                 );
-                validate_package_checksum_v01(
-                    &mut errors,
-                    "source.interfaceDigest",
-                    interface_digest,
-                );
-                let expected_definition_id =
-                    project_patch_node_definition_id_v01(patch_id, interface_digest);
-                if entry.definition.id != expected_definition_id {
-                    errors.push(ValidationErrorV01::new(format!(
-                        "projectPatch catalog entry {} definition.id must be {}",
-                        entry.catalog_id, expected_definition_id
-                    )));
+                if let Some(interface_digest) = interface_digest {
+                    validate_project_patch_catalog_provider_v01(
+                        &mut errors,
+                        entry,
+                        patch_id,
+                        interface_digest,
+                    );
                 }
             }
+            ObjectProviderRefV01::Package { .. } => {}
         }
 
         for diagnostic in entry.diagnostics.as_deref().unwrap_or_default() {
@@ -3498,14 +3587,27 @@ pub fn validate_package_install_plan_request_v01(
         errors.extend(package_install_plan_lock_entry_errors(rollback_candidate));
     }
     for binding in &request.current.object_bindings {
-        if let Some(ProjectObjectBindingTargetV01::PackageProvider { lock_entry_id, .. }) =
-            &binding.target
-            && !package_lock_ids.contains(lock_entry_id.as_str())
-        {
-            errors.push(ValidationErrorV01::new(format!(
-                "package install plan object binding {} references missing lockEntryId: {}",
-                binding.id, lock_entry_id
-            )));
+        let Some(ObjectProviderRefV01::Package { lock_entry_id, .. }) = binding
+            .implementation
+            .as_ref()
+            .map(|implementation| &implementation.provider)
+        else {
+            continue;
+        };
+        match lock_entry_id {
+            Some(lock_entry_id) if !package_lock_ids.contains(lock_entry_id.as_str()) => {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan object binding {} references missing lockEntryId: {}",
+                    binding.id, lock_entry_id
+                )));
+            }
+            None => {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan object binding {} package implementation requires lockEntryId",
+                    binding.id
+                )));
+            }
+            _ => {}
         }
     }
 
@@ -3995,25 +4097,27 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                 .any(|diagnostic| codes.contains(&diagnostic.code))
         };
 
-        if binding.status == ProjectObjectBindingStatusV01::Resolved && binding.target.is_none() {
+        if binding.status == ProjectObjectBindingStatusV01::Resolved
+            && binding.implementation.is_none()
+        {
             errors.push(ValidationErrorV01::new(format!(
-                "resolved object binding {} requires target",
+                "resolved object binding {} requires implementation",
                 binding.id
             )));
             continue;
         }
         if binding.status == ProjectObjectBindingStatusV01::Missing
-            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::BindingTargetMissing])
+            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::ImplementationMissing])
         {
             errors.push(ValidationErrorV01::new(format!(
-                "missing object binding {} requires binding-target-missing diagnostic",
+                "missing object binding {} requires implementation-missing diagnostic",
                 binding.id
             )));
         }
         if binding.status == ProjectObjectBindingStatusV01::Stale
             && !has_diagnostic(&[
-                ProjectObjectBindingDiagnosticCodeV01::BindingTargetStale,
-                ProjectObjectBindingDiagnosticCodeV01::BindingInterfaceDrift,
+                ProjectObjectBindingDiagnosticCodeV01::ImplementationStale,
+                ProjectObjectBindingDiagnosticCodeV01::InterfaceDrift,
             ])
         {
             errors.push(ValidationErrorV01::new(format!(
@@ -4022,24 +4126,28 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
             )));
         }
         if binding.status == ProjectObjectBindingStatusV01::Unresolved
-            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::BindingUnresolved])
+            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::ResolutionUnresolved])
         {
             errors.push(ValidationErrorV01::new(format!(
-                "unresolved object binding {} requires binding-unresolved diagnostic",
+                "unresolved object binding {} requires resolution-unresolved diagnostic",
                 binding.id
             )));
         }
         if binding.status == ProjectObjectBindingStatusV01::Ambiguous
-            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::BindingAmbiguous])
+            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::ResolutionAmbiguous])
         {
             errors.push(ValidationErrorV01::new(format!(
-                "ambiguous object binding {} requires binding-ambiguous diagnostic",
+                "ambiguous object binding {} requires resolution-ambiguous diagnostic",
                 binding.id
             )));
         }
 
-        match &binding.target {
-            Some(ProjectObjectBindingTargetV01::ProjectPatch {
+        match binding
+            .implementation
+            .as_ref()
+            .map(|implementation| &implementation.provider)
+        {
+            Some(ObjectProviderRefV01::ProjectPatch {
                 patch_id, revision, ..
             }) => {
                 let Some(patch) = patch_by_id.get(patch_id.as_str()) else {
@@ -4069,8 +4177,8 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                         )));
                     } else if binding.status != ProjectObjectBindingStatusV01::Stale
                         || !has_diagnostic(&[
-                            ProjectObjectBindingDiagnosticCodeV01::BindingTargetStale,
-                            ProjectObjectBindingDiagnosticCodeV01::BindingInterfaceDrift,
+                            ProjectObjectBindingDiagnosticCodeV01::ImplementationStale,
+                            ProjectObjectBindingDiagnosticCodeV01::InterfaceDrift,
                         ])
                     {
                         errors.push(ValidationErrorV01::new(format!(
@@ -4080,10 +4188,9 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                     }
                 }
             }
-            Some(ProjectObjectBindingTargetV01::PackageProvider {
+            Some(ObjectProviderRefV01::Package {
                 lock_entry_id,
                 package_id,
-                provided_id,
                 ..
             }) => {
                 if !is_package_id_v01(package_id) {
@@ -4092,12 +4199,13 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                         binding.id, package_id
                     )));
                 }
-                if !is_provided_id_v01(provided_id) {
+                let Some(lock_entry_id) = lock_entry_id else {
                     errors.push(ValidationErrorV01::new(format!(
-                        "object binding {} providedId must use lowercase dotted/hyphen grammar without underscores: {}",
-                        binding.id, provided_id
+                        "object binding {} package implementation requires lockEntryId",
+                        binding.id
                     )));
-                }
+                    continue;
+                };
                 let Some(lock_entry) = package_lock_by_id.get(lock_entry_id.as_str()) else {
                     if binding.status == ProjectObjectBindingStatusV01::Resolved {
                         errors.push(ValidationErrorV01::new(format!(
@@ -4121,6 +4229,7 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                     )));
                 }
             }
+            Some(ObjectProviderRefV01::Core) => {}
             None => {}
         }
     }
@@ -4132,9 +4241,29 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
 mod tests {
     use super::*;
     use crate::v0_1::{
-        EdgeEndpointV01, FeedbackPolicyV01, GraphFragmentV01, GraphNodeV01, StringOrStringsV01,
+        EdgeEndpointV01, FeedbackPolicyV01, GraphFragmentV01, GraphNodeV01,
+        ObjectImplementationRefV01, ObjectProviderRefV01, ObjectResolutionStatusV01,
+        ObjectResolutionV01, StringOrStringsV01,
     };
     use serde_json::json;
+
+    fn core_implementation(object_id: &str) -> ObjectImplementationRefV01 {
+        ObjectImplementationRefV01 {
+            provider: ObjectProviderRefV01::Core,
+            object_id: object_id.to_owned(),
+            version: Some("0.1.0".to_owned()),
+            interface_digest: None,
+        }
+    }
+
+    fn resolved_object_resolution() -> ObjectResolutionV01 {
+        ObjectResolutionV01 {
+            status: ObjectResolutionStatusV01::Resolved,
+            selected_spec: Some("float".to_owned()),
+            candidates: Vec::new(),
+            diagnostics: Vec::new(),
+        }
+    }
 
     fn graph(json: &str) -> GraphDocumentV01 {
         serde_json::from_str(json).expect("graph should parse")
@@ -4171,8 +4300,7 @@ mod tests {
               "nodes": [
                 {
                   "id": "source",
-                  "kind": "object.core.float",
-                  "kindVersion": "0.1.0",
+                  "implementation": { "provider": { "kind": "core" }, "objectId": "float", "version": "0.1.0" },
                   "params": {},
                   "ports": [
                     { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -4180,8 +4308,7 @@ mod tests {
                 },
                 {
                   "id": "target",
-                  "kind": "object.core.float",
-                  "kindVersion": "0.1.0",
+                  "implementation": { "provider": { "kind": "core" }, "objectId": "float", "version": "0.1.0" },
                   "params": {},
                   "ports": [
                     { "id": "in", "direction": "input", "type": "value.core.float64" }
@@ -4389,6 +4516,19 @@ mod tests {
         let serialized = serde_json::to_string(&graph).expect("graph should serialize");
         assert!(!serialized.contains("null"));
 
+        let mut resolved_without_implementation = graph.clone();
+        resolved_without_implementation.nodes[0].implementation = None;
+        resolved_without_implementation.nodes[0].object_resolution =
+            Some(resolved_object_resolution());
+        let resolved_without_implementation_report =
+            validate_graph_document_v01(&resolved_without_implementation)
+                .expect_err("resolved graph node without implementation should fail");
+        assert!(
+            resolved_without_implementation_report
+                .to_string()
+                .contains("resolved-object-missing-implementation")
+        );
+
         let mut invalid_default_port = graph;
         invalid_default_port.nodes[0].port_groups.as_mut().unwrap()[0].port_type =
             "number.float".to_owned();
@@ -4453,12 +4593,24 @@ mod tests {
         );
 
         let mut payload_identity_node = fragment.clone();
-        payload_identity_node.nodes[0].kind = "value.core.float32".to_owned();
+        payload_identity_node.nodes[0].implementation =
+            Some(core_implementation("value.core.float32"));
         assert!(
             validate_graph_fragment_v01(&payload_identity_node)
                 .expect_err("payload identity node should fail")
                 .to_string()
-                .contains("payload-node-kind")
+                .contains("payload-implementation-id")
+        );
+
+        let mut resolved_without_implementation = fragment.clone();
+        resolved_without_implementation.nodes[0].implementation = None;
+        resolved_without_implementation.nodes[0].object_resolution =
+            Some(resolved_object_resolution());
+        assert!(
+            validate_graph_fragment_v01(&resolved_without_implementation)
+                .expect_err("resolved fragment node without implementation should fail")
+                .to_string()
+                .contains("resolved-object-missing-implementation")
         );
 
         let mut invalid_fragment_contracts = fragment.clone();
@@ -4690,8 +4842,7 @@ mod tests {
               "nodes": [
                 {
                   "id": "loop",
-                  "kind": "core.loop",
-                  "kindVersion": "0.1.0",
+                  "implementation": { "provider": { "kind": "core" }, "objectId": "loop", "version": "0.1.0" },
                   "params": {},
                   "ports": [
                     { "id": "in", "direction": "input", "type": "value.core.float64" },
@@ -4730,8 +4881,7 @@ mod tests {
                 "nodes": [
                   {
                     "id": "a",
-                    "kind": "core.a",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "a", "version": "0.1.0" },
                     "params": {},
                     "ports": [
                       { "id": "in", "direction": "input", "type": "value.core.float64" },
@@ -4740,8 +4890,7 @@ mod tests {
                   },
                   {
                     "id": "b",
-                    "kind": "core.b",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "b", "version": "0.1.0" },
                     "params": {},
                     "ports": [
                       { "id": "in", "direction": "input", "type": "value.core.float64" },
@@ -4785,8 +4934,7 @@ mod tests {
                     "nodes": [
                       {
                         "id": "left_in",
-                        "kind": "object.core.inlet",
-                        "kindVersion": "0.1.0",
+                        "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                         "params": {},
                         "ports": [
                           { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -4794,8 +4942,7 @@ mod tests {
                       },
                       {
                         "id": "right_out",
-                        "kind": "object.core.outlet",
-                        "kindVersion": "0.1.0",
+                        "implementation": { "provider": { "kind": "core" }, "objectId": "outlet", "version": "0.1.0" },
                         "params": {},
                         "ports": [
                           { "id": "in", "direction": "input", "type": "value.core.float64" }
@@ -4844,8 +4991,7 @@ mod tests {
                     "nodes": [
                       {
                         "id": "inlet_a",
-                        "kind": "object.core.inlet",
-                        "kindVersion": "0.1.0",
+                        "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                         "params": { "portId": "same" },
                         "ports": [
                           { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -4853,8 +4999,7 @@ mod tests {
                       },
                       {
                         "id": "inlet_b",
-                        "kind": "object.core.inlet",
-                        "kindVersion": "0.1.0",
+                        "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                         "params": { "portId": "same" },
                         "ports": [
                           { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -5021,9 +5166,9 @@ mod tests {
 
         graph.nodes.push(GraphNodeV01 {
             id: "source_two".to_owned(),
-            kind: "object.core.float".to_owned(),
-            kind_version: "0.1.0".to_owned(),
+            implementation: Some(core_implementation("float")),
             object_spec: None,
+            object_resolution: None,
             binding_ref: None,
             params: serde_json::Map::new(),
             ports: vec![PortSpecV01 {
@@ -5111,8 +5256,7 @@ mod tests {
               "nodes": [
                 {
                   "id": "button",
-                  "kind": "object.core.bang",
-                  "kindVersion": "0.1.0",
+                  "implementation": { "provider": { "kind": "core" }, "objectId": "bang", "version": "0.1.0" },
                   "params": {},
                   "ports": [
                     { "id": "out", "direction": "output", "type": "value.core.bang", "rate": "event" }
@@ -5120,8 +5264,7 @@ mod tests {
                 },
                 {
                   "id": "int_source",
-                  "kind": "object.core.int",
-                  "kindVersion": "0.1.0",
+                  "implementation": { "provider": { "kind": "core" }, "objectId": "int", "version": "0.1.0" },
                   "params": {},
                   "ports": [
                     { "id": "value", "direction": "output", "type": "value.core.int64", "rate": "control" }
@@ -5129,8 +5272,7 @@ mod tests {
                 },
                 {
                   "id": "bool_source",
-                  "kind": "test.bool-emitter",
-                  "kindVersion": "0.1.0",
+                  "implementation": { "provider": { "kind": "core" }, "objectId": "test.bool-emitter", "version": "0.1.0" },
                   "params": {},
                   "ports": [
                     { "id": "value", "direction": "output", "type": "value.core.bool", "rate": "control" }
@@ -5138,8 +5280,7 @@ mod tests {
                 },
                 {
                   "id": "number_box",
-                  "kind": "object.core.float",
-                  "kindVersion": "0.1.0",
+                  "implementation": { "provider": { "kind": "core" }, "objectId": "float", "version": "0.1.0" },
                   "params": {},
                   "ports": [
                     {
@@ -5369,10 +5510,10 @@ mod tests {
 
         for payload_identity in ["bool", "string"] {
             let mut graph = base_graph();
-            graph.nodes[0].kind = payload_identity.to_owned();
+            graph.nodes[0].implementation = Some(core_implementation(payload_identity));
             let report = validate_graph_document_v01(&graph).expect_err("payload kind should fail");
             assert!(
-                report.to_string().contains("payload-node-kind"),
+                report.to_string().contains("payload-implementation-id"),
                 "{payload_identity}"
             );
 
@@ -5612,9 +5753,9 @@ mod tests {
         graph.schema_version = "9.9.9".to_owned();
         graph.nodes.push(GraphNodeV01 {
             id: "grouped".to_owned(),
-            kind: "core.grouped".to_owned(),
-            kind_version: "0.1.0".to_owned(),
+            implementation: Some(core_implementation("grouped")),
             object_spec: None,
+            object_resolution: None,
             binding_ref: None,
             params: serde_json::Map::new(),
             ports: Vec::new(),

@@ -87,6 +87,10 @@ import {
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
 
+function coreImplementation(objectId, version = "0.1.0") {
+  return { provider: { kind: "core" }, objectId, version };
+}
+
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(repoRoot, relativePath), "utf8"));
 }
@@ -244,9 +248,10 @@ function validCoreCatalogSnapshot() {
     entries: [
       {
         catalogId: "core.float",
-        canonicalObjectSpec: "float",
+        objectId: "float",
+        primaryObjectSpec: "float",
         aliases: ["float64", "number"],
-        source: { kind: "core" },
+        provider: { kind: "core" },
         definition: minimalNodeDefinition("object.core.float", "Float"),
         creatable: true,
         display: {
@@ -267,9 +272,10 @@ function validCoreCatalogSnapshot() {
       },
       {
         catalogId: "core.message",
-        canonicalObjectSpec: "message",
+        objectId: "message",
+        primaryObjectSpec: "message",
         aliases: ["msg"],
-        source: { kind: "core" },
+        provider: { kind: "core" },
         definition: minimalNodeDefinition("object.core.message", "Message"),
         creatable: true,
         display: {
@@ -309,8 +315,7 @@ function validProjectPatch() {
       nodes: [
         {
           id: "value_in",
-          kind: "object.core.inlet",
-          kindVersion: "0.1.0",
+          implementation: coreImplementation("inlet"),
           params: { portId: "value", label: "Value" },
           ports: [
             { id: "out", direction: "output", type: "value.core.float64", rate: "control" }
@@ -318,8 +323,7 @@ function validProjectPatch() {
         },
         {
           id: "value_out",
-          kind: "object.core.outlet",
-          kindVersion: "0.1.0",
+          implementation: coreImplementation("outlet"),
           params: { portId: "result", label: "Result" },
           ports: [
             { id: "in", direction: "input", type: "value.core.float64", rate: "control" }
@@ -343,10 +347,12 @@ function validProjectPatchCatalogSnapshot() {
     entries: [
       {
         catalogId: "project.folder-my-patch",
-        source: {
+        objectId: patch.id,
+        primaryObjectSpec: "Folder/My Patch?",
+        provider: {
           kind: "projectPatch",
           patchId: patch.id,
-          patchRevision: patch.revision,
+          revision: patch.revision,
           interfaceDigest
         },
         definition: {
@@ -358,7 +364,6 @@ function validProjectPatchCatalogSnapshot() {
           })
         },
         creatable: true,
-        canonicalObjectSpec: "Folder/My Patch?",
         aliases: ["Folder.My-Patch"],
         display: {
           title: "Folder/My Patch?",
@@ -386,11 +391,11 @@ test("validates node catalog snapshots and digest helpers", () => {
   );
   assert.equal(
     projectCatalog.catalogRevision.value,
-    "7d741cbc25a956ced954d0180ede5b29e8ff45a6966db83882972e122629acab"
+    "e83bcb5043a0e2fde92bf4ba808726a89b5e5b72a66ade55bb9496a4aad4ebc8"
   );
   assert.equal(
     coreCatalog.catalogRevision.value,
-    "b9c3c9483879f21696481b2634ffbcb9046b561b8ddedd01772dd4141f7fa538"
+    "7536ac0eb305d902c270630f356c1ec639923aaa3ff89512bfc5164eafef66b5"
   );
 
   const withDifferentPatchRevision = structuredClone(projectPatch);
@@ -462,7 +467,8 @@ test("rejects invalid node catalog snapshots", () => {
         snapshot.entries.push({
           ...structuredClone(snapshot.entries[1]),
           definition: minimalNodeDefinition("object.core.duplicate", "Duplicate"),
-          canonicalObjectSpec: "duplicate",
+          objectId: "duplicate",
+          primaryObjectSpec: "duplicate",
           aliases: undefined,
           display: { title: "Duplicate" },
           catalogId: "core.float"
@@ -480,9 +486,9 @@ test("rejects invalid node catalog snapshots", () => {
     [
       "duplicate canonical text",
       (snapshot) => {
-        snapshot.entries[1].canonicalObjectSpec = "float";
+        snapshot.entries[1].primaryObjectSpec = "float";
       },
-      /duplicate canonicalObjectSpec/
+      /duplicate primaryObjectSpec/
     ],
     [
       "alias collides with canonical",
@@ -530,16 +536,15 @@ test("rejects invalid node catalog snapshots", () => {
       /duplicate port id/
     ],
     [
-      "package source removed",
+      "malformed provider",
       (snapshot) => {
-        snapshot.entries[0].source = {
+        snapshot.entries[0].provider = {
           kind: "package",
           packageId: "skenion/examples",
-          packageVersion: "0.1.0",
-          providerId: "example.float"
+          packageVersion: "0.1.0"
         };
       },
-      /must match exactly one schema|must be equal to constant|additional properties/
+      /must NOT have additional properties|must match exactly one schema/
     ],
     [
       "generatedAt removed",
@@ -551,7 +556,7 @@ test("rejects invalid node catalog snapshots", () => {
     [
       "display object spec removed",
       (snapshot) => {
-        snapshot.entries[0].display.canonicalObjectSpec = "float";
+        snapshot.entries[0].display.primaryObjectSpec = "float";
         snapshot.entries[0].display.aliases = ["float64"];
       },
       /must NOT have additional properties/
@@ -597,8 +602,8 @@ test("rejects invalid node catalog snapshots", () => {
   }
 
   const uppercaseChecksum = structuredClone(validProjectPatchCatalogSnapshot());
-  uppercaseChecksum.entries[0].source.interfaceDigest.value =
-    uppercaseChecksum.entries[0].source.interfaceDigest.value.toUpperCase();
+  uppercaseChecksum.entries[0].provider.interfaceDigest.value =
+    uppercaseChecksum.entries[0].provider.interfaceDigest.value.toUpperCase();
   const uppercaseChecksumResult = validateNodeCatalogSnapshotV01(uppercaseChecksum);
   assert.equal(uppercaseChecksumResult.ok, false);
   assert.match(uppercaseChecksumResult.errors.join("\n"), /pattern/);
@@ -622,6 +627,38 @@ test("rejects invalid node catalog snapshots", () => {
   assert.equal(badProjectPatchDefinitionIdResult.ok, false);
   assert.match(badProjectPatchDefinitionIdResult.errors.join("\n"), /projectPatch catalog entry/);
 
+  const emptyProjectPatchProviderId = structuredClone(validProjectPatchCatalogSnapshot());
+  emptyProjectPatchProviderId.entries[0].provider.patchId = "";
+  withCatalogRevision(emptyProjectPatchProviderId);
+  const emptyProjectPatchProviderIdResult = validateNodeCatalogSnapshotV01(emptyProjectPatchProviderId);
+  assert.equal(emptyProjectPatchProviderIdResult.ok, false);
+  assert.match(emptyProjectPatchProviderIdResult.errors.join("\n"), /patchId/);
+
+  const packageProviderCatalog = structuredClone(validCoreCatalogSnapshot());
+  packageProviderCatalog.entries[0].provider = {
+    kind: "package",
+    packageId: "example/package",
+    lockEntryId: "pkg-example-package-0.1.0"
+  };
+  withCatalogRevision(packageProviderCatalog);
+  assert.equal(validateNodeCatalogSnapshotV01(packageProviderCatalog).ok, true);
+
+  const unlockedPackageProviderCatalog = structuredClone(validCoreCatalogSnapshot());
+  unlockedPackageProviderCatalog.entries[0].provider = {
+    kind: "package",
+    packageId: "example/package"
+  };
+  withCatalogRevision(unlockedPackageProviderCatalog);
+  assert.equal(validateNodeCatalogSnapshotV01(unlockedPackageProviderCatalog).ok, true);
+
+  const duplicateImplementation = structuredClone(packageProviderCatalog);
+  duplicateImplementation.entries[1].provider = structuredClone(duplicateImplementation.entries[0].provider);
+  duplicateImplementation.entries[1].objectId = duplicateImplementation.entries[0].objectId;
+  withCatalogRevision(duplicateImplementation);
+  const duplicateImplementationResult = validateNodeCatalogSnapshotV01(duplicateImplementation);
+  assert.equal(duplicateImplementationResult.ok, false);
+  assert.match(duplicateImplementationResult.errors.join("\n"), /duplicate catalog implementation/);
+
   const catalogScopedDiagnostic = structuredClone(validCoreCatalogSnapshot());
   catalogScopedDiagnostic.diagnostics[0].target = { kind: "catalog" };
   const catalogScopedDiagnosticResult = validateNodeCatalogSnapshotV01(catalogScopedDiagnostic);
@@ -635,6 +672,15 @@ test("rejects invalid node catalog snapshots", () => {
   const missingDiagnosticTargetResult = validateNodeCatalogSnapshotV01(missingDiagnosticTarget);
   assert.equal(missingDiagnosticTargetResult.ok, false);
   assert.match(missingDiagnosticTargetResult.errors.join("\n"), /missing diagnosticId/);
+
+  const missingEntryDiagnosticTarget = structuredClone(validCoreCatalogSnapshot());
+  missingEntryDiagnosticTarget.entries[0].diagnostics[0].target = {
+    kind: "entry",
+    catalogId: "missing.entry"
+  };
+  const missingEntryDiagnosticTargetResult = validateNodeCatalogSnapshotV01(missingEntryDiagnosticTarget);
+  assert.equal(missingEntryDiagnosticTargetResult.ok, false);
+  assert.match(missingEntryDiagnosticTargetResult.errors.join("\n"), /missing entry catalogId/);
 
   const badDiagnosticNodeDefinition = structuredClone(validCoreCatalogSnapshot());
   badDiagnosticNodeDefinition.diagnosticNodeDefinitions[0].definition.ports = [
@@ -886,6 +932,12 @@ test("validates package manifests and package roots", async () => {
   assert.equal(secondMissingEvidenceResult.ok, false);
   assert.match(secondMissingEvidenceResult.errors.join("\n"), /missing-native-attestation/);
 
+  const firstMissingEvidence = structuredClone(mixedPackage);
+  firstMissingEvidence.nativeArtifacts[0].evidenceRefs = ["missing-native-attestation"];
+  const firstMissingEvidenceResult = validatePackageManifestV01(firstMissingEvidence);
+  assert.equal(firstMissingEvidenceResult.ok, false);
+  assert.match(firstMissingEvidenceResult.errors.join("\n"), /missing-native-attestation/);
+
   const dottedPackageId = structuredClone(patchPackage);
   dottedPackageId.id = "skenion.examples";
   assert.equal(validatePackageManifestV01(dottedPackageId).ok, false);
@@ -981,6 +1033,12 @@ test("validates public package listing and discovery DTOs", async () => {
   const targetWithoutArtifactResult = validatePackageListingV01(targetWithoutArtifact);
   assert.equal(targetWithoutArtifactResult.ok, false);
   assert.match(targetWithoutArtifactResult.errors.join("\n"), /has no native artifact summary/);
+
+  const unavailableNativeListing = structuredClone(discovery.listings[1]);
+  unavailableNativeListing.targetSupport.kind = "unavailable";
+  delete unavailableNativeListing.targetSupport.targets;
+  const unavailableNativeListingResult = validatePackageListingV01(unavailableNativeListing);
+  assert.equal(unavailableNativeListingResult.ok, true);
 
   const unavailableTargets = structuredClone(discovery.listings[1]);
   unavailableTargets.targetSupport.kind = "unavailable";
@@ -1102,6 +1160,18 @@ test("validates package install and update plan DTOs", async () => {
   assert.match(mixedLockWithoutNativeEvidenceResult.errors.join("\n"), /requires runtimeAbiRange/);
   assert.match(mixedLockWithoutNativeEvidenceResult.errors.join("\n"), /requires target/);
   assert.match(mixedLockWithoutNativeEvidenceResult.errors.join("\n"), /requires nativeArtifacts/);
+
+  const mixedLockWithoutTarget = structuredClone(request);
+  delete mixedLockWithoutTarget.current.packageLock[0].target;
+  const mixedLockWithoutTargetResult = validatePackageInstallPlanRequestV01(mixedLockWithoutTarget);
+  assert.equal(mixedLockWithoutTargetResult.ok, false);
+  assert.match(mixedLockWithoutTargetResult.errors.join("\n"), /requires target/);
+
+  const bindingWithoutPackageLock = structuredClone(request);
+  delete bindingWithoutPackageLock.current.objectBindings[0].implementation.provider.lockEntryId;
+  const bindingWithoutPackageLockResult = validatePackageInstallPlanRequestV01(bindingWithoutPackageLock);
+  assert.equal(bindingWithoutPackageLockResult.ok, false);
+  assert.match(bindingWithoutPackageLockResult.errors.join("\n"), /package implementation requires lockEntryId/);
 
   const nativeLockCurrentState = structuredClone(request);
   nativeLockCurrentState.current.packageLock[0].category = "native";
@@ -1265,7 +1335,7 @@ test("validates object spec parse result fixtures", async () => {
 
   assert.equal(addResult.ok, true);
   assert.equal(add.className, "+");
-  assert.equal(add.resolvedKind, null);
+  assert.equal(add.implementation, undefined);
   assert.deepEqual(add.params, {});
   assert.deepEqual(add.instancePorts, []);
 
@@ -1276,8 +1346,12 @@ test("validates object spec parse result fixtures", async () => {
     ok: true,
     className: "example.gain",
     creationArgs: [{ type: "float", value: 0.5, representation: "f32" }],
-    resolvedKind: "example.package.gain",
-    resolvedKindVersion: "0.1.0",
+    implementation: {
+      provider: { kind: "package", packageId: "example/package", version: "0.1.0" },
+      objectId: "gain",
+      version: "0.1.0"
+    },
+    objectResolution: { status: "resolved", selectedSpec: "example.gain 0.5" },
     params: { gain: 0.5 },
     instancePorts: [
       {
@@ -1303,12 +1377,38 @@ test("validates object spec parse result fixtures", async () => {
 
   assert.equal(runtimeResolvedResult.ok, true);
 
+  const resolvedWithoutImplementation = structuredClone(runtimeResolved);
+  delete resolvedWithoutImplementation.implementation;
+  const resolvedWithoutImplementationResult =
+    validateObjectSpecParseResult(resolvedWithoutImplementation);
+  assert.equal(resolvedWithoutImplementationResult.ok, false);
+  assert.match(
+    resolvedWithoutImplementationResult.errors.join("\n"),
+    /requires implementation|must have required property 'implementation'/
+  );
+
+  const legacyResolutionDiagnostic = structuredClone(runtimeResolved);
+  legacyResolutionDiagnostic.objectResolution.diagnostics = [
+    {
+      severity: "error",
+      code: "binding-unresolved",
+      message: "legacy diagnostic code must be rejected"
+    }
+  ];
+  const legacyResolutionDiagnosticResult =
+    validateObjectSpecParseResult(legacyResolutionDiagnostic);
+  assert.equal(legacyResolutionDiagnosticResult.ok, false);
+  assert.match(
+    legacyResolutionDiagnosticResult.errors.join("\n"),
+    /allowed values|resolution-unresolved|binding-unresolved/
+  );
+
   const symbolic = await readJson("fixtures/object-spec/v0.1/valid/deferred-class-symbol.parse.json");
   const symbolicResult = validateObjectSpecParseResult(symbolic);
 
   assert.equal(symbolicResult.ok, true);
   assert.equal(symbolic.ok, true);
-  assert.equal(symbolic.resolvedKind, null);
+  assert.equal(symbolic.implementation, undefined);
   assert.deepEqual(symbolic.diagnostics, []);
 
   const invalid = await readJson("fixtures/object-spec/v0.1/invalid/missing-class-symbol.parse.json");
@@ -1341,7 +1441,7 @@ test("parses object spec into golden parse results", async () => {
   assert.equal(raw.displayText, "+ 1");
   assert.equal(raw.className, "+");
   assert.deepEqual(raw.creationArgs, [{ type: "int", value: 1, representation: "i32" }]);
-  assert.equal(raw.resolvedKind, null);
+  assert.equal(raw.implementation, undefined);
   assert.deepEqual(raw.params, {});
   assert.deepEqual(raw.instancePorts, []);
 
@@ -1350,7 +1450,7 @@ test("parses object spec into golden parse results", async () => {
   assert.equal(bracketed.displayText, "osc~ 1e3");
   assert.equal(bracketed.className, "osc~");
   assert.deepEqual(bracketed.creationArgs, [{ type: "float", value: 1000, representation: "f32" }]);
-  assert.equal(bracketed.resolvedKind, null);
+  assert.equal(bracketed.implementation, undefined);
 
   const runtimeOwned = parseObjectSpecV01("frobnicate true");
   assert.equal(runtimeOwned.ok, true);
@@ -1421,9 +1521,13 @@ test("validates value format and occurrence primitives", () => {
     ["value.core.uint32", "u32"],
     ["value.core.uint64", "u64"],
     ["value.core.color", "rgba32f"],
-    ["value.core.vector", "f32"]
+    ["value.core.vector", "f32"],
+    ["value.core.matrix", "f32"],
+    ["value.core.tensor", "f32"]
   ]) {
-    const shape = valueTypeId === "value.core.vector" ? { shape: [4] } : {};
+    const shape = ["value.core.vector", "value.core.matrix", "value.core.tensor"].includes(valueTypeId)
+      ? { shape: [4] }
+      : {};
     assert.equal(validateValueFormatV01({ valueTypeId, format, ...shape }).ok, true, valueTypeId);
   }
 
@@ -1448,7 +1552,9 @@ test("validates value format and occurrence primitives", () => {
     [],
     { unknown: true },
     { valueTypeId: "value.core.nope" },
+    { valueTypeId: "value.media.future-frame" },
     { valueTypeId: "wrong.namespace" },
+    { valueTypeId: "value.core.float8", format: "f32" },
     { valueTypeId: "value.core.float32", format: 1 },
     { valueTypeId: "value.media.video-frame", format: "rgba8unorm", shape: [1, 1, 4] },
     { valueTypeId: "value.core.tensor", format: "rgba8unorm", shape: [] },
@@ -2176,6 +2282,22 @@ test("exports and validates v0.1 graph and node schemas", async () => {
   assert.equal(validateNodeDefinition(node).ok, true);
   assert.equal(validateNodeDefinitionV01(node).ok, true);
 
+  const resolvedWithoutImplementation = structuredClone(graph);
+  delete resolvedWithoutImplementation.nodes[0].implementation;
+  resolvedWithoutImplementation.nodes[0].objectResolution = { status: "resolved" };
+  const resolvedWithoutImplementationResult = validateGraphDocument(resolvedWithoutImplementation);
+  assert.equal(resolvedWithoutImplementationResult.ok, false);
+  assert.match(
+    resolvedWithoutImplementationResult.errors.join("\n"),
+    /must have required property 'implementation'|requires implementation|resolved-object-missing-implementation/
+  );
+  const resolvedWithoutImplementationAnalysis = analyzeGraphDocumentV01(resolvedWithoutImplementation);
+  assert.equal(resolvedWithoutImplementationAnalysis.ok, false);
+  assert.match(
+    resolvedWithoutImplementationAnalysis.diagnostics.map((entry) => entry.code).join("\n"),
+    /resolved-object-missing-implementation/
+  );
+
   const legacyVersion = await readJson("fixtures/graph/v0.1/invalid/legacy-000-version.graph.json");
   const legacyInputsOutputs = await readJson("fixtures/unsupported/v0.1/invalid/legacy-inputs-outputs.graph.json");
   const legacySampledFlow = await readJson("fixtures/unsupported/v0.1/invalid/legacy-sampled-flow.graph.json");
@@ -2219,8 +2341,18 @@ test("exports and validates v0.1 graph fragment contracts", async () => {
   assert.match(validateGraphFragmentV01(duplicateNode).errors.join("\n"), /duplicate-node-id/);
 
   const payloadKind = structuredClone(fragment);
-  payloadKind.nodes[0].kind = "value.core.bang";
-  assert.match(validateGraphFragmentV01(payloadKind).errors.join("\n"), /payload-node-kind/);
+  payloadKind.nodes[0].implementation.objectId = "value.core.bang";
+  assert.match(validateGraphFragmentV01(payloadKind).errors.join("\n"), /payload-implementation-id/);
+
+  const resolvedWithoutImplementation = structuredClone(fragment);
+  delete resolvedWithoutImplementation.nodes[0].implementation;
+  resolvedWithoutImplementation.nodes[0].objectResolution = { status: "resolved" };
+  const resolvedWithoutImplementationResult = validateGraphFragmentV01(resolvedWithoutImplementation);
+  assert.equal(resolvedWithoutImplementationResult.ok, false);
+  assert.match(
+    resolvedWithoutImplementationResult.errors.join("\n"),
+    /must have required property 'implementation'|resolved-object-missing-implementation/
+  );
 
   const duplicatePort = structuredClone(fragment);
   duplicatePort.nodes[0].ports.push(structuredClone(duplicatePort.nodes[0].ports[0]));
@@ -2516,7 +2648,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
     assert.equal(result.ok, false, fixture);
     assert.match(
       result.errors.join("\n"),
-      /duplicate boundary port id|lockEntryId .*points to package|does not match lock entry package|locked version .*does not satisfy|nativeArtifacts|required property 'target'|requires target|missing lockEntryId|missing project patch/,
+      /duplicate boundary port id|lockEntryId .*points to package|does not match lock entry package|locked version .*does not satisfy|nativeArtifacts|required property 'target'|requires implementation|missing lockEntryId|missing project patch/,
       fixture
     );
   }
@@ -2574,11 +2706,17 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   assert.equal(missingProviderBinding.status, "missing");
   assert.equal(validateProjectDocumentV01(validPackageProject).ok, true);
 
+  const packageBindingWithoutLockEntry = structuredClone(validPackageProject);
+  delete packageBindingWithoutLockEntry.objectBindings[0].implementation.provider.lockEntryId;
+  const packageBindingWithoutLockEntryResult = validateProjectDocumentV01(packageBindingWithoutLockEntry);
+  assert.equal(packageBindingWithoutLockEntryResult.ok, false);
+  assert.match(packageBindingWithoutLockEntryResult.errors.join("\n"), /package implementation requires lockEntryId/);
+
   for (const [status, bindingIndex, expected] of [
-    ["missing", 2, /missing object binding .*binding-target-missing/],
-    ["stale", 1, /stale object binding .*binding-target-stale or binding-interface-drift/],
-    ["unresolved", 0, /unresolved object binding .*binding-unresolved/],
-    ["ambiguous", 3, /ambiguous object binding .*binding-ambiguous/]
+    ["missing", 2, /missing object binding .*implementation-missing/],
+    ["stale", 1, /stale object binding .*implementation-stale or interface-drift/],
+    ["unresolved", 0, /unresolved object binding .*resolution-unresolved/],
+    ["ambiguous", 3, /ambiguous object binding .*resolution-ambiguous/]
   ]) {
     const missingDiagnostics = structuredClone(validPackageProject);
     missingDiagnostics.objectBindings[bindingIndex].status = status;
@@ -2604,25 +2742,25 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   malformedDiagnostic.objectBindings[2].diagnostics = [null];
   const malformedDiagnosticResult = validateProjectDocumentV01(malformedDiagnostic);
   assert.equal(malformedDiagnosticResult.ok, false);
-  assert.match(malformedDiagnosticResult.errors.join("\n"), /missing object binding .*binding-target-missing/);
+  assert.match(malformedDiagnosticResult.errors.join("\n"), /missing object binding .*implementation-missing/);
 
   const wrongDiagnosticCode = structuredClone(validPackageProject);
   wrongDiagnosticCode.objectBindings[2].diagnostics = [
     {
       severity: "warning",
-      code: "binding-unresolved",
+      code: "resolution-unresolved",
       message: "This diagnostic does not satisfy a missing binding."
     }
   ];
   const wrongDiagnosticCodeResult = validateProjectDocumentV01(wrongDiagnosticCode);
   assert.equal(wrongDiagnosticCodeResult.ok, false);
-  assert.match(wrongDiagnosticCodeResult.errors.join("\n"), /missing object binding .*binding-target-missing/);
+  assert.match(wrongDiagnosticCodeResult.errors.join("\n"), /missing object binding .*implementation-missing/);
 
   const resolvedNoTarget = validateProjectDocumentV01(
     await readJson("fixtures/project/v0.1/invalid/resolved-binding-missing-target.project.json")
   );
   assert.equal(resolvedNoTarget.ok, false);
-  assert.match(resolvedNoTarget.errors.join("\n"), /required property 'target'|requires target/);
+  assert.match(resolvedNoTarget.errors.join("\n"), /requires implementation/);
 
   const resolvedPackageMissingLock = validateProjectDocumentV01(
     await readJson("fixtures/project/v0.1/invalid/resolved-package-binding-missing-lock.project.json")
@@ -2638,11 +2776,12 @@ test("exports and validates v0.1 project patch library contracts", async () => {
 
   const unresolvedProjectMissingPatch = structuredClone(validPackageProject);
   unresolvedProjectMissingPatch.objectBindings[1].status = "unresolved";
-  unresolvedProjectMissingPatch.objectBindings[1].target.patchId = "missing_patch";
+  unresolvedProjectMissingPatch.objectBindings[1].implementation.provider.patchId = "missing_patch";
+  unresolvedProjectMissingPatch.objectBindings[1].implementation.objectId = "missing_patch";
   unresolvedProjectMissingPatch.objectBindings[1].diagnostics = [
     {
       severity: "warning",
-      code: "binding-unresolved",
+      code: "resolution-unresolved",
       message: "Project patch selection has not been resolved."
     }
   ];
@@ -2652,11 +2791,11 @@ test("exports and validates v0.1 project patch library contracts", async () => {
 
   const unresolvedPackageMissingLock = structuredClone(validPackageProject);
   unresolvedPackageMissingLock.objectBindings[0].status = "unresolved";
-  unresolvedPackageMissingLock.objectBindings[0].target.lockEntryId = "missing-lock";
+  unresolvedPackageMissingLock.objectBindings[0].implementation.provider.lockEntryId = "missing-lock";
   unresolvedPackageMissingLock.objectBindings[0].diagnostics = [
     {
       severity: "warning",
-      code: "binding-unresolved",
+      code: "resolution-unresolved",
       message: "Package provider selection has not been resolved."
     }
   ];
@@ -2671,7 +2810,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   assert.match(missingBindingRefResult.errors.join("\n"), /bindingRef: missing-binding/);
 
   const staleProjectPatchBinding = structuredClone(validPackageProject);
-  staleProjectPatchBinding.objectBindings[1].target.revision = "stale-revision";
+  staleProjectPatchBinding.objectBindings[1].implementation.provider.revision = "stale-revision";
   const staleProjectPatchBindingResult = validateProjectDocumentV01(staleProjectPatchBinding);
   assert.equal(staleProjectPatchBindingResult.ok, false);
   assert.match(staleProjectPatchBindingResult.errors.join("\n"), /resolved object binding .*revision is stale/);
@@ -2680,7 +2819,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   staleProjectPatchBinding.objectBindings[1].diagnostics = [
     {
       severity: "warning",
-      code: "binding-target-stale",
+      code: "implementation-stale",
       message: "The project-local patch binding points at an older known revision."
     }
   ];
@@ -2689,7 +2828,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   staleProjectPatchBinding.objectBindings[1].diagnostics = [
     {
       severity: "warning",
-      code: "binding-interface-drift",
+      code: "interface-drift",
       message: "The project-local patch interface changed since the binding was last planned."
     }
   ];
@@ -2697,11 +2836,11 @@ test("exports and validates v0.1 project patch library contracts", async () => {
 
   const unresolvedStaleProjectPatchBinding = structuredClone(validPackageProject);
   unresolvedStaleProjectPatchBinding.objectBindings[1].status = "unresolved";
-  unresolvedStaleProjectPatchBinding.objectBindings[1].target.revision = "stale-revision";
+  unresolvedStaleProjectPatchBinding.objectBindings[1].implementation.provider.revision = "stale-revision";
   unresolvedStaleProjectPatchBinding.objectBindings[1].diagnostics = [
     {
       severity: "warning",
-      code: "binding-unresolved",
+      code: "resolution-unresolved",
       message: "The binding is unresolved, but it also carries old revision evidence."
     }
   ];
@@ -2758,8 +2897,7 @@ test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", a
       nodes: [
         {
           id: "single_boundary",
-          kind: "object.core.inlet",
-          kindVersion: "0.1.0",
+          implementation: coreImplementation("inlet"),
           params: {},
           ports: [
             { id: "out", direction: "output", type: "value.core.float64", rate: "control" }
@@ -2767,8 +2905,7 @@ test("derives v0.1 patch contracts from core inlet and outlet boundary nodes", a
         },
         {
           id: "multi_boundary",
-          kind: "object.core.outlet",
-          kindVersion: "0.1.0",
+          implementation: coreImplementation("outlet"),
           params: {},
           ports: [
             { id: "left", direction: "input", type: "value.core.float64", rate: "control" },
@@ -2827,8 +2964,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
     nodes: [
       {
         id: "button",
-        kind: "object.core.bang",
-        kindVersion: "0.1.0",
+        implementation: coreImplementation("bang"),
         params: {},
         ports: [
           { id: "out", direction: "output", type: "value.core.bang", rate: "event" }
@@ -2836,8 +2972,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
       },
       {
         id: "int_source",
-        kind: "object.core.int",
-        kindVersion: "0.1.0",
+        implementation: coreImplementation("int"),
         params: {},
         ports: [
           { id: "value", direction: "output", type: "value.core.int64", rate: "control" }
@@ -2845,8 +2980,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
       },
       {
         id: "bool_source",
-        kind: "test.bool-emitter",
-        kindVersion: "0.1.0",
+        implementation: coreImplementation("test.bool-emitter"),
         params: {},
         ports: [
           { id: "value", direction: "output", type: "value.core.bool", rate: "control" }
@@ -2854,8 +2988,7 @@ test("v0.1 control ports declare numeric accepts and bang trigger behavior separ
       },
       {
         id: "number_box",
-        kind: "object.core.float",
-        kindVersion: "0.1.0",
+        implementation: coreImplementation("float"),
         params: {},
         ports: [
           {
@@ -2943,15 +3076,13 @@ test("v0.1 rejects legacy control port aliases on current graph and node contrac
       nodes: [
         {
           id: "source",
-          kind: "test.source",
-          kindVersion: "0.1.0",
+          implementation: coreImplementation("test.source"),
           params: {},
           ports: [{ id: "out", direction: "output", type: invalidType }]
         },
         {
           id: "target",
-          kind: "test.target",
-          kindVersion: "0.1.0",
+          implementation: coreImplementation("test.target"),
           params: {},
           ports: [{ id: "in", direction: "input", type: "value.core.message" }]
         }
@@ -3006,7 +3137,7 @@ test("v0.1 rejects invalid direction fan-in and algebraic-loop fixtures", async 
     ["fixtures/graph/v0.1/invalid/fan-in-without-merge-policy.graph.json", /fan-in-without-merge-policy/],
     ["fixtures/graph/v0.1/invalid/render-input-fan-in-default.graph.json", /fan-in-cardinality/],
     ["fixtures/graph/v0.1/invalid/ambiguous-value-algebraic-loop.graph.json", /ambiguous-algebraic-loop/],
-    ["fixtures/graph/v0.1/invalid/payload-identity-node-kind.graph.json", /payload-node-kind/]
+    ["fixtures/graph/v0.1/invalid/payload-identity-node-kind.graph.json", /payload-implementation-id/]
   ];
 
   for (const [fixture, expected] of cases) {
@@ -3017,10 +3148,10 @@ test("v0.1 rejects invalid direction fan-in and algebraic-loop fixtures", async 
 
   for (const payloadKind of ["bool", "string"]) {
     const graph = await readJson("fixtures/graph/v0.1/valid/zero-port-node.graph.json");
-    graph.nodes[0].kind = payloadKind;
+    graph.nodes[0].implementation.objectId = payloadKind;
     const result = validateGraphDocumentV01(graph);
     assert.equal(result.ok, false, payloadKind);
-    assert.match(result.errors.join("\n"), /payload-node-kind/, payloadKind);
+    assert.match(result.errors.join("\n"), /payload-implementation-id/, payloadKind);
   }
 
   const controlLoop = await readJson("fixtures/graph/v0.1/invalid/ambiguous-value-algebraic-loop.graph.json");

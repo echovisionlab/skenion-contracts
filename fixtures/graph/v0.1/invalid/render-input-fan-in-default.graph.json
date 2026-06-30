@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "clear_a",
-      "kind": "object.core.render.clear-color",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -16,12 +14,17 @@
           "type": "value.core.tensor",
           "rate": "render"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "render.clear-color",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "clear_b",
-      "kind": "object.core.render.clear-color",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -30,12 +33,17 @@
           "type": "value.core.tensor",
           "rate": "render"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "render.clear-color",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "output",
-      "kind": "object.core.render.output",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -44,7 +52,14 @@
           "type": "value.core.tensor",
           "rate": "render"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "render.output",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

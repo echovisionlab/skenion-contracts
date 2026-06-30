@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "float_1",
-      "kind": "object.core.float",
-      "kindVersion": "0.1.0",
       "params": {
         "value": 0.5
       },
@@ -18,12 +16,17 @@
           "type": "value.core.float64",
           "rate": "control"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "float",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "meter_a",
-      "kind": "core.meter",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -32,12 +35,17 @@
           "type": "value.core.float64",
           "rate": "control"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "meter",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "meter_b",
-      "kind": "core.meter",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -46,7 +54,14 @@
           "type": "value.core.float64",
           "rate": "control"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "meter",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

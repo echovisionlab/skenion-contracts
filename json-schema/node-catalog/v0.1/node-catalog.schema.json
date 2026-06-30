@@ -78,7 +78,11 @@
       },
       "additionalProperties": false
     },
-    "source": {
+    "packageId": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+    },
+    "objectProvider": {
       "oneOf": [
         {
           "type": "object",
@@ -92,20 +96,46 @@
         },
         {
           "type": "object",
-          "required": ["kind", "patchId", "interfaceDigest"],
+          "required": ["kind", "patchId"],
           "properties": {
             "kind": {
               "const": "projectPatch"
             },
             "patchId": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
-            "patchRevision": {
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "interfaceRevision": {
               "type": "string",
               "minLength": 1
             },
             "interfaceDigest": {
               "$ref": "#/$defs/checksum"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "packageId"],
+          "properties": {
+            "kind": {
+              "const": "package"
+            },
+            "packageId": {
+              "$ref": "#/$defs/packageId"
+            },
+            "lockEntryId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "additionalProperties": false
@@ -180,8 +210,9 @@
       "type": "object",
       "required": [
         "catalogId",
-        "canonicalObjectSpec",
-        "source",
+        "objectId",
+        "primaryObjectSpec",
+        "provider",
         "definition",
         "creatable",
         "display"
@@ -191,7 +222,11 @@
           "type": "string",
           "minLength": 1
         },
-        "canonicalObjectSpec": {
+        "objectId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "primaryObjectSpec": {
           "type": "string",
           "minLength": 1
         },
@@ -203,8 +238,8 @@
           },
           "uniqueItems": true
         },
-        "source": {
-          "$ref": "#/$defs/source"
+        "provider": {
+          "$ref": "#/$defs/objectProvider"
         },
         "definition": {
           "$ref": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json"
