@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.55.0](https://github.com/skenion/skenion-contracts/compare/v0.54.0...v0.55.0) (2026-06-30)
+
+
+### Features
+
+* **contracts:** rename object text to object spec ([59db7f0](https://github.com/skenion/skenion-contracts/commit/59db7f035c31f225a1084689106cc11168789106)), closes [#187](https://github.com/skenion/skenion-contracts/issues/187)
+
 ## [0.54.0](https://github.com/skenion/skenion-contracts/compare/v0.53.0...v0.54.0) (2026-06-29)
 
 
