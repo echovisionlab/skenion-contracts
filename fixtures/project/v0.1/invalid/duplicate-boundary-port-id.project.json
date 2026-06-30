@@ -31,8 +31,6 @@
         "nodes": [
           {
             "id": "first_in",
-            "kind": "object.core.inlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "value"
             },
@@ -44,12 +42,17 @@
                 "rate": "control",
                 "description": "First value input."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "inlet",
+              "version": "0.1.0"
+            }
           },
           {
             "id": "second_in",
-            "kind": "object.core.inlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "value"
             },
@@ -61,7 +64,14 @@
                 "rate": "control",
                 "description": "Second value input with a duplicate boundary id."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "inlet",
+              "version": "0.1.0"
+            }
           }
         ],
         "edges": []

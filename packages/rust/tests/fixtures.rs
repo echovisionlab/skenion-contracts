@@ -4,17 +4,16 @@ use std::{fs, path::Path};
 
 use skenion_contracts::{
     GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
-    NodeDefinitionManifestV01, ObjectSpecParseResultV01, PackageDiagnosticSeverityV01,
-    PackageDiscoveryResponseV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
-    PackageListingV01, PackageManifestV01, PackageRootDocumentV01, ProjectDocumentV01,
-    ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingDiagnosticV01,
-    ProjectObjectBindingStatusV01, ProjectObjectBindingTargetV01, analyze_graph_fragment_v01,
-    parse_object_spec_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_definition_v01, validate_object_spec_parse_result_v01,
-    validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
-    validate_package_install_plan_response_v01, validate_package_listing_v01,
-    validate_package_manifest_v01, validate_package_root_v01, validate_patch_definition_v01,
-    validate_project_document_v01,
+    NodeDefinitionManifestV01, ObjectProviderRefV01, ObjectSpecParseResultV01,
+    PackageDiagnosticSeverityV01, PackageDiscoveryResponseV01, PackageInstallPlanRequestV01,
+    PackageInstallPlanResponseV01, PackageListingV01, PackageManifestV01, PackageRootDocumentV01,
+    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingDiagnosticV01,
+    ProjectObjectBindingStatusV01, analyze_graph_fragment_v01, parse_object_spec_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
+    validate_object_spec_parse_result_v01, validate_package_discovery_response_v01,
+    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
+    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
+    validate_patch_definition_v01, validate_project_document_v01,
 };
 
 fn collect_json_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
@@ -318,6 +317,12 @@ fn package_manifest_fixture(relative: &str) -> PackageManifestV01 {
         .expect("package fixture should parse")
 }
 
+fn package_listing_fixture(relative: &str) -> PackageListingV01 {
+    let file = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative);
+    serde_json::from_slice(&fs::read(&file).expect("package listing fixture should be readable"))
+        .expect("package listing fixture should parse")
+}
+
 fn assert_package_manifest_error(
     mutate: impl FnOnce(&mut PackageManifestV01),
     expected_message: &str,
@@ -328,6 +333,32 @@ fn assert_package_manifest_error(
     mutate(&mut manifest);
     let report = validate_package_manifest_v01(&manifest)
         .expect_err("mutated package manifest should fail validation");
+    assert!(
+        report.to_string().contains(expected_message),
+        "expected error containing {expected_message:?}, got {report}"
+    );
+}
+
+fn assert_package_listing_fixture_error(relative: &str, expected_message: &str) {
+    let listing = package_listing_fixture(relative);
+    let report = validate_package_listing_v01(&listing)
+        .expect_err("package listing fixture should fail validation");
+    assert!(
+        report.to_string().contains(expected_message),
+        "expected error containing {expected_message:?}, got {report}"
+    );
+}
+
+fn assert_package_listing_error(
+    mutate: impl FnOnce(&mut PackageListingV01),
+    expected_message: &str,
+) {
+    let mut listing = package_listing_fixture(
+        "../../fixtures/package/v0.1/valid/patch-listing.skenion.package-listing.json",
+    );
+    mutate(&mut listing);
+    let report = validate_package_listing_v01(&listing)
+        .expect_err("mutated package listing should fail validation");
     assert!(
         report.to_string().contains(expected_message),
         "expected error containing {expected_message:?}, got {report}"
@@ -398,6 +429,60 @@ fn validates_package_manifest_semantic_branches() {
     );
     assert_package_manifest_error(
         |manifest| {
+            manifest.provides.objects[0].primary_object_spec = "   ".to_owned();
+        },
+        "primaryObjectSpec must not be blank",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            manifest.provides.objects[0].aliases.push("\t".to_owned());
+        },
+        "alias/spec must not be blank",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            let mut object = manifest.provides.objects[0].clone();
+            object.primary_object_spec = "phasor~ 440".to_owned();
+            manifest.provides.objects.push(object);
+        },
+        "duplicate provided object provider/objectId",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            let mut object = manifest.provides.objects[0].clone();
+            object.object_id = "example.sine".to_owned();
+            object.primary_object_spec = "sine~ 440".to_owned();
+            object.aliases.clear();
+            manifest.provides.objects.push(object);
+        },
+        "duplicate object spec",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            manifest.provides.objects[0].object_id = "value.core.float32".to_owned();
+        },
+        "payload/value identity",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            manifest.provides.objects[0].object_id = "example.bad_id".to_owned();
+        },
+        "objectId must use lowercase dotted/hyphen grammar",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            manifest.provides.objects[0].definition_path = "../outside.node.json".to_owned();
+        },
+        "definitionPath must be relative and stay inside the package",
+    );
+    assert_package_manifest_error(
+        |manifest| {
+            manifest.provides.objects[0].help_id = Some("example.bad_help".to_owned());
+        },
+        "helpId must use lowercase dotted/hyphen grammar",
+    );
+    assert_package_manifest_error(
+        |manifest| {
             let mut provided = manifest.provides.patches[0].clone();
             provided.id = "example.bad_resource".to_owned();
             manifest.provides.resources.push(provided);
@@ -420,6 +505,48 @@ fn validates_package_manifest_semantic_branches() {
     let report = validate_package_manifest_v01(&native_missing_targets)
         .expect_err("native package without targets should fail validation");
     assert!(report.to_string().contains("requires targets"));
+}
+
+#[test]
+fn validates_package_listing_object_export_semantic_branches() {
+    assert_package_listing_fixture_error(
+        "../../fixtures/package/v0.1/invalid/listing-duplicate-object-id.skenion.package-listing.json",
+        "duplicate provided object provider/objectId",
+    );
+    assert_package_listing_fixture_error(
+        "../../fixtures/package/v0.1/invalid/listing-duplicate-object-spec.skenion.package-listing.json",
+        "duplicate object spec",
+    );
+    assert_package_listing_fixture_error(
+        "../../fixtures/package/v0.1/invalid/listing-payload-object-id.skenion.package-listing.json",
+        "payload/value identity",
+    );
+    assert_package_listing_fixture_error(
+        "../../fixtures/package/v0.1/invalid/listing-blank-object-primary-spec.skenion.package-listing.json",
+        "primaryObjectSpec must not be blank",
+    );
+    assert_package_listing_fixture_error(
+        "../../fixtures/package/v0.1/invalid/listing-blank-object-alias.skenion.package-listing.json",
+        "alias/spec must not be blank",
+    );
+    assert_package_listing_error(
+        |listing| {
+            listing.provides.objects[0].object_id = "example.bad_id".to_owned();
+        },
+        "objectId must use lowercase dotted/hyphen grammar",
+    );
+    assert_package_listing_error(
+        |listing| {
+            listing.provides.objects[0].definition_path = "/absolute.node.json".to_owned();
+        },
+        "definitionPath must be relative and stay inside the package",
+    );
+    assert_package_listing_error(
+        |listing| {
+            listing.provides.objects[0].help_id = Some("example.bad_help".to_owned());
+        },
+        "helpId must use lowercase dotted/hyphen grammar",
+    );
 }
 
 #[test]
@@ -576,7 +703,7 @@ fn validates_project_package_lock_reference_failures() {
         ),
         (
             "../../fixtures/project/v0.1/invalid/resolved-binding-missing-target.project.json",
-            "requires target",
+            "requires implementation",
         ),
         (
             "../../fixtures/project/v0.1/invalid/resolved-package-binding-missing-lock.project.json",
@@ -693,7 +820,7 @@ fn validates_project_package_and_binding_semantic_error_branches() {
     for (status, expected) in [
         (
             ProjectObjectBindingStatusV01::Missing,
-            "missing object binding binding-example-oscillator requires binding-target-missing diagnostic",
+            "missing object binding binding-example-oscillator requires implementation-missing diagnostic",
         ),
         (
             ProjectObjectBindingStatusV01::Stale,
@@ -701,11 +828,11 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         ),
         (
             ProjectObjectBindingStatusV01::Unresolved,
-            "unresolved object binding binding-example-oscillator requires binding-unresolved diagnostic",
+            "unresolved object binding binding-example-oscillator requires resolution-unresolved diagnostic",
         ),
         (
             ProjectObjectBindingStatusV01::Ambiguous,
-            "ambiguous object binding binding-example-oscillator requires binding-ambiguous diagnostic",
+            "ambiguous object binding binding-example-oscillator requires resolution-ambiguous diagnostic",
         ),
     ] {
         let mut missing_diagnostic = base_project.clone();
@@ -719,13 +846,18 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         let binding = &mut missing_patch_binding.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Unresolved;
         binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::BindingUnresolved,
+            ProjectObjectBindingDiagnosticCodeV01::ResolutionUnresolved,
         )];
-        match binding.target.as_mut().expect("project patch target") {
-            ProjectObjectBindingTargetV01::ProjectPatch { patch_id, .. } => {
+        match &mut binding
+            .implementation
+            .as_mut()
+            .expect("project patch implementation")
+            .provider
+        {
+            ObjectProviderRefV01::ProjectPatch { patch_id, .. } => {
                 *patch_id = "missing-wrapper".to_owned();
             }
-            ProjectObjectBindingTargetV01::PackageProvider { .. } => {
+            ObjectProviderRefV01::Package { .. } | ObjectProviderRefV01::Core => {
                 panic!("expected project patch binding")
             }
         }
@@ -740,13 +872,18 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         let binding = &mut missing_patch_with_diagnostic.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Missing;
         binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::BindingTargetMissing,
+            ProjectObjectBindingDiagnosticCodeV01::ImplementationMissing,
         )];
-        match binding.target.as_mut().expect("project patch target") {
-            ProjectObjectBindingTargetV01::ProjectPatch { patch_id, .. } => {
+        match &mut binding
+            .implementation
+            .as_mut()
+            .expect("project patch implementation")
+            .provider
+        {
+            ObjectProviderRefV01::ProjectPatch { patch_id, .. } => {
                 *patch_id = "missing-wrapper".to_owned();
             }
-            ProjectObjectBindingTargetV01::PackageProvider { .. } => {
+            ObjectProviderRefV01::Package { .. } | ObjectProviderRefV01::Core => {
                 panic!("expected project patch binding")
             }
         }
@@ -755,15 +892,16 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         .expect("missing project patch binding with diagnostic should remain valid");
 
     let mut resolved_stale_revision = base_project.clone();
-    match resolved_stale_revision.object_bindings[1]
-        .target
+    match &mut resolved_stale_revision.object_bindings[1]
+        .implementation
         .as_mut()
-        .expect("project patch target")
+        .expect("project patch implementation")
+        .provider
     {
-        ProjectObjectBindingTargetV01::ProjectPatch { revision, .. } => {
+        ObjectProviderRefV01::ProjectPatch { revision, .. } => {
             *revision = Some("2".to_owned());
         }
-        ProjectObjectBindingTargetV01::PackageProvider { .. } => {
+        ObjectProviderRefV01::Package { .. } | ObjectProviderRefV01::Core => {
             panic!("expected project patch binding")
         }
     }
@@ -777,11 +915,16 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         let binding = &mut stale_revision_without_diagnostic.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Stale;
         binding.diagnostics.clear();
-        match binding.target.as_mut().expect("project patch target") {
-            ProjectObjectBindingTargetV01::ProjectPatch { revision, .. } => {
+        match &mut binding
+            .implementation
+            .as_mut()
+            .expect("project patch implementation")
+            .provider
+        {
+            ObjectProviderRefV01::ProjectPatch { revision, .. } => {
                 *revision = Some("2".to_owned());
             }
-            ProjectObjectBindingTargetV01::PackageProvider { .. } => {
+            ObjectProviderRefV01::Package { .. } | ObjectProviderRefV01::Core => {
                 panic!("expected project patch binding")
             }
         }
@@ -796,13 +939,18 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         let binding = &mut stale_revision_with_diagnostic.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Stale;
         binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::BindingTargetStale,
+            ProjectObjectBindingDiagnosticCodeV01::ImplementationStale,
         )];
-        match binding.target.as_mut().expect("project patch target") {
-            ProjectObjectBindingTargetV01::ProjectPatch { revision, .. } => {
+        match &mut binding
+            .implementation
+            .as_mut()
+            .expect("project patch implementation")
+            .provider
+        {
+            ObjectProviderRefV01::ProjectPatch { revision, .. } => {
                 *revision = Some("2".to_owned());
             }
-            ProjectObjectBindingTargetV01::PackageProvider { .. } => {
+            ObjectProviderRefV01::Package { .. } | ObjectProviderRefV01::Core => {
                 panic!("expected project patch binding")
             }
         }
@@ -811,20 +959,16 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         .expect("stale project patch binding with diagnostic should remain valid");
 
     let mut invalid_provider_ids = base_project.clone();
-    match invalid_provider_ids.object_bindings[0]
-        .target
+    match &mut invalid_provider_ids.object_bindings[0]
+        .implementation
         .as_mut()
-        .expect("package provider target")
+        .expect("package implementation")
+        .provider
     {
-        ProjectObjectBindingTargetV01::PackageProvider {
-            package_id,
-            provided_id,
-            ..
-        } => {
+        ObjectProviderRefV01::Package { package_id, .. } => {
             *package_id = "skenion.examples".to_owned();
-            *provided_id = "example.bad_id".to_owned();
         }
-        ProjectObjectBindingTargetV01::ProjectPatch { .. } => {
+        ObjectProviderRefV01::ProjectPatch { .. } | ObjectProviderRefV01::Core => {
             panic!("expected package provider binding")
         }
     }
@@ -832,20 +976,24 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         .expect_err("invalid package provider ids should fail validation");
     let text = report.to_string();
     assert!(text.contains("object binding binding-example-oscillator packageId must match"));
-    assert!(text.contains("object binding binding-example-oscillator providedId must use lowercase dotted/hyphen grammar"));
 
     let mut unresolved_missing_lock = base_project;
     {
         let binding = &mut unresolved_missing_lock.object_bindings[0];
         binding.status = ProjectObjectBindingStatusV01::Unresolved;
         binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::BindingUnresolved,
+            ProjectObjectBindingDiagnosticCodeV01::ResolutionUnresolved,
         )];
-        match binding.target.as_mut().expect("package provider target") {
-            ProjectObjectBindingTargetV01::PackageProvider { lock_entry_id, .. } => {
-                *lock_entry_id = "missing-package-lock".to_owned();
+        match &mut binding
+            .implementation
+            .as_mut()
+            .expect("package implementation")
+            .provider
+        {
+            ObjectProviderRefV01::Package { lock_entry_id, .. } => {
+                *lock_entry_id = Some("missing-package-lock".to_owned());
             }
-            ProjectObjectBindingTargetV01::ProjectPatch { .. } => {
+            ObjectProviderRefV01::ProjectPatch { .. } | ObjectProviderRefV01::Core => {
                 panic!("expected package provider binding")
             }
         }
@@ -929,7 +1077,7 @@ fn parses_object_spec_parse_result_fixtures() {
         validate_object_spec_parse_result_v01(&result)
             .unwrap_or_else(|error| panic!("{input} success should validate: {error}"));
         assert!(result.ok, "{input} should parse");
-        assert_eq!(result.resolved_kind, None);
+        assert_eq!(result.implementation, None);
         assert!(result.params.is_empty());
         assert!(result.instance_ports.is_empty());
     }

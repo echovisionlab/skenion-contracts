@@ -25,9 +25,12 @@
       "id": "binding-resolved-missing-patch",
       "objectSpec": "p missing_patch",
       "status": "resolved",
-      "target": {
-        "kind": "projectPatch",
-        "patchId": "missing_patch"
+      "implementation": {
+        "provider": {
+          "kind": "projectPatch",
+          "patchId": "missing_patch"
+        },
+        "objectId": "missing_patch"
       }
     }
   ]

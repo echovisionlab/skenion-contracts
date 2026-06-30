@@ -36,6 +36,13 @@ Typed object boxes preserve user-entered `objectSpec`; Runtime resolution maps
 that text to implementation kinds and diagnostics without making unresolved text
 a separate user-facing node class.
 
+Package manifests and public listings declare object-box creatable exports under
+`provides.objects[]`. Each object export carries an internal `objectId`, a short
+user-facing `primaryObjectSpec`, optional `aliases`, a package-relative
+`definitionPath`, and optional `description` / `helpId`. `provides.nodes[]`
+remains a list of node-definition assets and is not the executable authoring
+surface for typed object boxes.
+
 ## Repository Layout
 
 ```text

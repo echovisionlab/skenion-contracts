@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "osc",
-      "kind": "object.core.audio.osc",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -18,7 +16,14 @@
             "data": "number.float"
           }
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "audio.osc",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": []

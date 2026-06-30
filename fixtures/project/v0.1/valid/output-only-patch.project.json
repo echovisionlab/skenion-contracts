@@ -34,8 +34,6 @@
         "nodes": [
           {
             "id": "amplitude_out",
-            "kind": "object.core.outlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "amplitude",
               "label": "Amplitude"
@@ -48,7 +46,14 @@
                 "rate": "control",
                 "description": "Amplitude value leaving the patch."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "outlet",
+              "version": "0.1.0"
+            }
           }
         ],
         "edges": []

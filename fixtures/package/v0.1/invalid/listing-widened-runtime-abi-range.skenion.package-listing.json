@@ -27,9 +27,11 @@
     "summary": "Native artifacts are currently published for macOS arm64."
   },
   "provides": {
-    "nativeObjects": [
+    "objects": [
       {
-        "id": "example.sensor-native",
+        "objectId": "example.sensor-native",
+        "primaryObjectSpec": "sensor",
+        "definitionPath": "nodes/example.sensor-reading.node.json",
         "description": "Native object entrypoint for sensor readings."
       }
     ],

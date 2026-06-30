@@ -5,50 +5,22 @@
   "version": "0.45.0",
   "displayName": "Skenion Examples",
   "summary": "Reusable example patches for learning Skenion.",
-  "description": "A public marketplace listing projection for the example patch package.",
   "category": "patch",
-  "tags": [
-    "examples",
-    "audio"
-  ],
   "license": "Apache-2.0",
-  "homepageUrl": "https://skenion.dev/examples",
-  "repositoryUrl": "https://github.com/skenion/skenion-examples",
   "contracts": {
     "line": "0.45",
     "range": ">=0.45.0 <0.46.0"
   },
   "targetSupport": {
-    "kind": "target-independent",
-    "summary": "Patch package; no native runtime target is required."
+    "kind": "target-independent"
   },
   "provides": {
-    "patches": [
-      {
-        "id": "example.oscillator",
-        "description": "Basic oscillator patch."
-      }
-    ],
     "objects": [
       {
-        "objectId": "example.oscillator",
-        "primaryObjectSpec": "osc~ 440",
-        "aliases": [
-          "sine~ 440"
-        ],
-        "definitionPath": "nodes/example.oscillator.node.json",
-        "description": "Creatable oscillator object for object boxes.",
-        "helpId": "example.oscillator"
+        "objectId": "value.core.float32",
+        "primaryObjectSpec": "float",
+        "definitionPath": "nodes/value.core.float32.node.json"
       }
-    ],
-    "help": [
-      {
-        "id": "example.oscillator",
-        "description": "Oscillator help and walkthrough."
-      }
-    ],
-    "capabilities": [
-      "patch-library"
     ]
   },
   "artifactEvidence": {

@@ -356,9 +356,19 @@ export interface PackageProvidedRefV01 {
   description?: string;
 }
 
+export interface PackageObjectExportV01 {
+  objectId: string;
+  primaryObjectSpec: string;
+  aliases?: string[];
+  definitionPath: string;
+  description?: string;
+  helpId?: string;
+}
+
 export interface PackageProvidesV01 {
   patches?: PackageProvidedRefV01[];
   nodes?: PackageProvidedRefV01[];
+  objects?: PackageObjectExportV01[];
   resources?: PackageProvidedRefV01[];
   help?: PackageProvidedRefV01[];
 }
@@ -440,12 +450,21 @@ export interface PackageListingProvidedSummaryRefV01 {
   description?: string;
 }
 
+export interface PackageListingObjectExportSummaryV01 {
+  objectId: string;
+  primaryObjectSpec: string;
+  aliases?: string[];
+  definitionPath: string;
+  description?: string;
+  helpId?: string;
+}
+
 export interface PackageListingProvidesSummaryV01 {
   patches?: PackageListingProvidedSummaryRefV01[];
   nodes?: PackageListingProvidedSummaryRefV01[];
+  objects?: PackageListingObjectExportSummaryV01[];
   resources?: PackageListingProvidedSummaryRefV01[];
   help?: PackageListingProvidedSummaryRefV01[];
-  nativeObjects?: PackageListingProvidedSummaryRefV01[];
   codecs?: PackageListingProvidedSummaryRefV01[];
   capabilities?: string[];
 }
@@ -924,11 +943,65 @@ export interface CableStyleV01 {
 
 export type CableStyleRegistryV01 = Record<string, CableStyleV01>;
 
+export type ObjectProviderRefV01 =
+  | { kind: "core" }
+  | {
+      kind: "projectPatch";
+      patchId: string;
+      revision?: string;
+      interfaceRevision?: string;
+      interfaceDigest?: PackageChecksumV01;
+    }
+  | {
+      kind: "package";
+      packageId: string;
+      lockEntryId?: string;
+      version?: string;
+    };
+
+export interface ObjectImplementationRefV01 {
+  provider: ObjectProviderRefV01;
+  objectId: string;
+  version?: string;
+  interfaceDigest?: PackageChecksumV01;
+}
+
+export type ObjectResolutionStatusV01 = "resolved" | "unresolved" | "ambiguous" | "stale" | "missing";
+
+export type ObjectResolutionDiagnosticCodeV01 =
+  | "resolution-unresolved"
+  | "resolution-ambiguous"
+  | "implementation-missing"
+  | "implementation-stale"
+  | "implementation-lock-mismatch"
+  | "interface-drift";
+
+export interface ObjectResolutionDiagnosticV01 {
+  severity: "error" | "warning" | "info";
+  code: ObjectResolutionDiagnosticCodeV01;
+  message: string;
+  details?: JsonValueV01;
+}
+
+export interface ObjectResolutionCandidateV01 {
+  implementation: ObjectImplementationRefV01;
+  objectSpec?: string;
+  displayName?: string;
+  reason?: string;
+}
+
+export interface ObjectResolutionV01 {
+  status: ObjectResolutionStatusV01;
+  selectedSpec?: string;
+  candidates?: ObjectResolutionCandidateV01[];
+  diagnostics?: ObjectResolutionDiagnosticV01[];
+}
+
 export interface GraphNodeV01 {
   id: string;
-  kind: string;
-  kindVersion: string;
+  implementation?: ObjectImplementationRefV01;
   objectSpec?: string;
+  objectResolution?: ObjectResolutionV01;
   bindingRef?: string;
   params: Record<string, unknown>;
   ports: PortSpecV01[];
@@ -1086,17 +1159,6 @@ export interface NodeCatalogDisplayV01 {
   helpId?: string | null;
 }
 
-export type NodeCatalogSourceV01 =
-  | {
-      kind: "core";
-    }
-  | {
-      kind: "projectPatch";
-      patchId: string;
-      patchRevision?: string;
-      interfaceDigest: PackageChecksumV01;
-    };
-
 export type NodeCatalogDiagnosticSeverityV01 = "info" | "warning" | "error";
 
 export type NodeCatalogDiagnosticTargetV01 =
@@ -1114,9 +1176,10 @@ export interface NodeCatalogDiagnosticV01 {
 
 export interface NodeCatalogEntryV01 {
   catalogId: string;
-  canonicalObjectSpec: string;
+  objectId: string;
+  primaryObjectSpec: string;
   aliases?: string[];
-  source: NodeCatalogSourceV01;
+  provider: ObjectProviderRefV01;
   definition: NodeDefinitionManifestV01;
   creatable: true;
   display: NodeCatalogDisplayV01;
@@ -1184,13 +1247,7 @@ export interface ProjectResourceLockEntryV01 {
 
 export type ProjectObjectBindingStatusV01 = "resolved" | "unresolved" | "ambiguous" | "stale" | "missing";
 
-export type ProjectObjectBindingDiagnosticCodeV01 =
-  | "binding-unresolved"
-  | "binding-ambiguous"
-  | "binding-target-missing"
-  | "binding-target-stale"
-  | "binding-lock-mismatch"
-  | "binding-interface-drift";
+export type ProjectObjectBindingDiagnosticCodeV01 = ObjectResolutionDiagnosticCodeV01;
 
 export interface ProjectObjectBindingDiagnosticV01 {
   severity: PackageDiagnosticSeverityV01;
@@ -1199,31 +1256,12 @@ export interface ProjectObjectBindingDiagnosticV01 {
   details?: JsonValueV01;
 }
 
-export interface ProjectPatchBindingTargetV01 {
-  kind: "projectPatch";
-  patchId: string;
-  revision?: string;
-  interfaceRevision?: string;
-  interfaceDigest?: PackageChecksumV01;
-}
-
-export interface PackageProviderBindingTargetV01 {
-  kind: "packageProvider";
-  lockEntryId: string;
-  packageId: string;
-  capabilityKind: ProviderRefKindV01;
-  providedId: string;
-  alias?: string;
-  displayName?: string;
-}
-
-export type ProjectObjectBindingTargetV01 = ProjectPatchBindingTargetV01 | PackageProviderBindingTargetV01;
-
 export interface ProjectObjectBindingV01 {
   id: string;
   objectSpec: string;
   status: ProjectObjectBindingStatusV01;
-  target?: ProjectObjectBindingTargetV01;
+  implementation?: ObjectImplementationRefV01;
+  candidates?: ObjectResolutionCandidateV01[];
   diagnostics?: ProjectObjectBindingDiagnosticV01[];
 }
 
@@ -1457,8 +1495,8 @@ export interface ObjectSpecParseResultV01 {
   ok: boolean;
   className: string;
   creationArgs: ObjectSpecAtomV01[];
-  resolvedKind: string | null;
-  resolvedKindVersion: string | null;
+  implementation?: ObjectImplementationRefV01;
+  objectResolution?: ObjectResolutionV01;
   params: Record<string, unknown>;
   instancePorts: ObjectSpecPortV01[];
   displayText: string;

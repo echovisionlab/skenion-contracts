@@ -208,6 +208,38 @@
       },
       "additionalProperties": false
     },
+    "objectExport": {
+      "description": "Object-box creatable export. provides.nodes[] is for node-definition assets; object authoring surfaces MUST be declared here.",
+      "type": "object",
+      "required": ["objectId", "primaryObjectSpec", "definitionPath"],
+      "properties": {
+        "objectId": {
+          "$ref": "#/$defs/providedId"
+        },
+        "primaryObjectSpec": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "definitionPath": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "description": {
+          "type": "string"
+        },
+        "helpId": {
+          "$ref": "#/$defs/providedId"
+        }
+      },
+      "additionalProperties": false
+    },
     "provides": {
       "type": "object",
       "properties": {
@@ -219,9 +251,17 @@
           "default": []
         },
         "nodes": {
+          "description": "Node-definition assets. Do not use nodes[] as the object-box creatable authoring surface; use objects[].",
           "type": "array",
           "items": {
             "$ref": "#/$defs/providedRef"
+          },
+          "default": []
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/objectExport"
           },
           "default": []
         },

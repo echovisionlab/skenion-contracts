@@ -25,12 +25,13 @@
       "id": "binding-resolved-missing-lock",
       "objectSpec": "my-patcher",
       "status": "resolved",
-      "target": {
-        "kind": "packageProvider",
-        "lockEntryId": "missing-lock-entry",
-        "packageId": "skenion/examples",
-        "capabilityKind": "patch",
-        "providedId": "example.oscillator"
+      "implementation": {
+        "provider": {
+          "kind": "package",
+          "packageId": "skenion/examples",
+          "lockEntryId": "missing-lock-entry"
+        },
+        "objectId": "example.oscillator"
       }
     }
   ]

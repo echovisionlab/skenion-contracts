@@ -6,17 +6,20 @@
   "nodes": [
     {
       "id": "note_1",
-      "kind": "object.core.comment",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "Video Asset is a resource. Decode it before using video frames."
       },
-      "ports": []
+      "ports": [],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "comment",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "asset_1",
-      "kind": "object.core.video-asset",
-      "kindVersion": "0.1.0",
       "params": {
         "src": "example.mp4"
       },
@@ -27,12 +30,17 @@
           "label": "Asset",
           "type": "value.core.string"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "video-asset",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "decode_1",
-      "kind": "object.core.video-decode",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -41,7 +49,14 @@
           "label": "Asset",
           "type": "value.core.string"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "video-decode",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

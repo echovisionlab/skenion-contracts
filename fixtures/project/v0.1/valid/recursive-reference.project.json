@@ -34,8 +34,6 @@
         "nodes": [
           {
             "id": "value_in",
-            "kind": "object.core.inlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "value",
               "label": "Value"
@@ -48,12 +46,17 @@
                 "rate": "control",
                 "description": "Value entering this recursive patch."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "inlet",
+              "version": "0.1.0"
+            }
           },
           {
             "id": "self_call",
-            "kind": "core.patch",
-            "kindVersion": "0.1.0",
             "params": {
               "patchId": "recursive_echo"
             },
@@ -70,12 +73,17 @@
                 "type": "value.core.float64",
                 "rate": "control"
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "patch",
+              "version": "0.1.0"
+            }
           },
           {
             "id": "result_out",
-            "kind": "object.core.outlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "result",
               "label": "Result"
@@ -88,7 +96,14 @@
                 "rate": "control",
                 "description": "Result leaving this recursive patch."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "outlet",
+              "version": "0.1.0"
+            }
           }
         ],
         "edges": [

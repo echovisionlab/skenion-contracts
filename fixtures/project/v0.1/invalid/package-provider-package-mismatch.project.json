@@ -43,12 +43,13 @@
       "id": "binding-example-oscillator",
       "objectSpec": "my-patcher",
       "status": "resolved",
-      "target": {
-        "kind": "packageProvider",
-        "lockEntryId": "pkg-skenion-examples-0.45.0",
-        "packageId": "example/not-examples",
-        "capabilityKind": "patch",
-        "providedId": "example.oscillator"
+      "implementation": {
+        "provider": {
+          "kind": "package",
+          "packageId": "example/not-examples",
+          "lockEntryId": "pkg-skenion-examples-0.45.0"
+        },
+        "objectId": "example.oscillator"
       }
     }
   ]

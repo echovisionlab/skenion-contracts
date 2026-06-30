@@ -25,8 +25,6 @@ function result(
     ok: partial.ok,
     className,
     creationArgs,
-    resolvedKind: null,
-    resolvedKindVersion: null,
     params: {},
     instancePorts: [],
     displayText,

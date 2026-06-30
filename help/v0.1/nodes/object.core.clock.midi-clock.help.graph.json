@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "midi_clock_1",
-      "kind": "object.core.clock.midi-clock",
-      "kindVersion": "0.1.0",
       "params": {
         "sourceId": "midi-clock-1",
         "timeSignatureNumerator": 4,
@@ -32,12 +30,17 @@
           "label": "Running",
           "type": "value.core.bool"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "clock.midi-clock",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "display_1",
-      "kind": "object.core.clock.position-display",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -47,7 +50,14 @@
           "type": "clock.state",
           "required": false
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "clock.position-display",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

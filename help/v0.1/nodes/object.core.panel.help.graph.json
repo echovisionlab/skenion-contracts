@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "panel_1",
-      "kind": "object.core.panel",
-      "kindVersion": "0.1.0",
       "params": {
         "label": "Panel",
         "color": "transparent"
@@ -31,12 +29,17 @@
             ]
           }
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "panel",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "note_1",
-      "kind": "object.core.comment",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "Panel is a visual grouping object. Send set #00ff00 to in to update runtime color state."
       },
@@ -59,7 +62,14 @@
             ]
           }
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "comment",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": []

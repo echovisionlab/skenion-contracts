@@ -8,12 +8,15 @@
   "entries": [
     {
       "catalogId": "project.folder-my-patch",
-      "canonicalObjectSpec": "Folder/My Patch?",
-      "aliases": ["Folder.My-Patch"],
-      "source": {
+      "objectId": "Folder/My Patch?",
+      "primaryObjectSpec": "Folder/My Patch?",
+      "aliases": [
+        "Folder.My-Patch"
+      ],
+      "provider": {
         "kind": "projectPatch",
         "patchId": "Folder/My Patch?",
-        "patchRevision": "rev-with-metadata-excluded",
+        "revision": "rev-with-metadata-excluded",
         "interfaceDigest": {
           "algorithm": "sha256",
           "value": "90548cb698af40b559a9538a7d07ba64839c09170857f2949cf792081fa0c33a"

@@ -6,12 +6,17 @@
   "nodes": [
     {
       "id": "note_1",
-      "kind": "core.note",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "documentation marker"
       },
-      "ports": []
+      "ports": [],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "note",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": []

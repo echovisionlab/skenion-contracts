@@ -6,16 +6,20 @@
   "nodes": [
     {
       "id": "note_1",
-      "kind": "object.core.comment",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "F32 stores a control payload. in emits, set stores silently, bang emits the current payload."
       },
-      "ports": []
+      "ports": [],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "comment",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "bang_1",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -62,12 +66,16 @@
           "type": "value.core.bang"
         }
       ],
-      "kind": "object.core.bang"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "bang",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "float_1",
-      "kind": "object.core.float",
-      "kindVersion": "0.1.0",
       "params": {
         "value": 0.5,
         "representation": "f32"
@@ -134,11 +142,17 @@
           "label": "Value",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "float",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "target_1",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -196,7 +210,13 @@
           "type": "value.core.float64"
         }
       ],
-      "kind": "object.core.float"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "float",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

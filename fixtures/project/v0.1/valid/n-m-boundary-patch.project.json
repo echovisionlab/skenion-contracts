@@ -34,8 +34,6 @@
         "nodes": [
           {
             "id": "left_in",
-            "kind": "object.core.inlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "left",
               "label": "Left"
@@ -48,12 +46,17 @@
                 "rate": "control",
                 "description": "Left input value."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "inlet",
+              "version": "0.1.0"
+            }
           },
           {
             "id": "right_in",
-            "kind": "object.core.inlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "right",
               "label": "Right"
@@ -66,12 +69,17 @@
                 "rate": "control",
                 "description": "Right input value."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "inlet",
+              "version": "0.1.0"
+            }
           },
           {
             "id": "sum_out",
-            "kind": "object.core.outlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "sum",
               "label": "Sum"
@@ -86,12 +94,17 @@
                 "maxConnections": null,
                 "description": "Combined sum output."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "outlet",
+              "version": "0.1.0"
+            }
           },
           {
             "id": "difference_out",
-            "kind": "object.core.outlet",
-            "kindVersion": "0.1.0",
             "params": {
               "portId": "difference",
               "label": "Difference"
@@ -104,7 +117,14 @@
                 "rate": "control",
                 "description": "Difference output."
               }
-            ]
+            ],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "outlet",
+              "version": "0.1.0"
+            }
           }
         ],
         "edges": [

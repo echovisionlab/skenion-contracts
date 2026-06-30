@@ -86,12 +86,13 @@ function derivedPatchBoundaryPortIds(patch) {
   const portIds = [];
 
   for (const node of patch.graph.nodes) {
-    if (node.kind === "object.core.inlet") {
+    const isCoreImplementation = node.implementation?.provider.kind === "core";
+    if (isCoreImplementation && node.implementation.objectId === "inlet") {
       const ports = node.ports.filter((port) => port.direction === "output");
       for (const port of ports) {
         portIds.push(boundaryPortId(node, port, ports.length));
       }
-    } else if (node.kind === "object.core.outlet") {
+    } else if (isCoreImplementation && node.implementation.objectId === "outlet") {
       const ports = node.ports.filter((port) => port.direction === "input");
       for (const port of ports) {
         portIds.push(boundaryPortId(node, port, ports.length));
@@ -186,59 +187,92 @@ function validateProjectV01Semantics(file, project) {
     const diagnostics = binding.diagnostics ?? [];
     const hasDiagnostic = (...codes) => diagnostics.some((diagnostic) => codes.includes(diagnostic.code));
 
-    if (binding.status === "resolved" && binding.target === undefined) {
-      fail(file, `resolved object binding ${binding.id} requires target`);
+    if (binding.status === "resolved" && binding.implementation === undefined) {
+      fail(file, `resolved object binding ${binding.id} requires implementation`);
     }
-    if (binding.status === "missing" && !hasDiagnostic("binding-target-missing")) {
-      fail(file, `missing object binding ${binding.id} requires binding-target-missing diagnostic`);
+    if (binding.status === "missing" && !hasDiagnostic("implementation-missing")) {
+      fail(file, `missing object binding ${binding.id} requires implementation-missing diagnostic`);
     }
-    if (binding.status === "stale" && !hasDiagnostic("binding-target-stale", "binding-interface-drift")) {
+    if (binding.status === "stale" && !hasDiagnostic("implementation-stale", "interface-drift")) {
       fail(file, `stale object binding ${binding.id} requires stale or interface-drift diagnostic`);
     }
-    if (binding.status === "unresolved" && !hasDiagnostic("binding-unresolved")) {
-      fail(file, `unresolved object binding ${binding.id} requires binding-unresolved diagnostic`);
+    if (binding.status === "unresolved" && !hasDiagnostic("resolution-unresolved")) {
+      fail(file, `unresolved object binding ${binding.id} requires resolution-unresolved diagnostic`);
     }
-    if (binding.status === "ambiguous" && !hasDiagnostic("binding-ambiguous")) {
-      fail(file, `ambiguous object binding ${binding.id} requires binding-ambiguous diagnostic`);
+    if (binding.status === "ambiguous" && !hasDiagnostic("resolution-ambiguous")) {
+      fail(file, `ambiguous object binding ${binding.id} requires resolution-ambiguous diagnostic`);
     }
 
-    if (binding.target?.kind === "projectPatch") {
-      const patch = project.patchLibrary.find((candidate) => candidate.id === binding.target.patchId);
+    const implementation = binding.implementation;
+    if (implementation?.provider.kind === "projectPatch") {
+      const target = implementation.provider;
+      const patch = project.patchLibrary.find((candidate) => candidate.id === target.patchId);
       if (!patch) {
         if (binding.status === "resolved") {
-          fail(file, `resolved object binding ${binding.id} references missing project patch: ${binding.target.patchId}`);
+          fail(file, `resolved object binding ${binding.id} references missing project patch: ${target.patchId}`);
         }
         if (binding.status !== "missing" && binding.status !== "stale") {
-          fail(file, `object binding ${binding.id} references missing project patch: ${binding.target.patchId}`);
+          fail(file, `object binding ${binding.id} references missing project patch: ${target.patchId}`);
         }
         continue;
       }
-      if (binding.target.revision !== undefined && binding.target.revision !== patch.revision) {
+      if (target.revision !== undefined && target.revision !== patch.revision) {
         if (binding.status === "resolved") {
-          fail(file, `resolved object binding ${binding.id} project patch ${binding.target.patchId} revision is stale`);
+          fail(file, `resolved object binding ${binding.id} project patch ${target.patchId} revision is stale`);
         }
-        if (binding.status !== "stale" || !hasDiagnostic("binding-target-stale", "binding-interface-drift")) {
-          fail(file, `object binding ${binding.id} project patch ${binding.target.patchId} revision is stale without diagnostics`);
+        if (binding.status !== "stale" || !hasDiagnostic("implementation-stale", "interface-drift")) {
+          fail(file, `object binding ${binding.id} project patch ${target.patchId} revision is stale without diagnostics`);
         }
       }
       continue;
     }
 
-    if (binding.target?.kind !== "packageProvider") {
+    if (implementation?.provider.kind !== "package") {
       continue;
     }
-    const lockEntry = packageLockById.get(binding.target.lockEntryId);
+    if (implementation.provider.lockEntryId === undefined) {
+      fail(file, `object binding ${binding.id} package implementation requires lockEntryId`);
+    }
+    const lockEntry = packageLockById.get(implementation.provider.lockEntryId);
     if (!lockEntry) {
       if (binding.status === "resolved") {
-        fail(file, `resolved object binding ${binding.id} references missing lockEntryId: ${binding.target.lockEntryId}`);
+        fail(file, `resolved object binding ${binding.id} references missing lockEntryId: ${implementation.provider.lockEntryId}`);
       }
       if (binding.status !== "missing" && binding.status !== "stale") {
-        fail(file, `object binding ${binding.id} references missing lockEntryId: ${binding.target.lockEntryId}`);
+        fail(file, `object binding ${binding.id} references missing lockEntryId: ${implementation.provider.lockEntryId}`);
       }
       continue;
     }
-    if (binding.target.packageId !== lockEntry.packageId) {
-      fail(file, `object binding ${binding.id} packageId ${binding.target.packageId} does not match lock entry package ${lockEntry.packageId}`);
+    if (implementation.provider.packageId !== lockEntry.packageId) {
+      fail(file, `object binding ${binding.id} packageId ${implementation.provider.packageId} does not match lock entry package ${lockEntry.packageId}`);
+    }
+  }
+}
+
+function validatePackageObjectExports(file, packageId, objects, label) {
+  duplicateCheck(
+    file,
+    objects.map((object) => `${packageId}/${object.objectId}`),
+    `${label} provider/objectId`
+  );
+
+  const specToObjectId = new Map();
+  for (const object of objects) {
+    if (payloadIdentityNodeKind(object.objectId)) {
+      fail(file, `${label} object ${object.objectId} uses payload/value identity as an executable object`);
+    }
+    if (object.primaryObjectSpec.trim().length === 0) {
+      fail(file, `${label} object ${object.objectId} primaryObjectSpec must not be blank`);
+    }
+    for (const spec of [object.primaryObjectSpec, ...(object.aliases ?? [])]) {
+      if (spec.trim().length === 0) {
+        fail(file, `${label} object ${object.objectId} alias/spec must not be blank`);
+      }
+      const previousObjectId = specToObjectId.get(spec);
+      if (previousObjectId !== undefined) {
+        fail(file, `${label} duplicate object spec ${JSON.stringify(spec)} for ${previousObjectId} and ${object.objectId}`);
+      }
+      specToObjectId.set(spec, object.objectId);
     }
   }
 }
@@ -248,6 +282,7 @@ function validatePackageManifestV01Semantics(file, manifest) {
   duplicateCheck(file, (manifest.provides.nodes ?? []).map((provided) => provided.id), "provided node id");
   duplicateCheck(file, (manifest.provides.resources ?? []).map((provided) => provided.id), "provided resource id");
   duplicateCheck(file, (manifest.provides.help ?? []).map((provided) => provided.id), "provided help id");
+  validatePackageObjectExports(file, manifest.id, manifest.provides.objects ?? [], "provided object");
 
   if (manifest.category === "patch") {
     if (manifest.runtimeAbiRange !== undefined) {
@@ -288,8 +323,8 @@ function validatePackageListingV01Semantics(file, listing) {
   duplicateCheck(file, (listing.provides.nodes ?? []).map((provided) => provided.id), "provided node id");
   duplicateCheck(file, (listing.provides.resources ?? []).map((provided) => provided.id), "provided resource id");
   duplicateCheck(file, (listing.provides.help ?? []).map((provided) => provided.id), "provided help id");
-  duplicateCheck(file, (listing.provides.nativeObjects ?? []).map((provided) => provided.id), "provided native object id");
   duplicateCheck(file, (listing.provides.codecs ?? []).map((provided) => provided.id), "provided codec id");
+  validatePackageObjectExports(file, listing.packageId, listing.provides.objects ?? [], "provided object");
 
   const lowerBoundVersion = listing.contracts.range.slice(2).split(" ")[0];
   if (
@@ -516,8 +551,14 @@ function validatePackageInstallPlanRequestV01Semantics(file, request) {
   }
 
   for (const binding of request.current.objectBindings) {
-    if (binding.target?.kind === "packageProvider" && !packageLockIds.has(binding.target.lockEntryId)) {
-      fail(file, `package install plan object binding ${binding.id} references missing lockEntryId: ${binding.target.lockEntryId}`);
+    const provider = binding.implementation?.provider;
+    if (provider?.kind === "package") {
+      if (provider.lockEntryId === undefined) {
+        fail(file, `package install plan object binding ${binding.id} package implementation requires lockEntryId`);
+      }
+      if (!packageLockIds.has(provider.lockEntryId)) {
+        fail(file, `package install plan object binding ${binding.id} references missing lockEntryId: ${provider.lockEntryId}`);
+      }
     }
   }
 
@@ -891,8 +932,11 @@ function validateGraphV01Semantics(file, graph) {
   const incoming = new Map();
   const outgoing = new Map();
   for (const node of graph.nodes) {
-    if (payloadIdentityNodeKind(node.kind)) {
-      fail(file, `node ${node.id} uses payload identity ${node.kind} as an executable kind`);
+    if (node.implementation?.objectId !== undefined && payloadIdentityNodeKind(node.implementation.objectId)) {
+      fail(file, `node ${node.id} uses payload identity ${node.implementation.objectId} as an executable implementation`);
+    }
+    if (node.objectResolution?.status === "resolved" && node.implementation === undefined) {
+      fail(file, `node ${node.id} has resolved objectResolution without implementation`);
     }
     duplicateCheck(
       file,
@@ -1034,8 +1078,11 @@ function validateGraphFragmentV01Semantics(file, fragment) {
   const nodeIds = new Set(fragment.nodes.map((node) => node.id));
   const ports = new Map();
   for (const node of fragment.nodes) {
-    if (payloadIdentityNodeKind(node.kind)) {
-      fail(file, `node ${node.id} uses payload identity ${node.kind} as an executable kind`);
+    if (node.implementation?.objectId !== undefined && payloadIdentityNodeKind(node.implementation.objectId)) {
+      fail(file, `node ${node.id} uses payload identity ${node.implementation.objectId} as an executable implementation`);
+    }
+    if (node.objectResolution?.status === "resolved" && node.implementation === undefined) {
+      fail(file, `node ${node.id} has resolved objectResolution without implementation`);
     }
     duplicateCheck(
       file,
@@ -1436,13 +1483,21 @@ function validateBuiltinFixtureHelpGraph(file, graph, id, manifest) {
   if (graph.id !== `help-${id.replaceAll(".", "-")}`) {
     fail(file, `help graph id must be help-${id.replaceAll(".", "-")}`);
   }
-  const fixtureKinds = new Set(manifest.nodes);
+  const fixtureObjectIds = new Set(manifest.nodes.map((nodeId) => {
+    if (nodeId.startsWith("object.core.")) return nodeId.slice("object.core.".length);
+    if (nodeId.startsWith("core.")) return nodeId.slice("core.".length);
+    return nodeId;
+  }));
   for (const node of graph.nodes) {
-    if (!fixtureKinds.has(node.kind)) {
-      fail(file, `help graph fixture node ${node.id} uses kind ${node.kind} outside the fixture manifest`);
+    if (node.implementation?.provider.kind !== "core") {
+      fail(file, `help graph fixture node ${node.id} must use core provider`);
     }
-    if (node.kindVersion !== "0.1.0") {
-      fail(file, `help graph node ${node.id} kindVersion must be 0.1.0`);
+    const objectId = node.implementation?.objectId;
+    if (!fixtureObjectIds.has(objectId)) {
+      fail(file, `help graph fixture node ${node.id} uses objectId ${objectId} outside the fixture manifest`);
+    }
+    if (node.implementation?.version !== "0.1.0") {
+      fail(file, `help graph node ${node.id} implementation version must be 0.1.0`);
     }
   }
 }

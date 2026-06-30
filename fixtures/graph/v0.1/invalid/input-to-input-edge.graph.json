@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "a",
-      "kind": "core.sink",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -15,12 +13,17 @@
           "direction": "input",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "sink",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "b",
-      "kind": "core.sink",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -28,7 +31,14 @@
           "direction": "input",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "sink",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

@@ -6,12 +6,17 @@
   "nodes": [
     {
       "id": "external-oscillator",
-      "kind": "custom.external",
-      "kindVersion": "0.1.0",
       "objectSpec": "my-patcher",
       "bindingRef": "binding-example-oscillator",
       "params": {},
-      "ports": []
+      "ports": [],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "custom.external",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": []

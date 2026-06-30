@@ -8,15 +8,16 @@ use skenion_contracts::{
     MidiClockSnapshotV01, NodeCatalogDiagnosticNodeDefinitionReasonV01,
     NodeCatalogDiagnosticNodeDefinitionV01, NodeCatalogDiagnosticSeverityV01,
     NodeCatalogDiagnosticTargetV01, NodeCatalogDiagnosticV01, NodeCatalogDisplayPaletteV01,
-    NodeCatalogDisplayV01, NodeCatalogEntryV01, NodeCatalogSnapshotV01, NodeCatalogSourceV01,
-    NodeDefinitionManifestV01, NumberRangeV01, ObjectSpecAtomV01, ObjectSpecParseResultV01,
+    NodeCatalogDisplayV01, NodeCatalogEntryV01, NodeCatalogSnapshotV01, NodeDefinitionManifestV01,
+    NumberRangeV01, ObjectProviderRefV01, ObjectSpecAtomV01, ObjectSpecParseResultV01,
     PackageCategoryV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
     PackageInstallPlanCheckStatusV01, PackageInstallPlanDiagnosticCodeV01,
     PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
     PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageListingArtifactKindV01,
-    PackageListingDiagnosticCodeV01, PackageListingTargetSupportKindV01, PackageListingV01,
-    PackageManifestV01, PackageRootDocumentV01, PackageTargetTripleV01, PasteGraphFragmentRequest,
-    PatchDefinitionV01, PatchPath, ProjectDocumentV01, ProjectObjectBindingTargetV01,
+    PackageListingDiagnosticCodeV01, PackageListingObjectExportSummaryV01,
+    PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
+    PackageObjectExportV01, PackageRootDocumentV01, PackageTargetTripleV01,
+    PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, ProjectDocumentV01,
     RuntimeSessionLoadModeV01, RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
     SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, ValueFormatV01,
     ValueOccurrenceHeaderV01, ValuePayloadKindV01, analyze_graph_document_v01,
@@ -83,8 +84,7 @@ fn serializes_optional_contract_fields_as_absent() {
           "nodes": [
             {
               "id": "source",
-              "kind": "core.slider",
-              "kindVersion": "0.1.0",
+              "implementation": { "provider": { "kind": "core" }, "objectId": "slider", "version": "0.1.0" },
               "params": {},
               "ports": [
                 { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -403,8 +403,7 @@ fn parses_public_graph_fragment_paste_request_payload() {
             "nodes": [
               {
                 "id": "source",
-                "kind": "object.core.float",
-                "kindVersion": "0.1.0",
+                "implementation": { "provider": { "kind": "core" }, "objectId": "float", "version": "0.1.0" },
                 "params": {},
                 "ports": [
                   { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -639,6 +638,44 @@ fn validates_public_package_manifest_contract_surface() {
         Some(">=0.45.0 <0.46.0")
     );
     assert_eq!(mixed_package.native_artifacts.len(), 1);
+    assert_eq!(mixed_package.provides.nodes[0].id, "example.sensor-reading");
+    assert_eq!(
+        mixed_package.provides.objects[0].object_id,
+        "example.sensor-native"
+    );
+    assert_eq!(
+        mixed_package.provides.objects[0].primary_object_spec,
+        "sensor"
+    );
+    assert_eq!(
+        mixed_package.provides.objects[0].aliases,
+        vec!["native-sensor".to_owned()]
+    );
+    assert_eq!(
+        mixed_package.provides.objects[0].definition_path,
+        "nodes/example.sensor-reading.node.json"
+    );
+
+    let public_object_export = PackageObjectExportV01 {
+        object_id: "example.public-object".to_owned(),
+        primary_object_spec: "public-object".to_owned(),
+        aliases: vec!["public-alias".to_owned()],
+        definition_path: "nodes/example.public-object.node.json".to_owned(),
+        description: None,
+        help_id: None,
+    };
+    let public_listing_object_export = PackageListingObjectExportSummaryV01 {
+        object_id: public_object_export.object_id.clone(),
+        primary_object_spec: public_object_export.primary_object_spec.clone(),
+        aliases: public_object_export.aliases.clone(),
+        definition_path: public_object_export.definition_path.clone(),
+        description: None,
+        help_id: None,
+    };
+    assert_eq!(
+        public_listing_object_export.primary_object_spec,
+        "public-object"
+    );
 
     let root = PackageRootDocumentV01 {
         schema: "skenion.package.root".to_owned(),
@@ -681,11 +718,11 @@ fn validates_public_package_manifest_contract_surface() {
     );
     assert_eq!(
         project.object_bindings[0]
-            .target
+            .implementation
             .as_ref()
-            .and_then(|target| match target {
-                skenion_contracts::ProjectObjectBindingTargetV01::PackageProvider {
-                    lock_entry_id,
+            .and_then(|implementation| match &implementation.provider {
+                ObjectProviderRefV01::Package {
+                    lock_entry_id: Some(lock_entry_id),
                     ..
                 } => Some(lock_entry_id.as_str()),
                 _ => None,
@@ -694,12 +731,10 @@ fn validates_public_package_manifest_contract_surface() {
     );
     assert_eq!(
         project.object_bindings[1]
-            .target
+            .implementation
             .as_ref()
-            .and_then(|target| match target {
-                skenion_contracts::ProjectObjectBindingTargetV01::ProjectPatch {
-                    patch_id, ..
-                } => Some(patch_id.as_str()),
+            .and_then(|implementation| match &implementation.provider {
+                ObjectProviderRefV01::ProjectPatch { patch_id, .. } => Some(patch_id.as_str()),
                 _ => None,
             }),
         Some("local_wrapper")
@@ -711,6 +746,38 @@ fn validates_public_package_manifest_contract_surface() {
     assert_eq!(
         project.graph.nodes[0].binding_ref.as_deref(),
         Some("binding-example-oscillator")
+    );
+    let mut project_with_core_binding = project.clone();
+    project_with_core_binding.object_bindings.push(
+        serde_json::from_value(serde_json::json!({
+            "id": "binding-core-float",
+            "objectSpec": "float",
+            "status": "resolved",
+            "implementation": {
+                "provider": { "kind": "core" },
+                "objectId": "float",
+                "version": "0.1.0"
+            }
+        }))
+        .expect("core binding should parse"),
+    );
+    validate_project_document_v01(&project_with_core_binding)
+        .expect("core object binding should validate");
+
+    let mut package_binding_without_lock = project.clone();
+    if let Some(implementation) =
+        &mut package_binding_without_lock.object_bindings[0].implementation
+        && let ObjectProviderRefV01::Package { lock_entry_id, .. } = &mut implementation.provider
+    {
+        *lock_entry_id = None;
+    }
+    let package_binding_without_lock_report =
+        validate_project_document_v01(&package_binding_without_lock)
+            .expect_err("package binding without lockEntryId should fail");
+    assert!(
+        package_binding_without_lock_report
+            .to_string()
+            .contains("package implementation requires lockEntryId")
     );
 
     let listing: PackageListingV01 = serde_json::from_str(include_str!(
@@ -731,8 +798,12 @@ fn validates_public_package_manifest_contract_surface() {
         .expect("public package discovery response should validate");
     assert_eq!(discovery.listings.len(), 2);
     assert_eq!(
-        discovery.listings[1].provides.native_objects[0].id,
+        discovery.listings[1].provides.objects[0].object_id,
         "example.sensor-native"
+    );
+    assert_eq!(
+        discovery.listings[1].provides.objects[0].primary_object_spec,
+        "sensor"
     );
     assert_eq!(
         discovery.listings[1].provides.codecs[0].id,
@@ -1442,10 +1513,11 @@ fn validates_public_package_install_plan_contract_surface() {
     );
 
     let mut missing_binding_lock = request.clone();
-    if let Some(ProjectObjectBindingTargetV01::PackageProvider { lock_entry_id, .. }) =
-        &mut missing_binding_lock.current.object_bindings[0].target
+    if let Some(implementation) =
+        &mut missing_binding_lock.current.object_bindings[0].implementation
+        && let ObjectProviderRefV01::Package { lock_entry_id, .. } = &mut implementation.provider
     {
-        *lock_entry_id = "missing-lock".to_owned();
+        *lock_entry_id = Some("missing-lock".to_owned());
     }
     let missing_binding_lock_report =
         validate_package_install_plan_request_v01(&missing_binding_lock)
@@ -1454,6 +1526,39 @@ fn validates_public_package_install_plan_contract_surface() {
         missing_binding_lock_report
             .to_string()
             .contains("object binding")
+    );
+
+    let mut request_with_core_binding = request.clone();
+    request_with_core_binding.current.object_bindings.push(
+        serde_json::from_value(serde_json::json!({
+            "id": "binding-core-float",
+            "objectSpec": "float",
+            "status": "resolved",
+            "implementation": {
+                "provider": { "kind": "core" },
+                "objectId": "float",
+                "version": "0.1.0"
+            }
+        }))
+        .expect("core binding should parse"),
+    );
+    validate_package_install_plan_request_v01(&request_with_core_binding)
+        .expect("core binding should not require package lock");
+
+    let mut binding_without_lock_id = request.clone();
+    if let Some(implementation) =
+        &mut binding_without_lock_id.current.object_bindings[0].implementation
+        && let ObjectProviderRefV01::Package { lock_entry_id, .. } = &mut implementation.provider
+    {
+        *lock_entry_id = None;
+    }
+    let binding_without_lock_id_report =
+        validate_package_install_plan_request_v01(&binding_without_lock_id)
+            .expect_err("binding without lockEntryId should fail");
+    assert!(
+        binding_without_lock_id_report
+            .to_string()
+            .contains("package implementation requires lockEntryId")
     );
 
     let mut request_without_candidates = request.clone();
@@ -1730,8 +1835,12 @@ fn validates_public_object_spec_parse_results() {
           "ok": true,
           "className": "example.gain",
           "creationArgs": [{ "type": "float", "value": 0.5, "representation": "f32" }],
-          "resolvedKind": "example.package.gain",
-          "resolvedKindVersion": "0.1.0",
+          "implementation": {
+            "provider": { "kind": "package", "packageId": "example/package", "version": "0.1.0" },
+            "objectId": "gain",
+            "version": "0.1.0"
+          },
+          "objectResolution": { "status": "resolved", "selectedSpec": "example.gain 0.5" },
           "params": { "gain": 0.5 },
           "instancePorts": [
             {
@@ -1758,8 +1867,58 @@ fn validates_public_object_spec_parse_results() {
 
     validate_object_spec_parse_result_v01(&result).expect("object spec result should validate");
     assert_eq!(
-        result.resolved_kind.as_deref(),
-        Some("example.package.gain")
+        result
+            .implementation
+            .as_ref()
+            .map(|implementation| implementation.object_id.as_str()),
+        Some("gain")
+    );
+
+    let mut resolved_without_implementation = result.clone();
+    resolved_without_implementation.implementation = None;
+    let resolved_without_implementation_error =
+        validate_object_spec_parse_result_v01(&resolved_without_implementation)
+            .expect_err("resolved object spec without implementation should fail");
+    assert!(
+        resolved_without_implementation_error
+            .to_string()
+            .contains("requires implementation")
+    );
+
+    let legacy_resolution_diagnostic: Result<ObjectSpecParseResultV01, _> = serde_json::from_str(
+        r#"{
+              "schema": "skenion.object-spec.parse-result",
+              "schemaVersion": "0.1.0",
+              "input": "missing.object",
+              "ok": false,
+              "className": "missing.object",
+              "creationArgs": [],
+              "implementation": {
+                "provider": { "kind": "core" },
+                "objectId": "missing",
+                "version": "0.1.0"
+              },
+              "objectResolution": {
+                "status": "unresolved",
+                "diagnostics": [
+                  {
+                    "severity": "error",
+                    "code": "binding-unresolved",
+                    "message": "legacy diagnostic code must be rejected"
+                  }
+                ]
+              },
+              "params": {},
+              "instancePorts": [],
+              "displayText": "missing.object",
+              "diagnostics": []
+            }"#,
+    );
+    assert!(
+        legacy_resolution_diagnostic
+            .expect_err("legacy resolution diagnostic code should fail parsing")
+            .to_string()
+            .contains("binding-unresolved")
     );
 
     let mut wrong_schema = result.clone();
@@ -1776,7 +1935,7 @@ fn validates_public_object_spec_parse_results() {
 
     let parsed = parse_object_spec_v01("[osc~ 440]");
     assert_eq!(parsed.class_name, "osc~");
-    assert_eq!(parsed.resolved_kind, None);
+    assert_eq!(parsed.implementation, None);
     assert!(parsed.params.is_empty());
     assert!(parsed.instance_ports.is_empty());
     assert_eq!(
@@ -1932,9 +2091,10 @@ fn valid_core_catalog_snapshot() -> NodeCatalogSnapshotV01 {
         "entries": [
             {
                 "catalogId": "core.float",
-                "canonicalObjectSpec": "float",
+                "objectId": "float",
+                "primaryObjectSpec": "float",
                 "aliases": ["float64", "number"],
-                "source": { "kind": "core" },
+                "provider": { "kind": "core" },
                 "definition": minimal_node_definition_value("object.core.float", "Float"),
                 "creatable": true,
                 "display": {
@@ -1955,9 +2115,10 @@ fn valid_core_catalog_snapshot() -> NodeCatalogSnapshotV01 {
             },
             {
                 "catalogId": "core.message",
-                "canonicalObjectSpec": "message",
+                "objectId": "message",
+                "primaryObjectSpec": "message",
                 "aliases": ["msg"],
-                "source": { "kind": "core" },
+                "provider": { "kind": "core" },
                 "definition": minimal_node_definition_value("object.core.message", "Message"),
                 "creatable": true,
                 "display": {
@@ -2000,8 +2161,7 @@ fn valid_project_patch() -> PatchDefinitionV01 {
             "nodes": [
                 {
                     "id": "value_in",
-                    "kind": "object.core.inlet",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                     "params": { "portId": "value", "label": "Value" },
                     "ports": [
                         { "id": "out", "direction": "output", "type": "value.core.float64", "rate": "control" }
@@ -2009,8 +2169,7 @@ fn valid_project_patch() -> PatchDefinitionV01 {
                 },
                 {
                     "id": "value_out",
-                    "kind": "object.core.outlet",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "outlet", "version": "0.1.0" },
                     "params": { "portId": "result", "label": "Result" },
                     "ports": [
                         { "id": "in", "direction": "input", "type": "value.core.float64", "rate": "control" }
@@ -2042,13 +2201,14 @@ fn valid_project_patch_catalog_snapshot() -> NodeCatalogSnapshotV01 {
         "entries": [
             {
                 "catalogId": "project.folder-my-patch",
-                "source": {
+                "objectId": patch.id,
+                "primaryObjectSpec": "Folder/My Patch?",
+                "provider": {
                     "kind": "projectPatch",
                     "patchId": patch.id,
-                    "patchRevision": patch.revision,
+                    "revision": patch.revision,
                     "interfaceDigest": interface_digest
                 },
-                "canonicalObjectSpec": "Folder/My Patch?",
                 "aliases": ["Folder.My-Patch"],
                 "definition": {
                     "schema": "skenion.node.definition",
@@ -2091,8 +2251,9 @@ fn validates_public_node_catalog_contracts() {
         serde_json::to_value(&public_display).expect("display should serialize")["palette"],
         serde_json::json!("direct")
     );
-    let _public_source: NodeCatalogSourceV01 =
-        serde_json::from_value(serde_json::json!({ "kind": "core" })).expect("source should parse");
+    let _public_provider: ObjectProviderRefV01 =
+        serde_json::from_value(serde_json::json!({ "kind": "core" }))
+            .expect("provider should parse");
     let _public_target: NodeCatalogDiagnosticTargetV01 =
         serde_json::from_value(serde_json::json!({ "kind": "entry", "catalogId": "core.float" }))
             .expect("target should parse");
@@ -2120,6 +2281,34 @@ fn validates_public_node_catalog_contracts() {
     validate_node_catalog_snapshot_v01(&core_catalog).expect("core catalog should validate");
     validate_node_catalog_snapshot_v01(&project_catalog)
         .expect("project patch catalog should validate");
+    let package_catalog: NodeCatalogSnapshotV01 = serde_json::from_value(serde_json::json!({
+        "schema": "skenion.node-catalog.snapshot",
+        "schemaVersion": "0.1.0",
+        "catalogRevision": zero_checksum_v01(),
+        "entries": [
+            {
+                "catalogId": "package.skenion-examples.gain",
+                "objectId": "gain",
+                "primaryObjectSpec": "gain",
+                "provider": {
+                    "kind": "package",
+                    "packageId": "skenion/examples",
+                    "lockEntryId": "pkg-skenion-examples-0.45.0",
+                    "version": "0.45.0"
+                },
+                "definition": minimal_node_definition_value("object.package.skenion-examples.gain", "Gain"),
+                "creatable": true,
+                "display": {
+                    "title": "Gain",
+                    "category": "Package"
+                }
+            }
+        ],
+        "diagnosticNodeDefinitions": []
+    }))
+    .expect("package catalog should parse");
+    validate_node_catalog_snapshot_v01(&with_catalog_revision(package_catalog))
+        .expect("package catalog should validate");
     assert_eq!(
         sanitize_project_patch_id_v01("Folder/My Patch?"),
         "Folder-My-Patch-"
@@ -2131,11 +2320,11 @@ fn validates_public_node_catalog_contracts() {
     );
     assert_eq!(
         project_catalog.catalog_revision.value,
-        "7d741cbc25a956ced954d0180ede5b29e8ff45a6966db83882972e122629acab"
+        "e83bcb5043a0e2fde92bf4ba808726a89b5e5b72a66ade55bb9496a4aad4ebc8"
     );
     assert_eq!(
         core_catalog.catalog_revision.value,
-        "b9c3c9483879f21696481b2634ffbcb9046b561b8ddedd01772dd4141f7fa538"
+        "7536ac0eb305d902c270630f356c1ec639923aaa3ff89512bfc5164eafef66b5"
     );
 
     let mut changed_patch = valid_project_patch();
@@ -2209,7 +2398,7 @@ fn reports_public_node_catalog_errors() {
     let mut duplicate_entry = duplicate_catalog_id.entries[1].clone();
     duplicate_entry.catalog_id = "core.float".to_owned();
     duplicate_entry.definition.id = "object.core.duplicate".to_owned();
-    duplicate_entry.canonical_object_spec = "duplicate".to_owned();
+    duplicate_entry.primary_object_spec = "duplicate".to_owned();
     duplicate_catalog_id.entries.push(duplicate_entry);
     duplicate_catalog_id = with_catalog_revision(duplicate_catalog_id);
     let report = validate_node_catalog_snapshot_v01(&duplicate_catalog_id)
@@ -2297,11 +2486,11 @@ fn reports_public_node_catalog_errors() {
     );
 
     let mut duplicate_canonical = valid_core_catalog_snapshot();
-    duplicate_canonical.entries[1].canonical_object_spec = "float".to_owned();
+    duplicate_canonical.entries[1].primary_object_spec = "float".to_owned();
     duplicate_canonical = with_catalog_revision(duplicate_canonical);
     let report = validate_node_catalog_snapshot_v01(&duplicate_canonical)
         .expect_err("duplicate canonical text should fail");
-    assert!(report.to_string().contains("duplicate canonicalObjectSpec"));
+    assert!(report.to_string().contains("duplicate primaryObjectSpec"));
 
     let mut duplicate_alias = valid_core_catalog_snapshot();
     duplicate_alias.entries[1].aliases = Some(vec!["dup".to_owned(), "dup".to_owned()]);
@@ -2330,15 +2519,27 @@ fn reports_public_node_catalog_errors() {
     assert!(report.to_string().contains("missing diagnosticId"));
 
     let mut uppercase_checksum = valid_project_patch_catalog_snapshot();
-    if let NodeCatalogSourceV01::ProjectPatch {
-        interface_digest, ..
-    } = &mut uppercase_checksum.entries[0].source
+    if let ObjectProviderRefV01::ProjectPatch {
+        interface_digest: Some(interface_digest),
+        ..
+    } = &mut uppercase_checksum.entries[0].provider
     {
         interface_digest.value = interface_digest.value.to_uppercase();
     }
     let report = validate_node_catalog_snapshot_v01(&uppercase_checksum)
         .expect_err("uppercase checksum should fail");
     assert!(report.to_string().contains("sha256 hex value"));
+
+    let mut empty_patch_id = valid_project_patch_catalog_snapshot();
+    if let ObjectProviderRefV01::ProjectPatch { patch_id, .. } =
+        &mut empty_patch_id.entries[0].provider
+    {
+        patch_id.clear();
+    }
+    empty_patch_id = with_catalog_revision(empty_patch_id);
+    let report = validate_node_catalog_snapshot_v01(&empty_patch_id)
+        .expect_err("empty project patch provider id should fail");
+    assert!(report.to_string().contains("provider.patchId"));
 
     let mut revision_mismatch = valid_core_catalog_snapshot();
     revision_mismatch.catalog_revision.value = "f".repeat(64);
@@ -2350,7 +2551,7 @@ fn reports_public_node_catalog_errors() {
         || serde_json::to_value(valid_core_catalog_snapshot()).expect("catalog should serialize");
     for (label, value, expected) in [
         (
-            "package source",
+            "legacy source field",
             {
                 let mut value = removed_field_snapshot_value();
                 value["entries"][0]["source"] = serde_json::json!({
@@ -2361,7 +2562,7 @@ fn reports_public_node_catalog_errors() {
                 });
                 value
             },
-            "unknown variant",
+            "unknown field",
         ),
         (
             "generatedAt",
@@ -2483,8 +2684,8 @@ fn parses_public_object_spec_lexical_matrix() {
         let result = parse_object_spec_v01(input);
         validate_object_spec_parse_result_v01(&result).expect("parse result should validate");
         assert!(result.ok, "{input} should parse");
-        assert_eq!(result.resolved_kind, None);
-        assert_eq!(result.resolved_kind_version, None);
+        assert_eq!(result.implementation, None);
+        assert_eq!(result.object_resolution, None);
         assert!(result.params.is_empty());
         assert!(result.instance_ports.is_empty());
     }
@@ -2785,8 +2986,7 @@ fn reports_public_graph_semantic_errors() {
           "nodes": [
             {
               "id": "node",
-              "kind": "core.node",
-              "kindVersion": "0.1.0",
+              "implementation": { "provider": { "kind": "core" }, "objectId": "node", "version": "0.1.0" },
               "params": {},
               "ports": [
                 { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -2794,8 +2994,7 @@ fn reports_public_graph_semantic_errors() {
             },
             {
               "id": "node",
-              "kind": "core.node",
-              "kindVersion": "0.1.0",
+              "implementation": { "provider": { "kind": "core" }, "objectId": "node", "version": "0.1.0" },
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "value.core.bang" }
@@ -2828,8 +3027,7 @@ fn validates_public_v01_graph_and_node_contracts() {
           "nodes": [
             {
               "id": "clear",
-              "kind": "object.core.render.clear-color",
-              "kindVersion": "0.1.0",
+              "implementation": { "provider": { "kind": "core" }, "objectId": "render.clear-color", "version": "0.1.0" },
               "params": { "color": [0, 0, 0, 1] },
               "ports": [
                 { "id": "out", "direction": "output", "type": "value.core.tensor", "rate": "render" }
@@ -2837,8 +3035,7 @@ fn validates_public_v01_graph_and_node_contracts() {
             },
             {
               "id": "output",
-              "kind": "object.core.render.output",
-              "kindVersion": "0.1.0",
+              "implementation": { "provider": { "kind": "core" }, "objectId": "render.output", "version": "0.1.0" },
               "params": {},
               "ports": [
                 { "id": "in", "direction": "input", "type": "value.core.tensor", "rate": "render", "required": true }
@@ -2950,8 +3147,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                 "nodes": [
                   {
                     "id": "fallback_input",
-                    "kind": "object.core.inlet",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                     "params": {},
                     "ports": [
                       { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -2959,8 +3155,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                   },
                   {
                     "id": "multi_input",
-                    "kind": "object.core.inlet",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                     "params": {},
                     "ports": [
                       { "id": "first", "direction": "output", "type": "value.core.float64" },
@@ -2969,8 +3164,7 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
                   },
                   {
                     "id": "fallback_output",
-                    "kind": "object.core.outlet",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "outlet", "version": "0.1.0" },
                     "params": {},
                     "ports": [
                       { "id": "in", "direction": "input", "type": "value.core.float64" }
@@ -3026,8 +3220,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
             "nodes": [
                 {
                     "id": "source",
-                    "kind": "object.core.float",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "float", "version": "0.1.0" },
                     "params": {},
                     "ports": [
                         { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -3035,8 +3228,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                 },
                 {
                     "id": "target",
-                    "kind": "object.core.render.output",
-                    "kindVersion": "0.1.0",
+                    "implementation": { "provider": { "kind": "core" }, "objectId": "render.output", "version": "0.1.0" },
                     "params": {},
                     "ports": [
                         { "id": "in", "direction": "input", "type": "value.core.tensor" }
@@ -3072,8 +3264,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                     "nodes": [
                         {
                             "id": "inlet_a",
-                            "kind": "object.core.inlet",
-                            "kindVersion": "0.1.0",
+                            "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                             "params": { "portId": "same" },
                             "ports": [
                                 { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -3081,8 +3272,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                         },
                         {
                             "id": "inlet_b",
-                            "kind": "object.core.inlet",
-                            "kindVersion": "0.1.0",
+                            "implementation": { "provider": { "kind": "core" }, "objectId": "inlet", "version": "0.1.0" },
                             "params": { "portId": "same" },
                             "ports": [
                                 { "id": "out", "direction": "output", "type": "value.core.float64" }
@@ -3090,8 +3280,7 @@ fn reports_public_v01_project_and_patch_definition_errors() {
                         },
                         {
                             "id": "sink",
-                            "kind": "object.core.render.output",
-                            "kindVersion": "0.1.0",
+                            "implementation": { "provider": { "kind": "core" }, "objectId": "render.output", "version": "0.1.0" },
                             "params": {},
                             "ports": [
                                 { "id": "in", "direction": "input", "type": "value.core.tensor" }

@@ -12,12 +12,17 @@
     "nodes": [
       {
         "id": "sensor",
-        "kind": "custom.external",
-        "kindVersion": "0.1.0",
         "objectSpec": "sensor-reading",
         "bindingRef": "binding-sensor-reading",
         "params": {},
-        "ports": []
+        "ports": [],
+        "implementation": {
+          "provider": {
+            "kind": "core"
+          },
+          "objectId": "custom.external",
+          "version": "0.1.0"
+        }
       }
     ],
     "edges": []
@@ -85,14 +90,13 @@
       "id": "binding-sensor-reading",
       "objectSpec": "sensor-reading",
       "status": "resolved",
-      "target": {
-        "kind": "packageProvider",
-        "lockEntryId": "pkg-example-native-sensor-0.45.1",
-        "packageId": "example/native-sensor",
-        "capabilityKind": "node",
-        "providedId": "example.sensor-reading",
-        "alias": "sensor-reading",
-        "displayName": "Sensor Reading"
+      "implementation": {
+        "provider": {
+          "kind": "package",
+          "packageId": "example/native-sensor",
+          "lockEntryId": "pkg-example-native-sensor-0.45.1"
+        },
+        "objectId": "example.sensor-reading"
       }
     }
   ]

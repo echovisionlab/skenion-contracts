@@ -21,6 +21,17 @@
         "path": "nodes/sensor-reading.skenion.json"
       }
     ],
+    "objects": [
+      {
+        "objectId": "example.sensor-native",
+        "primaryObjectSpec": "sensor",
+        "aliases": [
+          "native-sensor"
+        ],
+        "definitionPath": "nodes/example.sensor-reading.node.json",
+        "description": "Native object entrypoint for sensor readings."
+      }
+    ],
     "resources": [
       {
         "id": "example.sensor-calibration",

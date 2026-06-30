@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "a",
-      "kind": "object.core.float",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -15,12 +13,17 @@
           "direction": "output",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "float",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "b",
-      "kind": "object.core.float",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -28,11 +31,17 @@
           "direction": "output",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "float",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "target",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -42,7 +51,13 @@
           "maxConnections": 2
         }
       ],
-      "kind": "object.core.operator.add"
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "operator.add",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

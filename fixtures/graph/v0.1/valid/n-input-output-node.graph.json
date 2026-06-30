@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "matrix_1",
-      "kind": "core.matrix",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -36,7 +34,14 @@
           "type": "value.core.float64",
           "rate": "control"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "matrix",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": []

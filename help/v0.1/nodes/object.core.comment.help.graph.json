@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "note_1",
-      "kind": "object.core.comment",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "Comments annotate a patch. Send set <text> to in to update runtime display text."
       },
@@ -30,12 +28,17 @@
             ]
           }
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "comment",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "note_2",
-      "kind": "object.core.comment",
-      "kindVersion": "0.1.0",
       "params": {
         "text": "Use comments near important control or render decisions."
       },
@@ -58,7 +61,14 @@
             ]
           }
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "comment",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": []

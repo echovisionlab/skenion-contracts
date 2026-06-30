@@ -37,12 +37,17 @@
         "nodes": [
           {
             "id": "note",
-            "kind": "core.note",
-            "kindVersion": "0.1.0",
             "params": {
               "text": "No boundary ports."
             },
-            "ports": []
+            "ports": [],
+            "implementation": {
+              "provider": {
+                "kind": "core"
+              },
+              "objectId": "note",
+              "version": "0.1.0"
+            }
           }
         ],
         "edges": []

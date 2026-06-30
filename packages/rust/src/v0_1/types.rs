@@ -527,15 +527,114 @@ pub struct ViewStateV01 {
     pub canvas: CanvasViewStateV01,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum ObjectProviderRefV01 {
+    Core,
+    ProjectPatch {
+        patch_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        revision: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        interface_revision: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        interface_digest: Option<PackageChecksumV01>,
+    },
+    Package {
+        package_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        lock_entry_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        version: Option<String>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectImplementationRefV01 {
+    pub provider: ObjectProviderRefV01,
+    pub object_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface_digest: Option<PackageChecksumV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ObjectResolutionStatusV01 {
+    Resolved,
+    Unresolved,
+    Ambiguous,
+    Stale,
+    Missing,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ObjectResolutionDiagnosticCodeV01 {
+    ResolutionUnresolved,
+    ResolutionAmbiguous,
+    ImplementationMissing,
+    ImplementationStale,
+    ImplementationLockMismatch,
+    InterfaceDrift,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectResolutionDiagnosticV01 {
+    pub severity: PackageDiagnosticSeverityV01,
+    pub code: ObjectResolutionDiagnosticCodeV01,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectResolutionCandidateV01 {
+    pub implementation: ObjectImplementationRefV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub object_spec: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectResolutionV01 {
+    pub status: ObjectResolutionStatusV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_spec: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub candidates: Vec<ObjectResolutionCandidateV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diagnostics: Vec<ObjectResolutionDiagnosticV01>,
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct GraphNodeV01 {
     pub id: String,
-    pub kind: String,
-    pub kind_version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub implementation: Option<ObjectImplementationRefV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub object_spec: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub object_resolution: Option<ObjectResolutionV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub binding_ref: Option<String>,
     pub params: serde_json::Map<String, Value>,
@@ -816,23 +915,6 @@ pub struct NodeCatalogDisplayV01 {
     pub help_id: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(
-    tag = "kind",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase",
-    deny_unknown_fields
-)]
-pub enum NodeCatalogSourceV01 {
-    Core,
-    ProjectPatch {
-        patch_id: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        patch_revision: Option<String>,
-        interface_digest: PackageChecksumV01,
-    },
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum NodeCatalogDiagnosticSeverityV01 {
@@ -871,10 +953,11 @@ pub struct NodeCatalogDiagnosticV01 {
 #[serde(rename_all = "camelCase")]
 pub struct NodeCatalogEntryV01 {
     pub catalog_id: String,
-    pub canonical_object_spec: String,
+    pub object_id: String,
+    pub primary_object_spec: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub aliases: Option<Vec<String>>,
-    pub source: NodeCatalogSourceV01,
+    pub provider: ObjectProviderRefV01,
     pub definition: NodeDefinitionManifestV01,
     pub creatable: bool,
     pub display: NodeCatalogDisplayV01,
@@ -1030,6 +1113,21 @@ pub struct PackageProvidedRefV01 {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageObjectExportV01 {
+    pub object_id: String,
+    pub primary_object_spec: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aliases: Vec<String>,
+    pub definition_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub help_id: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
@@ -1038,6 +1136,8 @@ pub struct PackageProvidesV01 {
     pub patches: Vec<PackageProvidedRefV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub nodes: Vec<PackageProvidedRefV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub objects: Vec<PackageObjectExportV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub resources: Vec<PackageProvidedRefV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1165,6 +1265,21 @@ pub struct PackageListingProvidedSummaryRefV01 {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageListingObjectExportSummaryV01 {
+    pub object_id: String,
+    pub primary_object_spec: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aliases: Vec<String>,
+    pub definition_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub help_id: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
@@ -1174,11 +1289,11 @@ pub struct PackageListingProvidesSummaryV01 {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub nodes: Vec<PackageListingProvidedSummaryRefV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub objects: Vec<PackageListingObjectExportSummaryV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub resources: Vec<PackageListingProvidedSummaryRefV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub help: Vec<PackageListingProvidedSummaryRefV01>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub native_objects: Vec<PackageListingProvidedSummaryRefV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub codecs: Vec<PackageListingProvidedSummaryRefV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1605,55 +1720,8 @@ pub enum ProjectObjectBindingStatusV01 {
     Missing,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum ProjectObjectBindingDiagnosticCodeV01 {
-    BindingUnresolved,
-    BindingAmbiguous,
-    BindingTargetMissing,
-    BindingTargetStale,
-    BindingLockMismatch,
-    BindingInterfaceDrift,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
-pub struct ProjectObjectBindingDiagnosticV01 {
-    pub severity: PackageDiagnosticSeverityV01,
-    pub code: ProjectObjectBindingDiagnosticCodeV01,
-    pub message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub details: Option<Value>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(
-    tag = "kind",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
-pub enum ProjectObjectBindingTargetV01 {
-    ProjectPatch {
-        patch_id: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        revision: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        interface_revision: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        interface_digest: Option<PackageChecksumV01>,
-    },
-    PackageProvider {
-        lock_entry_id: String,
-        package_id: String,
-        capability_kind: ProviderRefKindV01,
-        provided_id: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        alias: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        display_name: Option<String>,
-    },
-}
+pub type ProjectObjectBindingDiagnosticCodeV01 = ObjectResolutionDiagnosticCodeV01;
+pub type ProjectObjectBindingDiagnosticV01 = ObjectResolutionDiagnosticV01;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -1663,7 +1731,9 @@ pub struct ProjectObjectBindingV01 {
     pub object_spec: String,
     pub status: ProjectObjectBindingStatusV01,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub target: Option<ProjectObjectBindingTargetV01>,
+    pub implementation: Option<ObjectImplementationRefV01>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub candidates: Vec<ObjectResolutionCandidateV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub diagnostics: Vec<ProjectObjectBindingDiagnosticV01>,
 }
@@ -1827,16 +1897,27 @@ fn derive_boundary_ports(
         .collect()
 }
 
+fn is_core_implementation(node: &GraphNodeV01, object_id: &str) -> bool {
+    matches!(
+        &node.implementation,
+        Some(ObjectImplementationRefV01 {
+            provider: ObjectProviderRefV01::Core,
+            object_id: node_object_id,
+            ..
+        }) if node_object_id == object_id
+    )
+}
+
 pub fn derive_patch_contract_v01(patch: &PatchDefinitionV01) -> PatchContractV01 {
     let mut ports = Vec::new();
     for node in &patch.graph.nodes {
-        if node.kind == "object.core.inlet" {
+        if is_core_implementation(node, "inlet") {
             ports.extend(derive_boundary_ports(
                 node,
                 PortDirectionV01::Output,
                 PortDirectionV01::Input,
             ));
-        } else if node.kind == "object.core.outlet" {
+        } else if is_core_implementation(node, "outlet") {
             ports.extend(derive_boundary_ports(
                 node,
                 PortDirectionV01::Input,

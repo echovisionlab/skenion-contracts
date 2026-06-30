@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "bang_1",
-      "kind": "object.core.bang",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -57,12 +55,17 @@
           "label": "Bang",
           "type": "value.core.bang"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "bang",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "float_1",
-      "kind": "object.core.float",
-      "kindVersion": "0.1.0",
       "params": {
         "value": 0.5,
         "representation": "f32",
@@ -130,7 +133,14 @@
           "label": "Value",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "float",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": [

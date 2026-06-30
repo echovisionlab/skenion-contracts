@@ -12,12 +12,17 @@
     "nodes": [
       {
         "id": "external-oscillator",
-        "kind": "custom.external",
-        "kindVersion": "0.1.0",
         "objectSpec": "my-patcher",
         "bindingRef": "binding-example-oscillator",
         "params": {},
-        "ports": []
+        "ports": [],
+        "implementation": {
+          "provider": {
+            "kind": "core"
+          },
+          "objectId": "custom.external",
+          "version": "0.1.0"
+        }
       }
     ],
     "edges": []
@@ -92,42 +97,44 @@
       "id": "binding-example-oscillator",
       "objectSpec": "my-patcher",
       "status": "resolved",
-      "target": {
-        "kind": "packageProvider",
-        "lockEntryId": "pkg-skenion-examples-0.45.0",
-        "packageId": "skenion/examples",
-        "capabilityKind": "patch",
-        "providedId": "example.oscillator",
-        "alias": "my-patcher",
-        "displayName": "Example Oscillator"
+      "implementation": {
+        "provider": {
+          "kind": "package",
+          "packageId": "skenion/examples",
+          "lockEntryId": "pkg-skenion-examples-0.45.0"
+        },
+        "objectId": "example.oscillator"
       }
     },
     {
       "id": "binding-local-wrapper",
       "objectSpec": "p local_wrapper",
       "status": "resolved",
-      "target": {
-        "kind": "projectPatch",
-        "patchId": "local_wrapper",
-        "revision": "1"
+      "implementation": {
+        "provider": {
+          "kind": "projectPatch",
+          "patchId": "local_wrapper",
+          "revision": "1"
+        },
+        "objectId": "local_wrapper"
       }
     },
     {
       "id": "binding-missing-provider",
       "objectSpec": "missing-provider",
       "status": "missing",
-      "target": {
-        "kind": "packageProvider",
-        "lockEntryId": "missing-lock-entry",
-        "packageId": "skenion/examples",
-        "capabilityKind": "patch",
-        "providedId": "example.missing-provider",
-        "alias": "missing-provider"
+      "implementation": {
+        "provider": {
+          "kind": "package",
+          "packageId": "skenion/examples",
+          "lockEntryId": "missing-lock-entry"
+        },
+        "objectId": "example.missing-provider"
       },
       "diagnostics": [
         {
           "severity": "warning",
-          "code": "binding-target-missing",
+          "code": "implementation-missing",
           "message": "The previously selected package provider is not available in the current project load."
         }
       ]
@@ -139,7 +146,7 @@
       "diagnostics": [
         {
           "severity": "warning",
-          "code": "binding-ambiguous",
+          "code": "resolution-ambiguous",
           "message": "Multiple providers can satisfy this object spec; explicit selection is required."
         }
       ]

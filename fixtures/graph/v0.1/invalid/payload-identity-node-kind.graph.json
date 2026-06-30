@@ -6,8 +6,6 @@
   "nodes": [
     {
       "id": "float_payload",
-      "kind": "value.core.float64",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -15,12 +13,17 @@
           "direction": "output",
           "type": "value.core.float64"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "value.core.float64",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "video_payload",
-      "kind": "value.core.string",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -28,12 +31,17 @@
           "direction": "output",
           "type": "value.core.string"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "value.core.string",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "bool_payload",
-      "kind": "value.core.bool",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -41,12 +49,17 @@
           "direction": "output",
           "type": "value.core.bool"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "value.core.bool",
+        "version": "0.1.0"
+      }
     },
     {
       "id": "string_payload",
-      "kind": "value.core.string",
-      "kindVersion": "0.1.0",
       "params": {},
       "ports": [
         {
@@ -54,7 +67,14 @@
           "direction": "output",
           "type": "value.core.string"
         }
-      ]
+      ],
+      "implementation": {
+        "provider": {
+          "kind": "core"
+        },
+        "objectId": "value.core.string",
+        "version": "0.1.0"
+      }
     }
   ],
   "edges": []
