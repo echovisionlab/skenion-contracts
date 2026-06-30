@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://skenion.dev/schemas/object-text/v0.1/parse-result.schema.json",
-  "title": "skenion Object Text Parse Result v0.1",
+  "$id": "https://skenion.dev/schemas/object-spec/v0.1/parse-result.schema.json",
+  "title": "skenion Object Spec Parse Result v0.1",
   "type": "object",
   "required": [
     "schema",
@@ -19,7 +19,7 @@
   ],
   "properties": {
     "schema": {
-      "const": "skenion.object-text.parse-result"
+      "const": "skenion.object-spec.parse-result"
     },
     "schemaVersion": {
       "const": "0.1.0"

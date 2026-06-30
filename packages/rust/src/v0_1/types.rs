@@ -535,7 +535,7 @@ pub struct GraphNodeV01 {
     pub kind: String,
     pub kind_version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub object_text: Option<String>,
+    pub object_spec: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub binding_ref: Option<String>,
     pub params: serde_json::Map<String, Value>,
@@ -871,7 +871,7 @@ pub struct NodeCatalogDiagnosticV01 {
 #[serde(rename_all = "camelCase")]
 pub struct NodeCatalogEntryV01 {
     pub catalog_id: String,
-    pub canonical_object_text: String,
+    pub canonical_object_spec: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub aliases: Option<Vec<String>>,
     pub source: NodeCatalogSourceV01,
@@ -1660,7 +1660,7 @@ pub enum ProjectObjectBindingTargetV01 {
 #[serde(rename_all = "camelCase")]
 pub struct ProjectObjectBindingV01 {
     pub id: String,
-    pub object_text: String,
+    pub object_spec: String,
     pub status: ProjectObjectBindingStatusV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<ProjectObjectBindingTargetV01>,

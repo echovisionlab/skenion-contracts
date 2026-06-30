@@ -1,5 +1,5 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
   "input": "example.gain 1",
   "ok": true,
@@ -20,11 +20,8 @@
     {
       "id": "in",
       "direction": "input",
-      "type": "value.core.float64",
+      "type": "value.core.message",
       "rate": "control",
-      "accepts": [
-        "value.core.message"
-      ],
       "activation": "trigger"
     },
     {

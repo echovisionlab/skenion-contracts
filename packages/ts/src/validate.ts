@@ -12,7 +12,7 @@ import {
   graphV01Schema,
   nodeCatalogV01Schema,
   nodeDefinitionV01Schema,
-  objectTextParseResultV01Schema,
+  objectSpecParseResultV01Schema,
   packageDiscoveryV01Schema,
   packageInstallPlanRequestV01Schema,
   packageInstallPlanResponseV01Schema,
@@ -46,7 +46,7 @@ import type {
   NodeCatalogDiagnosticV01,
   NodeCatalogSnapshotV01,
   NodeDefinitionManifestV01,
-  ObjectTextParseResultV01,
+  ObjectSpecParseResultV01,
   PackageDiscoveryResponseV01,
   PackageInstallPlanRequestV01,
   PackageInstallPlanResponseV01,
@@ -89,7 +89,7 @@ ajv.addSchema(nodeDefinitionV01Schema);
 const graphV01Validator = ajv.compile(graphV01Schema);
 const graphFragmentV01Validator = ajv.compile(graphFragmentV01Schema);
 const messageValueV01Validator = ajv.compile(messageValueV01Schema);
-const objectTextParseResultV01Validator = ajv.compile(objectTextParseResultV01Schema);
+const objectSpecParseResultV01Validator = ajv.compile(objectSpecParseResultV01Schema);
 const nodeDefinitionV01Validator = ajv.compile(nodeDefinitionV01Schema);
 const nodeCatalogV01Validator = ajv.compile(nodeCatalogV01Schema);
 const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
@@ -350,24 +350,24 @@ function validateNodeCatalogDiagnosticV01Semantics(
   return errors;
 }
 
-function validateNodeCatalogObjectTextV01Semantics(
-  canonicalObjectText: string,
+function validateNodeCatalogObjectSpecV01Semantics(
+  canonicalObjectSpec: string,
   aliases: string[] | undefined,
   label: string,
-  objectTextOwners: Map<string, string>,
-  canonicalObjectTexts: Set<string>
+  objectSpecOwners: Map<string, string>,
+  canonicalObjectSpecs: Set<string>
 ): string[] {
   const errors: string[] = [];
-  if (canonicalObjectTexts.has(canonicalObjectText)) {
-    errors.push(`duplicate canonicalObjectText: ${canonicalObjectText}`);
+  if (canonicalObjectSpecs.has(canonicalObjectSpec)) {
+    errors.push(`duplicate canonicalObjectSpec: ${canonicalObjectSpec}`);
   }
-  canonicalObjectTexts.add(canonicalObjectText);
+  canonicalObjectSpecs.add(canonicalObjectSpec);
 
-  const existingCanonicalOwner = objectTextOwners.get(canonicalObjectText);
+  const existingCanonicalOwner = objectSpecOwners.get(canonicalObjectSpec);
   if (existingCanonicalOwner !== undefined) {
-    errors.push(`${label} canonicalObjectText collides with ${existingCanonicalOwner}: ${canonicalObjectText}`);
+    errors.push(`${label} canonicalObjectSpec collides with ${existingCanonicalOwner}: ${canonicalObjectSpec}`);
   } else {
-    objectTextOwners.set(canonicalObjectText, `${label} canonicalObjectText`);
+    objectSpecOwners.set(canonicalObjectSpec, `${label} canonicalObjectSpec`);
   }
 
   if (aliases === undefined) {
@@ -378,11 +378,11 @@ function validateNodeCatalogObjectTextV01Semantics(
   errors.push(...duplicateErrors(aliases, `${label} alias`));
 
   for (const alias of aliases) {
-    const owner = objectTextOwners.get(alias);
+    const owner = objectSpecOwners.get(alias);
     if (owner !== undefined) {
       errors.push(`${label} alias collides with ${owner}: ${alias}`);
     } else {
-      objectTextOwners.set(alias, `${label} alias`);
+      objectSpecOwners.set(alias, `${label} alias`);
     }
   }
 
@@ -416,8 +416,8 @@ function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV0
     "node definition id/version"
   ));
 
-  const objectTextOwners = new Map<string, string>();
-  const canonicalObjectTexts = new Set<string>();
+  const objectSpecOwners = new Map<string, string>();
+  const canonicalObjectSpecs = new Set<string>();
 
   for (const entry of snapshot.entries) {
     const definitionResult = validateNodeDefinitionV01(entry.definition);
@@ -427,12 +427,12 @@ function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV0
       );
     }
 
-    errors.push(...validateNodeCatalogObjectTextV01Semantics(
-      entry.canonicalObjectText,
+    errors.push(...validateNodeCatalogObjectSpecV01Semantics(
+      entry.canonicalObjectSpec,
       entry.aliases,
       `catalog entry ${entry.catalogId}`,
-      objectTextOwners,
-      canonicalObjectTexts
+      objectSpecOwners,
+      canonicalObjectSpecs
     ));
 
     for (const diagnostic of entry.diagnostics ?? []) {
@@ -1499,9 +1499,9 @@ function messageKeyPolicyErrors(port: MessageKeyPolicyPortV01, label: string): s
   return errors;
 }
 
-function validateObjectTextParseResultV01Semantics(result: ObjectTextParseResultV01): string[] {
+function validateObjectSpecParseResultV01Semantics(result: ObjectSpecParseResultV01): string[] {
   return result.instancePorts.flatMap((port) =>
-    messageKeyPolicyErrors(port, `objectText instancePort ${result.className}.${port.id}`)
+    messageKeyPolicyErrors(port, `objectSpec instancePort ${result.className}.${port.id}`)
   );
 }
 
@@ -2145,18 +2145,18 @@ export function validateValueOccurrenceHeaderV01(
   return { ok: true, value: document as ValueOccurrenceHeaderV01 };
 }
 
-export function validateObjectTextParseResult(
+export function validateObjectSpecParseResult(
   document: unknown
-): ValidationResult<ObjectTextParseResultV01> {
-  if (!objectTextParseResultV01Validator(document)) {
+): ValidationResult<ObjectSpecParseResultV01> {
+  if (!objectSpecParseResultV01Validator(document)) {
     return {
       ok: false,
-      errors: schemaErrors(objectTextParseResultV01Validator.errors as ErrorObject[])
+      errors: schemaErrors(objectSpecParseResultV01Validator.errors as ErrorObject[])
     };
   }
 
-  const result = document as ObjectTextParseResultV01;
-  const errors = validateObjectTextParseResultV01Semantics(result);
+  const result = document as ObjectSpecParseResultV01;
+  const errors = validateObjectSpecParseResultV01Semantics(result);
   if (errors.length > 0) {
     return { ok: false, errors };
   }

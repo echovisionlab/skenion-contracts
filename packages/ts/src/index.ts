@@ -6,7 +6,7 @@ export {
   graphV01Schema,
   nodeCatalogV01Schema,
   nodeDefinitionV01Schema,
-  objectTextParseResultV01Schema,
+  objectSpecParseResultV01Schema,
   packageDiscoveryV01Schema,
   packageInstallPlanRequestV01Schema,
   packageInstallPlanResponseV01Schema,
@@ -121,10 +121,10 @@ export type {
   NodeExecutionV01,
   NodeStateV01,
   NodeSurfaceV01,
-  ObjectTextAtomV01,
-  ObjectTextDiagnosticV01,
-  ObjectTextParseResultV01,
-  ObjectTextPortV01,
+  ObjectSpecAtomV01,
+  ObjectSpecDiagnosticV01,
+  ObjectSpecParseResultV01,
+  ObjectSpecPortV01,
   NumericRepresentationV01,
   PackageCategoryV01,
   PackageChecksumAlgorithmV01,
@@ -261,7 +261,7 @@ export type {
   MidiClockSnapshotOptionsV01,
   MidiClockSnapshotV01
 } from "./clock.js";
-export { parseObjectTextV01 } from "./objectText.js";
+export { parseObjectSpecV01 } from "./objectSpec.js";
 export {
   computeNodeCatalogRevisionV01,
   computePatchInterfaceDigestV01,
@@ -296,7 +296,7 @@ export {
   validateEndpointBindingValueFormatV01,
   validateValueOccurrenceHeaderV01,
   validateNodeCatalogSnapshotV01,
-  validateObjectTextParseResult,
+  validateObjectSpecParseResult,
   validateNodeDefinition,
   validateNodeDefinitionV01,
   validatePackageDiscoveryResponseV01,

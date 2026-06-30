@@ -1,7 +1,7 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
-  "input": "[*~ 0.5 2]",
+  "input": "[*~ 0.5]",
   "ok": true,
   "className": "*~",
   "creationArgs": [
@@ -9,17 +9,12 @@
       "type": "float",
       "value": 0.5,
       "representation": "f32"
-    },
-    {
-      "type": "int",
-      "value": 2,
-      "representation": "i32"
     }
   ],
   "resolvedKind": null,
   "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
-  "displayText": "*~ 0.5 2",
+  "displayText": "*~ 0.5",
   "diagnostics": []
 }

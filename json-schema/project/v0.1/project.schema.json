@@ -355,13 +355,13 @@
     },
     "objectBinding": {
       "type": "object",
-      "required": ["id", "objectText", "status"],
+      "required": ["id", "objectSpec", "status"],
       "properties": {
         "id": {
           "type": "string",
           "minLength": 1
         },
-        "objectText": {
+        "objectSpec": {
           "type": "string",
           "minLength": 1
         },

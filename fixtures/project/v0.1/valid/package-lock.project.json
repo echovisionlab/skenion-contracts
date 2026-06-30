@@ -14,7 +14,7 @@
         "id": "external-oscillator",
         "kind": "custom.external",
         "kindVersion": "0.1.0",
-        "objectText": "my-patcher",
+        "objectSpec": "my-patcher",
         "bindingRef": "binding-example-oscillator",
         "params": {},
         "ports": []
@@ -90,7 +90,7 @@
   "objectBindings": [
     {
       "id": "binding-example-oscillator",
-      "objectText": "my-patcher",
+      "objectSpec": "my-patcher",
       "status": "resolved",
       "target": {
         "kind": "packageProvider",
@@ -104,7 +104,7 @@
     },
     {
       "id": "binding-local-wrapper",
-      "objectText": "p local_wrapper",
+      "objectSpec": "p local_wrapper",
       "status": "resolved",
       "target": {
         "kind": "projectPatch",
@@ -114,7 +114,7 @@
     },
     {
       "id": "binding-missing-provider",
-      "objectText": "missing-provider",
+      "objectSpec": "missing-provider",
       "status": "missing",
       "target": {
         "kind": "packageProvider",
@@ -134,13 +134,13 @@
     },
     {
       "id": "binding-ambiguous-patcher",
-      "objectText": "ambiguous-patcher",
+      "objectSpec": "ambiguous-patcher",
       "status": "ambiguous",
       "diagnostics": [
         {
           "severity": "warning",
           "code": "binding-ambiguous",
-          "message": "Multiple providers can satisfy this object text; explicit selection is required."
+          "message": "Multiple providers can satisfy this object spec; explicit selection is required."
         }
       ]
     }

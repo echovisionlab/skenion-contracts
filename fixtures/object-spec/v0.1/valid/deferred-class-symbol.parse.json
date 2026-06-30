@@ -1,5 +1,5 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
   "input": "[sin~]",
   "ok": true,

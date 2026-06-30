@@ -928,7 +928,7 @@ export interface GraphNodeV01 {
   id: string;
   kind: string;
   kindVersion: string;
-  objectText?: string;
+  objectSpec?: string;
   bindingRef?: string;
   params: Record<string, unknown>;
   ports: PortSpecV01[];
@@ -1114,7 +1114,7 @@ export interface NodeCatalogDiagnosticV01 {
 
 export interface NodeCatalogEntryV01 {
   catalogId: string;
-  canonicalObjectText: string;
+  canonicalObjectSpec: string;
   aliases?: string[];
   source: NodeCatalogSourceV01;
   definition: NodeDefinitionManifestV01;
@@ -1221,7 +1221,7 @@ export type ProjectObjectBindingTargetV01 = ProjectPatchBindingTargetV01 | Packa
 
 export interface ProjectObjectBindingV01 {
   id: string;
-  objectText: string;
+  objectSpec: string;
   status: ProjectObjectBindingStatusV01;
   target?: ProjectObjectBindingTargetV01;
   diagnostics?: ProjectObjectBindingDiagnosticV01[];
@@ -1424,7 +1424,7 @@ export interface MessageValueV01 {
   atoms: MessageAtomV01[];
 }
 
-export type ObjectTextAtomV01 =
+export type ObjectSpecAtomV01 =
   | { type: "float"; value: number; representation?: string }
   | { type: "int"; value: number; representation?: string }
   | { type: "uint"; value: number; representation?: string }
@@ -1432,7 +1432,7 @@ export type ObjectTextAtomV01 =
   | { type: "identifier"; value: string }
   | { type: "string"; value: string };
 
-export interface ObjectTextPortV01 {
+export interface ObjectSpecPortV01 {
   id: string;
   direction: PortDirection;
   type: string;
@@ -1444,25 +1444,25 @@ export interface ObjectTextPortV01 {
   description?: string;
 }
 
-export interface ObjectTextDiagnosticV01 {
+export interface ObjectSpecDiagnosticV01 {
   severity: "error" | "warning" | "info";
   code: string;
   message: string;
 }
 
-export interface ObjectTextParseResultV01 {
-  schema: "skenion.object-text.parse-result";
+export interface ObjectSpecParseResultV01 {
+  schema: "skenion.object-spec.parse-result";
   schemaVersion: "0.1.0";
   input: string;
   ok: boolean;
   className: string;
-  creationArgs: ObjectTextAtomV01[];
+  creationArgs: ObjectSpecAtomV01[];
   resolvedKind: string | null;
   resolvedKindVersion: string | null;
   params: Record<string, unknown>;
-  instancePorts: ObjectTextPortV01[];
+  instancePorts: ObjectSpecPortV01[];
   displayText: string;
-  diagnostics: ObjectTextDiagnosticV01[];
+  diagnostics: ObjectSpecDiagnosticV01[];
 }
 
 export type CompatibilityMatrixPackageEcosystemV01 = "npm" | "crates.io";

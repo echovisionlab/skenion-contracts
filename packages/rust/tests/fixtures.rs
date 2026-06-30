@@ -4,13 +4,13 @@ use std::{fs, path::Path};
 
 use skenion_contracts::{
     GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
-    NodeDefinitionManifestV01, ObjectTextParseResultV01, PackageDiagnosticSeverityV01,
+    NodeDefinitionManifestV01, ObjectSpecParseResultV01, PackageDiagnosticSeverityV01,
     PackageDiscoveryResponseV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
     PackageListingV01, PackageManifestV01, PackageRootDocumentV01, ProjectDocumentV01,
     ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingDiagnosticV01,
     ProjectObjectBindingStatusV01, ProjectObjectBindingTargetV01, analyze_graph_fragment_v01,
-    parse_object_text_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_definition_v01, validate_object_text_parse_result_v01,
+    parse_object_spec_v01, validate_graph_document_v01, validate_graph_fragment_v01,
+    validate_node_definition_v01, validate_object_spec_parse_result_v01,
     validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
     validate_package_install_plan_response_v01, validate_package_listing_v01,
     validate_package_manifest_v01, validate_package_root_v01, validate_patch_definition_v01,
@@ -857,29 +857,29 @@ fn validates_project_package_and_binding_semantic_error_branches() {
 }
 
 #[test]
-fn parses_object_text_parse_result_fixtures() {
-    for file in fixture_files("../../fixtures/object-text/v0.1/valid") {
-        let result: ObjectTextParseResultV01 =
+fn parses_object_spec_parse_result_fixtures() {
+    for file in fixture_files("../../fixtures/object-spec/v0.1/valid") {
+        let result: ObjectSpecParseResultV01 =
             serde_json::from_slice(&fs::read(&file).expect("fixture should be readable"))
                 .unwrap_or_else(|error| panic!("{} should parse: {error}", file.display()));
-        validate_object_text_parse_result_v01(&result)
+        validate_object_spec_parse_result_v01(&result)
             .unwrap_or_else(|error| panic!("{} should validate: {error}", file.display()));
         assert_eq!(
-            parse_object_text_v01(&result.input),
+            parse_object_spec_v01(&result.input),
             result,
             "{} should match parser output",
             file.display()
         );
     }
 
-    for file in fixture_files("../../fixtures/object-text/v0.1/invalid") {
-        let parsed = serde_json::from_slice::<ObjectTextParseResultV01>(
+    for file in fixture_files("../../fixtures/object-spec/v0.1/invalid") {
+        let parsed = serde_json::from_slice::<ObjectSpecParseResultV01>(
             &fs::read(&file).expect("fixture should be readable"),
         );
         let Ok(result) = parsed else {
             continue;
         };
-        validate_object_text_parse_result_v01(&result)
+        validate_object_spec_parse_result_v01(&result)
             .expect_err("structurally valid invalid fixture should be semantically invalid");
     }
 
@@ -925,8 +925,8 @@ fn parses_object_text_parse_result_fixtures() {
         "[dac~ 1]",
         "[frobnicate]",
     ] {
-        let result = parse_object_text_v01(input);
-        validate_object_text_parse_result_v01(&result)
+        let result = parse_object_spec_v01(input);
+        validate_object_spec_parse_result_v01(&result)
             .unwrap_or_else(|error| panic!("{input} success should validate: {error}"));
         assert!(result.ok, "{input} should parse");
         assert_eq!(result.resolved_kind, None);
@@ -935,8 +935,8 @@ fn parses_object_text_parse_result_fixtures() {
     }
 
     for input in ["[+ 1", "+ 1]", ""] {
-        let result = parse_object_text_v01(input);
-        validate_object_text_parse_result_v01(&result)
+        let result = parse_object_spec_v01(input);
+        validate_object_spec_parse_result_v01(&result)
             .unwrap_or_else(|error| panic!("{input} failure should validate: {error}"));
         assert!(!result.ok, "{input} should fail without panicking");
     }

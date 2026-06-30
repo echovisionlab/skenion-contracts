@@ -22,7 +22,7 @@ import {
   graphV01Schema,
   nodeCatalogV01Schema,
   nodeDefinitionV01Schema,
-  objectTextParseResultV01Schema,
+  objectSpecParseResultV01Schema,
   packageDiscoveryV01Schema,
   packageInstallPlanRequestV01Schema,
   packageInstallPlanResponseV01Schema,
@@ -32,7 +32,7 @@ import {
   planConversion,
   projectV01Schema,
   runtimeSessionLoadRequestV01Schema,
-  parseObjectTextV01,
+  parseObjectSpecV01,
   projectPatchNodeDefinitionIdV01,
   representationForDataType,
   representationRegistryV01,
@@ -50,7 +50,7 @@ import {
   parseMidiClockMessageV01,
   validateMessageValue,
   validateExtensionManifestV01,
-  validateObjectTextParseResult,
+  validateObjectSpecParseResult,
   validateGraphDocument,
   validateGraphDocumentV01,
   validateGraphFragmentV01,
@@ -131,7 +131,7 @@ test("exports active schema contracts", () => {
   ]) {
     assert.equal(Object.hasOwn(contracts, removedCommandExport), false, removedCommandExport);
   }
-  assert.equal(objectTextParseResultV01Schema.properties.schema.const, "skenion.object-text.parse-result");
+  assert.equal(objectSpecParseResultV01Schema.properties.schema.const, "skenion.object-spec.parse-result");
   assert.equal(extensionManifestV01Schema.properties.schemaVersion.const, "0.1.0");
   assert.equal(packageManifestV01Schema.properties.schema.const, "skenion.package.manifest");
   assert.equal(packageListingV01Schema.properties.schema.const, "skenion.package.listing");
@@ -244,7 +244,7 @@ function validCoreCatalogSnapshot() {
     entries: [
       {
         catalogId: "core.float",
-        canonicalObjectText: "float",
+        canonicalObjectSpec: "float",
         aliases: ["float64", "number"],
         source: { kind: "core" },
         definition: minimalNodeDefinition("object.core.float", "Float"),
@@ -267,7 +267,7 @@ function validCoreCatalogSnapshot() {
       },
       {
         catalogId: "core.message",
-        canonicalObjectText: "message",
+        canonicalObjectSpec: "message",
         aliases: ["msg"],
         source: { kind: "core" },
         definition: minimalNodeDefinition("object.core.message", "Message"),
@@ -358,7 +358,7 @@ function validProjectPatchCatalogSnapshot() {
           })
         },
         creatable: true,
-        canonicalObjectText: "Folder/My Patch?",
+        canonicalObjectSpec: "Folder/My Patch?",
         aliases: ["Folder.My-Patch"],
         display: {
           title: "Folder/My Patch?",
@@ -386,11 +386,11 @@ test("validates node catalog snapshots and digest helpers", () => {
   );
   assert.equal(
     projectCatalog.catalogRevision.value,
-    "9c0a843d107801006d7b931f733ba29dc62a60e0ffaa46977f5b9a06eb72e67a"
+    "7d741cbc25a956ced954d0180ede5b29e8ff45a6966db83882972e122629acab"
   );
   assert.equal(
     coreCatalog.catalogRevision.value,
-    "42d4e882b0a0874e42d01faa99414f73ac07aa85e98c14239ad268495b57f2c8"
+    "b9c3c9483879f21696481b2634ffbcb9046b561b8ddedd01772dd4141f7fa538"
   );
 
   const withDifferentPatchRevision = structuredClone(projectPatch);
@@ -462,7 +462,7 @@ test("rejects invalid node catalog snapshots", () => {
         snapshot.entries.push({
           ...structuredClone(snapshot.entries[1]),
           definition: minimalNodeDefinition("object.core.duplicate", "Duplicate"),
-          canonicalObjectText: "duplicate",
+          canonicalObjectSpec: "duplicate",
           aliases: undefined,
           display: { title: "Duplicate" },
           catalogId: "core.float"
@@ -480,9 +480,9 @@ test("rejects invalid node catalog snapshots", () => {
     [
       "duplicate canonical text",
       (snapshot) => {
-        snapshot.entries[1].canonicalObjectText = "float";
+        snapshot.entries[1].canonicalObjectSpec = "float";
       },
-      /duplicate canonicalObjectText/
+      /duplicate canonicalObjectSpec/
     ],
     [
       "alias collides with canonical",
@@ -549,9 +549,9 @@ test("rejects invalid node catalog snapshots", () => {
       /must NOT have additional properties/
     ],
     [
-      "display object text removed",
+      "display object spec removed",
       (snapshot) => {
-        snapshot.entries[0].display.canonicalObjectText = "float";
+        snapshot.entries[0].display.canonicalObjectSpec = "float";
         snapshot.entries[0].display.aliases = ["float64"];
       },
       /must NOT have additional properties/
@@ -1259,9 +1259,9 @@ test("validates package install and update plan DTOs", async () => {
   assert.equal(validatePackageInstallPlanResponseV01(null).ok, false);
 });
 
-test("validates object text parse result fixtures", async () => {
-  const add = await readJson("fixtures/object-text/v0.1/valid/add-int.parse.json");
-  const addResult = validateObjectTextParseResult(add);
+test("validates object spec parse result fixtures", async () => {
+  const add = await readJson("fixtures/object-spec/v0.1/valid/add-int.parse.json");
+  const addResult = validateObjectSpecParseResult(add);
 
   assert.equal(addResult.ok, true);
   assert.equal(add.className, "+");
@@ -1270,7 +1270,7 @@ test("validates object text parse result fixtures", async () => {
   assert.deepEqual(add.instancePorts, []);
 
   const runtimeResolved = {
-    schema: "skenion.object-text.parse-result",
+    schema: "skenion.object-spec.parse-result",
     schemaVersion: "0.1.0",
     input: "example.gain 0.5",
     ok: true,
@@ -1299,43 +1299,43 @@ test("validates object text parse result fixtures", async () => {
     displayText: "example.gain 0.5",
     diagnostics: []
   };
-  const runtimeResolvedResult = validateObjectTextParseResult(runtimeResolved);
+  const runtimeResolvedResult = validateObjectSpecParseResult(runtimeResolved);
 
   assert.equal(runtimeResolvedResult.ok, true);
 
-  const symbolic = await readJson("fixtures/object-text/v0.1/valid/deferred-class-symbol.parse.json");
-  const symbolicResult = validateObjectTextParseResult(symbolic);
+  const symbolic = await readJson("fixtures/object-spec/v0.1/valid/deferred-class-symbol.parse.json");
+  const symbolicResult = validateObjectSpecParseResult(symbolic);
 
   assert.equal(symbolicResult.ok, true);
   assert.equal(symbolic.ok, true);
   assert.equal(symbolic.resolvedKind, null);
   assert.deepEqual(symbolic.diagnostics, []);
 
-  const invalid = await readJson("fixtures/object-text/v0.1/invalid/missing-class-symbol.parse.json");
-  const invalidResult = validateObjectTextParseResult(invalid);
+  const invalid = await readJson("fixtures/object-spec/v0.1/invalid/missing-class-symbol.parse.json");
+  const invalidResult = validateObjectSpecParseResult(invalid);
 
   assert.equal(invalidResult.ok, false);
   assert.match(invalidResult.errors.join("\n"), /className/);
 
   for (const fixture of [
-    "fixtures/object-text/v0.1/invalid/message-value-missing-keys.parse.json",
-    "fixtures/object-text/v0.1/invalid/accepts-message-value-missing-keys.parse.json"
+    "fixtures/object-spec/v0.1/invalid/message-value-missing-keys.parse.json",
+    "fixtures/object-spec/v0.1/invalid/accepts-message-value-missing-keys.parse.json"
   ]) {
     const missingKeys = await readJson(fixture);
-    const result = validateObjectTextParseResult(missingKeys);
+    const result = validateObjectSpecParseResult(missingKeys);
 
     assert.equal(result.ok, false, fixture);
     assert.match(result.errors.join("\n"), /requires messageKeys/, fixture);
   }
 });
 
-test("parses object text into golden parse results", async () => {
-  for (const fixture of await fixtureFiles("fixtures/object-text/v0.1/valid")) {
+test("parses object spec into golden parse results", async () => {
+  for (const fixture of await fixtureFiles("fixtures/object-spec/v0.1/valid")) {
     const expected = await readJson(fixture);
-    assert.deepEqual(parseObjectTextV01(expected.input), expected, fixture);
+    assert.deepEqual(parseObjectSpecV01(expected.input), expected, fixture);
   }
 
-  const raw = parseObjectTextV01("+ 1");
+  const raw = parseObjectSpecV01("+ 1");
   assert.equal(raw.ok, true);
   assert.equal(raw.input, "+ 1");
   assert.equal(raw.displayText, "+ 1");
@@ -1345,25 +1345,25 @@ test("parses object text into golden parse results", async () => {
   assert.deepEqual(raw.params, {});
   assert.deepEqual(raw.instancePorts, []);
 
-  const bracketed = parseObjectTextV01("[osc~ 1e3]");
+  const bracketed = parseObjectSpecV01("[osc~ 1e3]");
   assert.equal(bracketed.ok, true);
   assert.equal(bracketed.displayText, "osc~ 1e3");
   assert.equal(bracketed.className, "osc~");
   assert.deepEqual(bracketed.creationArgs, [{ type: "float", value: 1000, representation: "f32" }]);
   assert.equal(bracketed.resolvedKind, null);
 
-  const runtimeOwned = parseObjectTextV01("frobnicate true");
+  const runtimeOwned = parseObjectSpecV01("frobnicate true");
   assert.equal(runtimeOwned.ok, true);
   assert.equal(runtimeOwned.className, "frobnicate");
   assert.deepEqual(runtimeOwned.creationArgs, [{ type: "bool", value: true }]);
   assert.deepEqual(runtimeOwned.diagnostics, []);
 
-  const nonFinite = parseObjectTextV01("+ 1e309");
+  const nonFinite = parseObjectSpecV01("+ 1e309");
   assert.deepEqual(nonFinite.creationArgs, [{ type: "identifier", value: "1e309" }]);
 
-  assert.equal(parseObjectTextV01("[+ 1").diagnostics[0].code, "invalid-syntax");
-  assert.equal(parseObjectTextV01("+ 1]").diagnostics[0].code, "invalid-syntax");
-  assert.equal(parseObjectTextV01("").diagnostics[0].code, "empty-object-text");
+  assert.equal(parseObjectSpecV01("[+ 1").diagnostics[0].code, "invalid-syntax");
+  assert.equal(parseObjectSpecV01("+ 1]").diagnostics[0].code, "invalid-syntax");
+  assert.equal(parseObjectSpecV01("").diagnostics[0].code, "empty-object-spec");
 });
 
 test("validates control messages as key and atoms", () => {

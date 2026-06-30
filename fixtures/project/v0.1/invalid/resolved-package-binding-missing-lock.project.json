@@ -23,7 +23,7 @@
   "objectBindings": [
     {
       "id": "binding-resolved-missing-lock",
-      "objectText": "my-patcher",
+      "objectSpec": "my-patcher",
       "status": "resolved",
       "target": {
         "kind": "packageProvider",

@@ -1,20 +1,20 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
-  "input": "[/~ 0.5]",
+  "input": "[osc~ 440]",
   "ok": true,
-  "className": "/~",
+  "className": "osc~",
   "creationArgs": [
     {
-      "type": "float",
-      "value": 0.5,
-      "representation": "f32"
+      "type": "int",
+      "value": 440,
+      "representation": "i32"
     }
   ],
   "resolvedKind": null,
   "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
-  "displayText": "/~ 0.5",
+  "displayText": "osc~ 440",
   "diagnostics": []
 }

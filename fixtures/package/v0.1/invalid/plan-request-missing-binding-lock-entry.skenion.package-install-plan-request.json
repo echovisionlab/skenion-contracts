@@ -42,7 +42,7 @@
     "objectBindings": [
       {
         "id": "binding-example-oscillator",
-        "objectText": "example.oscillator",
+        "objectSpec": "example.oscillator",
         "status": "resolved",
         "target": {
           "kind": "packageProvider",

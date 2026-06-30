@@ -1,9 +1,9 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
-  "input": "[* 0.5]",
+  "input": "[/ 0.5]",
   "ok": true,
-  "className": "*",
+  "className": "/",
   "creationArgs": [
     {
       "type": "float",
@@ -15,6 +15,6 @@
   "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
-  "displayText": "* 0.5",
+  "displayText": "/ 0.5",
   "diagnostics": []
 }

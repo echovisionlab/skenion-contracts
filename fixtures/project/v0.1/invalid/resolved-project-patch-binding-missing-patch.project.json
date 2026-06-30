@@ -23,7 +23,7 @@
   "objectBindings": [
     {
       "id": "binding-resolved-missing-patch",
-      "objectText": "p missing_patch",
+      "objectSpec": "p missing_patch",
       "status": "resolved",
       "target": {
         "kind": "projectPatch",

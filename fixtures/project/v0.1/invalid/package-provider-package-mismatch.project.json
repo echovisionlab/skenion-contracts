@@ -41,7 +41,7 @@
   "objectBindings": [
     {
       "id": "binding-example-oscillator",
-      "objectText": "my-patcher",
+      "objectSpec": "my-patcher",
       "status": "resolved",
       "target": {
         "kind": "packageProvider",

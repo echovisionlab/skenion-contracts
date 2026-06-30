@@ -2055,31 +2055,31 @@ fn validate_node_catalog_display_schema_v01(
 
 fn validate_node_catalog_display_v01(
     errors: &mut Vec<ValidationErrorV01>,
-    canonical_object_text: &str,
+    canonical_object_spec: &str,
     aliases: Option<&[String]>,
     label: &str,
-    object_text_owners: &mut HashMap<String, String>,
-    canonical_object_texts: &mut HashSet<String>,
+    object_spec_owners: &mut HashMap<String, String>,
+    canonical_object_specs: &mut HashSet<String>,
 ) {
     push_non_empty_string_error(
         errors,
-        &format!("{label}.canonicalObjectText"),
-        canonical_object_text,
+        &format!("{label}.canonicalObjectSpec"),
+        canonical_object_spec,
     );
-    if !canonical_object_texts.insert(canonical_object_text.to_owned()) {
+    if !canonical_object_specs.insert(canonical_object_spec.to_owned()) {
         errors.push(ValidationErrorV01::new(format!(
-            "duplicate canonicalObjectText: {canonical_object_text}"
+            "duplicate canonicalObjectSpec: {canonical_object_spec}"
         )));
     }
 
-    if let Some(owner) = object_text_owners.get(canonical_object_text) {
+    if let Some(owner) = object_spec_owners.get(canonical_object_spec) {
         errors.push(ValidationErrorV01::new(format!(
-            "{label} canonicalObjectText collides with {owner}: {canonical_object_text}"
+            "{label} canonicalObjectSpec collides with {owner}: {canonical_object_spec}"
         )));
     } else {
-        object_text_owners.insert(
-            canonical_object_text.to_owned(),
-            format!("{label} canonicalObjectText"),
+        object_spec_owners.insert(
+            canonical_object_spec.to_owned(),
+            format!("{label} canonicalObjectSpec"),
         );
     }
 
@@ -2094,12 +2094,12 @@ fn validate_node_catalog_display_v01(
     ));
     for alias in aliases {
         push_non_empty_string_error(errors, &format!("{label}.alias"), alias);
-        if let Some(owner) = object_text_owners.get(alias) {
+        if let Some(owner) = object_spec_owners.get(alias) {
             errors.push(ValidationErrorV01::new(format!(
                 "{label} alias collides with {owner}: {alias}"
             )));
         } else {
-            object_text_owners.insert(alias.to_owned(), format!("{label} alias"));
+            object_spec_owners.insert(alias.to_owned(), format!("{label} alias"));
         }
     }
 }
@@ -2205,8 +2205,8 @@ pub fn validate_node_catalog_snapshot_v01(
         }
     }
 
-    let mut object_text_owners = HashMap::new();
-    let mut canonical_object_texts = HashSet::new();
+    let mut object_spec_owners = HashMap::new();
+    let mut canonical_object_specs = HashSet::new();
 
     for entry in &snapshot.entries {
         push_non_empty_string_error(
@@ -2216,11 +2216,11 @@ pub fn validate_node_catalog_snapshot_v01(
         );
         validate_node_catalog_display_v01(
             &mut errors,
-            &entry.canonical_object_text,
+            &entry.canonical_object_spec,
             entry.aliases.as_deref(),
             &format!("catalog entry {}", entry.catalog_id),
-            &mut object_text_owners,
-            &mut canonical_object_texts,
+            &mut object_spec_owners,
+            &mut canonical_object_specs,
         );
         validate_node_catalog_display_schema_v01(
             &mut errors,
@@ -5023,7 +5023,7 @@ mod tests {
             id: "source_two".to_owned(),
             kind: "object.core.float".to_owned(),
             kind_version: "0.1.0".to_owned(),
-            object_text: None,
+            object_spec: None,
             binding_ref: None,
             params: serde_json::Map::new(),
             ports: vec![PortSpecV01 {
@@ -5614,7 +5614,7 @@ mod tests {
             id: "grouped".to_owned(),
             kind: "core.grouped".to_owned(),
             kind_version: "0.1.0".to_owned(),
-            object_text: None,
+            object_spec: None,
             binding_ref: None,
             params: serde_json::Map::new(),
             ports: Vec::new(),

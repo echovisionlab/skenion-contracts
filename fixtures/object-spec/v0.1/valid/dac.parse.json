@@ -1,14 +1,14 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
-  "input": "[frobnicate]",
+  "input": "[dac~]",
   "ok": true,
-  "className": "frobnicate",
+  "className": "dac~",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
-  "displayText": "frobnicate",
+  "displayText": "dac~",
   "diagnostics": []
 }

@@ -43,8 +43,8 @@ const shaderDiagnosticV01Schema = await readSchema(
 const messageValueV01Schema = await readSchema(
   "json-schema/message/v0.1/message-value.schema.json"
 );
-const objectTextParseResultV01Schema = await readSchema(
-  "json-schema/object-text/v0.1/parse-result.schema.json"
+const objectSpecParseResultV01Schema = await readSchema(
+  "json-schema/object-spec/v0.1/parse-result.schema.json"
 );
 const extensionManifestV01Schema = await readSchema(
   "json-schema/extension/v0.1/extension-manifest.schema.json"
@@ -94,7 +94,7 @@ await writeFile(
     "",
     `export const messageValueV01Schema = ${JSON.stringify(messageValueV01Schema, null, 2)} as const;`,
     "",
-    `export const objectTextParseResultV01Schema = ${JSON.stringify(objectTextParseResultV01Schema, null, 2)} as const;`,
+    `export const objectSpecParseResultV01Schema = ${JSON.stringify(objectSpecParseResultV01Schema, null, 2)} as const;`,
     "",
     `export const extensionManifestV01Schema = ${JSON.stringify(extensionManifestV01Schema, null, 2)} as const;`,
     "",

@@ -1,14 +1,14 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
-  "input": "[dac~]",
+  "input": "adc~",
   "ok": true,
-  "className": "dac~",
+  "className": "adc~",
   "creationArgs": [],
   "resolvedKind": null,
   "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
-  "displayText": "dac~",
+  "displayText": "adc~",
   "diagnostics": []
 }

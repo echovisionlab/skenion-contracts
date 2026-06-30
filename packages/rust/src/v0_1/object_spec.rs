@@ -7,7 +7,7 @@ use super::types::MessageKeyPolicyV01;
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
-pub enum ObjectTextAtomV01 {
+pub enum ObjectSpecAtomV01 {
     #[serde(rename = "float")]
     Float {
         value: f64,
@@ -36,14 +36,14 @@ pub enum ObjectTextAtomV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ObjectTextPortDirectionV01 {
+pub enum ObjectSpecPortDirectionV01 {
     Input,
     Output,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum ObjectTextPortRateV01 {
+pub enum ObjectSpecPortRateV01 {
     Event,
     Control,
     Audio,
@@ -55,7 +55,7 @@ pub enum ObjectTextPortRateV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum ObjectTextPortActivationV01 {
+pub enum ObjectSpecPortActivationV01 {
     Trigger,
     Latched,
     Passive,
@@ -64,17 +64,17 @@ pub enum ObjectTextPortActivationV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct ObjectTextPortV01 {
+pub struct ObjectSpecPortV01 {
     pub id: String,
-    pub direction: ObjectTextPortDirectionV01,
+    pub direction: ObjectSpecPortDirectionV01,
     #[serde(rename = "type")]
     pub port_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rate: Option<ObjectTextPortRateV01>,
+    pub rate: Option<ObjectSpecPortRateV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub accepts: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub activation: Option<ObjectTextPortActivationV01>,
+    pub activation: Option<ObjectSpecPortActivationV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_value: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -85,7 +85,7 @@ pub struct ObjectTextPortV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ObjectTextDiagnosticSeverityV01 {
+pub enum ObjectSpecDiagnosticSeverityV01 {
     Error,
     Warning,
     Info,
@@ -93,8 +93,8 @@ pub enum ObjectTextDiagnosticSeverityV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct ObjectTextDiagnosticV01 {
-    pub severity: ObjectTextDiagnosticSeverityV01,
+pub struct ObjectSpecDiagnosticV01 {
+    pub severity: ObjectSpecDiagnosticSeverityV01,
     pub code: String,
     pub message: String,
 }
@@ -102,53 +102,53 @@ pub struct ObjectTextDiagnosticV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct ObjectTextParseResultV01 {
+pub struct ObjectSpecParseResultV01 {
     pub schema: String,
     pub schema_version: String,
     pub input: String,
     pub ok: bool,
     pub class_name: String,
-    pub creation_args: Vec<ObjectTextAtomV01>,
+    pub creation_args: Vec<ObjectSpecAtomV01>,
     pub resolved_kind: Option<String>,
     pub resolved_kind_version: Option<String>,
     pub params: Map<String, Value>,
-    pub instance_ports: Vec<ObjectTextPortV01>,
+    pub instance_ports: Vec<ObjectSpecPortV01>,
     pub display_text: String,
-    pub diagnostics: Vec<ObjectTextDiagnosticV01>,
+    pub diagnostics: Vec<ObjectSpecDiagnosticV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum ObjectTextValidationErrorV01 {
-    #[error("expected schema skenion.object-text.parse-result, found {0}")]
+pub enum ObjectSpecValidationErrorV01 {
+    #[error("expected schema skenion.object-spec.parse-result, found {0}")]
     SchemaMismatch(String),
     #[error("expected schemaVersion 0.1.0, found {0}")]
     SchemaVersionMismatch(String),
-    #[error("object text parse result semantic validation failed: {0}")]
+    #[error("object spec parse result semantic validation failed: {0}")]
     Semantic(String),
 }
 
-pub fn validate_object_text_parse_result_v01(
-    result: &ObjectTextParseResultV01,
-) -> Result<(), ObjectTextValidationErrorV01> {
-    if result.schema != "skenion.object-text.parse-result" {
-        return Err(ObjectTextValidationErrorV01::SchemaMismatch(
+pub fn validate_object_spec_parse_result_v01(
+    result: &ObjectSpecParseResultV01,
+) -> Result<(), ObjectSpecValidationErrorV01> {
+    if result.schema != "skenion.object-spec.parse-result" {
+        return Err(ObjectSpecValidationErrorV01::SchemaMismatch(
             result.schema.clone(),
         ));
     }
     if result.schema_version != "0.1.0" {
-        return Err(ObjectTextValidationErrorV01::SchemaVersionMismatch(
+        return Err(ObjectSpecValidationErrorV01::SchemaVersionMismatch(
             result.schema_version.clone(),
         ));
     }
-    let errors = object_text_parse_result_semantic_errors(result);
+    let errors = object_spec_parse_result_semantic_errors(result);
     if !errors.is_empty() {
-        return Err(ObjectTextValidationErrorV01::Semantic(errors.join("; ")));
+        return Err(ObjectSpecValidationErrorV01::Semantic(errors.join("; ")));
     }
     Ok(())
 }
 
-fn is_key_aware_object_text_input_port(port: &ObjectTextPortV01) -> bool {
-    port.direction == ObjectTextPortDirectionV01::Input
+fn is_key_aware_object_spec_input_port(port: &ObjectSpecPortV01) -> bool {
+    port.direction == ObjectSpecPortDirectionV01::Input
         && (port.port_type == "value.core.message"
             || port
                 .accepts
@@ -156,9 +156,9 @@ fn is_key_aware_object_text_input_port(port: &ObjectTextPortV01) -> bool {
                 .is_some_and(|accepted| accepted.iter().any(|value| value == "value.core.message")))
 }
 
-fn object_text_message_key_policy_errors(port: &ObjectTextPortV01, label: &str) -> Vec<String> {
+fn object_spec_message_key_policy_errors(port: &ObjectSpecPortV01, label: &str) -> Vec<String> {
     let Some(policy) = &port.message_keys else {
-        return if is_key_aware_object_text_input_port(port) {
+        return if is_key_aware_object_spec_input_port(port) {
             vec![format!(
                 "{label} message-key-aware input port requires messageKeys"
             )]
@@ -219,22 +219,22 @@ fn object_text_message_key_policy_errors(port: &ObjectTextPortV01, label: &str) 
     errors
 }
 
-fn object_text_parse_result_semantic_errors(result: &ObjectTextParseResultV01) -> Vec<String> {
+fn object_spec_parse_result_semantic_errors(result: &ObjectSpecParseResultV01) -> Vec<String> {
     result
         .instance_ports
         .iter()
         .flat_map(|port| {
-            object_text_message_key_policy_errors(
+            object_spec_message_key_policy_errors(
                 port,
-                &format!("objectText instancePort {}.{}", result.class_name, port.id),
+                &format!("objectSpec instancePort {}.{}", result.class_name, port.id),
             )
         })
         .collect()
 }
 
-fn diagnostic(code: &str, message: impl Into<String>) -> ObjectTextDiagnosticV01 {
-    ObjectTextDiagnosticV01 {
-        severity: ObjectTextDiagnosticSeverityV01::Error,
+fn diagnostic(code: &str, message: impl Into<String>) -> ObjectSpecDiagnosticV01 {
+    ObjectSpecDiagnosticV01 {
+        severity: ObjectSpecDiagnosticSeverityV01::Error,
         code: code.to_owned(),
         message: message.into(),
     }
@@ -244,10 +244,10 @@ fn success(
     input: &str,
     display_text: &str,
     class_name: &str,
-    creation_args: Vec<ObjectTextAtomV01>,
-) -> ObjectTextParseResultV01 {
-    ObjectTextParseResultV01 {
-        schema: "skenion.object-text.parse-result".to_owned(),
+    creation_args: Vec<ObjectSpecAtomV01>,
+) -> ObjectSpecParseResultV01 {
+    ObjectSpecParseResultV01 {
+        schema: "skenion.object-spec.parse-result".to_owned(),
         schema_version: "0.1.0".to_owned(),
         input: input.to_owned(),
         ok: true,
@@ -266,12 +266,12 @@ fn failure(
     input: &str,
     display_text: &str,
     class_name: &str,
-    creation_args: Vec<ObjectTextAtomV01>,
+    creation_args: Vec<ObjectSpecAtomV01>,
     code: &str,
     message: impl Into<String>,
-) -> ObjectTextParseResultV01 {
-    ObjectTextParseResultV01 {
-        schema: "skenion.object-text.parse-result".to_owned(),
+) -> ObjectSpecParseResultV01 {
+    ObjectSpecParseResultV01 {
+        schema: "skenion.object-spec.parse-result".to_owned(),
         schema_version: "0.1.0".to_owned(),
         input: input.to_owned(),
         ok: false,
@@ -294,7 +294,7 @@ fn normalize_input(input: &str) -> Result<String, (String, String)> {
         if starts_with_bracket != ends_with_bracket {
             return Err((
                 trimmed.to_owned(),
-                "object text brackets must be balanced".to_owned(),
+                "object spec brackets must be balanced".to_owned(),
             ));
         }
         return Ok(trimmed[1..trimmed.len() - 1].trim().to_owned());
@@ -306,14 +306,14 @@ fn tokenize(display_text: &str) -> Vec<&str> {
     display_text.split_whitespace().collect()
 }
 
-fn parse_atom(token: &str) -> ObjectTextAtomV01 {
+fn parse_atom(token: &str) -> ObjectSpecAtomV01 {
     let unsigned_token = token.strip_prefix(['+', '-']).unwrap_or(token);
     if !unsigned_token.is_empty() {
         let all_digits = unsigned_token
             .chars()
             .all(|character| character.is_ascii_digit());
         if all_digits {
-            return ObjectTextAtomV01::Int {
+            return ObjectSpecAtomV01::Int {
                 value: token.parse::<i64>().unwrap_or(0),
                 representation: Some("i32".to_owned()),
             };
@@ -327,7 +327,7 @@ fn parse_atom(token: &str) -> ObjectTextAtomV01 {
     };
     match maybe_float {
         Some(value) if value.is_finite() => {
-            return ObjectTextAtomV01::Float {
+            return ObjectSpecAtomV01::Float {
                 value,
                 representation: Some("f32".to_owned()),
             };
@@ -336,17 +336,17 @@ fn parse_atom(token: &str) -> ObjectTextAtomV01 {
     }
 
     if token == "true" || token == "false" {
-        return ObjectTextAtomV01::Bool {
+        return ObjectSpecAtomV01::Bool {
             value: token == "true",
         };
     }
 
-    ObjectTextAtomV01::Identifier {
+    ObjectSpecAtomV01::Identifier {
         value: token.to_owned(),
     }
 }
 
-pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
+pub fn parse_object_spec_v01(input: &str) -> ObjectSpecParseResultV01 {
     let display_text = match normalize_input(input) {
         Ok(display_text) => display_text,
         Err((display_text, message)) => {
@@ -367,11 +367,11 @@ pub fn parse_object_text_v01(input: &str) -> ObjectTextParseResultV01 {
             "<empty>",
             "<empty>",
             Vec::new(),
-            "empty-object-text",
-            "object text must contain a class name",
+            "empty-object-spec",
+            "object spec must contain a class name",
         );
     };
-    let creation_args: Vec<ObjectTextAtomV01> =
+    let creation_args: Vec<ObjectSpecAtomV01> =
         arg_tokens.iter().map(|token| parse_atom(token)).collect();
 
     success(input, &display_text, class_name, creation_args)
@@ -383,18 +383,18 @@ mod tests {
     use serde_json::json;
 
     fn code(input: &str) -> String {
-        parse_object_text_v01(input).diagnostics[0].code.clone()
+        parse_object_spec_v01(input).diagnostics[0].code.clone()
     }
 
     #[test]
-    fn parses_lexical_object_text_without_resolving_runtime_kinds() {
-        let raw = parse_object_text_v01("+ 1");
+    fn parses_lexical_object_spec_without_resolving_runtime_kinds() {
+        let raw = parse_object_spec_v01("+ 1");
         assert!(raw.ok);
         assert_eq!(raw.class_name, "+");
         assert_eq!(raw.display_text, "+ 1");
         assert_eq!(
             raw.creation_args,
-            vec![ObjectTextAtomV01::Int {
+            vec![ObjectSpecAtomV01::Int {
                 value: 1,
                 representation: Some("i32".to_owned())
             }]
@@ -404,13 +404,13 @@ mod tests {
         assert!(raw.params.is_empty());
         assert!(raw.instance_ports.is_empty());
 
-        let bracketed = parse_object_text_v01("[osc~ 1e3]");
+        let bracketed = parse_object_spec_v01("[osc~ 1e3]");
         assert!(bracketed.ok);
         assert_eq!(bracketed.class_name, "osc~");
         assert_eq!(bracketed.display_text, "osc~ 1e3");
         assert_eq!(
             bracketed.creation_args,
-            vec![ObjectTextAtomV01::Float {
+            vec![ObjectSpecAtomV01::Float {
                 value: 1000.0,
                 representation: Some("f32".to_owned())
             }]
@@ -422,13 +422,13 @@ mod tests {
     fn reports_parser_failures_without_panicking() {
         assert_eq!(code("[+ 1"), "invalid-syntax");
         assert_eq!(code("+ 1]"), "invalid-syntax");
-        assert_eq!(code(""), "empty-object-text");
+        assert_eq!(code(""), "empty-object-spec");
     }
 
     #[test]
     fn leaves_runtime_resolution_diagnostics_to_runtime() {
         for input in ["sin~", "square~", "expr $f1", "frobnicate", "adc~ 1"] {
-            let result = parse_object_text_v01(input);
+            let result = parse_object_spec_v01(input);
             assert!(result.ok, "{input} should be a lexical parse");
             assert!(
                 result.diagnostics.is_empty(),
@@ -442,37 +442,37 @@ mod tests {
     fn parses_atom_numeric_and_identifier_edges() {
         assert_eq!(
             parse_atom("+"),
-            ObjectTextAtomV01::Identifier {
+            ObjectSpecAtomV01::Identifier {
                 value: "+".to_owned()
             }
         );
         assert_eq!(
             parse_atom("xyz"),
-            ObjectTextAtomV01::Identifier {
+            ObjectSpecAtomV01::Identifier {
                 value: "xyz".to_owned()
             }
         );
         assert_eq!(
             parse_atom("1E3"),
-            ObjectTextAtomV01::Float {
+            ObjectSpecAtomV01::Float {
                 value: 1000.0,
                 representation: Some("f32".to_owned())
             }
         );
         assert_eq!(
             parse_atom("false"),
-            ObjectTextAtomV01::Bool { value: false }
+            ObjectSpecAtomV01::Bool { value: false }
         );
     }
 
     #[test]
-    fn serializes_all_public_object_text_variants() {
+    fn serializes_all_public_object_spec_variants() {
         assert_eq!(
-            serde_json::to_value(ObjectTextAtomV01::Bool { value: false }).unwrap(),
+            serde_json::to_value(ObjectSpecAtomV01::Bool { value: false }).unwrap(),
             json!({ "type": "bool", "value": false })
         );
         assert_eq!(
-            serde_json::to_value(ObjectTextAtomV01::Identifier {
+            serde_json::to_value(ObjectSpecAtomV01::Identifier {
                 value: "symbolic".to_owned()
             })
             .unwrap(),
@@ -480,13 +480,13 @@ mod tests {
         );
 
         let rates = [
-            ObjectTextPortRateV01::Event,
-            ObjectTextPortRateV01::Control,
-            ObjectTextPortRateV01::Audio,
-            ObjectTextPortRateV01::Render,
-            ObjectTextPortRateV01::Gpu,
-            ObjectTextPortRateV01::Resource,
-            ObjectTextPortRateV01::Io,
+            ObjectSpecPortRateV01::Event,
+            ObjectSpecPortRateV01::Control,
+            ObjectSpecPortRateV01::Audio,
+            ObjectSpecPortRateV01::Render,
+            ObjectSpecPortRateV01::Gpu,
+            ObjectSpecPortRateV01::Resource,
+            ObjectSpecPortRateV01::Io,
         ];
         assert_eq!(
             serde_json::to_value(rates).unwrap(),
@@ -496,9 +496,9 @@ mod tests {
         );
 
         let activations = [
-            ObjectTextPortActivationV01::Trigger,
-            ObjectTextPortActivationV01::Latched,
-            ObjectTextPortActivationV01::Passive,
+            ObjectSpecPortActivationV01::Trigger,
+            ObjectSpecPortActivationV01::Latched,
+            ObjectSpecPortActivationV01::Passive,
         ];
         assert_eq!(
             serde_json::to_value(activations).unwrap(),
@@ -506,9 +506,9 @@ mod tests {
         );
 
         let severities = [
-            ObjectTextDiagnosticSeverityV01::Error,
-            ObjectTextDiagnosticSeverityV01::Warning,
-            ObjectTextDiagnosticSeverityV01::Info,
+            ObjectSpecDiagnosticSeverityV01::Error,
+            ObjectSpecDiagnosticSeverityV01::Warning,
+            ObjectSpecDiagnosticSeverityV01::Info,
         ];
         assert_eq!(
             serde_json::to_value(severities).unwrap(),

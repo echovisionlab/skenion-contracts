@@ -180,7 +180,7 @@
       "type": "object",
       "required": [
         "catalogId",
-        "canonicalObjectText",
+        "canonicalObjectSpec",
         "source",
         "definition",
         "creatable",
@@ -191,7 +191,7 @@
           "type": "string",
           "minLength": 1
         },
-        "canonicalObjectText": {
+        "canonicalObjectSpec": {
           "type": "string",
           "minLength": 1
         },

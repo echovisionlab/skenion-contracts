@@ -3,7 +3,7 @@
   "schemaVersion": "0.1.0",
   "id": "object.core.audio.operator.add",
   "summary": "Pd-style +~ signal operator.",
-  "description": "Audio Add is a block/vector DSP operator. Object text with a numeric creation argument may specialize the right inlet to a latched scalar operand.",
+  "description": "Audio Add is a block/vector DSP operator. Object spec with a numeric creation argument may specialize the right inlet to a latched scalar operand.",
   "helpGraph": "help/v0.1/nodes/object.core.audio.operator.add.help.graph.json",
   "tags": [
     "audio",

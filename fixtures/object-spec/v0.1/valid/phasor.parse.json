@@ -1,13 +1,13 @@
 {
-  "schema": "skenion.object-text.parse-result",
+  "schema": "skenion.object-spec.parse-result",
   "schemaVersion": "0.1.0",
-  "input": "[osc~ 440]",
+  "input": "[phasor~ 1]",
   "ok": true,
-  "className": "osc~",
+  "className": "phasor~",
   "creationArgs": [
     {
       "type": "int",
-      "value": 440,
+      "value": 1,
       "representation": "i32"
     }
   ],
@@ -15,6 +15,6 @@
   "resolvedKindVersion": null,
   "params": {},
   "instancePorts": [],
-  "displayText": "osc~ 440",
+  "displayText": "phasor~ 1",
   "diagnostics": []
 }

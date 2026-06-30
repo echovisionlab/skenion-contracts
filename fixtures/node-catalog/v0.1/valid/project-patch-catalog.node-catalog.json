@@ -3,12 +3,12 @@
   "schemaVersion": "0.1.0",
   "catalogRevision": {
     "algorithm": "sha256",
-    "value": "9c0a843d107801006d7b931f733ba29dc62a60e0ffaa46977f5b9a06eb72e67a"
+    "value": "7d741cbc25a956ced954d0180ede5b29e8ff45a6966db83882972e122629acab"
   },
   "entries": [
     {
       "catalogId": "project.folder-my-patch",
-      "canonicalObjectText": "Folder/My Patch?",
+      "canonicalObjectSpec": "Folder/My Patch?",
       "aliases": ["Folder.My-Patch"],
       "source": {
         "kind": "projectPatch",

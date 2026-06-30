@@ -68,7 +68,7 @@ export const graphV01Schema = {
           "type": "string",
           "minLength": 1
         },
-        "objectText": {
+        "objectSpec": {
           "type": "string",
           "minLength": 1
         },
@@ -1067,7 +1067,7 @@ export const projectV01Schema = {
       "type": "object",
       "required": [
         "id",
-        "objectText",
+        "objectSpec",
         "status"
       ],
       "properties": {
@@ -1075,7 +1075,7 @@ export const projectV01Schema = {
           "type": "string",
           "minLength": 1
         },
-        "objectText": {
+        "objectSpec": {
           "type": "string",
           "minLength": 1
         },
@@ -2104,7 +2104,7 @@ export const nodeCatalogV01Schema = {
       "type": "object",
       "required": [
         "catalogId",
-        "canonicalObjectText",
+        "canonicalObjectSpec",
         "source",
         "definition",
         "creatable",
@@ -2115,7 +2115,7 @@ export const nodeCatalogV01Schema = {
           "type": "string",
           "minLength": 1
         },
-        "canonicalObjectText": {
+        "canonicalObjectSpec": {
           "type": "string",
           "minLength": 1
         },
@@ -2546,10 +2546,10 @@ export const messageValueV01Schema = {
   }
 } as const;
 
-export const objectTextParseResultV01Schema = {
+export const objectSpecParseResultV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://skenion.dev/schemas/object-text/v0.1/parse-result.schema.json",
-  "title": "skenion Object Text Parse Result v0.1",
+  "$id": "https://skenion.dev/schemas/object-spec/v0.1/parse-result.schema.json",
+  "title": "skenion Object Spec Parse Result v0.1",
   "type": "object",
   "required": [
     "schema",
@@ -2567,7 +2567,7 @@ export const objectTextParseResultV01Schema = {
   ],
   "properties": {
     "schema": {
-      "const": "skenion.object-text.parse-result"
+      "const": "skenion.object-spec.parse-result"
     },
     "schemaVersion": {
       "const": "0.1.0"

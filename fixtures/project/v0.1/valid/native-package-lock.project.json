@@ -14,7 +14,7 @@
         "id": "sensor",
         "kind": "custom.external",
         "kindVersion": "0.1.0",
-        "objectText": "sensor-reading",
+        "objectSpec": "sensor-reading",
         "bindingRef": "binding-sensor-reading",
         "params": {},
         "ports": []
@@ -83,7 +83,7 @@
   "objectBindings": [
     {
       "id": "binding-sensor-reading",
-      "objectText": "sensor-reading",
+      "objectSpec": "sensor-reading",
       "status": "resolved",
       "target": {
         "kind": "packageProvider",

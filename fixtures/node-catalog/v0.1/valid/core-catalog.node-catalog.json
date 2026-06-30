@@ -3,12 +3,12 @@
   "schemaVersion": "0.1.0",
   "catalogRevision": {
     "algorithm": "sha256",
-    "value": "42d4e882b0a0874e42d01faa99414f73ac07aa85e98c14239ad268495b57f2c8"
+    "value": "b9c3c9483879f21696481b2634ffbcb9046b561b8ddedd01772dd4141f7fa538"
   },
   "entries": [
     {
       "catalogId": "core.float",
-      "canonicalObjectText": "float",
+      "canonicalObjectSpec": "float",
       "aliases": ["float64", "number"],
       "source": {
         "kind": "core"
@@ -52,7 +52,7 @@
     },
     {
       "catalogId": "core.message",
-      "canonicalObjectText": "message",
+      "canonicalObjectSpec": "message",
       "aliases": ["msg"],
       "source": {
         "kind": "core"

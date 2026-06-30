@@ -60,7 +60,7 @@
     "objectBindings": [
       {
         "id": "binding-sensor-reading",
-        "objectText": "sensor-reading",
+        "objectSpec": "sensor-reading",
         "status": "resolved",
         "target": {
           "kind": "packageProvider",

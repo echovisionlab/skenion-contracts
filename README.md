@@ -32,7 +32,7 @@ package manifests/listings/install plans, and extension-provided nodes. Older
 v0.1 graph/project/patch compatibility and migration helpers are not active
 contract surfaces.
 
-Typed object boxes preserve user-entered `objectText`; Runtime resolution maps
+Typed object boxes preserve user-entered `objectSpec`; Runtime resolution maps
 that text to implementation kinds and diagnostics without making unresolved text
 a separate user-facing node class.
 
@@ -54,8 +54,8 @@ boundary.
 For design review of how values, messages, audio, video, render frames, and GPU
 resources move through the system, start with the
 [skenion Docs data delivery model](https://github.com/skenion/skenion-docs/blob/main/docs/model/data-delivery-model.md).
-Object text parse outputs are defined in
-[Object Text Parser Contract](docs/object-text-parser.md). The first audio DSP
+Object spec parse outputs are defined in
+[Object Spec Parser Contract](docs/object-spec-parser.md). The first audio DSP
 contract baseline is documented in
 [Audio DSP Contract Baseline](docs/audio-dsp-contract.md).
 

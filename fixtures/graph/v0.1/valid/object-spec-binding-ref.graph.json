@@ -1,14 +1,14 @@
 {
   "schema": "skenion.graph",
   "schemaVersion": "0.1.0",
-  "id": "graph-object-text-binding-ref",
+  "id": "graph-object-spec-binding-ref",
   "revision": "1",
   "nodes": [
     {
       "id": "external-oscillator",
       "kind": "custom.external",
       "kindVersion": "0.1.0",
-      "objectText": "my-patcher",
+      "objectSpec": "my-patcher",
       "bindingRef": "binding-example-oscillator",
       "params": {},
       "ports": []

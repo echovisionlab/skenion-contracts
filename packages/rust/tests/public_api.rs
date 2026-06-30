@@ -9,7 +9,7 @@ use skenion_contracts::{
     NodeCatalogDiagnosticNodeDefinitionV01, NodeCatalogDiagnosticSeverityV01,
     NodeCatalogDiagnosticTargetV01, NodeCatalogDiagnosticV01, NodeCatalogDisplayPaletteV01,
     NodeCatalogDisplayV01, NodeCatalogEntryV01, NodeCatalogSnapshotV01, NodeCatalogSourceV01,
-    NodeDefinitionManifestV01, NumberRangeV01, ObjectTextAtomV01, ObjectTextParseResultV01,
+    NodeDefinitionManifestV01, NumberRangeV01, ObjectSpecAtomV01, ObjectSpecParseResultV01,
     PackageCategoryV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
     PackageInstallPlanCheckStatusV01, PackageInstallPlanDiagnosticCodeV01,
     PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
@@ -24,13 +24,13 @@ use skenion_contracts::{
     compute_node_catalog_revision_v01, compute_patch_interface_digest_v01,
     derive_patch_contract_v01, derive_patch_contracts_v01, derive_v0_compatibility_line,
     derive_v0_compatibility_range, is_same_v0_compatibility_line,
-    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_text_v01,
+    midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_spec_v01,
     plan_audio_clock_bridge_v01, project_patch_node_definition_id_v01,
     sanitize_project_patch_id_v01, satisfies_v0_compatibility_range, type_label_v01,
     validate_compatibility_matrix_v01, validate_endpoint_binding_value_format_v01,
     validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
     validate_node_catalog_snapshot_v01, validate_node_definition_v01,
-    validate_object_text_parse_result_v01, validate_package_discovery_response_v01,
+    validate_object_spec_parse_result_v01, validate_package_discovery_response_v01,
     validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
     validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_project_document_v01,
@@ -1721,10 +1721,10 @@ fn validates_public_package_install_plan_contract_surface() {
 }
 
 #[test]
-fn validates_public_object_text_parse_results() {
-    let result: ObjectTextParseResultV01 = serde_json::from_str(
+fn validates_public_object_spec_parse_results() {
+    let result: ObjectSpecParseResultV01 = serde_json::from_str(
         r#"{
-          "schema": "skenion.object-text.parse-result",
+          "schema": "skenion.object-spec.parse-result",
           "schemaVersion": "0.1.0",
           "input": "example.gain 0.5",
           "ok": true,
@@ -1754,34 +1754,34 @@ fn validates_public_object_text_parse_results() {
           "diagnostics": []
         }"#,
     )
-    .expect("object text result should parse");
+    .expect("object spec result should parse");
 
-    validate_object_text_parse_result_v01(&result).expect("object text result should validate");
+    validate_object_spec_parse_result_v01(&result).expect("object spec result should validate");
     assert_eq!(
         result.resolved_kind.as_deref(),
         Some("example.package.gain")
     );
 
     let mut wrong_schema = result.clone();
-    wrong_schema.schema = "wrong.object-text".to_owned();
-    let schema_error = validate_object_text_parse_result_v01(&wrong_schema)
+    wrong_schema.schema = "wrong.object-spec".to_owned();
+    let schema_error = validate_object_spec_parse_result_v01(&wrong_schema)
         .expect_err("schema mismatch should fail");
-    assert!(schema_error.to_string().contains("wrong.object-text"));
+    assert!(schema_error.to_string().contains("wrong.object-spec"));
 
     let mut wrong_version = result.clone();
     wrong_version.schema_version = "9.9.9".to_owned();
-    let version_error = validate_object_text_parse_result_v01(&wrong_version)
+    let version_error = validate_object_spec_parse_result_v01(&wrong_version)
         .expect_err("schema version mismatch should fail");
     assert!(version_error.to_string().contains("9.9.9"));
 
-    let parsed = parse_object_text_v01("[osc~ 440]");
+    let parsed = parse_object_spec_v01("[osc~ 440]");
     assert_eq!(parsed.class_name, "osc~");
     assert_eq!(parsed.resolved_kind, None);
     assert!(parsed.params.is_empty());
     assert!(parsed.instance_ports.is_empty());
     assert_eq!(
         parsed.creation_args,
-        vec![ObjectTextAtomV01::Int {
+        vec![ObjectSpecAtomV01::Int {
             value: 440,
             representation: Some("i32".to_owned())
         }]
@@ -1789,8 +1789,8 @@ fn validates_public_object_text_parse_results() {
 
     let mut missing_keys = result.clone();
     missing_keys.instance_ports[0].message_keys = None;
-    let missing_keys_error = validate_object_text_parse_result_v01(&missing_keys)
-        .expect_err("value.core.message object text port without keys should fail");
+    let missing_keys_error = validate_object_spec_parse_result_v01(&missing_keys)
+        .expect_err("value.core.message object spec port without keys should fail");
     assert!(
         missing_keys_error
             .to_string()
@@ -1801,8 +1801,8 @@ fn validates_public_object_text_parse_results() {
     accepting_message_any.instance_ports[0].port_type = "value.core.float64".to_owned();
     accepting_message_any.instance_ports[0].accepts = Some(vec!["value.core.message".to_owned()]);
     accepting_message_any.instance_ports[0].message_keys = None;
-    let accepting_message_any_error = validate_object_text_parse_result_v01(&accepting_message_any)
-        .expect_err("object text port accepting value.core.message without keys should fail");
+    let accepting_message_any_error = validate_object_spec_parse_result_v01(&accepting_message_any)
+        .expect_err("object spec port accepting value.core.message without keys should fail");
     assert!(
         accepting_message_any_error
             .to_string()
@@ -1813,9 +1813,9 @@ fn validates_public_object_text_parse_results() {
     let policy = empty_key_set.instance_ports[0]
         .message_keys
         .as_mut()
-        .expect("resolved object text should declare key policy");
+        .expect("resolved object spec should declare key policy");
     policy.accepted.clear();
-    let empty_key_error = validate_object_text_parse_result_v01(&empty_key_set)
+    let empty_key_error = validate_object_spec_parse_result_v01(&empty_key_set)
         .expect_err("empty key policy should fail");
     assert!(
         empty_key_error
@@ -1827,10 +1827,10 @@ fn validates_public_object_text_parse_results() {
     let policy = unaccepted_trigger.instance_ports[0]
         .message_keys
         .as_mut()
-        .expect("resolved object text should declare key policy");
+        .expect("resolved object spec should declare key policy");
     policy.accepted = vec!["float".to_owned()];
     policy.trigger = Some(vec!["int".to_owned()]);
-    let unaccepted_trigger_error = validate_object_text_parse_result_v01(&unaccepted_trigger)
+    let unaccepted_trigger_error = validate_object_spec_parse_result_v01(&unaccepted_trigger)
         .expect_err("key behavior outside accepted set should fail");
     assert!(
         unaccepted_trigger_error
@@ -1842,13 +1842,13 @@ fn validates_public_object_text_parse_results() {
     let policy = set_as_emit.instance_ports[0]
         .message_keys
         .as_mut()
-        .expect("resolved object text should declare key policy");
+        .expect("resolved object spec should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
     policy.store = None;
     policy.emit = Some(vec!["set".to_owned()]);
-    let set_emit_error = validate_object_text_parse_result_v01(&set_as_emit)
+    let set_emit_error = validate_object_spec_parse_result_v01(&set_as_emit)
         .expect_err("set must not be emit behavior");
     assert!(
         set_emit_error
@@ -1860,13 +1860,13 @@ fn validates_public_object_text_parse_results() {
     let policy = set_as_trigger.instance_ports[0]
         .message_keys
         .as_mut()
-        .expect("resolved object text should declare key policy");
+        .expect("resolved object spec should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = Some(vec!["set".to_owned()]);
     policy.store = None;
     policy.emit = None;
-    let set_trigger_error = validate_object_text_parse_result_v01(&set_as_trigger)
+    let set_trigger_error = validate_object_spec_parse_result_v01(&set_as_trigger)
         .expect_err("set must not be trigger behavior");
     let set_trigger_text = set_trigger_error.to_string();
     assert!(set_trigger_text.contains("messageKeys.trigger must not include set"));
@@ -1876,26 +1876,26 @@ fn validates_public_object_text_parse_results() {
     let policy = set_as_silent.instance_ports[0]
         .message_keys
         .as_mut()
-        .expect("resolved object text should declare key policy");
+        .expect("resolved object spec should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = Some(vec!["set".to_owned()]);
     policy.trigger = None;
     policy.store = None;
     policy.emit = None;
-    validate_object_text_parse_result_v01(&set_as_silent)
+    validate_object_spec_parse_result_v01(&set_as_silent)
         .expect("set should be valid as silent key behavior");
 
     let mut set_as_store = result.clone();
     let policy = set_as_store.instance_ports[0]
         .message_keys
         .as_mut()
-        .expect("resolved object text should declare key policy");
+        .expect("resolved object spec should declare key policy");
     policy.accepted = vec!["set".to_owned()];
     policy.silent = None;
     policy.trigger = None;
     policy.store = Some(vec!["set".to_owned()]);
     policy.emit = None;
-    validate_object_text_parse_result_v01(&set_as_store)
+    validate_object_spec_parse_result_v01(&set_as_store)
         .expect("set should be valid as store key behavior");
 }
 
@@ -1932,7 +1932,7 @@ fn valid_core_catalog_snapshot() -> NodeCatalogSnapshotV01 {
         "entries": [
             {
                 "catalogId": "core.float",
-                "canonicalObjectText": "float",
+                "canonicalObjectSpec": "float",
                 "aliases": ["float64", "number"],
                 "source": { "kind": "core" },
                 "definition": minimal_node_definition_value("object.core.float", "Float"),
@@ -1955,7 +1955,7 @@ fn valid_core_catalog_snapshot() -> NodeCatalogSnapshotV01 {
             },
             {
                 "catalogId": "core.message",
-                "canonicalObjectText": "message",
+                "canonicalObjectSpec": "message",
                 "aliases": ["msg"],
                 "source": { "kind": "core" },
                 "definition": minimal_node_definition_value("object.core.message", "Message"),
@@ -2048,7 +2048,7 @@ fn valid_project_patch_catalog_snapshot() -> NodeCatalogSnapshotV01 {
                     "patchRevision": patch.revision,
                     "interfaceDigest": interface_digest
                 },
-                "canonicalObjectText": "Folder/My Patch?",
+                "canonicalObjectSpec": "Folder/My Patch?",
                 "aliases": ["Folder.My-Patch"],
                 "definition": {
                     "schema": "skenion.node.definition",
@@ -2131,11 +2131,11 @@ fn validates_public_node_catalog_contracts() {
     );
     assert_eq!(
         project_catalog.catalog_revision.value,
-        "9c0a843d107801006d7b931f733ba29dc62a60e0ffaa46977f5b9a06eb72e67a"
+        "7d741cbc25a956ced954d0180ede5b29e8ff45a6966db83882972e122629acab"
     );
     assert_eq!(
         core_catalog.catalog_revision.value,
-        "42d4e882b0a0874e42d01faa99414f73ac07aa85e98c14239ad268495b57f2c8"
+        "b9c3c9483879f21696481b2634ffbcb9046b561b8ddedd01772dd4141f7fa538"
     );
 
     let mut changed_patch = valid_project_patch();
@@ -2209,7 +2209,7 @@ fn reports_public_node_catalog_errors() {
     let mut duplicate_entry = duplicate_catalog_id.entries[1].clone();
     duplicate_entry.catalog_id = "core.float".to_owned();
     duplicate_entry.definition.id = "object.core.duplicate".to_owned();
-    duplicate_entry.canonical_object_text = "duplicate".to_owned();
+    duplicate_entry.canonical_object_spec = "duplicate".to_owned();
     duplicate_catalog_id.entries.push(duplicate_entry);
     duplicate_catalog_id = with_catalog_revision(duplicate_catalog_id);
     let report = validate_node_catalog_snapshot_v01(&duplicate_catalog_id)
@@ -2297,11 +2297,11 @@ fn reports_public_node_catalog_errors() {
     );
 
     let mut duplicate_canonical = valid_core_catalog_snapshot();
-    duplicate_canonical.entries[1].canonical_object_text = "float".to_owned();
+    duplicate_canonical.entries[1].canonical_object_spec = "float".to_owned();
     duplicate_canonical = with_catalog_revision(duplicate_canonical);
     let report = validate_node_catalog_snapshot_v01(&duplicate_canonical)
         .expect_err("duplicate canonical text should fail");
-    assert!(report.to_string().contains("duplicate canonicalObjectText"));
+    assert!(report.to_string().contains("duplicate canonicalObjectSpec"));
 
     let mut duplicate_alias = valid_core_catalog_snapshot();
     duplicate_alias.entries[1].aliases = Some(vec!["dup".to_owned(), "dup".to_owned()]);
@@ -2373,10 +2373,10 @@ fn reports_public_node_catalog_errors() {
             "unknown field",
         ),
         (
-            "display object text",
+            "display object spec",
             {
                 let mut value = removed_field_snapshot_value();
-                value["entries"][0]["display"]["canonicalObjectText"] = serde_json::json!("float");
+                value["entries"][0]["display"]["canonicalObjectSpec"] = serde_json::json!("float");
                 value["entries"][0]["display"]["aliases"] = serde_json::json!(["float64"]);
                 value
             },
@@ -2460,7 +2460,7 @@ fn reports_public_node_catalog_errors() {
 }
 
 #[test]
-fn parses_public_object_text_lexical_matrix() {
+fn parses_public_object_spec_lexical_matrix() {
     for input in [
         "[+ 1]",
         "[+ 1.]",
@@ -2480,8 +2480,8 @@ fn parses_public_object_text_lexical_matrix() {
         "[frobnicate]",
         "[expr $f1]",
     ] {
-        let result = parse_object_text_v01(input);
-        validate_object_text_parse_result_v01(&result).expect("parse result should validate");
+        let result = parse_object_spec_v01(input);
+        validate_object_spec_parse_result_v01(&result).expect("parse result should validate");
         assert!(result.ok, "{input} should parse");
         assert_eq!(result.resolved_kind, None);
         assert_eq!(result.resolved_kind_version, None);
@@ -2490,8 +2490,8 @@ fn parses_public_object_text_lexical_matrix() {
     }
 
     for input in ["[+ 1", "+ 1]", ""] {
-        let result = parse_object_text_v01(input);
-        validate_object_text_parse_result_v01(&result).expect("failure result should validate");
+        let result = parse_object_spec_v01(input);
+        validate_object_spec_parse_result_v01(&result).expect("failure result should validate");
         assert!(!result.ok, "{input} should fail without throwing");
         assert!(
             !result.diagnostics.is_empty(),

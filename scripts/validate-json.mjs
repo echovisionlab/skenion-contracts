@@ -787,9 +787,9 @@ function validateMessageKeyPolicy(file, port, label) {
   }
 }
 
-function validateObjectTextParseResultSemantics(file, result) {
+function validateObjectSpecParseResultSemantics(file, result) {
   for (const port of result.instancePorts ?? []) {
-    validateMessageKeyPolicy(file, port, `objectText instancePort ${result.className}.${port.id}`);
+    validateMessageKeyPolicy(file, port, `objectSpec instancePort ${result.className}.${port.id}`);
   }
 }
 
@@ -1224,8 +1224,8 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.shader.interface" && document.schemaVersion === "0.1.0") {
     return validators.shaderInterfaceV01;
   }
-  if (document.schema === "skenion.object-text.parse-result" && document.schemaVersion === "0.1.0") {
-    return validators.objectTextParseResultV01;
+  if (document.schema === "skenion.object-spec.parse-result" && document.schemaVersion === "0.1.0") {
+    return validators.objectSpecParseResultV01;
   }
   if (document.schema === "skenion.extension.manifest" && document.schemaVersion === "0.1.0") {
     return validators.extensionManifestV01;
@@ -1279,8 +1279,8 @@ function validateDocument(file, document, validators) {
   if (document.schema === "skenion.runtime.session-load-request" && document.schemaVersion === "0.1.0") {
     validateRuntimeSessionLoadRequestV01Semantics(file, document);
   }
-  if (document.schema === "skenion.object-text.parse-result" && document.schemaVersion === "0.1.0") {
-    validateObjectTextParseResultSemantics(file, document);
+  if (document.schema === "skenion.object-spec.parse-result" && document.schemaVersion === "0.1.0") {
+    validateObjectSpecParseResultSemantics(file, document);
   }
   if (document.schema === "skenion.package.manifest" && document.schemaVersion === "0.1.0") {
     validatePackageManifestV01Semantics(file, document);
@@ -1569,8 +1569,8 @@ const validators = {
   shaderInterfaceV01: ajv.compile(
     await readJson("json-schema/shader/v0.1/shader-interface.schema.json")
   ),
-  objectTextParseResultV01: ajv.compile(
-    await readJson("json-schema/object-text/v0.1/parse-result.schema.json")
+  objectSpecParseResultV01: ajv.compile(
+    await readJson("json-schema/object-spec/v0.1/parse-result.schema.json")
   ),
   extensionManifestV01: ajv.compile(extensionManifestV01Schema),
   packageManifestV01: ajv.compile(packageManifestV01Schema),

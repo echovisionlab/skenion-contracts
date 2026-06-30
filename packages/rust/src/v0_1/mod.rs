@@ -2,7 +2,7 @@ mod audio_clock;
 mod clock;
 mod compatibility_matrix;
 mod message_value;
-mod object_text;
+mod object_spec;
 mod shader_interface;
 mod types;
 mod validation;
@@ -25,11 +25,11 @@ pub use clock::{
 };
 pub use compatibility_matrix::*;
 pub use message_value::{MessageAtomV01, MessageValueV01};
-pub use object_text::{
-    ObjectTextAtomV01, ObjectTextDiagnosticSeverityV01, ObjectTextDiagnosticV01,
-    ObjectTextParseResultV01, ObjectTextPortActivationV01, ObjectTextPortDirectionV01,
-    ObjectTextPortRateV01, ObjectTextPortV01, ObjectTextValidationErrorV01, parse_object_text_v01,
-    validate_object_text_parse_result_v01,
+pub use object_spec::{
+    ObjectSpecAtomV01, ObjectSpecDiagnosticSeverityV01, ObjectSpecDiagnosticV01,
+    ObjectSpecParseResultV01, ObjectSpecPortActivationV01, ObjectSpecPortDirectionV01,
+    ObjectSpecPortRateV01, ObjectSpecPortV01, ObjectSpecValidationErrorV01, parse_object_spec_v01,
+    validate_object_spec_parse_result_v01,
 };
 pub use shader_interface::{
     GeneratedShaderSourceMapV01, ShaderDiagnosticPhaseV01, ShaderDiagnosticSeverityV01,
