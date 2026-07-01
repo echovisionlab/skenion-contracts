@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.59.0](https://github.com/skenion/skenion-contracts/compare/v0.58.0...v0.59.0) (2026-07-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove object implementation version
+
+### Features
+
+* remove object implementation version ([29afc19](https://github.com/skenion/skenion-contracts/commit/29afc19f36808687e7e646585f08a8488813fa25))
+
 ## [0.58.0](https://github.com/skenion/skenion-contracts/compare/v0.57.0...v0.58.0) (2026-07-01)
 
 
