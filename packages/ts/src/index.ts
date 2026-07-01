@@ -38,7 +38,6 @@ export type {
   CableStyleRegistryV01,
   CableStyleV01,
   CanvasNodeViewV01,
-  CanvasViewportV01,
   ClockAuthorityV01,
   ClockCapabilityV01,
   ClockFieldV01,

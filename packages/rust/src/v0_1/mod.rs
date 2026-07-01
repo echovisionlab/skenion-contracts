@@ -37,7 +37,7 @@ pub use shader_interface::{
     analyze_shader_interface_v01, shader_interface_to_ports_v01,
 };
 pub use types::{
-    CableStyleRegistryV01, CableStyleV01, CanvasNodeViewV01, CanvasViewStateV01, CanvasViewportV01,
+    CableStyleRegistryV01, CableStyleV01, CanvasNodeViewV01, CanvasViewStateV01,
     CycleValidationV01, DataFlowV01, DataTypeV01, EdgeEndpointV01, EdgeSpecV01,
     EndpointBindingDeliveryPolicyV01, EndpointBindingValueFormatV01, ExecutionModelV01,
     ExtensionCodecDescriptorV01, ExtensionCodecDirectionV01, ExtensionFrontendMetadataV01,

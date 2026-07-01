@@ -1039,18 +1039,11 @@ export interface CanvasNodeViewV01 {
   collapsed?: boolean;
 }
 
-export interface CanvasViewportV01 {
-  x: number;
-  y: number;
-  zoom: number;
-}
-
 export interface ViewStateV01 {
   schema: "skenion.view-state";
   schemaVersion: "0.1.0";
   canvas: {
     nodes: Record<string, CanvasNodeViewV01>;
-    viewport?: CanvasViewportV01;
   };
 }
 

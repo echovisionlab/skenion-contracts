@@ -503,19 +503,8 @@ pub struct CanvasNodeViewV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct CanvasViewportV01 {
-    pub x: f64,
-    pub y: f64,
-    pub zoom: f64,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
 pub struct CanvasViewStateV01 {
     pub nodes: BTreeMap<String, CanvasNodeViewV01>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub viewport: Option<CanvasViewportV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

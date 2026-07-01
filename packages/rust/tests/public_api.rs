@@ -18,7 +18,7 @@ use skenion_contracts::{
     PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortSpecV01, ProjectDocumentV01,
     RuntimeSessionLoadModeV01, RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
     SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, ValueFormatV01,
-    ValueOccurrenceHeaderV01, ValuePayloadKindV01, analyze_graph_document_v01,
+    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, analyze_graph_document_v01,
     analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
     compute_node_catalog_revision_v01, compute_patch_interface_digest_v01,
     derive_patch_contract_v01, derive_patch_contracts_v01, derive_v0_compatibility_line,
@@ -3251,6 +3251,26 @@ fn derives_public_v01_patch_contract_fallback_port_ids() {
             "second:Input:multi_input:second",
             "fallback_output:Output:fallback_output:in"
         ]
+    );
+}
+
+#[test]
+fn rejects_public_v01_view_state_viewport_field() {
+    let result: Result<ViewStateV01, _> = serde_json::from_str(
+        r#"{
+          "schema": "skenion.view-state",
+          "schemaVersion": "0.1.0",
+          "canvas": {
+            "nodes": {},
+            "viewport": { "x": 0, "y": 0, "zoom": 1 }
+          }
+        }"#,
+    );
+
+    let error = result.expect_err("viewport is not part of persisted v0.1 view state");
+    assert!(
+        error.to_string().contains("unknown field `viewport`"),
+        "{error}"
     );
 }
 

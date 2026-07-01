@@ -903,9 +903,6 @@ export const viewStateV01Schema = {
           "additionalProperties": {
             "$ref": "#/$defs/nodeView"
           }
-        },
-        "viewport": {
-          "$ref": "#/$defs/viewport"
         }
       },
       "additionalProperties": false
@@ -936,27 +933,6 @@ export const viewStateV01Schema = {
         },
         "collapsed": {
           "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
-    "viewport": {
-      "type": "object",
-      "required": [
-        "x",
-        "y",
-        "zoom"
-      ],
-      "properties": {
-        "x": {
-          "type": "number"
-        },
-        "y": {
-          "type": "number"
-        },
-        "zoom": {
-          "type": "number",
-          "exclusiveMinimum": 0
         }
       },
       "additionalProperties": false

@@ -1869,6 +1869,11 @@ test("default graph project view and node validators are strict v0.1", async () 
   assert.equal(validateNodeDefinition(unsupportedNode).ok, false);
   assert.equal(validateNodeDefinitionV01(unsupportedNode).ok, false);
 
+  const viewportViewState = structuredClone(viewState);
+  viewportViewState.canvas.viewport = { x: 0, y: 0, zoom: 1 };
+  assert.equal(validateViewState(viewportViewState).ok, false);
+  assert.equal(validateViewStateV01(viewportViewState).ok, false);
+
   const orphanViewProject = structuredClone(project);
   orphanViewProject.viewState.canvas.nodes["missing-node"] = { x: 0, y: 0 };
   const orphanViewResult = validateProjectDocument(orphanViewProject);
@@ -1891,7 +1896,7 @@ test("creates default view state for graph nodes", async () => {
   assert.deepEqual(Object.keys(viewState.canvas.nodes), ["clear_color", "output"]);
   assert.deepEqual(viewState.canvas.nodes.clear_color, { x: 96, y: 96 });
   assert.deepEqual(viewState.canvas.nodes.output, { x: 376, y: 96 });
-  assert.deepEqual(viewState.canvas.viewport, { x: 0, y: 0, zoom: 1 });
+  assert.equal("viewport" in viewState.canvas, false);
 });
 
 test("parses MIDI Clock messages into clock state authority", () => {
