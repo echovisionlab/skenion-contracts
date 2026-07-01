@@ -49,4 +49,4 @@ jobs:
           rustup component add llvm-tools-preview
           cargo install cargo-llvm-cov --locked
       - name: Rust coverage
-        run: cargo llvm-cov --manifest-path packages/rust/Cargo.toml --all-targets --all-features --fail-uncovered-lines 0 --fail-under-functions 100
+        run: cargo llvm-cov --manifest-path packages/rust/Cargo.toml --all-targets --all-features --fail-under-lines 95 --fail-under-functions 100

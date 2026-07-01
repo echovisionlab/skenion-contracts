@@ -420,10 +420,45 @@ pub fn parse_object_spec_v01(input: &str) -> ObjectSpecParseResultV01 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::v0_1::{
+        ObjectProviderRefV01, ObjectResolutionIssueCodeV01, PackageIssueSeverityV01,
+    };
     use serde_json::json;
 
     fn code(input: &str) -> String {
         parse_object_spec_v01(input).issues[0].code.clone()
+    }
+
+    fn core_implementation(object_id: &str) -> ObjectImplementationRefV01 {
+        ObjectImplementationRefV01 {
+            provider: ObjectProviderRefV01::Core,
+            object_id: object_id.to_owned(),
+            version: Some("0.1.0".to_owned()),
+            interface_digest: None,
+        }
+    }
+
+    fn object_resolution_issue(
+        code: ObjectResolutionIssueCodeV01,
+    ) -> super::super::types::ObjectResolutionIssueV01 {
+        super::super::types::ObjectResolutionIssueV01 {
+            severity: PackageIssueSeverityV01::Warning,
+            code,
+            message: "resolution issue".to_owned(),
+            details: None,
+        }
+    }
+
+    fn object_resolution(
+        status: ObjectResolutionStatusV01,
+        issues: Vec<super::super::types::ObjectResolutionIssueV01>,
+    ) -> ObjectResolutionV01 {
+        ObjectResolutionV01 {
+            status,
+            selected_spec: None,
+            candidates: Vec::new(),
+            issues,
+        }
     }
 
     #[test]
@@ -463,6 +498,51 @@ mod tests {
         assert_eq!(code("[+ 1"), "invalid-syntax");
         assert_eq!(code("+ 1]"), "invalid-syntax");
         assert_eq!(code(""), "empty-object-spec");
+    }
+
+    #[test]
+    fn validates_runtime_object_resolution_status_semantics() {
+        let mut unresolved_with_implementation = parse_object_spec_v01("float");
+        unresolved_with_implementation.implementation = Some(core_implementation("float"));
+        unresolved_with_implementation.object_resolution = Some(object_resolution(
+            ObjectResolutionStatusV01::Unresolved,
+            Vec::new(),
+        ));
+        assert!(
+            validate_object_spec_parse_result_v01(&unresolved_with_implementation)
+                .unwrap_err()
+                .to_string()
+                .contains("unresolved object spec parse result must not include implementation")
+        );
+
+        let mut error_without_implementation = parse_object_spec_v01("float");
+        error_without_implementation.object_resolution = Some(object_resolution(
+            ObjectResolutionStatusV01::Error,
+            vec![object_resolution_issue(
+                ObjectResolutionIssueCodeV01::ImplementationMissing,
+            )],
+        ));
+        assert!(
+            validate_object_spec_parse_result_v01(&error_without_implementation)
+                .unwrap_err()
+                .to_string()
+                .contains("error object spec parse result requires implementation")
+        );
+
+        let mut error_without_implementation_issue = parse_object_spec_v01("float");
+        error_without_implementation_issue.implementation = Some(core_implementation("float"));
+        error_without_implementation_issue.object_resolution = Some(object_resolution(
+            ObjectResolutionStatusV01::Error,
+            vec![object_resolution_issue(
+                ObjectResolutionIssueCodeV01::ResolutionUnresolved,
+            )],
+        ));
+        assert!(
+            validate_object_spec_parse_result_v01(&error_without_implementation_issue)
+                .unwrap_err()
+                .to_string()
+                .contains("error object spec parse result requires implementation issue")
+        );
     }
 
     #[test]
