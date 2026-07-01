@@ -40,7 +40,7 @@ It does not implement a high-quality bridge or resampler.
 
 - same domain: `method: direct`, `required: false`
 - different domains with an explicit bridge node: `method: clock-bridge`
-- different domains without a bridge: `method: invalid` with diagnostic code
+- different domains without a bridge: `method: invalid` with issue code
   `audio-clock-domain-crossing-requires-bridge`
 
 Runtime planners may add richer `AudioResamplerPlanV01` details later, but they

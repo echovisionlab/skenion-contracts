@@ -37,7 +37,7 @@
           "sine~ 440"
         ],
         "definitionPath": "nodes/example.oscillator.node.json",
-        "description": "Creatable oscillator object for object boxes.",
+        "description": "Creatable oscillator object for object authoring.",
         "helpId": "example.oscillator"
       }
     ],
@@ -81,5 +81,5 @@
     "stargazerCount": 128,
     "rankingScore": 0.92
   },
-  "diagnostics": []
+  "issues": []
 }

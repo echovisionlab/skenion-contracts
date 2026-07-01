@@ -35,15 +35,15 @@ import type {
   ExtensionManifestV01,
   GraphCycleValidationV01,
   GraphDocumentV01,
-  GraphFragmentDiagnosticV01,
+  GraphFragmentIssueV01,
   GraphFragmentValidationOptionsV01,
   GraphFragmentValidationResultV01,
   GraphFragmentV01,
-  GraphValidationDiagnosticV01,
+  GraphValidationIssueV01,
   GraphValidationResultV01,
   EndpointBindingValueFormatV01,
-  NodeCatalogDiagnosticTargetV01,
-  NodeCatalogDiagnosticV01,
+  NodeCatalogIssueTargetV01,
+  NodeCatalogIssueV01,
   NodeCatalogSnapshotV01,
   NodeDefinitionManifestV01,
   ObjectProviderRefV01,
@@ -57,6 +57,7 @@ import type {
   PackageRootDocumentV01,
   PatchDefinitionV01,
   PasteGraphFragmentRequest,
+  PortConnectionPolicyV01,
   PortSpecV01,
   ProjectDocumentV01,
   ProjectPackageLockEntryV01,
@@ -203,9 +204,9 @@ function validateViewStateNodeReferences(
 
 function graphV01SemanticErrors(graph: GraphDocumentV01, label: string): string[] {
   const result = analyzeGraphDocumentV01(graph);
-  return result.diagnostics
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => `${label} ${diagnostic.code}: ${diagnostic.message}`);
+  return result.issues
+    .filter((issue) => issue.severity === "error")
+    .map((issue) => `${label} ${issue.code}: ${issue.message}`);
 }
 
 function validatePatchDefinitionV01Semantics(patch: PatchDefinitionV01): string[] {
@@ -368,10 +369,9 @@ function checksumEquals(left: { algorithm: string; value: string }, right: { alg
   return left.algorithm === right.algorithm && left.value === right.value;
 }
 
-function validateNodeCatalogDiagnosticTargetV01(
-  target: NodeCatalogDiagnosticTargetV01,
+function validateNodeCatalogIssueTargetV01(
+  target: NodeCatalogIssueTargetV01,
   entryIds: ReadonlySet<string>,
-  diagnosticIds: ReadonlySet<string>,
   label: string
 ): string[] {
   if (target.kind === "catalog") {
@@ -380,25 +380,20 @@ function validateNodeCatalogDiagnosticTargetV01(
   if (target.kind === "entry" && !entryIds.has(target.catalogId)) {
     return [`${label} references missing entry catalogId: ${target.catalogId}`];
   }
-  if (target.kind === "diagnosticNodeDefinition" && !diagnosticIds.has(target.diagnosticId)) {
-    return [`${label} references missing diagnosticId: ${target.diagnosticId}`];
-  }
   return [];
 }
 
-function validateNodeCatalogDiagnosticV01Semantics(
-  diagnostic: NodeCatalogDiagnosticV01,
+function validateNodeCatalogIssueV01Semantics(
+  issue: NodeCatalogIssueV01,
   entryIds: ReadonlySet<string>,
-  diagnosticIds: ReadonlySet<string>,
   label: string
 ): string[] {
-  const errors = validateNodeCatalogDiagnosticTargetV01(
-    diagnostic.target,
+  const errors = validateNodeCatalogIssueTargetV01(
+    issue.target,
     entryIds,
-    diagnosticIds,
     `${label} target`
   );
-  if (diagnostic.severity === "error") {
+  if (issue.severity === "error") {
     errors.push(`${label} must not use error severity in a valid catalog snapshot`);
   }
   return errors;
@@ -456,27 +451,11 @@ function validateNodeCatalogObjectSpecV01Semantics(
 function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV01): string[] {
   const errors: string[] = [];
   const entryIds = new Set(snapshot.entries.map((entry) => entry.catalogId));
-  const diagnosticIds = new Set(
-    snapshot.diagnosticNodeDefinitions.map((definition) => definition.diagnosticId)
-  );
 
   errors.push(...duplicateErrors(snapshot.entries.map((entry) => entry.catalogId), "catalogId"));
-  errors.push(...duplicateErrors(
-    snapshot.diagnosticNodeDefinitions.map((definition) => definition.diagnosticId),
-    "diagnosticId"
-  ));
   errors.push(...sortedErrors(snapshot.entries.map((entry) => entry.catalogId), "catalog entries"));
-  errors.push(...sortedErrors(
-    snapshot.diagnosticNodeDefinitions.map((definition) => definition.diagnosticId),
-    "diagnostic node definitions"
-  ));
   errors.push(...duplicateErrors(
-    [
-      ...snapshot.entries.map((entry) => `${entry.definition.id}@${entry.definition.version}`),
-      ...snapshot.diagnosticNodeDefinitions.map((definition) => (
-        `${definition.definition.id}@${definition.definition.version}`
-      ))
-    ],
+    snapshot.entries.map((entry) => `${entry.definition.id}@${entry.definition.version}`),
     "node definition id/version"
   ));
 
@@ -506,12 +485,11 @@ function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV0
       primaryObjectSpecs
     ));
 
-    for (const diagnostic of entry.diagnostics ?? []) {
-      errors.push(...validateNodeCatalogDiagnosticV01Semantics(
-        diagnostic,
+    for (const issue of entry.issues ?? []) {
+      errors.push(...validateNodeCatalogIssueV01Semantics(
+        issue,
         entryIds,
-        diagnosticIds,
-        `catalog entry ${entry.catalogId} diagnostic`
+        `catalog entry ${entry.catalogId} issue`
       ));
     }
 
@@ -528,23 +506,11 @@ function validateNodeCatalogSnapshotV01Semantics(snapshot: NodeCatalogSnapshotV0
     }
   }
 
-  for (const definition of snapshot.diagnosticNodeDefinitions) {
-    const definitionResult = validateNodeDefinitionV01(definition.definition);
-    if (!definitionResult.ok) {
-      errors.push(
-        ...definitionResult.errors.map((error) => (
-          `diagnostic node definition ${definition.diagnosticId}: ${error}`
-        ))
-      );
-    }
-  }
-
-  for (const [index, diagnostic] of (snapshot.diagnostics ?? []).entries()) {
-    errors.push(...validateNodeCatalogDiagnosticV01Semantics(
-      diagnostic,
+  for (const [index, issue] of (snapshot.issues ?? []).entries()) {
+    errors.push(...validateNodeCatalogIssueV01Semantics(
+      issue,
       entryIds,
-      diagnosticIds,
-      `catalog diagnostic ${index}`
+      `catalog issue ${index}`
     ));
   }
 
@@ -672,7 +638,7 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(document: unknown)
     ok?: unknown;
     checks?: unknown;
     actions?: unknown;
-    diagnostics?: unknown;
+    issues?: unknown;
   };
   if (response.schema !== "skenion.package.install-plan.response") {
     return [];
@@ -681,18 +647,18 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(document: unknown)
   const errors: string[] = [];
   const checks = Array.isArray(response.checks) ? response.checks : [];
   const actions = Array.isArray(response.actions) ? response.actions : [];
-  const diagnostics = Array.isArray(response.diagnostics) ? response.diagnostics : [];
+  const issues = Array.isArray(response.issues) ? response.issues : [];
 
   for (const check of checks) {
     if (check === null || typeof check !== "object") {
       continue;
     }
-    const diagnosticRefs = (check as { diagnosticRefs?: unknown }).diagnosticRefs;
+    const issueRefs = (check as { issueRefs?: unknown }).issueRefs;
     if (
       (check as { status?: unknown }).status === "fail" &&
-      (!Array.isArray(diagnosticRefs) || diagnosticRefs.length === 0)
+      (!Array.isArray(issueRefs) || issueRefs.length === 0)
     ) {
-      errors.push(`package install plan failing check ${(check as { kind?: unknown }).kind} requires diagnosticRefs`);
+      errors.push(`package install plan failing check ${(check as { kind?: unknown }).kind} requires issueRefs`);
     }
   }
 
@@ -700,12 +666,12 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(document: unknown)
     if (action === null || typeof action !== "object") {
       continue;
     }
-    const diagnosticRefs = (action as { diagnosticRefs?: unknown }).diagnosticRefs;
+    const issueRefs = (action as { issueRefs?: unknown }).issueRefs;
     if (
       (action as { kind?: unknown }).kind === "reject" &&
-      (!Array.isArray(diagnosticRefs) || diagnosticRefs.length === 0)
+      (!Array.isArray(issueRefs) || issueRefs.length === 0)
     ) {
-      errors.push(`package install plan reject action ${(action as { id?: unknown }).id} requires diagnosticRefs`);
+      errors.push(`package install plan reject action ${(action as { id?: unknown }).id} requires issueRefs`);
     }
   }
 
@@ -715,8 +681,8 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(document: unknown)
   const hasRejectAction = actions.some((action) => {
     return action !== null && typeof action === "object" && (action as { kind?: unknown }).kind === "reject";
   });
-  const hasErrorDiagnostic = diagnostics.some((diagnostic) => {
-    return diagnostic !== null && typeof diagnostic === "object" && (diagnostic as { severity?: unknown }).severity === "error";
+  const hasErrorIssue = issues.some((issue) => {
+    return issue !== null && typeof issue === "object" && (issue as { severity?: unknown }).severity === "error";
   });
 
   if (response.ok === true) {
@@ -732,8 +698,8 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(document: unknown)
     if (!hasRejectAction) {
       errors.push("failed package install plan response requires a reject action");
     }
-    if (!hasErrorDiagnostic) {
-      errors.push("failed package install plan response requires an error diagnostic");
+    if (!hasErrorIssue) {
+      errors.push("failed package install plan response requires an error issue");
     }
   }
 
@@ -808,13 +774,13 @@ function validatePackageInstallPlanResponseV01Semantics(
   const errors = validatePackageInstallPlanTargetV01Semantics(response.target);
 
   errors.push(...duplicateErrors(response.actions.map((action) => action.id), "package install plan action id"));
-  errors.push(...duplicateErrors(response.diagnostics.map((diagnostic) => diagnostic.id), "package install plan diagnostic id"));
+  errors.push(...duplicateErrors(response.issues.map((issue) => issue.id), "package install plan issue id"));
 
-  const diagnosticIds = new Set(response.diagnostics.map((diagnostic) => diagnostic.id));
+  const issueIds = new Set(response.issues.map((issue) => issue.id));
   for (const check of response.checks) {
-    for (const diagnosticRef of check.diagnosticRefs ?? []) {
-      if (!diagnosticIds.has(diagnosticRef)) {
-        errors.push(`package install plan check ${check.kind} references missing diagnostic ${diagnosticRef}`);
+    for (const issueRef of check.issueRefs ?? []) {
+      if (!issueIds.has(issueRef)) {
+        errors.push(`package install plan check ${check.kind} references missing issue ${issueRef}`);
       }
     }
   }
@@ -824,16 +790,16 @@ function validatePackageInstallPlanResponseV01Semantics(
       errors.push(`package install plan action ${action.id} order must be ${index}`);
     }
 
-    for (const diagnosticRef of action.diagnosticRefs ?? []) {
-      if (!diagnosticIds.has(diagnosticRef)) {
-        errors.push(`package install plan action ${action.id} references missing diagnostic ${diagnosticRef}`);
+    for (const issueRef of action.issueRefs ?? []) {
+      if (!issueIds.has(issueRef)) {
+        errors.push(`package install plan action ${action.id} references missing issue ${issueRef}`);
       }
     }
 
     for (const capabilityChange of action.capabilityChanges ?? []) {
-      if (capabilityChange.diagnosticRef !== undefined && !diagnosticIds.has(capabilityChange.diagnosticRef)) {
+      if (capabilityChange.issueRef !== undefined && !issueIds.has(capabilityChange.issueRef)) {
         errors.push(
-          `package install plan action ${action.id} capability change references missing diagnostic ${capabilityChange.diagnosticRef}`
+          `package install plan action ${action.id} capability change references missing issue ${capabilityChange.issueRef}`
         );
       }
     }
@@ -894,16 +860,16 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
       if (!patch) {
         if (binding.status === "resolved") {
           errors.push(`resolved object binding ${binding.id} references missing project patch: ${target.patchId}`);
-        } else if (binding.status !== "missing" && binding.status !== "stale") {
-          errors.push(`object binding ${binding.id} references missing project patch: ${target.patchId}`);
+        } else if (!bindingHasIssue(binding, new Set(["implementation-missing"]))) {
+          errors.push(`object binding ${binding.id} references missing project patch: ${target.patchId} without error issue`);
         }
         continue;
       }
       if (patch && target.revision !== undefined && target.revision !== patch.revision) {
         if (binding.status === "resolved") {
           errors.push(`resolved object binding ${binding.id} project patch ${target.patchId} revision is stale`);
-        } else if (binding.status !== "stale") {
-          errors.push(`object binding ${binding.id} project patch ${target.patchId} revision is stale without diagnostics`);
+        } else if (!bindingHasIssue(binding, new Set(["implementation-stale", "interface-drift"]))) {
+          errors.push(`object binding ${binding.id} project patch ${target.patchId} revision is stale without issues`);
         }
       }
       continue;
@@ -922,8 +888,8 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
     if (!lockEntry) {
       if (binding.status === "resolved") {
         errors.push(`resolved object binding ${binding.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
-      } else if (binding.status !== "missing" && binding.status !== "stale") {
-        errors.push(`object binding ${binding.id} references missing lockEntryId: ${providerRef.lockEntryId}`);
+      } else if (!bindingHasIssue(binding, new Set(["implementation-missing"]))) {
+        errors.push(`object binding ${binding.id} references missing lockEntryId: ${providerRef.lockEntryId} without error issue`);
       }
       continue;
     }
@@ -937,14 +903,14 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
   return errors;
 }
 
-function diagnostic(
-  diagnostics: GraphValidationDiagnosticV01[],
-  severity: GraphValidationDiagnosticV01["severity"],
+function issue(
+  issues: GraphValidationIssueV01[],
+  severity: GraphValidationIssueV01["severity"],
   code: string,
   message: string,
-  refs: Pick<GraphValidationDiagnosticV01, "nodes" | "edges"> = {}
+  refs: Pick<GraphValidationIssueV01, "nodes" | "edges"> = {}
 ): void {
-  diagnostics.push({ severity, code, message, ...refs });
+  issues.push({ severity, code, message, ...refs });
 }
 
 function portSpecKey(nodeId: string, portId: string): string {
@@ -974,14 +940,31 @@ function portFanOutPolicy(port: PortSpecV01): string {
   return port.fanOutPolicy ?? "allow";
 }
 
-function portTypeAccepts(source: PortSpecV01, target: PortSpecV01): boolean {
-  if (target.type === "value.core.message" && isMessageValuePortType(source.type)) {
-    return true;
+function portTypePolicyV01(source: PortSpecV01, target: PortSpecV01): PortConnectionPolicyV01 {
+  if (source.type === target.type) {
+    return { accepted: true, reason: "type-match", effectiveType: source.type };
   }
-  return source.type === target.type || target.accepts?.includes(source.type) === true;
+  if (target.type === "value.core.message" && isMessageValuePortType(source.type)) {
+    return { accepted: true, reason: "message-selector", effectiveType: source.type };
+  }
+  if (target.accepts?.includes(source.type) === true) {
+    return { accepted: true, reason: "target-accepts", effectiveType: source.type };
+  }
+  return { accepted: false, reason: "incompatible-type" };
 }
 
-function isMessageValuePortType(type: string): boolean {
+export function portTypeAcceptsV01(source: PortSpecV01, target: PortSpecV01): boolean {
+  return portTypePolicyV01(source, target).accepted;
+}
+
+export function portConnectionPolicyV01(source: PortSpecV01, target: PortSpecV01): PortConnectionPolicyV01 {
+  if (source.direction !== "output" || target.direction !== "input") {
+    return { accepted: false, reason: "direction-mismatch" };
+  }
+  return portTypePolicyV01(source, target);
+}
+
+export function isMessageValuePortTypeV01(type: string): boolean {
   return [
     "value.core.message",
     "value.core.bang",
@@ -1005,6 +988,10 @@ function isMessageValuePortType(type: string): boolean {
     "value.core.color",
     "value.core.string"
   ].includes(type);
+}
+
+function isMessageValuePortType(type: string): boolean {
+  return isMessageValuePortTypeV01(type);
 }
 
 const firstPartyValueTypeIds = new Set([
@@ -1083,6 +1070,14 @@ const firstPartyRepresentations = new Set([
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function isReservedValueTypeIdV01(type: string): boolean {
+  return type.startsWith("value.core.") || type.startsWith("value.media.");
+}
+
+export function isValidCustomValueTypeIdV01(type: string): boolean {
+  return valueTypeIdPattern.test(type) && !isReservedValueTypeIdV01(type) && !invalidValueTypeIds.has(type);
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -1496,7 +1491,13 @@ function invalidPortValueType(type: string): boolean {
   if (invalidValueTypeIds.has(type)) {
     return true;
   }
-  if (type.startsWith("value.") && !firstPartyValueTypeIds.has(type)) {
+  if (type.startsWith("value.core.") && !firstPartyValueTypeIds.has(type)) {
+    return true;
+  }
+  if (type.startsWith("value.media.")) {
+    return true;
+  }
+  if (type.startsWith("value.") && !firstPartyValueTypeIds.has(type) && !isValidCustomValueTypeIdV01(type)) {
     return true;
   }
   return false;
@@ -1524,29 +1525,69 @@ function isPayloadIdentityNodeKind(kind: string): boolean {
     kind.startsWith("control.");
 }
 
-function graphNodeResolutionDiagnostics(
-  node: { id: string; implementation?: { objectId: string }; objectResolution?: { status: string } }
-): GraphValidationDiagnosticV01[] {
-  const diagnostics: GraphValidationDiagnosticV01[] = [];
+function graphNodeResolutionIssues(
+  node: {
+    id: string;
+    implementation?: { objectId: string };
+    objectResolution?: { status: string; issues?: Array<{ code?: string }> };
+  }
+): GraphValidationIssueV01[] {
+  const issues: GraphValidationIssueV01[] = [];
   const objectId = node.implementation?.objectId;
   if (objectId !== undefined && isPayloadIdentityNodeKind(objectId)) {
-    diagnostics.push({
+    issues.push({
       severity: "error",
       code: "payload-implementation-id",
       message: `node ${node.id} uses payload identity ${objectId} as an executable implementation`,
       nodes: [node.id]
     });
   }
+  if (node.objectResolution?.status === "unresolved" && node.implementation !== undefined) {
+    issues.push({
+      severity: "error",
+      code: "unresolved-object-has-implementation",
+      message: `node ${node.id} has unresolved objectResolution with implementation`,
+      nodes: [node.id]
+    });
+  }
   if (node.objectResolution?.status === "resolved" && node.implementation === undefined) {
-    diagnostics.push({
+    issues.push({
       severity: "error",
       code: "resolved-object-missing-implementation",
       message: `node ${node.id} has resolved objectResolution without implementation`,
       nodes: [node.id]
     });
   }
-  return diagnostics;
+  if (node.objectResolution?.status === "error") {
+    const hasImplementationIssue = (node.objectResolution.issues ?? []).some((issue) =>
+      typeof issue.code === "string" && IMPLEMENTATION_ERROR_ISSUE_CODES.has(issue.code)
+    );
+    if (node.implementation === undefined) {
+      issues.push({
+        severity: "error",
+        code: "error-object-missing-implementation",
+        message: `node ${node.id} has error objectResolution without implementation`,
+        nodes: [node.id]
+      });
+    }
+    if (!hasImplementationIssue) {
+      issues.push({
+        severity: "error",
+        code: "error-object-missing-issue",
+        message: `node ${node.id} has error objectResolution without implementation issue`,
+        nodes: [node.id]
+      });
+    }
+  }
+  return issues;
 }
+
+const IMPLEMENTATION_ERROR_ISSUE_CODES = new Set([
+  "implementation-missing",
+  "implementation-stale",
+  "implementation-lock-mismatch",
+  "interface-drift"
+]);
 
 type MessageKeyPolicyPortV01 = Pick<PortSpecV01, "direction" | "type" | "accepts" | "messageKeys">;
 
@@ -1612,21 +1653,21 @@ function validateObjectSpecParseResultV01Semantics(result: ObjectSpecParseResult
   return errors;
 }
 
-function fragmentDiagnostic(
-  diagnostics: GraphFragmentDiagnosticV01[],
-  severity: GraphFragmentDiagnosticV01["severity"],
+function fragmentIssue(
+  issues: GraphFragmentIssueV01[],
+  severity: GraphFragmentIssueV01["severity"],
   code: string,
   message: string,
-  refs: Pick<GraphFragmentDiagnosticV01, "nodes" | "edges"> = {}
+  refs: Pick<GraphFragmentIssueV01, "nodes" | "edges"> = {}
 ): void {
-  diagnostics.push({ severity, code, message, ...refs });
+  issues.push({ severity, code, message, ...refs });
 }
 
 function analyzeFragmentSemantics(
   fragment: GraphFragmentV01,
   options: GraphFragmentValidationOptionsV01
 ): GraphFragmentValidationResultV01 {
-  const diagnostics: GraphFragmentDiagnosticV01[] = [];
+  const issues: GraphFragmentIssueV01[] = [];
   const omittedEdgeIds: string[] = [];
   const outsideEndpointPolicy = options.outsideEndpointPolicy ?? "reject";
   const nodeIds = new Set<string>();
@@ -1635,8 +1676,8 @@ function analyzeFragmentSemantics(
 
   for (const node of fragment.nodes) {
     if (nodeIds.has(node.id)) {
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         "error",
         "duplicate-node-id",
         `duplicate node id: ${node.id}`,
@@ -1644,21 +1685,21 @@ function analyzeFragmentSemantics(
       );
     }
     nodeIds.add(node.id);
-    for (const resolutionDiagnostic of graphNodeResolutionDiagnostics(node)) {
-      fragmentDiagnostic(
-        diagnostics,
-        resolutionDiagnostic.severity,
-        resolutionDiagnostic.code,
-        resolutionDiagnostic.message,
-        { nodes: resolutionDiagnostic.nodes }
+    for (const resolutionIssue of graphNodeResolutionIssues(node)) {
+      fragmentIssue(
+        issues,
+        resolutionIssue.severity,
+        resolutionIssue.code,
+        resolutionIssue.message,
+        { nodes: resolutionIssue.nodes }
       );
     }
 
     const portIds = new Set<string>();
     for (const port of node.ports) {
       if (portIds.has(port.id)) {
-        fragmentDiagnostic(
-          diagnostics,
+        fragmentIssue(
+          issues,
           "error",
           "duplicate-port-id",
           `duplicate port id on ${node.id}: ${port.id}`,
@@ -1667,8 +1708,8 @@ function analyzeFragmentSemantics(
       }
       portIds.add(port.id);
       if (invalidPortValueType(port.type)) {
-        fragmentDiagnostic(
-          diagnostics,
+        fragmentIssue(
+          issues,
           "error",
           "invalid-value-type",
           `port ${node.id}.${port.id} uses invalid value type ${port.type}`,
@@ -1677,8 +1718,8 @@ function analyzeFragmentSemantics(
       }
       for (const acceptedType of port.accepts ?? []) {
         if (invalidPortValueType(acceptedType)) {
-          fragmentDiagnostic(
-            diagnostics,
+          fragmentIssue(
+            issues,
             "error",
             "invalid-value-type",
             `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`,
@@ -1687,7 +1728,7 @@ function analyzeFragmentSemantics(
         }
       }
       for (const error of messageKeyPolicyErrors(port, `port ${node.id}.${port.id}`)) {
-        fragmentDiagnostic(diagnostics, "error", "message-key-policy", error, { nodes: [node.id] });
+        fragmentIssue(issues, "error", "message-key-policy", error, { nodes: [node.id] });
       }
       ports.set(portSpecKey(node.id, port.id), port);
     }
@@ -1695,8 +1736,8 @@ function analyzeFragmentSemantics(
 
   for (const edge of fragment.edges) {
     if (edgeIds.has(edge.id)) {
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         "error",
         "duplicate-edge-id",
         `duplicate edge id: ${edge.id}`,
@@ -1705,8 +1746,8 @@ function analyzeFragmentSemantics(
     }
     edgeIds.add(edge.id);
     if (edge.resolvedType !== undefined && invalidPortValueType(edge.resolvedType)) {
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         "error",
         "invalid-value-type",
         `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`,
@@ -1721,8 +1762,8 @@ function analyzeFragmentSemantics(
       if (outsideEndpointPolicy === "omit") {
         omittedEdgeIds.push(edge.id);
       }
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         severity,
         "fragment-edge-outside-selection",
         `edge ${edge.id} references an endpoint outside the graph fragment`,
@@ -1737,8 +1778,8 @@ function analyzeFragmentSemantics(
     const target = ports.get(targetKey);
 
     if (!source) {
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         "error",
         "missing-source-port",
         `edge ${edge.id} references missing source port ${sourceKey}`,
@@ -1746,8 +1787,8 @@ function analyzeFragmentSemantics(
       );
     }
     if (!target) {
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         "error",
         "missing-target-port",
         `edge ${edge.id} references missing target port ${targetKey}`,
@@ -1759,8 +1800,8 @@ function analyzeFragmentSemantics(
     }
 
     if (source.direction !== "output") {
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         "error",
         "invalid-source-direction",
         `edge ${edge.id} source ${sourceKey} is not an output port`,
@@ -1768,28 +1809,29 @@ function analyzeFragmentSemantics(
       );
     }
     if (target.direction !== "input") {
-      fragmentDiagnostic(
-        diagnostics,
+      fragmentIssue(
+        issues,
         "error",
         "invalid-target-direction",
         `edge ${edge.id} target ${targetKey} is not an input port`,
         { edges: [edge.id] }
       );
     }
-    if (!portTypeAccepts(source, target)) {
-      fragmentDiagnostic(
-        diagnostics,
+    const connectionPolicy = portConnectionPolicyV01(source, target);
+    if (!connectionPolicy.accepted && connectionPolicy.reason !== "direction-mismatch") {
+      fragmentIssue(
+        issues,
         "error",
         "incompatible-type",
-        `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}`,
+        `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}: ${connectionPolicy.reason}`,
         { edges: [edge.id] }
       );
     }
   }
 
   return {
-    ok: diagnostics.every((entry) => entry.severity !== "error"),
-    diagnostics,
+    ok: issues.every((entry) => entry.severity !== "error"),
+    issues,
     omittedEdgeIds
   };
 }
@@ -1962,7 +2004,7 @@ function validateNodeDefinitionV01Semantics(definition: NodeDefinitionManifestV0
 }
 
 export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidationResultV01 {
-  const diagnostics: GraphValidationDiagnosticV01[] = [];
+  const issues: GraphValidationIssueV01[] = [];
   const cycles: GraphCycleValidationV01[] = [];
   const nodeIds = new Set<string>();
   const ports = new Map<string, PortSpecV01>();
@@ -1973,16 +2015,16 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
 
   for (const node of graph.nodes) {
     if (nodeIds.has(node.id)) {
-      diagnostic(diagnostics, "error", "duplicate-node-id", `duplicate node id: ${node.id}`, { nodes: [node.id] });
+      issue(issues, "error", "duplicate-node-id", `duplicate node id: ${node.id}`, { nodes: [node.id] });
     }
     nodeIds.add(node.id);
-    diagnostics.push(...graphNodeResolutionDiagnostics(node));
+    issues.push(...graphNodeResolutionIssues(node));
 
     const portIds = new Set<string>();
     for (const port of node.ports) {
       if (portIds.has(port.id)) {
-        diagnostic(
-          diagnostics,
+        issue(
+          issues,
           "error",
           "duplicate-port-id",
           `duplicate port id on ${node.id}: ${port.id}`,
@@ -1991,8 +2033,8 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
       }
       portIds.add(port.id);
       if (invalidPortValueType(port.type)) {
-        diagnostic(
-          diagnostics,
+        issue(
+          issues,
           "error",
           "invalid-value-type",
           `port ${node.id}.${port.id} uses invalid value type ${port.type}`,
@@ -2001,8 +2043,8 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
       }
       for (const acceptedType of port.accepts ?? []) {
         if (invalidPortValueType(acceptedType)) {
-          diagnostic(
-            diagnostics,
+          issue(
+            issues,
             "error",
             "invalid-value-type",
             `port ${node.id}.${port.id} accepts invalid value type ${acceptedType}`,
@@ -2011,7 +2053,7 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
         }
       }
       for (const error of messageKeyPolicyErrors(port, `port ${node.id}.${port.id}`)) {
-        diagnostic(diagnostics, "error", "message-key-policy", error, { nodes: [node.id] });
+        issue(issues, "error", "message-key-policy", error, { nodes: [node.id] });
       }
       const key = portSpecKey(node.id, port.id);
       ports.set(key, port);
@@ -2021,8 +2063,8 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
 
     for (const group of node.portGroups ?? []) {
       if (invalidPortValueType(group.type)) {
-        diagnostic(
-          diagnostics,
+        issue(
+          issues,
           "error",
           "invalid-value-type",
           `port group ${node.id}.${group.id} uses invalid value type ${group.type}`,
@@ -2030,8 +2072,8 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
         );
       }
       if (invalidPortValueType(group.defaultPortSpec?.type ?? "")) {
-        diagnostic(
-          diagnostics,
+        issue(
+          issues,
           "error",
           "invalid-value-type",
           `port group ${node.id}.${group.id} default port uses invalid value type ${group.defaultPortSpec?.type}`,
@@ -2040,8 +2082,8 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
       }
       for (const acceptedType of group.defaultPortSpec?.accepts ?? []) {
         if (invalidPortValueType(acceptedType)) {
-          diagnostic(
-            diagnostics,
+          issue(
+            issues,
             "error",
             "invalid-value-type",
             `port group ${node.id}.${group.id} default port accepts invalid value type ${acceptedType}`,
@@ -2051,12 +2093,12 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
       }
       if (group.defaultPortSpec) {
         for (const error of messageKeyPolicyErrors(group.defaultPortSpec, `port group ${node.id}.${group.id} defaultPortSpec`)) {
-          diagnostic(diagnostics, "error", "message-key-policy", error, { nodes: [node.id] });
+          issue(issues, "error", "message-key-policy", error, { nodes: [node.id] });
         }
       }
       if (group.maxPorts !== undefined && group.maxPorts < group.minPorts) {
-        diagnostic(
-          diagnostics,
+        issue(
+          issues,
           "error",
           "invalid-port-group",
           `port group ${node.id}.${group.id} maxPorts is less than minPorts`,
@@ -2068,13 +2110,13 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
 
   for (const edge of graph.edges) {
     if (edgeIds.has(edge.id)) {
-      diagnostic(diagnostics, "error", "duplicate-edge-id", `duplicate edge id: ${edge.id}`, { edges: [edge.id] });
+      issue(issues, "error", "duplicate-edge-id", `duplicate edge id: ${edge.id}`, { edges: [edge.id] });
     }
     edgeIds.add(edge.id);
 
     const edgeKey = edgeEndpointKey(edge);
     if (edgeKeys.has(edgeKey)) {
-      diagnostic(diagnostics, "error", "duplicate-edge", `duplicate edge endpoints: ${edgeKey}`, { edges: [edge.id] });
+      issue(issues, "error", "duplicate-edge", `duplicate edge endpoints: ${edgeKey}`, { edges: [edge.id] });
     }
     edgeKeys.add(edgeKey);
 
@@ -2083,8 +2125,8 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
     const source = ports.get(sourceKey);
     const target = ports.get(targetKey);
     if (edge.resolvedType !== undefined && invalidPortValueType(edge.resolvedType)) {
-      diagnostic(
-        diagnostics,
+      issue(
+        issues,
         "error",
         "invalid-value-type",
         `edge ${edge.id} uses invalid resolvedType ${edge.resolvedType}`,
@@ -2093,23 +2135,24 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
     }
 
     if (!source) {
-      diagnostic(diagnostics, "error", "missing-source-port", `edge ${edge.id} references missing source port ${sourceKey}`, { edges: [edge.id] });
+      issue(issues, "error", "missing-source-port", `edge ${edge.id} references missing source port ${sourceKey}`, { edges: [edge.id] });
     }
     if (!target) {
-      diagnostic(diagnostics, "error", "missing-target-port", `edge ${edge.id} references missing target port ${targetKey}`, { edges: [edge.id] });
+      issue(issues, "error", "missing-target-port", `edge ${edge.id} references missing target port ${targetKey}`, { edges: [edge.id] });
     }
     if (!source || !target) {
       continue;
     }
 
     if (source.direction !== "output") {
-      diagnostic(diagnostics, "error", "invalid-source-direction", `edge ${edge.id} source ${sourceKey} is not an output port`, { edges: [edge.id] });
+      issue(issues, "error", "invalid-source-direction", `edge ${edge.id} source ${sourceKey} is not an output port`, { edges: [edge.id] });
     }
     if (target.direction !== "input") {
-      diagnostic(diagnostics, "error", "invalid-target-direction", `edge ${edge.id} target ${targetKey} is not an input port`, { edges: [edge.id] });
+      issue(issues, "error", "invalid-target-direction", `edge ${edge.id} target ${targetKey} is not an input port`, { edges: [edge.id] });
     }
-    if (!portTypeAccepts(source, target)) {
-      diagnostic(diagnostics, "error", "incompatible-type", `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}`, { edges: [edge.id] });
+    const connectionPolicy = portConnectionPolicyV01(source, target);
+    if (!connectionPolicy.accepted && connectionPolicy.reason !== "direction-mismatch") {
+      issue(issues, "error", "incompatible-type", `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}: ${connectionPolicy.reason}`, { edges: [edge.id] });
     }
 
     if (isEdgeEnabled(edge)) {
@@ -2125,20 +2168,20 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
     }
     const minimum = port.required === true ? Math.max(port.minConnections ?? 0, 1) : port.minConnections ?? 0;
     if (connectedEdges.length < minimum) {
-      diagnostic(diagnostics, "error", "missing-required-input", `input ${key} requires at least ${minimum} connection(s)`);
+      issue(issues, "error", "missing-required-input", `input ${key} requires at least ${minimum} connection(s)`);
     }
     if (connectedEdges.length > inputMaxConnections(port)) {
-      diagnostic(diagnostics, "error", "fan-in-cardinality", `input ${key} accepts at most ${port.maxConnections ?? 1} connection(s)`);
+      issue(issues, "error", "fan-in-cardinality", `input ${key} accepts at most ${port.maxConnections ?? 1} connection(s)`);
     }
     if (connectedEdges.length > 1 && portMergePolicy(port) === "forbid") {
-      diagnostic(diagnostics, "error", "fan-in-without-merge-policy", `input ${key} has fan-in but mergePolicy is forbid`);
+      issue(issues, "error", "fan-in-without-merge-policy", `input ${key} has fan-in but mergePolicy is forbid`);
     }
   }
 
   for (const [key, connectedEdges] of outgoing) {
     const port = ports.get(key);
     if (port?.direction === "output" && connectedEdges.length > 1 && portFanOutPolicy(port) === "forbid") {
-      diagnostic(diagnostics, "error", "fan-out-forbidden", `output ${key} forbids fan-out`);
+      issue(issues, "error", "fan-out-forbidden", `output ${key} forbids fan-out`);
     }
   }
 
@@ -2150,15 +2193,15 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
     const cycle = classifyCycle(component, componentEdges, ports);
     cycles.push(cycle);
     if (cycle.classification === "ambiguous-algebraic-loop" || cycle.classification === "invalid-cycle") {
-      diagnostic(diagnostics, "error", cycle.classification, cycle.message, { nodes: cycle.nodes, edges: cycle.edges });
+      issue(issues, "error", cycle.classification, cycle.message, { nodes: cycle.nodes, edges: cycle.edges });
     } else if (cycle.classification === "risky-feedback") {
-      diagnostic(diagnostics, "warning", cycle.classification, cycle.message, { nodes: cycle.nodes, edges: cycle.edges });
+      issue(issues, "warning", cycle.classification, cycle.message, { nodes: cycle.nodes, edges: cycle.edges });
     }
   }
 
   return {
-    ok: diagnostics.every((entry) => entry.severity !== "error"),
-    diagnostics,
+    ok: issues.every((entry) => entry.severity !== "error"),
+    issues,
     cycles
   };
 }
@@ -2171,7 +2214,7 @@ export function validateGraphDocumentV01(document: unknown): ValidationResult<Gr
   const graph = document as GraphDocumentV01;
   const result = analyzeGraphDocumentV01(graph);
   if (!result.ok) {
-    return { ok: false, errors: result.diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`) };
+    return { ok: false, errors: result.issues.map((issue) => `${issue.code}: ${issue.message}`) };
   }
 
   return { ok: true, value: graph };
@@ -2199,7 +2242,7 @@ export function validateGraphFragmentV01(
   const fragment = document as GraphFragmentV01;
   const result = analyzeGraphFragmentV01(fragment, options);
   if (!result.ok) {
-    return { ok: false, errors: result.diagnostics.map((entry) => `${entry.code}: ${entry.message}`) };
+    return { ok: false, errors: result.issues.map((entry) => `${entry.code}: ${entry.message}`) };
   }
 
   return { ok: true, value: fragment };
@@ -2644,41 +2687,47 @@ function validateProjectObjectBindingStatusInvariants(document: unknown): string
   }
 
   const errors: string[] = [];
-  const requiredDiagnosticByStatus = new Map([
-    ["missing", ["implementation-missing"]],
-    ["stale", ["implementation-stale", "interface-drift"]],
-    ["unresolved", ["resolution-unresolved"]],
-    ["ambiguous", ["resolution-ambiguous"]]
-  ]);
 
   for (const binding of (document as { objectBindings: unknown[] }).objectBindings) {
     if (typeof binding !== "object" || binding === null) {
       continue;
     }
-    const record = binding as { id?: unknown; status?: unknown; implementation?: unknown; diagnostics?: unknown };
+    const record = binding as { id?: unknown; status?: unknown; implementation?: unknown; issues?: unknown };
     const id = typeof record.id === "string" ? record.id : "<unknown>";
     if (record.status === "resolved" && record.implementation === undefined) {
       errors.push(`resolved object binding ${id} requires implementation`);
       continue;
     }
-    if (typeof record.status !== "string" || !requiredDiagnosticByStatus.has(record.status)) {
+    if (record.status === "unresolved" && record.implementation !== undefined) {
+      errors.push(`unresolved object binding ${id} must not include implementation`);
       continue;
     }
-    const requiredCodes = requiredDiagnosticByStatus.get(record.status)!;
-    const diagnostics = Array.isArray(record.diagnostics) ? record.diagnostics : [];
-    const hasRequiredDiagnostic = diagnostics.some((diagnostic) => {
-      if (typeof diagnostic !== "object" || diagnostic === null) {
-        return false;
+    if (record.status === "error") {
+      if (record.implementation === undefined) {
+        errors.push(`error object binding ${id} requires implementation`);
+        continue;
       }
-      const code = (diagnostic as { code?: unknown }).code;
-      return typeof code === "string" && requiredCodes.includes(code);
-    });
-    if (!hasRequiredDiagnostic) {
-      errors.push(`${record.status} object binding ${id} requires ${requiredCodes.join(" or ")} diagnostic`);
+      if (!bindingHasIssue(record, IMPLEMENTATION_ERROR_ISSUE_CODES)) {
+        errors.push(`error object binding ${id} requires implementation issue`);
+      }
     }
   }
 
   return errors;
+}
+
+function bindingHasIssue(
+  record: { issues?: unknown },
+  codes: ReadonlySet<string>
+): boolean {
+  const issues = Array.isArray(record.issues) ? record.issues : [];
+  return issues.some((issue) => {
+    if (typeof issue !== "object" || issue === null) {
+      return false;
+    }
+    const code = (issue as { code?: unknown }).code;
+    return typeof code === "string" && codes.has(code);
+  });
 }
 
 export function validateProjectDocument(document: unknown): ValidationResult<ProjectDocumentV01> {
@@ -2746,7 +2795,7 @@ export function validatePasteGraphFragmentRequest(
         options.idConflictPolicy === "reject") &&
       (options.interfaceIncidentEdgePolicy === undefined ||
         options.interfaceIncidentEdgePolicy === "drop" ||
-        options.interfaceIncidentEdgePolicy === "preserve-diagnostic" ||
+        options.interfaceIncidentEdgePolicy === "preserve-issue" ||
         options.interfaceIncidentEdgePolicy === "reject") &&
       (options.preserveRelativePositions === undefined ||
         typeof options.preserveRelativePositions === "boolean")

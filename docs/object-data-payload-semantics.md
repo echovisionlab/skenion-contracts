@@ -4,9 +4,9 @@ Issue: skenion/skenion-contracts#174.
 
 Contracts v0.1 draws this boundary:
 
-- User-facing `objectSpec` records what the author typed in an object box.
+- User-facing `objectSpec` records what the author typed for an object.
 - Resolved `implementation` identifies executable behavior with provider,
-  `objectId`, optional version/interface data, ports, state, and diagnostics.
+  `objectId`, optional version/interface data, ports, state, and issues.
 - Port `type`, `accepts`, `messageKeys`, control atoms, and resources identify payload semantics.
 - Runtime/package registries own object availability, dispatch, state mutation,
   ordering, operation acceptance, and execution. Contracts only define the
@@ -27,5 +27,5 @@ Contracts v0.1 draws this boundary:
 | Message box behavior | Runtime/package-provided message-box object definition, `docs/message-value-model.md` | Keep the message payload shape and key semantics. Concrete message-box object availability belongs to Runtime/package registries. |
 | Bang behavior and event payload | Runtime/package-provided trigger object definition, `value.core.bang` port type | Keep separated. A trigger object is executable behavior; `value.core.bang` is payload/event type and is rejected as a node kind. |
 | Resource source objects and resource payloads | Runtime/package-provided asset, decoder, uploader, and render nodes; `value.core.string`, `value.core.tensor` payload/resource types | Keep behavior/resource split. Source/decoder/uploader/render nodes are executable; `value.core.string` and `value.core.tensor` are payload/resource types and rejected as node kinds. |
-| Object-spec parse result shape | `json-schema/object-spec/v0.1/parse-result.schema.json`, `ObjectSpecParseResultV01`, `parseObjectSpecV01` / Rust parser | Keep as shape plus lexical helper. `implementation` and `objectResolution` may point to executable behavior when a Runtime/package resolver supplies them; Contracts must not map object spec to concrete first-party kinds or decide object availability. Invalid payload identity object spec should resolve to diagnostics in the owning Runtime/package resolver rather than to a payload node. |
-| Unresolved-object placeholder | Any concrete unresolved placeholder object identity | Defer. Known transitional surface; issue direction is resolution diagnostics on object boxes rather than stabilizing a separate payload/data identity. |
+| Object-spec parse result shape | `json-schema/object-spec/v0.1/parse-result.schema.json`, `ObjectSpecParseResultV01`, `parseObjectSpecV01` / Rust parser | Keep as shape plus lexical helper. `implementation` and `objectResolution` may point to executable behavior when a Runtime/package resolver supplies them; Contracts must not map object spec to concrete first-party kinds or decide object availability. Invalid payload identity object spec should resolve to issues in the owning Runtime/package resolver rather than to a payload node. |
+| Unresolved-object placeholder | Any concrete unresolved placeholder object identity | Defer. Known transitional surface; issue direction is resolution issues on objects rather than stabilizing a separate payload/data identity. |

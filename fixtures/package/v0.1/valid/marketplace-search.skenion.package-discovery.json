@@ -74,7 +74,7 @@
         "stargazerCount": 128,
         "rankingScore": 0.92
       },
-      "diagnostics": []
+      "issues": []
     },
     {
       "schema": "skenion.package.listing",
@@ -204,7 +204,7 @@
         "stargazerCount": 42,
         "rankingScore": 0.71
       },
-      "diagnostics": [
+      "issues": [
         {
           "severity": "warning",
           "code": "unavailable-target",
@@ -216,7 +216,7 @@
       ]
     }
   ],
-  "diagnostics": [
+  "issues": [
     {
       "severity": "info",
       "code": "hidden-package",

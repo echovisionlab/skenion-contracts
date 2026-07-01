@@ -15,7 +15,7 @@ Studio, SDK, and package authors; they are not the Runtime realtime event or
 command registry.
 `parseObjectSpecV01` is a lexical shape helper only; concrete object resolution
 and alias mapping are Runtime/package-registry responsibilities.
-Package manifests and listings expose creatable object-box exports as
+Package manifests and listings expose creatable object exports as
 `provides.objects[]` with `objectId`, `primaryObjectSpec`, optional `aliases`,
 `definitionPath`, and optional `description` / `helpId`. `provides.nodes[]`
 describes node-definition assets; do not treat it as the object authoring

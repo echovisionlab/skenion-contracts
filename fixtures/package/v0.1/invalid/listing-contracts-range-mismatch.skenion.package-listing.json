@@ -45,7 +45,7 @@
     "stargazerCount": 128,
     "rankingScore": 0.92
   },
-  "diagnostics": [
+  "issues": [
     {
       "severity": "error",
       "code": "unsupported-contracts-range",

@@ -18,7 +18,7 @@
     {
       "kind": "lock-state",
       "status": "fail",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-rollback-warning"
       ]
     }
@@ -29,12 +29,12 @@
       "order": 0,
       "kind": "reject",
       "packageId": "example/native-sensor",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-rollback-warning"
       ]
     }
   ],
-  "diagnostics": [
+  "issues": [
     {
       "id": "diag-rollback-warning",
       "severity": "warning",

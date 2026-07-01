@@ -121,15 +121,15 @@ pub struct MidiClockMessageV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum MidiClockDiagnosticSeverityV01 {
+pub enum MidiClockIssueSeverityV01 {
     Warning,
     Error,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MidiClockDiagnosticV01 {
-    pub severity: MidiClockDiagnosticSeverityV01,
+pub struct MidiClockIssueV01 {
+    pub severity: MidiClockIssueSeverityV01,
     pub code: String,
     pub message: String,
 }
@@ -152,7 +152,7 @@ pub struct MidiClockSnapshotV01 {
 pub struct MidiClockApplyResultV01 {
     pub snapshot: MidiClockSnapshotV01,
     pub clock_state: ClockStateV01,
-    pub diagnostics: Vec<MidiClockDiagnosticV01>,
+    pub issues: Vec<MidiClockIssueV01>,
 }
 
 impl MidiClockSnapshotV01 {
@@ -195,17 +195,17 @@ fn normalize_ticks_per_quarter(ticks_per_quarter: u64) -> u64 {
     }
 }
 
-fn invalid_spp_diagnostic() -> MidiClockDiagnosticV01 {
-    MidiClockDiagnosticV01 {
-        severity: MidiClockDiagnosticSeverityV01::Error,
+fn invalid_spp_issue() -> MidiClockIssueV01 {
+    MidiClockIssueV01 {
+        severity: MidiClockIssueSeverityV01::Error,
         code: "invalid-midi-song-position-pointer".to_owned(),
         message: "MIDI Song Position Pointer must be a 14-bit sixteenth-note position".to_owned(),
     }
 }
 
-fn tick_overflow_diagnostic() -> MidiClockDiagnosticV01 {
-    MidiClockDiagnosticV01 {
-        severity: MidiClockDiagnosticSeverityV01::Warning,
+fn tick_overflow_issue() -> MidiClockIssueV01 {
+    MidiClockIssueV01 {
+        severity: MidiClockIssueSeverityV01::Warning,
         code: "midi-clock-tick-overflow".to_owned(),
         message: "MIDI Clock tickIndex reached u64::MAX".to_owned(),
     }
@@ -282,12 +282,12 @@ pub fn apply_midi_clock_message_v01(
     }
     next.ticks_per_quarter = normalize_ticks_per_quarter(next.ticks_per_quarter);
     let ticks_per_sixteenth = ticks_per_sixteenth(next.ticks_per_quarter);
-    let mut diagnostics = Vec::new();
+    let mut issues = Vec::new();
 
     match message.kind {
         MidiClockMessageKindV01::Tick => {
             if next.tick_index == u64::MAX {
-                diagnostics.push(tick_overflow_diagnostic());
+                issues.push(tick_overflow_issue());
             } else {
                 next.tick_index += 1;
             }
@@ -306,19 +306,19 @@ pub fn apply_midi_clock_message_v01(
         }
         MidiClockMessageKindV01::SongPositionPointer => {
             let Some(song_position_sixteenth) = message.song_position_sixteenth else {
-                diagnostics.push(invalid_spp_diagnostic());
+                issues.push(invalid_spp_issue());
                 return MidiClockApplyResultV01 {
                     clock_state: midi_clock_snapshot_to_clock_state_v01(&next),
                     snapshot: next,
-                    diagnostics,
+                    issues,
                 };
             };
             if song_position_sixteenth > 0x3fff {
-                diagnostics.push(invalid_spp_diagnostic());
+                issues.push(invalid_spp_issue());
                 return MidiClockApplyResultV01 {
                     clock_state: midi_clock_snapshot_to_clock_state_v01(&next),
                     snapshot: next,
-                    diagnostics,
+                    issues,
                 };
             }
             next.song_position_sixteenth = song_position_sixteenth;
@@ -329,7 +329,7 @@ pub fn apply_midi_clock_message_v01(
     MidiClockApplyResultV01 {
         clock_state: midi_clock_snapshot_to_clock_state_v01(&next),
         snapshot: next,
-        diagnostics,
+        issues,
     }
 }
 

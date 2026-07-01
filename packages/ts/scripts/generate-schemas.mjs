@@ -37,8 +37,8 @@ const nodeCatalogV01Schema = await readSchema(
 const shaderInterfaceV01Schema = await readSchema(
   "json-schema/shader/v0.1/shader-interface.schema.json"
 );
-const shaderDiagnosticV01Schema = await readSchema(
-  "json-schema/shader/v0.1/shader-diagnostic.schema.json"
+const shaderIssueV01Schema = await readSchema(
+  "json-schema/shader/v0.1/shader-issue.schema.json"
 );
 const messageValueV01Schema = await readSchema(
   "json-schema/message/v0.1/message-value.schema.json"
@@ -90,7 +90,7 @@ await writeFile(
     "",
     `export const shaderInterfaceV01Schema = ${JSON.stringify(shaderInterfaceV01Schema, null, 2)} as const;`,
     "",
-    `export const shaderDiagnosticV01Schema = ${JSON.stringify(shaderDiagnosticV01Schema, null, 2)} as const;`,
+    `export const shaderIssueV01Schema = ${JSON.stringify(shaderIssueV01Schema, null, 2)} as const;`,
     "",
     `export const messageValueV01Schema = ${JSON.stringify(messageValueV01Schema, null, 2)} as const;`,
     "",

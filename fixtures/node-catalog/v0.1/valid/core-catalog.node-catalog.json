@@ -42,7 +42,7 @@
         "description": "Core scalar node.",
         "helpId": "object.core.float"
       },
-      "diagnostics": [
+      "issues": [
         {
           "severity": "info",
           "code": "catalog.note",
@@ -88,37 +88,13 @@
       }
     }
   ],
-  "diagnosticNodeDefinitions": [
-    {
-      "diagnosticId": "diag.unresolved",
-      "reason": "unresolvedObject",
-      "definition": {
-        "schema": "skenion.node.definition",
-        "schemaVersion": "0.1.0",
-        "id": "object.diagnostic.unresolved",
-        "version": "0.1.0",
-        "displayName": "Unresolved Object",
-        "category": "Core",
-        "ports": [],
-        "execution": {
-          "model": "control"
-        },
-        "state": {
-          "persistent": false
-        },
-        "permissions": [],
-        "capabilities": []
-      }
-    }
-  ],
-  "diagnostics": [
+  "issues": [
     {
       "severity": "warning",
       "code": "catalog.generated",
-      "message": "Generated with non-fatal catalog diagnostics.",
+      "message": "Generated with non-fatal catalog issues.",
       "target": {
-        "kind": "diagnosticNodeDefinition",
-        "diagnosticId": "diag.unresolved"
+        "kind": "catalog"
       }
     }
   ]

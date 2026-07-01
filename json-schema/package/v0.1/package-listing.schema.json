@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json",
   "title": "skenion Package Listing v0.1",
-  "description": "Read-only public discovery projection. Project packageId, version, category, contracts, runtimeAbiRange, targetSupport targets, provides, and artifactEvidence from PackageManifestV01 and release artifacts; project displayName when present. Marketplace/discovery metadata owns summary, description, tags, license, homepageUrl, repositoryUrl, discoverySignals, and public visibility diagnostics.",
+  "description": "Read-only public discovery projection. Project packageId, version, category, contracts, runtimeAbiRange, targetSupport targets, provides, and artifactEvidence from PackageManifestV01 and release artifacts; project displayName when present. Marketplace/discovery metadata owns summary, description, tags, license, homepageUrl, repositoryUrl, discoverySignals, and public visibility issues.",
   "type": "object",
   "required": [
     "schema",
@@ -18,7 +18,7 @@
     "provides",
     "artifactEvidence",
     "discoverySignals",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -83,10 +83,10 @@
     "discoverySignals": {
       "$ref": "#/$defs/discoverySignals"
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/packageListingDiagnostic"
+        "$ref": "#/$defs/packageListingIssue"
       },
       "default": []
     }
@@ -305,7 +305,7 @@
       "additionalProperties": false
     },
     "objectExportSummary": {
-      "description": "Public discovery projection for an object-box creatable export. provides.nodes[] is for node-definition assets; object authoring surfaces MUST be declared here.",
+      "description": "Public discovery projection for an object authoring export. provides.nodes[] is for node-definition assets; object authoring surfaces MUST be declared here.",
       "type": "object",
       "required": ["objectId", "primaryObjectSpec", "definitionPath"],
       "properties": {
@@ -347,7 +347,7 @@
           "default": []
         },
         "nodes": {
-          "description": "Node-definition assets. Do not use nodes[] as the object-box creatable authoring surface; use objects[].",
+          "description": "Node-definition assets. Do not use nodes[] as the object authoring surface; use objects[].",
           "type": "array",
           "items": {
             "$ref": "#/$defs/providedSummaryRef"
@@ -509,7 +509,7 @@
       },
       "additionalProperties": false
     },
-    "packageListingDiagnosticCode": {
+    "packageListingIssueCode": {
       "enum": [
         "malformed-listing-metadata",
         "unsupported-contracts-range",
@@ -519,7 +519,7 @@
         "hidden-package"
       ]
     },
-    "packageListingDiagnostic": {
+    "packageListingIssue": {
       "type": "object",
       "required": ["severity", "code", "message"],
       "properties": {
@@ -527,14 +527,14 @@
           "enum": ["error", "warning", "info"]
         },
         "code": {
-          "$ref": "#/$defs/packageListingDiagnosticCode"
+          "$ref": "#/$defs/packageListingIssueCode"
         },
         "message": {
           "type": "string",
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false

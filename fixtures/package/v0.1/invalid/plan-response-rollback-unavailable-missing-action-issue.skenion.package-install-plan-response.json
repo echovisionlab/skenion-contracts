@@ -1,7 +1,7 @@
 {
   "schema": "skenion.package.install-plan.response",
   "schemaVersion": "0.1.0",
-  "requestId": "plan-rollback-unavailable-missing-action-diagnostic",
+  "requestId": "plan-rollback-unavailable-missing-action-issue",
   "ok": false,
   "packageId": "example/native-sensor",
   "target": {
@@ -18,7 +18,7 @@
     {
       "kind": "lock-state",
       "status": "fail",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-rollback-unavailable"
       ],
       "message": "No rollback lock entry is available."
@@ -30,13 +30,13 @@
       "order": 0,
       "kind": "reject",
       "packageId": "example/native-sensor",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-missing-rollback"
       ],
       "reason": "Fail closed because rollback evidence is unavailable."
     }
   ],
-  "diagnostics": [
+  "issues": [
     {
       "id": "diag-rollback-unavailable",
       "severity": "error",

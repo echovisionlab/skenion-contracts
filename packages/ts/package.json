@@ -1,6 +1,6 @@
 {
   "name": "@skenion/contracts",
-  "version": "0.56.0",
+  "version": "0.57.0",
   "description": "skenion contract schemas and validators",
   "type": "module",
   "license": "Apache-2.0",
@@ -48,7 +48,7 @@
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
-    "./shader/v0.1/diagnostic-schema": {
+    "./shader/v0.1/issue-schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },

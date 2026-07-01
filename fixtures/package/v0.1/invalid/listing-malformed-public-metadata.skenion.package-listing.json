@@ -50,7 +50,7 @@
     "stargazerCount": 128,
     "rankingScore": -0.01
   },
-  "diagnostics": [
+  "issues": [
     {
       "severity": "error",
       "code": "malformed-listing-metadata",

@@ -1,13 +1,13 @@
 import type {
   ObjectSpecAtomV01,
-  ObjectSpecDiagnosticV01,
+  ObjectSpecIssueV01,
   ObjectSpecParseResultV01
 } from "./types.js";
 
 const SCHEMA = "skenion.object-spec.parse-result" as const;
 const SCHEMA_VERSION = "0.1.0" as const;
 
-function diagnostic(code: string, message: string): ObjectSpecDiagnosticV01 {
+function issue(code: string, message: string): ObjectSpecIssueV01 {
   return { severity: "error", code, message };
 }
 
@@ -16,7 +16,7 @@ function result(
   displayText: string,
   className: string,
   creationArgs: ObjectSpecAtomV01[],
-  partial: Pick<ObjectSpecParseResultV01, "ok" | "diagnostics">
+  partial: Pick<ObjectSpecParseResultV01, "ok" | "issues">
 ): ObjectSpecParseResultV01 {
   return {
     schema: SCHEMA,
@@ -28,7 +28,7 @@ function result(
     params: {},
     instancePorts: [],
     displayText,
-    diagnostics: partial.diagnostics
+    issues: partial.issues
   };
 }
 
@@ -42,7 +42,7 @@ function failure(
 ): ObjectSpecParseResultV01 {
   return result(input, displayText, className, creationArgs, {
     ok: false,
-    diagnostics: [diagnostic(code, message)]
+    issues: [issue(code, message)]
   });
 }
 
@@ -95,6 +95,6 @@ export function parseObjectSpecV01(input: string): ObjectSpecParseResultV01 {
   const creationArgs = argTokens.map(parseAtom);
   return result(input, displayText, className, creationArgs, {
     ok: true,
-    diagnostics: []
+    issues: []
   });
 }

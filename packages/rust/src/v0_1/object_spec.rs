@@ -87,7 +87,7 @@ pub struct ObjectSpecPortV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ObjectSpecDiagnosticSeverityV01 {
+pub enum ObjectSpecIssueSeverityV01 {
     Error,
     Warning,
     Info,
@@ -95,8 +95,8 @@ pub enum ObjectSpecDiagnosticSeverityV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct ObjectSpecDiagnosticV01 {
-    pub severity: ObjectSpecDiagnosticSeverityV01,
+pub struct ObjectSpecIssueV01 {
+    pub severity: ObjectSpecIssueSeverityV01,
     pub code: String,
     pub message: String,
 }
@@ -118,7 +118,7 @@ pub struct ObjectSpecParseResultV01 {
     pub params: Map<String, Value>,
     pub instance_ports: Vec<ObjectSpecPortV01>,
     pub display_text: String,
-    pub diagnostics: Vec<ObjectSpecDiagnosticV01>,
+    pub issues: Vec<ObjectSpecIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -225,13 +225,43 @@ fn object_spec_message_key_policy_errors(port: &ObjectSpecPortV01, label: &str) 
 
 fn object_spec_parse_result_semantic_errors(result: &ObjectSpecParseResultV01) -> Vec<String> {
     let mut errors = Vec::new();
-    if result
-        .object_resolution
-        .as_ref()
-        .is_some_and(|resolution| resolution.status == ObjectResolutionStatusV01::Resolved)
-        && result.implementation.is_none()
-    {
-        errors.push("resolved object spec parse result requires implementation".to_owned());
+    if let Some(resolution) = &result.object_resolution {
+        match resolution.status {
+            ObjectResolutionStatusV01::Resolved => {
+                if result.implementation.is_none() {
+                    errors.push(
+                        "resolved object spec parse result requires implementation".to_owned(),
+                    );
+                }
+            }
+            ObjectResolutionStatusV01::Unresolved => {
+                if result.implementation.is_some() {
+                    errors.push(
+                        "unresolved object spec parse result must not include implementation"
+                            .to_owned(),
+                    );
+                }
+            }
+            ObjectResolutionStatusV01::Error => {
+                if result.implementation.is_none() {
+                    errors
+                        .push("error object spec parse result requires implementation".to_owned());
+                }
+                if !resolution.issues.iter().any(|issue| {
+                    matches!(
+                        issue.code,
+                        super::types::ObjectResolutionIssueCodeV01::ImplementationMissing
+                            | super::types::ObjectResolutionIssueCodeV01::ImplementationStale
+                            | super::types::ObjectResolutionIssueCodeV01::ImplementationLockMismatch
+                            | super::types::ObjectResolutionIssueCodeV01::InterfaceDrift
+                    )
+                }) {
+                    errors.push(
+                        "error object spec parse result requires implementation issue".to_owned(),
+                    );
+                }
+            }
+        }
     }
     errors.extend(result.instance_ports.iter().flat_map(|port| {
         object_spec_message_key_policy_errors(
@@ -242,9 +272,9 @@ fn object_spec_parse_result_semantic_errors(result: &ObjectSpecParseResultV01) -
     errors
 }
 
-fn diagnostic(code: &str, message: impl Into<String>) -> ObjectSpecDiagnosticV01 {
-    ObjectSpecDiagnosticV01 {
-        severity: ObjectSpecDiagnosticSeverityV01::Error,
+fn issue(code: &str, message: impl Into<String>) -> ObjectSpecIssueV01 {
+    ObjectSpecIssueV01 {
+        severity: ObjectSpecIssueSeverityV01::Error,
         code: code.to_owned(),
         message: message.into(),
     }
@@ -268,7 +298,7 @@ fn success(
         params: Map::new(),
         instance_ports: Vec::new(),
         display_text: display_text.to_owned(),
-        diagnostics: Vec::new(),
+        issues: Vec::new(),
     }
 }
 
@@ -292,7 +322,7 @@ fn failure(
         params: Map::new(),
         instance_ports: Vec::new(),
         display_text: display_text.to_owned(),
-        diagnostics: vec![diagnostic(code, message)],
+        issues: vec![issue(code, message)],
     }
 }
 
@@ -390,10 +420,45 @@ pub fn parse_object_spec_v01(input: &str) -> ObjectSpecParseResultV01 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::v0_1::{
+        ObjectProviderRefV01, ObjectResolutionIssueCodeV01, PackageIssueSeverityV01,
+    };
     use serde_json::json;
 
     fn code(input: &str) -> String {
-        parse_object_spec_v01(input).diagnostics[0].code.clone()
+        parse_object_spec_v01(input).issues[0].code.clone()
+    }
+
+    fn core_implementation(object_id: &str) -> ObjectImplementationRefV01 {
+        ObjectImplementationRefV01 {
+            provider: ObjectProviderRefV01::Core,
+            object_id: object_id.to_owned(),
+            version: Some("0.1.0".to_owned()),
+            interface_digest: None,
+        }
+    }
+
+    fn object_resolution_issue(
+        code: ObjectResolutionIssueCodeV01,
+    ) -> super::super::types::ObjectResolutionIssueV01 {
+        super::super::types::ObjectResolutionIssueV01 {
+            severity: PackageIssueSeverityV01::Warning,
+            code,
+            message: "resolution issue".to_owned(),
+            details: None,
+        }
+    }
+
+    fn object_resolution(
+        status: ObjectResolutionStatusV01,
+        issues: Vec<super::super::types::ObjectResolutionIssueV01>,
+    ) -> ObjectResolutionV01 {
+        ObjectResolutionV01 {
+            status,
+            selected_spec: None,
+            candidates: Vec::new(),
+            issues,
+        }
     }
 
     #[test]
@@ -436,12 +501,57 @@ mod tests {
     }
 
     #[test]
-    fn leaves_runtime_resolution_diagnostics_to_runtime() {
+    fn validates_runtime_object_resolution_status_semantics() {
+        let mut unresolved_with_implementation = parse_object_spec_v01("float");
+        unresolved_with_implementation.implementation = Some(core_implementation("float"));
+        unresolved_with_implementation.object_resolution = Some(object_resolution(
+            ObjectResolutionStatusV01::Unresolved,
+            Vec::new(),
+        ));
+        assert!(
+            validate_object_spec_parse_result_v01(&unresolved_with_implementation)
+                .unwrap_err()
+                .to_string()
+                .contains("unresolved object spec parse result must not include implementation")
+        );
+
+        let mut error_without_implementation = parse_object_spec_v01("float");
+        error_without_implementation.object_resolution = Some(object_resolution(
+            ObjectResolutionStatusV01::Error,
+            vec![object_resolution_issue(
+                ObjectResolutionIssueCodeV01::ImplementationMissing,
+            )],
+        ));
+        assert!(
+            validate_object_spec_parse_result_v01(&error_without_implementation)
+                .unwrap_err()
+                .to_string()
+                .contains("error object spec parse result requires implementation")
+        );
+
+        let mut error_without_implementation_issue = parse_object_spec_v01("float");
+        error_without_implementation_issue.implementation = Some(core_implementation("float"));
+        error_without_implementation_issue.object_resolution = Some(object_resolution(
+            ObjectResolutionStatusV01::Error,
+            vec![object_resolution_issue(
+                ObjectResolutionIssueCodeV01::ResolutionUnresolved,
+            )],
+        ));
+        assert!(
+            validate_object_spec_parse_result_v01(&error_without_implementation_issue)
+                .unwrap_err()
+                .to_string()
+                .contains("error object spec parse result requires implementation issue")
+        );
+    }
+
+    #[test]
+    fn leaves_runtime_resolution_issues_to_runtime() {
         for input in ["sin~", "square~", "expr $f1", "frobnicate", "adc~ 1"] {
             let result = parse_object_spec_v01(input);
             assert!(result.ok, "{input} should be a lexical parse");
             assert!(
-                result.diagnostics.is_empty(),
+                result.issues.is_empty(),
                 "{input} should not resolve in Contracts"
             );
             assert_eq!(result.implementation, None);
@@ -516,9 +626,9 @@ mod tests {
         );
 
         let severities = [
-            ObjectSpecDiagnosticSeverityV01::Error,
-            ObjectSpecDiagnosticSeverityV01::Warning,
-            ObjectSpecDiagnosticSeverityV01::Info,
+            ObjectSpecIssueSeverityV01::Error,
+            ObjectSpecIssueSeverityV01::Warning,
+            ObjectSpecIssueSeverityV01::Info,
         ];
         assert_eq!(
             serde_json::to_value(severities).unwrap(),

@@ -1,7 +1,7 @@
 {
   "schema": "skenion.package.install-plan.response",
   "schemaVersion": "0.1.0",
-  "requestId": "plan-missing-diagnostic-refs",
+  "requestId": "plan-missing-issue-refs",
   "ok": false,
   "packageId": "example/native-sensor",
   "target": {
@@ -18,18 +18,18 @@
     {
       "kind": "checksum",
       "status": "fail",
-      "message": "Checksum validation failed without a diagnostic reference."
+      "message": "Checksum validation failed without a issue reference."
     }
   ],
   "actions": [
     {
-      "id": "reject-missing-diagnostic-refs",
+      "id": "reject-missing-issue-refs",
       "order": 0,
       "kind": "reject",
       "packageId": "example/native-sensor"
     }
   ],
-  "diagnostics": [
+  "issues": [
     {
       "id": "diag-checksum-mismatch",
       "severity": "error",

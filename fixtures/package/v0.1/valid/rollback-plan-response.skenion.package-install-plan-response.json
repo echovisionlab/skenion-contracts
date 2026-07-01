@@ -38,5 +38,5 @@
       "reason": "Return to the last installed lock entry."
     }
   ],
-  "diagnostics": []
+  "issues": []
 }

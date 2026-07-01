@@ -163,7 +163,7 @@ Rules:
   convention defines clamping.
 - Runtime may reject invalid shader source.
 - Shader compile or render errors should be surfaced through preview telemetry
-  and Runtime diagnostics.
+  and Runtime issues.
 
 `object.core.render.fullscreen-shader` is a frame-clocked GPU pass that produces a
 `value.core.tensor` output. Starting in v0.13, preview output should be
@@ -283,7 +283,7 @@ Rules:
 - `object.core.render.output` selects the final local preview surface source.
 - `object.core.render.output:in` accepts `value.core.tensor` render outputs.
 - v0.13 supports one effective output. If multiple `object.core.render.output` nodes exist,
-  runtimes should select deterministically and report a diagnostic.
+  runtimes should select deterministically and report a issue.
 - If no `object.core.render.output` node exists, runtimes must report that no active render
   output is available. They must not select an older render node shape as a
   fallback.

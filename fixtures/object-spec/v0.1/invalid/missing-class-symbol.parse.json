@@ -7,7 +7,7 @@
   "params": {},
   "instancePorts": [],
   "displayText": "example.gain 1",
-  "diagnostics": [],
+  "issues": [],
   "implementation": {
     "provider": {
       "kind": "core"

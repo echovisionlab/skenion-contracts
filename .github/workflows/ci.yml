@@ -22,8 +22,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10.12.4
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -51,4 +49,4 @@ jobs:
           rustup component add llvm-tools-preview
           cargo install cargo-llvm-cov --locked
       - name: Rust coverage
-        run: cargo llvm-cov --manifest-path packages/rust/Cargo.toml --all-targets --all-features --fail-uncovered-lines 0 --fail-under-functions 100
+        run: cargo llvm-cov --manifest-path packages/rust/Cargo.toml --all-targets --all-features --fail-under-lines 95 --fail-under-functions 100

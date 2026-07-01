@@ -32,16 +32,16 @@ package manifests/listings/install plans, and extension-provided nodes. Older
 v0.1 graph/project/patch compatibility and migration helpers are not active
 contract surfaces.
 
-Typed object boxes preserve user-entered `objectSpec`; Runtime resolution maps
-that text to implementation kinds and diagnostics without making unresolved text
-a separate user-facing node class.
+Objects preserve user-entered `objectSpec`; Runtime resolution maps that spec to
+implementation kinds and issues without making unresolved specs a separate
+user-facing node class.
 
-Package manifests and public listings declare object-box creatable exports under
+Package manifests and public listings declare object authoring exports under
 `provides.objects[]`. Each object export carries an internal `objectId`, a short
 user-facing `primaryObjectSpec`, optional `aliases`, a package-relative
 `definitionPath`, and optional `description` / `helpId`. `provides.nodes[]`
 remains a list of node-definition assets and is not the executable authoring
-surface for typed object boxes.
+surface for objects.
 
 ## Repository Layout
 

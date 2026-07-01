@@ -22,7 +22,7 @@ it only if it blocks verification.
 Skenion v0 does not support legacy, deprecated, or import-only compatibility
 paths. Contracts must model the current product surface only. Unsupported
 schema, protocol, graph, project, package, manifest, or ABI versions must be
-rejected with structured diagnostics rather than migrated, imported, shimmed, or
+rejected with structured issues rather than migrated, imported, shimmed, or
 kept behind deprecated aliases.
 
 The forward graph/project contract label is `0.1`. Remove v0.2 as a separate

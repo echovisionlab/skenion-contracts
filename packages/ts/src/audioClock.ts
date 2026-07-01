@@ -11,7 +11,7 @@ export function planAudioClockBridgeV01(
       sourceClockDomainId: source.id,
       targetClockDomainId: target.id,
       method: "direct",
-      diagnostics: []
+      issues: []
     };
   }
 
@@ -22,7 +22,7 @@ export function planAudioClockBridgeV01(
       targetClockDomainId: target.id,
       method: "clock-bridge",
       bridgeNodeId,
-      diagnostics: [
+      issues: [
         {
           severity: "info",
           code: "explicit-audio-clock-bridge",
@@ -37,7 +37,7 @@ export function planAudioClockBridgeV01(
     sourceClockDomainId: source.id,
     targetClockDomainId: target.id,
     method: "invalid",
-    diagnostics: [
+    issues: [
       {
         severity: "error",
         code: "audio-clock-domain-crossing-requires-bridge",

@@ -2,7 +2,7 @@ import type {
   DataTypeV01,
   PortV01,
   ShaderInterfaceAnalysisV01,
-  ShaderInterfaceDiagnosticV01,
+  ShaderInterfaceIssueV01,
   ShaderInterfaceV01,
   ShaderLanguageV01,
   ShaderUniformDataKindV01,
@@ -25,12 +25,12 @@ export function analyzeShaderInterfaceV01(
   source: string,
   options: { language: ShaderLanguageV01 }
 ): ShaderInterfaceAnalysisV01 {
-  const diagnostics: ShaderInterfaceDiagnosticV01[] = [];
+  const issues: ShaderInterfaceIssueV01[] = [];
   const uniforms: ShaderUniformV01[] = [];
   const ids = new Set<string>();
 
   if (options.language !== "wgsl") {
-    diagnostics.push({
+    issues.push({
       severity: "error",
       phase: "interface-analysis",
       code: "unsupported-language",
@@ -45,7 +45,7 @@ export function analyzeShaderInterfaceV01(
     const match = line.match(UNIFORM_RE);
     if (!match) {
       if (markerIndex >= 0 && line.trimStart().startsWith("//")) {
-        diagnostics.push(diagnostic({
+        issues.push(issue({
           code: "malformed-annotation",
           message: "malformed @skenion.uniform annotation",
           line: lineIndex + 1,
@@ -59,27 +59,27 @@ export function analyzeShaderInterfaceV01(
     const lineNumber = lineIndex + 1;
     const idColumn = Math.max(1, line.indexOf(id) + 1);
     if (!PORT_ID_RE.test(id)) {
-      diagnostics.push(error("invalid-uniform-id", `invalid uniform id: ${id}`, lineNumber, id, idColumn));
+      issues.push(error("invalid-uniform-id", `invalid uniform id: ${id}`, lineNumber, id, idColumn));
       continue;
     }
     if (RESERVED_UNIFORM_IDS.has(id)) {
-      diagnostics.push(error("reserved-uniform-id", `reserved uniform id: ${id}`, lineNumber, id, idColumn));
+      issues.push(error("reserved-uniform-id", `reserved uniform id: ${id}`, lineNumber, id, idColumn));
       continue;
     }
     if (ids.has(id)) {
-      diagnostics.push(error("duplicate-uniform-id", `duplicate uniform id: ${id}`, lineNumber, id, idColumn));
+      issues.push(error("duplicate-uniform-id", `duplicate uniform id: ${id}`, lineNumber, id, idColumn));
       continue;
     }
     ids.add(id);
 
     if (!isSupportedType(rawType)) {
-      diagnostics.push(error("unsupported-uniform-type", `unsupported uniform type: ${rawType}`, lineNumber, id, idColumn));
+      issues.push(error("unsupported-uniform-type", `unsupported uniform type: ${rawType}`, lineNumber, id, idColumn));
       continue;
     }
 
     const attributes = parseAttributes(rest);
-    for (const rangeDiagnostic of rangeDiagnostics(attributes, line, lineNumber, id)) {
-      diagnostics.push(rangeDiagnostic);
+    for (const rangeIssue of rangeIssues(attributes, line, lineNumber, id)) {
+      issues.push(rangeIssue);
     }
     const type = dataTypeFor(rawType, attributes);
     const uniform: ShaderUniformV01 = {
@@ -93,7 +93,7 @@ export function analyzeShaderInterfaceV01(
       if (parsedDefault.ok) {
         uniform.default = parsedDefault.value;
       } else {
-        diagnostics.push(error(
+        issues.push(error(
           "invalid-default",
           parsedDefault.message,
           lineNumber,
@@ -106,14 +106,14 @@ export function analyzeShaderInterfaceV01(
   }
 
   return {
-    ok: diagnostics.every((diagnostic) => diagnostic.severity !== "error"),
+    ok: issues.every((issue) => issue.severity !== "error"),
     shaderInterface: {
       schema: "skenion.shader.interface",
       schemaVersion: "0.1.0",
       language: options.language,
       uniforms
     },
-    diagnostics
+    issues
   };
 }
 
@@ -153,11 +153,11 @@ function error(
   line: number,
   uniformId?: string,
   column?: number
-): ShaderInterfaceDiagnosticV01 {
-  return diagnostic({ code, message, line, column, uniformId });
+): ShaderInterfaceIssueV01 {
+  return issue({ code, message, line, column, uniformId });
 }
 
-function diagnostic({
+function issue({
   code,
   message,
   line,
@@ -169,7 +169,7 @@ function diagnostic({
   line?: number;
   column?: number;
   uniformId?: string;
-}): ShaderInterfaceDiagnosticV01 {
+}): ShaderInterfaceIssueV01 {
   return {
     severity: "error",
     phase: "interface-analysis",
@@ -243,17 +243,17 @@ function positiveNumberAttribute(attributes: Map<string, string>, key: string): 
   return value !== undefined && value > 0 ? value : undefined;
 }
 
-function rangeDiagnostics(
+function rangeIssues(
   attributes: Map<string, string>,
   line: string,
   lineNumber: number,
   uniformId: string
-): ShaderInterfaceDiagnosticV01[] {
-  const diagnostics: ShaderInterfaceDiagnosticV01[] = [];
+): ShaderInterfaceIssueV01[] {
+  const issues: ShaderInterfaceIssueV01[] = [];
   for (const key of ["min", "max"] as const) {
     const rawValue = attributes.get(key);
     if (rawValue !== undefined && !Number.isFinite(Number(rawValue))) {
-      diagnostics.push(error(
+      issues.push(error(
         "invalid-number-range",
         `invalid ${key} range value: ${rawValue}`,
         lineNumber,
@@ -267,7 +267,7 @@ function rangeDiagnostics(
   if (step !== undefined) {
     const parsed = Number(step);
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      diagnostics.push(error(
+      issues.push(error(
         "invalid-number-range",
         `invalid step range value: ${step}`,
         lineNumber,
@@ -276,7 +276,7 @@ function rangeDiagnostics(
       ));
     }
   }
-  return diagnostics;
+  return issues;
 }
 
 function attributeColumn(line: string, key: string): number {
@@ -325,7 +325,7 @@ function parseDefault(
       return { ok: true, value: parsed };
     }
   } catch {
-    // Report below with a stable diagnostic.
+    // Report below with a stable issue.
   }
   return { ok: false, message: `invalid color default: ${value}` };
 }

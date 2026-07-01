@@ -113,7 +113,7 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
       ok: true,
       lossy: false,
       steps: [{ policy: "identity" }],
-      diagnostics: []
+      issues: []
     };
   }
 
@@ -127,7 +127,7 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
       ok: true,
       lossy: false,
       steps: [{ policy: "identity" }],
-      diagnostics: []
+      issues: []
     };
   }
 
@@ -161,7 +161,7 @@ export function planConversion(sourceType: DataTypeV01, targetType: DataTypeV01)
         quantize: true,
         sanitize: "nan-inf-to-finite"
       }],
-      diagnostics: [lossyDiagnostic(source, target)]
+      issues: [lossyIssue(source, target)]
     };
   }
 
@@ -215,7 +215,7 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
         trunc: "toward-zero",
         sanitize: "nan-inf-to-finite"
       }],
-      diagnostics: [lossyDiagnostic(base.source, base.target)]
+      issues: [lossyIssue(base.source, base.target)]
     };
   }
 
@@ -230,7 +230,7 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
         quantize: true,
         sanitize: "nan-inf-to-finite"
       }],
-      diagnostics: [lossyDiagnostic(base.source, base.target)]
+      issues: [lossyIssue(base.source, base.target)]
     };
   }
 
@@ -243,7 +243,7 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
       ok: true,
       lossy: true,
       steps: [{ policy: "integer-signedness", clamp: "saturating" }],
-      diagnostics: [lossyDiagnostic(base.source, base.target)]
+      issues: [lossyIssue(base.source, base.target)]
     };
   }
 
@@ -257,7 +257,7 @@ function numericConversionPlan(base: Pick<ConversionPlanV01, "source" | "target"
       quantize: true,
       sanitize: "nan-inf-to-finite"
     }],
-    diagnostics: [lossyDiagnostic(base.source, base.target)]
+    issues: [lossyIssue(base.source, base.target)]
   };
 }
 
@@ -270,11 +270,11 @@ function failedPlan(
     ok: false,
     lossy: false,
     steps: [],
-    diagnostics: [{ severity: "error", code: "incompatible-types", message }]
+    issues: [{ severity: "error", code: "incompatible-types", message }]
   };
 }
 
-function lossyDiagnostic(source: TypeDescriptorV01, target: TypeDescriptorV01): ConversionPlanV01["diagnostics"][number] {
+function lossyIssue(source: TypeDescriptorV01, target: TypeDescriptorV01): ConversionPlanV01["issues"][number] {
   return {
     severity: "warning",
     code: "implicit-lossy-conversion",

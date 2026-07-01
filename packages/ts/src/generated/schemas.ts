@@ -138,7 +138,7 @@ export const graphV01Schema = {
       },
       "additionalProperties": false
     },
-    "objectResolutionDiagnostic": {
+    "objectResolutionIssue": {
       "type": "object",
       "required": [
         "severity",
@@ -205,9 +205,7 @@ export const graphV01Schema = {
           "enum": [
             "resolved",
             "unresolved",
-            "ambiguous",
-            "stale",
-            "missing"
+            "error"
           ]
         },
         "selectedSpec": {
@@ -220,10 +218,10 @@ export const graphV01Schema = {
             "$ref": "#/$defs/objectResolutionCandidate"
           }
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/objectResolutionDiagnostic"
+            "$ref": "#/$defs/objectResolutionIssue"
           }
         }
       },
@@ -317,6 +315,91 @@ export const graphV01Schema = {
             "required": [
               "implementation"
             ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "objectResolution": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": "unresolved"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "objectResolution"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "implementation"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "objectResolution": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": "error"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "objectResolution"
+            ]
+          },
+          "then": {
+            "required": [
+              "implementation"
+            ],
+            "properties": {
+              "objectResolution": {
+                "type": "object",
+                "required": [
+                  "issues"
+                ],
+                "properties": {
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/objectResolutionIssue"
+                    },
+                    "minItems": 1,
+                    "contains": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "implementation-missing",
+                            "implementation-stale",
+                            "implementation-lock-mismatch",
+                            "interface-drift"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       ],
@@ -1424,9 +1507,7 @@ export const projectV01Schema = {
           "enum": [
             "resolved",
             "unresolved",
-            "ambiguous",
-            "stale",
-            "missing"
+            "error"
           ]
         },
         "implementation": {
@@ -1438,10 +1519,10 @@ export const projectV01Schema = {
             "$ref": "#/$defs/objectResolutionCandidate"
           }
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/objectBindingDiagnostic"
+            "$ref": "#/$defs/objectBindingIssue"
           },
           "default": []
         }
@@ -1468,85 +1549,6 @@ export const projectV01Schema = {
           "if": {
             "properties": {
               "status": {
-                "const": "missing"
-              }
-            },
-            "required": [
-              "status"
-            ]
-          },
-          "then": {
-            "required": [
-              "implementation",
-              "diagnostics"
-            ],
-            "properties": {
-              "diagnostics": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/objectBindingDiagnostic"
-                },
-                "minItems": 1,
-                "contains": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "const": "implementation-missing"
-                    }
-                  },
-                  "required": [
-                    "code"
-                  ]
-                }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "status": {
-                "const": "stale"
-              }
-            },
-            "required": [
-              "status"
-            ]
-          },
-          "then": {
-            "required": [
-              "implementation",
-              "diagnostics"
-            ],
-            "properties": {
-              "diagnostics": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/objectBindingDiagnostic"
-                },
-                "minItems": 1,
-                "contains": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "implementation-stale",
-                        "interface-drift"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "code"
-                  ]
-                }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "status": {
                 "const": "unresolved"
               }
             },
@@ -1555,28 +1557,10 @@ export const projectV01Schema = {
             ]
           },
           "then": {
-            "required": [
-              "diagnostics"
-            ],
-            "properties": {
-              "diagnostics": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/objectBindingDiagnostic"
-                },
-                "minItems": 1,
-                "contains": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "const": "resolution-unresolved"
-                    }
-                  },
-                  "required": [
-                    "code"
-                  ]
-                }
-              }
+            "not": {
+              "required": [
+                "implementation"
+              ]
             }
           }
         },
@@ -1584,7 +1568,7 @@ export const projectV01Schema = {
           "if": {
             "properties": {
               "status": {
-                "const": "ambiguous"
+                "const": "error"
               }
             },
             "required": [
@@ -1593,20 +1577,26 @@ export const projectV01Schema = {
           },
           "then": {
             "required": [
-              "diagnostics"
+              "implementation",
+              "issues"
             ],
             "properties": {
-              "diagnostics": {
+              "issues": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/objectBindingDiagnostic"
+                  "$ref": "#/$defs/objectBindingIssue"
                 },
                 "minItems": 1,
                 "contains": {
                   "type": "object",
                   "properties": {
                     "code": {
-                      "const": "resolution-ambiguous"
+                      "enum": [
+                        "implementation-missing",
+                        "implementation-stale",
+                        "implementation-lock-mismatch",
+                        "interface-drift"
+                      ]
                     }
                   },
                   "required": [
@@ -1620,7 +1610,7 @@ export const projectV01Schema = {
       ],
       "additionalProperties": false
     },
-    "objectBindingDiagnostic": {
+    "objectBindingIssue": {
       "type": "object",
       "required": [
         "severity",
@@ -1650,7 +1640,7 @@ export const projectV01Schema = {
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false
@@ -2137,8 +2127,7 @@ export const nodeCatalogV01Schema = {
     "schema",
     "schemaVersion",
     "catalogRevision",
-    "entries",
-    "diagnosticNodeDefinitions"
+    "entries"
   ],
   "properties": {
     "schema": {
@@ -2156,16 +2145,10 @@ export const nodeCatalogV01Schema = {
         "$ref": "#/$defs/entry"
       }
     },
-    "diagnosticNodeDefinitions": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/diagnosticNodeDefinition"
-      }
-    },
-    "diagnostics": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/diagnostic"
+        "$ref": "#/$defs/issue"
       }
     }
   },
@@ -2316,7 +2299,7 @@ export const nodeCatalogV01Schema = {
         }
       ]
     },
-    "diagnosticTarget": {
+    "issueTarget": {
       "oneOf": [
         {
           "type": "object",
@@ -2346,27 +2329,10 @@ export const nodeCatalogV01Schema = {
             }
           },
           "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "kind",
-            "diagnosticId"
-          ],
-          "properties": {
-            "kind": {
-              "const": "diagnosticNodeDefinition"
-            },
-            "diagnosticId": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "additionalProperties": false
         }
       ]
     },
-    "diagnostic": {
+    "issue": {
       "type": "object",
       "required": [
         "severity",
@@ -2391,7 +2357,7 @@ export const nodeCatalogV01Schema = {
           "minLength": 1
         },
         "target": {
-          "$ref": "#/$defs/diagnosticTarget"
+          "$ref": "#/$defs/issueTarget"
         },
         "details": true
       },
@@ -2441,32 +2407,11 @@ export const nodeCatalogV01Schema = {
         "display": {
           "$ref": "#/$defs/display"
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/diagnostic"
+            "$ref": "#/$defs/issue"
           }
-        }
-      },
-      "additionalProperties": false
-    },
-    "diagnosticNodeDefinition": {
-      "type": "object",
-      "required": [
-        "diagnosticId",
-        "reason",
-        "definition"
-      ],
-      "properties": {
-        "diagnosticId": {
-          "type": "string",
-          "minLength": 1
-        },
-        "reason": {
-          "const": "unresolvedObject"
-        },
-        "definition": {
-          "$ref": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json"
         }
       },
       "additionalProperties": false
@@ -2587,10 +2532,10 @@ export const shaderInterfaceV01Schema = {
   }
 } as const;
 
-export const shaderDiagnosticV01Schema = {
+export const shaderIssueV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://skenion.dev/schemas/shader/v0.1/shader-diagnostic.schema.json",
-  "title": "skenion Shader Diagnostic v0.1",
+  "$id": "https://skenion.dev/schemas/shader/v0.1/shader-issue.schema.json",
+  "title": "skenion Shader Issue v0.1",
   "type": "object",
   "required": [
     "severity",
@@ -2863,7 +2808,7 @@ export const objectSpecParseResultV01Schema = {
     "params",
     "instancePorts",
     "displayText",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -2909,10 +2854,10 @@ export const objectSpecParseResultV01Schema = {
       "type": "string",
       "minLength": 1
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/diagnostic"
+        "$ref": "#/$defs/issue"
       }
     }
   },
@@ -2940,6 +2885,91 @@ export const objectSpecParseResultV01Schema = {
         "required": [
           "implementation"
         ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "objectResolution": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "unresolved"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "objectResolution"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "implementation"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "objectResolution": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "objectResolution"
+        ]
+      },
+      "then": {
+        "required": [
+          "implementation"
+        ],
+        "properties": {
+          "objectResolution": {
+            "type": "object",
+            "required": [
+              "issues"
+            ],
+            "properties": {
+              "issues": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/objectResolutionIssue"
+                },
+                "minItems": 1,
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "implementation-missing",
+                        "implementation-stale",
+                        "implementation-lock-mismatch",
+                        "interface-drift"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code"
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     }
   ],
@@ -3084,9 +3114,7 @@ export const objectSpecParseResultV01Schema = {
           "enum": [
             "resolved",
             "unresolved",
-            "ambiguous",
-            "stale",
-            "missing"
+            "error"
           ]
         },
         "selectedSpec": {
@@ -3099,16 +3127,16 @@ export const objectSpecParseResultV01Schema = {
             "$ref": "#/$defs/objectResolutionCandidate"
           }
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/objectResolutionDiagnostic"
+            "$ref": "#/$defs/objectResolutionIssue"
           }
         }
       },
       "additionalProperties": false
     },
-    "objectResolutionDiagnostic": {
+    "objectResolutionIssue": {
       "type": "object",
       "required": [
         "severity",
@@ -3282,7 +3310,7 @@ export const objectSpecParseResultV01Schema = {
       "minItems": 1,
       "uniqueItems": true
     },
-    "diagnostic": {
+    "issue": {
       "type": "object",
       "required": [
         "severity",
@@ -3721,10 +3749,10 @@ export const packageManifestV01Schema = {
         "$ref": "#/$defs/nativeArtifact"
       }
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/packageDiagnostic"
+        "$ref": "#/$defs/packageIssue"
       },
       "default": []
     }
@@ -3875,7 +3903,7 @@ export const packageManifestV01Schema = {
       "additionalProperties": false
     },
     "objectExport": {
-      "description": "Object-box creatable export. provides.nodes[] is for node-definition assets; object authoring surfaces MUST be declared here.",
+      "description": "Object authoring export. provides.nodes[] is for node-definition assets; object authoring surfaces MUST be declared here.",
       "type": "object",
       "required": [
         "objectId",
@@ -3921,7 +3949,7 @@ export const packageManifestV01Schema = {
           "default": []
         },
         "nodes": {
-          "description": "Node-definition assets. Do not use nodes[] as the object-box creatable authoring surface; use objects[].",
+          "description": "Node-definition assets. Do not use nodes[] as the object authoring surface; use objects[].",
           "type": "array",
           "items": {
             "$ref": "#/$defs/providedRef"
@@ -4091,7 +4119,7 @@ export const packageManifestV01Schema = {
       },
       "additionalProperties": false
     },
-    "packageDiagnostic": {
+    "packageIssue": {
       "type": "object",
       "required": [
         "severity",
@@ -4115,7 +4143,7 @@ export const packageManifestV01Schema = {
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false
@@ -4127,7 +4155,7 @@ export const packageListingV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json",
   "title": "skenion Package Listing v0.1",
-  "description": "Read-only public discovery projection. Project packageId, version, category, contracts, runtimeAbiRange, targetSupport targets, provides, and artifactEvidence from PackageManifestV01 and release artifacts; project displayName when present. Marketplace/discovery metadata owns summary, description, tags, license, homepageUrl, repositoryUrl, discoverySignals, and public visibility diagnostics.",
+  "description": "Read-only public discovery projection. Project packageId, version, category, contracts, runtimeAbiRange, targetSupport targets, provides, and artifactEvidence from PackageManifestV01 and release artifacts; project displayName when present. Marketplace/discovery metadata owns summary, description, tags, license, homepageUrl, repositoryUrl, discoverySignals, and public visibility issues.",
   "type": "object",
   "required": [
     "schema",
@@ -4143,7 +4171,7 @@ export const packageListingV01Schema = {
     "provides",
     "artifactEvidence",
     "discoverySignals",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -4208,10 +4236,10 @@ export const packageListingV01Schema = {
     "discoverySignals": {
       "$ref": "#/$defs/discoverySignals"
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/packageListingDiagnostic"
+        "$ref": "#/$defs/packageListingIssue"
       },
       "default": []
     }
@@ -4471,7 +4499,7 @@ export const packageListingV01Schema = {
       "additionalProperties": false
     },
     "objectExportSummary": {
-      "description": "Public discovery projection for an object-box creatable export. provides.nodes[] is for node-definition assets; object authoring surfaces MUST be declared here.",
+      "description": "Public discovery projection for an object authoring export. provides.nodes[] is for node-definition assets; object authoring surfaces MUST be declared here.",
       "type": "object",
       "required": [
         "objectId",
@@ -4517,7 +4545,7 @@ export const packageListingV01Schema = {
           "default": []
         },
         "nodes": {
-          "description": "Node-definition assets. Do not use nodes[] as the object-box creatable authoring surface; use objects[].",
+          "description": "Node-definition assets. Do not use nodes[] as the object authoring surface; use objects[].",
           "type": "array",
           "items": {
             "$ref": "#/$defs/providedSummaryRef"
@@ -4713,7 +4741,7 @@ export const packageListingV01Schema = {
       },
       "additionalProperties": false
     },
-    "packageListingDiagnosticCode": {
+    "packageListingIssueCode": {
       "enum": [
         "malformed-listing-metadata",
         "unsupported-contracts-range",
@@ -4723,7 +4751,7 @@ export const packageListingV01Schema = {
         "hidden-package"
       ]
     },
-    "packageListingDiagnostic": {
+    "packageListingIssue": {
       "type": "object",
       "required": [
         "severity",
@@ -4739,14 +4767,14 @@ export const packageListingV01Schema = {
           ]
         },
         "code": {
-          "$ref": "#/$defs/packageListingDiagnosticCode"
+          "$ref": "#/$defs/packageListingIssueCode"
         },
         "message": {
           "type": "string",
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false
@@ -4764,7 +4792,7 @@ export const packageDiscoveryV01Schema = {
     "schemaVersion",
     "ok",
     "listings",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -4782,10 +4810,10 @@ export const packageDiscoveryV01Schema = {
         "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json"
       }
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageListingDiagnostic"
+        "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageListingIssue"
       }
     }
   },
@@ -4996,7 +5024,7 @@ export const packageInstallPlanResponseV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/package/v0.1/package-install-plan-response.schema.json",
   "title": "skenion Package Install/Update Plan Response v0.1",
-  "description": "Declarative package install/update planning output. It can express a safe no-op, ordered install/update actions, rollback actions, and fail-closed rejection with structured diagnostics. Actions are planning records only; Runtime filesystem mutation and registry writes are intentionally out of scope.",
+  "description": "Declarative package install/update planning output. It can express a safe no-op, ordered install/update actions, rollback actions, and fail-closed rejection with structured issues. Actions are planning records only; Runtime filesystem mutation and registry writes are intentionally out of scope.",
   "type": "object",
   "required": [
     "schema",
@@ -5007,7 +5035,7 @@ export const packageInstallPlanResponseV01Schema = {
     "target",
     "checks",
     "actions",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -5045,10 +5073,10 @@ export const packageInstallPlanResponseV01Schema = {
         "$ref": "#/$defs/packageInstallPlanAction"
       }
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/packageInstallPlanDiagnostic"
+        "$ref": "#/$defs/packageInstallPlanIssue"
       }
     }
   },
@@ -5080,7 +5108,7 @@ export const packageInstallPlanResponseV01Schema = {
               }
             }
           },
-          "diagnostics": {
+          "issues": {
             "type": "array",
             "minItems": 1,
             "contains": {
@@ -5149,7 +5177,7 @@ export const packageInstallPlanResponseV01Schema = {
   ],
   "additionalProperties": false,
   "$defs": {
-    "diagnosticRefArray": {
+    "issueRefArray": {
       "type": "array",
       "items": {
         "type": "string",
@@ -5190,8 +5218,8 @@ export const packageInstallPlanResponseV01Schema = {
         "status": {
           "$ref": "#/$defs/packageInstallPlanCheckStatus"
         },
-        "diagnosticRefs": {
-          "$ref": "#/$defs/diagnosticRefArray"
+        "issueRefs": {
+          "$ref": "#/$defs/issueRefArray"
         },
         "message": {
           "type": "string",
@@ -5212,7 +5240,7 @@ export const packageInstallPlanResponseV01Schema = {
           },
           "then": {
             "required": [
-              "diagnosticRefs"
+              "issueRefs"
             ]
           }
         }
@@ -5267,7 +5295,7 @@ export const packageInstallPlanResponseV01Schema = {
           "type": "string",
           "minLength": 1
         },
-        "diagnosticRef": {
+        "issueRef": {
           "type": "string",
           "minLength": 1
         }
@@ -5322,7 +5350,7 @@ export const packageInstallPlanResponseV01Schema = {
           "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/checksum"
         },
         "evidenceRefs": {
-          "$ref": "#/$defs/diagnosticRefArray"
+          "$ref": "#/$defs/issueRefArray"
         },
         "capabilityChanges": {
           "type": "array",
@@ -5331,8 +5359,8 @@ export const packageInstallPlanResponseV01Schema = {
           },
           "default": []
         },
-        "diagnosticRefs": {
-          "$ref": "#/$defs/diagnosticRefArray"
+        "issueRefs": {
+          "$ref": "#/$defs/issueRefArray"
         },
         "reason": {
           "type": "string",
@@ -5449,14 +5477,14 @@ export const packageInstallPlanResponseV01Schema = {
           },
           "then": {
             "required": [
-              "diagnosticRefs"
+              "issueRefs"
             ]
           }
         }
       ],
       "additionalProperties": false
     },
-    "packageInstallPlanDiagnosticCode": {
+    "packageInstallPlanIssueCode": {
       "enum": [
         "incompatible-contracts-line",
         "incompatible-runtime-abi",
@@ -5471,7 +5499,7 @@ export const packageInstallPlanResponseV01Schema = {
         "rollback-unavailable"
       ]
     },
-    "packageInstallPlanDiagnostic": {
+    "packageInstallPlanIssue": {
       "type": "object",
       "required": [
         "id",
@@ -5492,14 +5520,14 @@ export const packageInstallPlanResponseV01Schema = {
           ]
         },
         "code": {
-          "$ref": "#/$defs/packageInstallPlanDiagnosticCode"
+          "$ref": "#/$defs/packageInstallPlanIssueCode"
         },
         "message": {
           "type": "string",
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false

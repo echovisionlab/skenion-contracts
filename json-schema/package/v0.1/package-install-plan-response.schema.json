@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/package/v0.1/package-install-plan-response.schema.json",
   "title": "skenion Package Install/Update Plan Response v0.1",
-  "description": "Declarative package install/update planning output. It can express a safe no-op, ordered install/update actions, rollback actions, and fail-closed rejection with structured diagnostics. Actions are planning records only; Runtime filesystem mutation and registry writes are intentionally out of scope.",
+  "description": "Declarative package install/update planning output. It can express a safe no-op, ordered install/update actions, rollback actions, and fail-closed rejection with structured issues. Actions are planning records only; Runtime filesystem mutation and registry writes are intentionally out of scope.",
   "type": "object",
   "required": [
     "schema",
@@ -13,7 +13,7 @@
     "target",
     "checks",
     "actions",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -51,10 +51,10 @@
         "$ref": "#/$defs/packageInstallPlanAction"
       }
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/packageInstallPlanDiagnostic"
+        "$ref": "#/$defs/packageInstallPlanIssue"
       }
     }
   },
@@ -82,7 +82,7 @@
               }
             }
           },
-          "diagnostics": {
+          "issues": {
             "type": "array",
             "minItems": 1,
             "contains": {
@@ -143,7 +143,7 @@
   ],
   "additionalProperties": false,
   "$defs": {
-    "diagnosticRefArray": {
+    "issueRefArray": {
       "type": "array",
       "items": {
         "type": "string",
@@ -176,8 +176,8 @@
         "status": {
           "$ref": "#/$defs/packageInstallPlanCheckStatus"
         },
-        "diagnosticRefs": {
-          "$ref": "#/$defs/diagnosticRefArray"
+        "issueRefs": {
+          "$ref": "#/$defs/issueRefArray"
         },
         "message": {
           "type": "string",
@@ -195,7 +195,7 @@
             "required": ["status"]
           },
           "then": {
-            "required": ["diagnosticRefs"]
+            "required": ["issueRefs"]
           }
         }
       ],
@@ -233,7 +233,7 @@
           "type": "string",
           "minLength": 1
         },
-        "diagnosticRef": {
+        "issueRef": {
           "type": "string",
           "minLength": 1
         }
@@ -283,7 +283,7 @@
           "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/checksum"
         },
         "evidenceRefs": {
-          "$ref": "#/$defs/diagnosticRefArray"
+          "$ref": "#/$defs/issueRefArray"
         },
         "capabilityChanges": {
           "type": "array",
@@ -292,8 +292,8 @@
           },
           "default": []
         },
-        "diagnosticRefs": {
-          "$ref": "#/$defs/diagnosticRefArray"
+        "issueRefs": {
+          "$ref": "#/$defs/issueRefArray"
         },
         "reason": {
           "type": "string",
@@ -376,13 +376,13 @@
             "required": ["kind"]
           },
           "then": {
-            "required": ["diagnosticRefs"]
+            "required": ["issueRefs"]
           }
         }
       ],
       "additionalProperties": false
     },
-    "packageInstallPlanDiagnosticCode": {
+    "packageInstallPlanIssueCode": {
       "enum": [
         "incompatible-contracts-line",
         "incompatible-runtime-abi",
@@ -397,7 +397,7 @@
         "rollback-unavailable"
       ]
     },
-    "packageInstallPlanDiagnostic": {
+    "packageInstallPlanIssue": {
       "type": "object",
       "required": ["id", "severity", "code", "message"],
       "properties": {
@@ -409,14 +409,14 @@
           "enum": ["error", "warning", "info"]
         },
         "code": {
-          "$ref": "#/$defs/packageInstallPlanDiagnosticCode"
+          "$ref": "#/$defs/packageInstallPlanIssueCode"
         },
         "message": {
           "type": "string",
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false

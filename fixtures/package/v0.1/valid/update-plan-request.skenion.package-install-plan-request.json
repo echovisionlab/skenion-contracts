@@ -203,7 +203,7 @@
           "stargazerCount": 42,
           "rankingScore": 0.71
         },
-        "diagnostics": []
+        "issues": []
       },
       "manifest": {
         "schema": "skenion.package.manifest",

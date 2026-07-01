@@ -19,7 +19,7 @@ Canonical control port types describe the meaning of a value:
 Representation-specific names such as `number.f32`, `number.i32`, or
 `color.rgba` are not canonical data kinds.
 
-These names are payload/port semantics, not object-box names. A user may type a
+These names are payload/port semantics, not object authoring names. A user may type a
 short object spec such as `+~`, `osc~`, or a project/package alias; the resolver
 maps that authoring text to provider-scoped implementation identity. Port types
 stay namespaced because graph edge compatibility needs stable cross-provider
@@ -62,7 +62,7 @@ conversion policy is deterministic:
 - Narrowing float and color conversions may quantize.
 - Color channel conversion clamps channels into the target representation range.
 
-Conversion diagnostics should be shown in inspectors, debug views, or edge
+Conversion issues should be shown in inspectors, debug views, or edge
 metadata. The default canvas should not be flooded with warnings for expected
 numeric/color conversions.
 

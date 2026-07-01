@@ -18,7 +18,7 @@
     {
       "kind": "checksum",
       "status": "fail",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-checksum-mismatch"
       ],
       "message": "Artifact checksum evidence does not match."
@@ -52,12 +52,12 @@
       "order": 1,
       "kind": "reject",
       "packageId": "example/native-sensor",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-checksum-mismatch"
       ]
     }
   ],
-  "diagnostics": [
+  "issues": [
     {
       "id": "diag-checksum-mismatch",
       "severity": "error",

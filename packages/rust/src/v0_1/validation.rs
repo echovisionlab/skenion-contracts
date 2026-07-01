@@ -7,21 +7,20 @@ use std::{
 use super::types::{
     CycleValidationV01, DataFlowV01, DataTypeV01, EdgeSpecV01, EndpointBindingValueFormatV01,
     ExtensionKindV01, ExtensionManifestV01, FeedbackBoundaryV01, GraphCycleValidationV01,
-    GraphDocumentV01, GraphFragmentDiagnosticV01, GraphFragmentOutsideEndpointPolicyV01,
-    GraphFragmentV01, GraphFragmentValidationResultV01, GraphTargetRef,
-    GraphValidationDiagnosticV01, GraphValidationResultV01, MergePolicyV01,
-    NodeCatalogDiagnosticNodeDefinitionReasonV01, NodeCatalogDiagnosticSeverityV01,
-    NodeCatalogDiagnosticTargetV01, NodeCatalogDiagnosticV01, NodeCatalogDisplayPaletteV01,
-    NodeCatalogDisplayV01, NodeCatalogEntryV01, NodeCatalogSnapshotV01, NodeDefinitionManifestV01,
-    ObjectProviderRefV01, PackageCategoryV01, PackageChecksumV01, PackageDiagnosticSeverityV01,
-    PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01,
-    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
-    PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01,
+    GraphDocumentV01, GraphFragmentIssueV01, GraphFragmentOutsideEndpointPolicyV01,
+    GraphFragmentV01, GraphFragmentValidationResultV01, GraphTargetRef, GraphValidationIssueV01,
+    GraphValidationResultV01, MergePolicyV01, NodeCatalogDisplayPaletteV01, NodeCatalogDisplayV01,
+    NodeCatalogEntryV01, NodeCatalogIssueSeverityV01, NodeCatalogIssueTargetV01,
+    NodeCatalogIssueV01, NodeCatalogSnapshotV01, NodeDefinitionManifestV01, ObjectProviderRefV01,
+    PackageCategoryV01, PackageChecksumV01, PackageDiscoveryResponseV01,
+    PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01, PackageInstallPlanIntentV01,
+    PackageInstallPlanRequestV01, PackageInstallPlanResponseV01, PackageInstallPlanTargetArchV01,
+    PackageInstallPlanTargetOsV01, PackageInstallPlanTargetV01, PackageIssueSeverityV01,
     PackageListingArtifactKindV01, PackageListingObjectExportSummaryV01,
     PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
     PackageObjectExportV01, PackageRootDocumentV01, PackageTargetTripleV01,
     PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortDirectionV01, PortSpecV01,
-    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingStatusV01,
+    ProjectDocumentV01, ProjectObjectBindingIssueCodeV01, ProjectObjectBindingStatusV01,
     RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01, SKENION_PACKAGE_MANIFEST_FILE_NAME,
     ValueFormatV01, ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01,
     compute_node_catalog_revision_v01, derive_patch_contract_v01,
@@ -30,6 +29,13 @@ use super::types::{
 use super::version::{
     derive_v0_compatibility_line, derive_v0_compatibility_range, satisfies_v0_compatibility_range,
 };
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PortConnectionPolicyV01 {
+    pub accepted: bool,
+    pub reason: &'static str,
+    pub effective_type: Option<String>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationErrorV01 {
@@ -245,10 +251,17 @@ fn is_value_type_id_v01(value: &str) -> bool {
     if is_first_party_value_type(value) {
         return true;
     }
-    if value.starts_with("value.core.") || value.starts_with("value.media.") {
+    is_valid_custom_value_type_id_v01(value)
+}
+
+pub fn is_reserved_value_type_id_v01(value: &str) -> bool {
+    value.starts_with("value.core.") || value.starts_with("value.media.")
+}
+
+pub fn is_valid_custom_value_type_id_v01(value: &str) -> bool {
+    if is_reserved_value_type_id_v01(value) {
         return false;
     }
-
     let mut parts = value.split('.');
     if parts.next() != Some("value") {
         return false;
@@ -630,15 +643,15 @@ pub fn type_label_v01(data_type: &DataTypeV01) -> String {
     format!("{flow}<{}>", data_type.data_kind)
 }
 
-fn diagnostic(
-    diagnostics: &mut Vec<GraphValidationDiagnosticV01>,
+fn issue(
+    issues: &mut Vec<GraphValidationIssueV01>,
     severity: &str,
     code: &str,
     message: impl Into<String>,
     nodes: Option<Vec<String>>,
     edges: Option<Vec<String>>,
 ) {
-    diagnostics.push(GraphValidationDiagnosticV01 {
+    issues.push(GraphValidationIssueV01 {
         severity: severity.to_owned(),
         code: code.to_owned(),
         message: message.into(),
@@ -647,15 +660,15 @@ fn diagnostic(
     });
 }
 
-fn fragment_diagnostic(
-    diagnostics: &mut Vec<GraphFragmentDiagnosticV01>,
+fn fragment_issue(
+    issues: &mut Vec<GraphFragmentIssueV01>,
     severity: &str,
     code: &str,
     message: impl Into<String>,
     nodes: Option<Vec<String>>,
     edges: Option<Vec<String>>,
 ) {
-    diagnostics.push(GraphFragmentDiagnosticV01 {
+    issues.push(GraphFragmentIssueV01 {
         severity: severity.to_owned(),
         code: code.to_owned(),
         message: message.into(),
@@ -692,19 +705,62 @@ fn merge_policy_for(port: &PortSpecV01) -> MergePolicyV01 {
 }
 
 fn accepts(source: &PortSpecV01, target: &PortSpecV01) -> bool {
-    if target.port_type == "value.core.message" && is_message_value_port_type(&source.port_type) {
-        return true;
-    }
-    if source.port_type == target.port_type {
-        return true;
-    }
-    if let Some(accepted) = &target.accepts {
-        return accepted.contains(&source.port_type);
-    }
-    false
+    port_type_accepts_v01(source, target)
 }
 
-fn is_message_value_port_type(port_type: &str) -> bool {
+fn port_type_policy_v01(source: &PortSpecV01, target: &PortSpecV01) -> PortConnectionPolicyV01 {
+    if source.port_type == target.port_type {
+        return PortConnectionPolicyV01 {
+            accepted: true,
+            reason: "type-match",
+            effective_type: Some(source.port_type.clone()),
+        };
+    }
+    if target.port_type == "value.core.message" && is_message_value_port_type_v01(&source.port_type)
+    {
+        return PortConnectionPolicyV01 {
+            accepted: true,
+            reason: "message-selector",
+            effective_type: Some(source.port_type.clone()),
+        };
+    }
+    if target
+        .accepts
+        .as_ref()
+        .is_some_and(|accepted| accepted.contains(&source.port_type))
+    {
+        return PortConnectionPolicyV01 {
+            accepted: true,
+            reason: "target-accepts",
+            effective_type: Some(source.port_type.clone()),
+        };
+    }
+    PortConnectionPolicyV01 {
+        accepted: false,
+        reason: "incompatible-type",
+        effective_type: None,
+    }
+}
+
+pub fn port_type_accepts_v01(source: &PortSpecV01, target: &PortSpecV01) -> bool {
+    port_type_policy_v01(source, target).accepted
+}
+
+pub fn port_connection_policy_v01(
+    source: &PortSpecV01,
+    target: &PortSpecV01,
+) -> PortConnectionPolicyV01 {
+    if source.direction != PortDirectionV01::Output || target.direction != PortDirectionV01::Input {
+        return PortConnectionPolicyV01 {
+            accepted: false,
+            reason: "direction-mismatch",
+            effective_type: None,
+        };
+    }
+    port_type_policy_v01(source, target)
+}
+
+pub fn is_message_value_port_type_v01(port_type: &str) -> bool {
     is_message_value_data_kind(port_type)
 }
 
@@ -791,7 +847,16 @@ fn is_invalid_value_type(port_type: &str) -> bool {
     {
         return true;
     }
-    if port_type.starts_with("value.") && !is_first_party_value_type(port_type) {
+    if port_type.starts_with("value.core.") && !is_first_party_value_type(port_type) {
+        return true;
+    }
+    if port_type.starts_with("value.media.") {
+        return true;
+    }
+    if port_type.starts_with("value.")
+        && !is_first_party_value_type(port_type)
+        && !is_valid_custom_value_type_id_v01(port_type)
+    {
         return true;
     }
     false
@@ -815,6 +880,18 @@ fn is_payload_identity_node_kind(kind: &str) -> bool {
         || kind.starts_with("data.")
         || kind.starts_with("payload.")
         || kind.starts_with("control.")
+}
+
+fn has_implementation_error_issue(issues: &[super::types::ObjectResolutionIssueV01]) -> bool {
+    issues.iter().any(|issue| {
+        matches!(
+            issue.code,
+            ProjectObjectBindingIssueCodeV01::ImplementationMissing
+                | ProjectObjectBindingIssueCodeV01::ImplementationStale
+                | ProjectObjectBindingIssueCodeV01::ImplementationLockMismatch
+                | ProjectObjectBindingIssueCodeV01::InterfaceDrift
+        )
+    })
 }
 
 struct PackageObjectExportView<'a> {
@@ -976,7 +1053,7 @@ pub fn analyze_graph_fragment_v01(
     fragment: &GraphFragmentV01,
     outside_endpoint_policy: GraphFragmentOutsideEndpointPolicyV01,
 ) -> GraphFragmentValidationResultV01 {
-    let mut diagnostics = Vec::new();
+    let mut issues = Vec::new();
     let mut omitted_edge_ids = Vec::new();
     let mut node_ids = HashSet::new();
     let mut edge_ids = HashSet::new();
@@ -984,8 +1061,8 @@ pub fn analyze_graph_fragment_v01(
 
     for node in &fragment.nodes {
         if !node_ids.insert(node.id.clone()) {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "duplicate-node-id",
                 format!("duplicate node id: {}", node.id),
@@ -999,8 +1076,8 @@ pub fn analyze_graph_fragment_v01(
             .map(|implementation| &implementation.object_id)
             && is_payload_identity_node_kind(object_id)
         {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "payload-implementation-id",
                 format!(
@@ -1011,27 +1088,73 @@ pub fn analyze_graph_fragment_v01(
                 None,
             );
         }
-        if node.object_resolution.as_ref().is_some_and(|resolution| {
-            resolution.status == super::types::ObjectResolutionStatusV01::Resolved
-        }) && node.implementation.is_none()
-        {
-            fragment_diagnostic(
-                &mut diagnostics,
-                "error",
-                "resolved-object-missing-implementation",
-                format!(
-                    "node {} has resolved objectResolution without implementation",
-                    node.id
-                ),
-                Some(vec![node.id.clone()]),
-                None,
-            );
+        if let Some(resolution) = &node.object_resolution {
+            match resolution.status {
+                super::types::ObjectResolutionStatusV01::Resolved => {
+                    if node.implementation.is_none() {
+                        fragment_issue(
+                            &mut issues,
+                            "error",
+                            "resolved-object-missing-implementation",
+                            format!(
+                                "node {} has resolved objectResolution without implementation",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                }
+                super::types::ObjectResolutionStatusV01::Unresolved => {
+                    if node.implementation.is_some() {
+                        fragment_issue(
+                            &mut issues,
+                            "error",
+                            "unresolved-object-has-implementation",
+                            format!(
+                                "node {} has unresolved objectResolution with implementation",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                }
+                super::types::ObjectResolutionStatusV01::Error => {
+                    if node.implementation.is_none() {
+                        fragment_issue(
+                            &mut issues,
+                            "error",
+                            "error-object-missing-implementation",
+                            format!(
+                                "node {} has error objectResolution without implementation",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                    if !has_implementation_error_issue(&resolution.issues) {
+                        fragment_issue(
+                            &mut issues,
+                            "error",
+                            "error-object-missing-issue",
+                            format!(
+                                "node {} has error objectResolution without implementation issue",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                }
+            }
         }
         let mut port_ids = HashSet::new();
         for port in &node.ports {
             if !port_ids.insert(port.id.clone()) {
-                fragment_diagnostic(
-                    &mut diagnostics,
+                fragment_issue(
+                    &mut issues,
                     "error",
                     "duplicate-port-id",
                     format!("duplicate port id on {}: {}", node.id, port.id),
@@ -1040,8 +1163,8 @@ pub fn analyze_graph_fragment_v01(
                 );
             }
             if is_invalid_value_type(&port.port_type) {
-                fragment_diagnostic(
-                    &mut diagnostics,
+                fragment_issue(
+                    &mut issues,
                     "error",
                     "invalid-value-type",
                     format!(
@@ -1055,8 +1178,8 @@ pub fn analyze_graph_fragment_v01(
             if let Some(accepted) = &port.accepts {
                 for accepted_type in accepted {
                     if is_invalid_value_type(accepted_type) {
-                        fragment_diagnostic(
-                            &mut diagnostics,
+                        fragment_issue(
+                            &mut issues,
                             "error",
                             "invalid-value-type",
                             format!(
@@ -1070,8 +1193,8 @@ pub fn analyze_graph_fragment_v01(
                 }
             }
             for error in message_key_policy_errors(port, &format!("port {}.{}", node.id, port.id)) {
-                fragment_diagnostic(
-                    &mut diagnostics,
+                fragment_issue(
+                    &mut issues,
                     "error",
                     "message-key-policy",
                     error,
@@ -1085,8 +1208,8 @@ pub fn analyze_graph_fragment_v01(
 
     for edge in &fragment.edges {
         if !edge_ids.insert(edge.id.clone()) {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "duplicate-edge-id",
                 format!("duplicate edge id: {}", edge.id),
@@ -1099,8 +1222,8 @@ pub fn analyze_graph_fragment_v01(
             .as_ref()
             .is_some_and(|port_type| is_invalid_value_type(port_type))
         {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "invalid-value-type",
                 format!(
@@ -1123,8 +1246,8 @@ pub fn analyze_graph_fragment_v01(
             } else {
                 "error"
             };
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 severity,
                 "fragment-edge-outside-selection",
                 format!(
@@ -1143,8 +1266,8 @@ pub fn analyze_graph_fragment_v01(
         let target = ports.get(&target_key);
 
         if source.is_none() {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "missing-source-port",
                 format!(
@@ -1156,8 +1279,8 @@ pub fn analyze_graph_fragment_v01(
             );
         }
         if target.is_none() {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "missing-target-port",
                 format!(
@@ -1173,8 +1296,8 @@ pub fn analyze_graph_fragment_v01(
         };
 
         if source.direction != PortDirectionV01::Output {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "invalid-source-direction",
                 format!("edge {} source {source_key} is not an output port", edge.id),
@@ -1183,8 +1306,8 @@ pub fn analyze_graph_fragment_v01(
             );
         }
         if target.direction != PortDirectionV01::Input {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "invalid-target-direction",
                 format!("edge {} target {target_key} is not an input port", edge.id),
@@ -1193,8 +1316,8 @@ pub fn analyze_graph_fragment_v01(
             );
         }
         if !accepts(source, target) {
-            fragment_diagnostic(
-                &mut diagnostics,
+            fragment_issue(
+                &mut issues,
                 "error",
                 "incompatible-type",
                 format!(
@@ -1208,10 +1331,8 @@ pub fn analyze_graph_fragment_v01(
     }
 
     GraphFragmentValidationResultV01 {
-        ok: diagnostics
-            .iter()
-            .all(|diagnostic| diagnostic.severity != "error"),
-        diagnostics,
+        ok: issues.iter().all(|issue| issue.severity != "error"),
+        issues,
         omitted_edge_ids,
     }
 }
@@ -1381,7 +1502,7 @@ fn cycle_edges_for(component: &[String], edges: &[EdgeSpecV01]) -> Vec<EdgeSpecV
 }
 
 pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationResultV01 {
-    let mut diagnostics = Vec::new();
+    let mut issues = Vec::new();
     let mut cycles = Vec::new();
     let mut node_ids = HashSet::new();
     let mut ports: HashMap<String, PortSpecV01> = HashMap::new();
@@ -1392,8 +1513,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
 
     for node in &graph.nodes {
         if !node_ids.insert(node.id.clone()) {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "duplicate-node-id",
                 format!("duplicate node id: {}", node.id),
@@ -1407,8 +1528,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             .map(|implementation| &implementation.object_id)
             && is_payload_identity_node_kind(object_id)
         {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "payload-implementation-id",
                 format!(
@@ -1419,28 +1540,74 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 None,
             );
         }
-        if node.object_resolution.as_ref().is_some_and(|resolution| {
-            resolution.status == super::types::ObjectResolutionStatusV01::Resolved
-        }) && node.implementation.is_none()
-        {
-            diagnostic(
-                &mut diagnostics,
-                "error",
-                "resolved-object-missing-implementation",
-                format!(
-                    "node {} has resolved objectResolution without implementation",
-                    node.id
-                ),
-                Some(vec![node.id.clone()]),
-                None,
-            );
+        if let Some(resolution) = &node.object_resolution {
+            match resolution.status {
+                super::types::ObjectResolutionStatusV01::Resolved => {
+                    if node.implementation.is_none() {
+                        issue(
+                            &mut issues,
+                            "error",
+                            "resolved-object-missing-implementation",
+                            format!(
+                                "node {} has resolved objectResolution without implementation",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                }
+                super::types::ObjectResolutionStatusV01::Unresolved => {
+                    if node.implementation.is_some() {
+                        issue(
+                            &mut issues,
+                            "error",
+                            "unresolved-object-has-implementation",
+                            format!(
+                                "node {} has unresolved objectResolution with implementation",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                }
+                super::types::ObjectResolutionStatusV01::Error => {
+                    if node.implementation.is_none() {
+                        issue(
+                            &mut issues,
+                            "error",
+                            "error-object-missing-implementation",
+                            format!(
+                                "node {} has error objectResolution without implementation",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                    if !has_implementation_error_issue(&resolution.issues) {
+                        issue(
+                            &mut issues,
+                            "error",
+                            "error-object-missing-issue",
+                            format!(
+                                "node {} has error objectResolution without implementation issue",
+                                node.id
+                            ),
+                            Some(vec![node.id.clone()]),
+                            None,
+                        );
+                    }
+                }
+            }
         }
 
         let mut port_ids = HashSet::new();
         for port in &node.ports {
             if !port_ids.insert(port.id.clone()) {
-                diagnostic(
-                    &mut diagnostics,
+                issue(
+                    &mut issues,
                     "error",
                     "duplicate-port-id",
                     format!("duplicate port id on {}: {}", node.id, port.id),
@@ -1449,8 +1616,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 );
             }
             if is_invalid_value_type(&port.port_type) {
-                diagnostic(
-                    &mut diagnostics,
+                issue(
+                    &mut issues,
                     "error",
                     "invalid-value-type",
                     format!(
@@ -1464,8 +1631,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             if let Some(accepted) = &port.accepts {
                 for accepted_type in accepted {
                     if is_invalid_value_type(accepted_type) {
-                        diagnostic(
-                            &mut diagnostics,
+                        issue(
+                            &mut issues,
                             "error",
                             "invalid-value-type",
                             format!(
@@ -1479,8 +1646,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 }
             }
             for error in message_key_policy_errors(port, &format!("port {}.{}", node.id, port.id)) {
-                diagnostic(
-                    &mut diagnostics,
+                issue(
+                    &mut issues,
                     "error",
                     "message-key-policy",
                     error,
@@ -1496,8 +1663,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
 
         for group in node.port_groups.as_deref().unwrap_or_default() {
             if is_invalid_value_type(&group.port_type) {
-                diagnostic(
-                    &mut diagnostics,
+                issue(
+                    &mut issues,
                     "error",
                     "invalid-value-type",
                     format!(
@@ -1513,8 +1680,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 .as_ref()
                 .is_some_and(|port| is_invalid_value_type(&port.port_type))
             {
-                diagnostic(
-                    &mut diagnostics,
+                issue(
+                    &mut issues,
                     "error",
                     "invalid-value-type",
                     format!(
@@ -1535,8 +1702,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 if let Some(accepted) = &default_port.accepts {
                     for accepted_type in accepted {
                         if is_invalid_value_type(accepted_type) {
-                            diagnostic(
-                                &mut diagnostics,
+                            issue(
+                                &mut issues,
                                 "error",
                                 "invalid-value-type",
                                 format!(
@@ -1553,8 +1720,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                     default_port,
                     &format!("port group {}.{} defaultPortSpec", node.id, group.id),
                 ) {
-                    diagnostic(
-                        &mut diagnostics,
+                    issue(
+                        &mut issues,
                         "error",
                         "message-key-policy",
                         error,
@@ -1567,8 +1734,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 if max_ports >= group.min_ports {
                     continue;
                 }
-                diagnostic(
-                    &mut diagnostics,
+                issue(
+                    &mut issues,
                     "error",
                     "invalid-port-group",
                     format!(
@@ -1584,8 +1751,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
 
     for edge in &graph.edges {
         if !edge_ids.insert(edge.id.clone()) {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "duplicate-edge-id",
                 format!("duplicate edge id: {}", edge.id),
@@ -1595,8 +1762,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
         }
         let edge_key = edge_endpoint_key(edge);
         if !edge_keys.insert(edge_key.clone()) {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "duplicate-edge",
                 format!("duplicate edge endpoints: {edge_key}"),
@@ -1614,8 +1781,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             .as_ref()
             .is_some_and(|port_type| is_invalid_value_type(port_type))
         {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "invalid-value-type",
                 format!(
@@ -1629,8 +1796,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
         }
 
         if source.is_none() {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "missing-source-port",
                 format!(
@@ -1642,8 +1809,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             );
         }
         if target.is_none() {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "missing-target-port",
                 format!(
@@ -1659,8 +1826,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
         };
 
         if source.direction != PortDirectionV01::Output {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "invalid-source-direction",
                 format!("edge {} source {source_key} is not an output port", edge.id),
@@ -1669,8 +1836,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             );
         }
         if target.direction != PortDirectionV01::Input {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "invalid-target-direction",
                 format!("edge {} target {target_key} is not an input port", edge.id),
@@ -1679,8 +1846,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             );
         }
         if !accepts(source, target) {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "incompatible-type",
                 format!(
@@ -1715,8 +1882,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             port.min_connections.unwrap_or(0)
         };
         if connected_edges.len() < minimum as usize {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "missing-required-input",
                 format!("input {key} requires at least {minimum} connection(s)"),
@@ -1726,8 +1893,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
         }
         let max_connections = input_max_connections(port);
         if connected_edges.len() as u64 > max_connections {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "fan-in-cardinality",
                 format!(
@@ -1739,8 +1906,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
             );
         }
         if connected_edges.len() > 1 && merge_policy_for(port) == MergePolicyV01::Forbid {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "fan-in-without-merge-policy",
                 format!("input {key} has fan-in but mergePolicy is forbid"),
@@ -1759,8 +1926,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                 Some(super::FanOutPolicyV01::Forbid)
             )
         {
-            diagnostic(
-                &mut diagnostics,
+            issue(
+                &mut issues,
                 "error",
                 "fan-out-forbidden",
                 format!("output {key} forbids fan-out"),
@@ -1784,8 +1951,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                     CycleValidationV01::AmbiguousAlgebraicLoop => "ambiguous-algebraic-loop",
                     _ => "invalid-cycle",
                 };
-                diagnostic(
-                    &mut diagnostics,
+                issue(
+                    &mut issues,
                     "error",
                     code,
                     cycle.message.clone(),
@@ -1793,8 +1960,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
                     Some(cycle.edges.clone()),
                 );
             }
-            CycleValidationV01::RiskyFeedback => diagnostic(
-                &mut diagnostics,
+            CycleValidationV01::RiskyFeedback => issue(
+                &mut issues,
                 "warning",
                 "risky-feedback",
                 cycle.message.clone(),
@@ -1807,10 +1974,8 @@ pub fn analyze_graph_document_v01(graph: &GraphDocumentV01) -> GraphValidationRe
     }
 
     GraphValidationResultV01 {
-        ok: diagnostics
-            .iter()
-            .all(|diagnostic| diagnostic.severity != "error"),
-        diagnostics,
+        ok: issues.iter().all(|issue| issue.severity != "error"),
+        issues,
         cycles,
     }
 }
@@ -1833,14 +1998,14 @@ pub fn validate_graph_document_v01(
     }
 
     let result = analyze_graph_document_v01(graph);
-    for diagnostic in result
-        .diagnostics
+    for issue in result
+        .issues
         .iter()
-        .filter(|diagnostic| diagnostic.severity == "error")
+        .filter(|issue| issue.severity == "error")
     {
         errors.push(ValidationErrorV01::new(format!(
             "{}: {}",
-            diagnostic.code, diagnostic.message
+            issue.code, issue.message
         )));
     }
 
@@ -1870,14 +2035,14 @@ fn validate_graph_fragment_with_policy(
     }
 
     let result = analyze_graph_fragment_v01(fragment, outside_endpoint_policy);
-    for diagnostic in result
-        .diagnostics
+    for issue in result
+        .issues
         .iter()
-        .filter(|diagnostic| diagnostic.severity == "error")
+        .filter(|issue| issue.severity == "error")
     {
         errors.push(ValidationErrorV01::new(format!(
             "{}: {}",
-            diagnostic.code, diagnostic.message
+            issue.code, issue.message
         )));
     }
 
@@ -2120,49 +2285,39 @@ fn sorted_string_errors(values: &[String], label: &str) -> Vec<ValidationErrorV0
     }
 }
 
-fn validate_node_catalog_diagnostic_target_v01(
+fn validate_node_catalog_issue_target_v01(
     errors: &mut Vec<ValidationErrorV01>,
-    target: &NodeCatalogDiagnosticTargetV01,
+    target: &NodeCatalogIssueTargetV01,
     entry_ids: &HashSet<&str>,
-    diagnostic_ids: &HashSet<&str>,
     label: &str,
 ) {
     match target {
-        NodeCatalogDiagnosticTargetV01::Catalog => {}
-        NodeCatalogDiagnosticTargetV01::Entry { catalog_id } => {
+        NodeCatalogIssueTargetV01::Catalog => {}
+        NodeCatalogIssueTargetV01::Entry { catalog_id } => {
             if !entry_ids.contains(catalog_id.as_str()) {
                 errors.push(ValidationErrorV01::new(format!(
                     "{label} references missing entry catalogId: {catalog_id}"
                 )));
             }
         }
-        NodeCatalogDiagnosticTargetV01::DiagnosticNodeDefinition { diagnostic_id } => {
-            if !diagnostic_ids.contains(diagnostic_id.as_str()) {
-                errors.push(ValidationErrorV01::new(format!(
-                    "{label} references missing diagnosticId: {diagnostic_id}"
-                )));
-            }
-        }
     }
 }
 
-fn validate_node_catalog_diagnostic_v01(
+fn validate_node_catalog_issue_v01(
     errors: &mut Vec<ValidationErrorV01>,
-    diagnostic: &NodeCatalogDiagnosticV01,
+    issue: &NodeCatalogIssueV01,
     entry_ids: &HashSet<&str>,
-    diagnostic_ids: &HashSet<&str>,
     label: &str,
 ) {
-    push_non_empty_string_error(errors, &format!("{label}.code"), &diagnostic.code);
-    push_non_empty_string_error(errors, &format!("{label}.message"), &diagnostic.message);
-    validate_node_catalog_diagnostic_target_v01(
+    push_non_empty_string_error(errors, &format!("{label}.code"), &issue.code);
+    push_non_empty_string_error(errors, &format!("{label}.message"), &issue.message);
+    validate_node_catalog_issue_target_v01(
         errors,
-        &diagnostic.target,
+        &issue.target,
         entry_ids,
-        diagnostic_ids,
         &format!("{label}.target"),
     );
-    if diagnostic.severity == NodeCatalogDiagnosticSeverityV01::Error {
+    if issue.severity == NodeCatalogIssueSeverityV01::Error {
         errors.push(ValidationErrorV01::new(format!(
             "{label} must not use error severity in a valid catalog snapshot"
         )));
@@ -2293,14 +2448,6 @@ pub fn validate_node_catalog_snapshot_v01(
             .collect(),
         "catalogId",
     ));
-    errors.extend(duplicate_errors(
-        snapshot
-            .diagnostic_node_definitions
-            .iter()
-            .map(|definition| definition.diagnostic_id.as_str())
-            .collect(),
-        "diagnosticId",
-    ));
     errors.extend(sorted_string_errors(
         &snapshot
             .entries
@@ -2309,48 +2456,20 @@ pub fn validate_node_catalog_snapshot_v01(
             .collect::<Vec<_>>(),
         "catalog entries",
     ));
-    errors.extend(sorted_string_errors(
-        &snapshot
-            .diagnostic_node_definitions
-            .iter()
-            .map(|definition| definition.diagnostic_id.clone())
-            .collect::<Vec<_>>(),
-        "diagnostic node definitions",
-    ));
 
     let entry_ids = snapshot
         .entries
         .iter()
         .map(|entry| entry.catalog_id.as_str())
         .collect::<HashSet<_>>();
-    let diagnostic_ids = snapshot
-        .diagnostic_node_definitions
-        .iter()
-        .map(|definition| definition.diagnostic_id.as_str())
-        .collect::<HashSet<_>>();
 
     let mut definition_keys = HashSet::new();
-    for (label, definition) in snapshot
-        .entries
-        .iter()
-        .map(|entry| {
-            (
-                format!("catalog entry {}", entry.catalog_id),
-                &entry.definition,
-            )
-        })
-        .chain(
-            snapshot
-                .diagnostic_node_definitions
-                .iter()
-                .map(|definition| {
-                    (
-                        format!("diagnostic node definition {}", definition.diagnostic_id),
-                        &definition.definition,
-                    )
-                }),
+    for (label, definition) in snapshot.entries.iter().map(|entry| {
+        (
+            format!("catalog entry {}", entry.catalog_id),
+            &entry.definition,
         )
-    {
+    }) {
         let key = format!("{}@{}", definition.id, definition.version);
         if !definition_keys.insert(key.clone()) {
             errors.push(ValidationErrorV01::new(format!(
@@ -2439,44 +2558,28 @@ pub fn validate_node_catalog_snapshot_v01(
             ObjectProviderRefV01::Package { .. } => {}
         }
 
-        for diagnostic in entry.diagnostics.as_deref().unwrap_or_default() {
-            validate_node_catalog_diagnostic_v01(
+        for issue in entry.issues.as_deref().unwrap_or_default() {
+            validate_node_catalog_issue_v01(
                 &mut errors,
-                diagnostic,
+                issue,
                 &entry_ids,
-                &diagnostic_ids,
-                &format!("catalog entry {} diagnostic", entry.catalog_id),
+                &format!("catalog entry {} issue", entry.catalog_id),
             );
         }
     }
 
-    for definition in &snapshot.diagnostic_node_definitions {
-        push_non_empty_string_error(
-            &mut errors,
-            &format!(
-                "diagnostic node definition {} diagnosticId",
-                definition.diagnostic_id
-            ),
-            &definition.diagnostic_id,
-        );
-        match definition.reason {
-            NodeCatalogDiagnosticNodeDefinitionReasonV01::UnresolvedObject => {}
-        }
-    }
-
-    for (index, diagnostic) in snapshot
-        .diagnostics
+    for (index, issue) in snapshot
+        .issues
         .as_deref()
         .unwrap_or_default()
         .iter()
         .enumerate()
     {
-        validate_node_catalog_diagnostic_v01(
+        validate_node_catalog_issue_v01(
             &mut errors,
-            diagnostic,
+            issue,
             &entry_ids,
-            &diagnostic_ids,
-            &format!("catalog diagnostic {index}"),
+            &format!("catalog issue {index}"),
         );
     }
 
@@ -2574,13 +2677,13 @@ fn graph_v01_semantic_errors(graph: &GraphDocumentV01, label: &str) -> Vec<Valid
         )));
     }
 
-    for diagnostic in analyze_graph_document_v01(graph).diagnostics {
-        if diagnostic.severity != "error" {
+    for issue in analyze_graph_document_v01(graph).issues {
+        if issue.severity != "error" {
             continue;
         }
         errors.push(ValidationErrorV01::new(format!(
             "{label} {}: {}",
-            diagnostic.code, diagnostic.message
+            issue.code, issue.message
         )));
     }
 
@@ -3867,9 +3970,9 @@ fn package_install_plan_action_errors(
             }
         }
         PackageInstallPlanActionKindV01::Reject => {
-            if action.diagnostic_refs.is_empty() {
+            if action.issue_refs.is_empty() {
                 errors.push(ValidationErrorV01::new(format!(
-                    "package install plan reject action {} requires diagnosticRefs",
+                    "package install plan reject action {} requires issueRefs",
                     action.id
                 )));
             }
@@ -3931,56 +4034,56 @@ pub fn validate_package_install_plan_response_v01(
     ));
     errors.extend(duplicate_errors(
         response
-            .diagnostics
+            .issues
             .iter()
-            .map(|diagnostic| diagnostic.id.as_str())
+            .map(|issue| issue.id.as_str())
             .collect(),
-        "package install plan diagnostic id",
+        "package install plan issue id",
     ));
 
-    let diagnostic_ids: HashSet<&str> = response
-        .diagnostics
+    let issue_ids: HashSet<&str> = response
+        .issues
         .iter()
-        .map(|diagnostic| diagnostic.id.as_str())
+        .map(|issue| issue.id.as_str())
         .collect();
-    for diagnostic in &response.diagnostics {
-        if diagnostic.id.is_empty() {
+    for issue in &response.issues {
+        if issue.id.is_empty() {
             errors.push(ValidationErrorV01::new(
-                "package install plan diagnostic id must not be empty",
+                "package install plan issue id must not be empty",
             ));
         }
-        if diagnostic.message.is_empty() {
+        if issue.message.is_empty() {
             errors.push(ValidationErrorV01::new(format!(
-                "package install plan diagnostic {} message must not be empty",
-                diagnostic.id
+                "package install plan issue {} message must not be empty",
+                issue.id
             )));
         }
     }
     for check in &response.checks {
         if matches!(check.status, PackageInstallPlanCheckStatusV01::Fail)
-            && check.diagnostic_refs.is_empty()
+            && check.issue_refs.is_empty()
         {
             errors.push(ValidationErrorV01::new(format!(
-                "package install plan failing check {:?} requires diagnosticRefs",
+                "package install plan failing check {:?} requires issueRefs",
                 check.kind
             )));
         }
-        for diagnostic_ref in &check.diagnostic_refs {
-            if !diagnostic_ids.contains(diagnostic_ref.as_str()) {
+        for issue_ref in &check.issue_refs {
+            if !issue_ids.contains(issue_ref.as_str()) {
                 errors.push(ValidationErrorV01::new(format!(
-                    "package install plan check {:?} references missing diagnostic {}",
-                    check.kind, diagnostic_ref
+                    "package install plan check {:?} references missing issue {}",
+                    check.kind, issue_ref
                 )));
             }
         }
     }
     for (index, action) in response.actions.iter().enumerate() {
         errors.extend(package_install_plan_action_errors(action, index));
-        for diagnostic_ref in &action.diagnostic_refs {
-            if !diagnostic_ids.contains(diagnostic_ref.as_str()) {
+        for issue_ref in &action.issue_refs {
+            if !issue_ids.contains(issue_ref.as_str()) {
                 errors.push(ValidationErrorV01::new(format!(
-                    "package install plan action {} references missing diagnostic {}",
-                    action.id, diagnostic_ref
+                    "package install plan action {} references missing issue {}",
+                    action.id, issue_ref
                 )));
             }
         }
@@ -3991,12 +4094,12 @@ pub fn validate_package_install_plan_response_v01(
                     action.id
                 )));
             }
-            if let Some(diagnostic_ref) = &capability_change.diagnostic_ref
-                && !diagnostic_ids.contains(diagnostic_ref.as_str())
+            if let Some(issue_ref) = &capability_change.issue_ref
+                && !issue_ids.contains(issue_ref.as_str())
             {
                 errors.push(ValidationErrorV01::new(format!(
-                    "package install plan action {} capability change references missing diagnostic {}",
-                    action.id, diagnostic_ref
+                    "package install plan action {} capability change references missing issue {}",
+                    action.id, issue_ref
                 )));
             }
         }
@@ -4006,10 +4109,10 @@ pub fn validate_package_install_plan_response_v01(
         .actions
         .iter()
         .any(|action| matches!(action.kind, PackageInstallPlanActionKindV01::Reject));
-    let has_error_diagnostic = response
-        .diagnostics
+    let has_error_issue = response
+        .issues
         .iter()
-        .any(|diagnostic| matches!(diagnostic.severity, PackageDiagnosticSeverityV01::Error));
+        .any(|issue| matches!(issue.severity, PackageIssueSeverityV01::Error));
     let has_failed_check = response
         .checks
         .iter()
@@ -4031,9 +4134,9 @@ pub fn validate_package_install_plan_response_v01(
                 "failed package install plan response requires a reject action",
             ));
         }
-        if !has_error_diagnostic {
+        if !has_error_issue {
             errors.push(ValidationErrorV01::new(
-                "failed package install plan response requires an error diagnostic",
+                "failed package install plan response requires an error issue",
             ));
         }
     }
@@ -4199,11 +4302,11 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
     }
 
     for binding in &project.object_bindings {
-        let has_diagnostic = |codes: &[ProjectObjectBindingDiagnosticCodeV01]| {
+        let has_issue = |codes: &[ProjectObjectBindingIssueCodeV01]| {
             binding
-                .diagnostics
+                .issues
                 .iter()
-                .any(|diagnostic| codes.contains(&diagnostic.code))
+                .any(|issue| codes.contains(&issue.code))
         };
 
         if binding.status == ProjectObjectBindingStatusV01::Resolved
@@ -4215,40 +4318,29 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
             )));
             continue;
         }
-        if binding.status == ProjectObjectBindingStatusV01::Missing
-            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::ImplementationMissing])
-        {
-            errors.push(ValidationErrorV01::new(format!(
-                "missing object binding {} requires implementation-missing diagnostic",
-                binding.id
-            )));
-        }
-        if binding.status == ProjectObjectBindingStatusV01::Stale
-            && !has_diagnostic(&[
-                ProjectObjectBindingDiagnosticCodeV01::ImplementationStale,
-                ProjectObjectBindingDiagnosticCodeV01::InterfaceDrift,
-            ])
-        {
-            errors.push(ValidationErrorV01::new(format!(
-                "stale object binding {} requires stale or interface-drift diagnostic",
-                binding.id
-            )));
-        }
         if binding.status == ProjectObjectBindingStatusV01::Unresolved
-            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::ResolutionUnresolved])
+            && binding.implementation.is_some()
         {
             errors.push(ValidationErrorV01::new(format!(
-                "unresolved object binding {} requires resolution-unresolved diagnostic",
+                "unresolved object binding {} must not include implementation",
                 binding.id
             )));
+            continue;
         }
-        if binding.status == ProjectObjectBindingStatusV01::Ambiguous
-            && !has_diagnostic(&[ProjectObjectBindingDiagnosticCodeV01::ResolutionAmbiguous])
-        {
-            errors.push(ValidationErrorV01::new(format!(
-                "ambiguous object binding {} requires resolution-ambiguous diagnostic",
-                binding.id
-            )));
+        if binding.status == ProjectObjectBindingStatusV01::Error {
+            if binding.implementation.is_none() {
+                errors.push(ValidationErrorV01::new(format!(
+                    "error object binding {} requires implementation",
+                    binding.id
+                )));
+                continue;
+            }
+            if !has_implementation_error_issue(&binding.issues) {
+                errors.push(ValidationErrorV01::new(format!(
+                    "error object binding {} requires implementation issue",
+                    binding.id
+                )));
+            }
         }
 
         match binding
@@ -4265,11 +4357,11 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                             "resolved object binding {} references missing project patch: {}",
                             binding.id, patch_id
                         )));
-                    } else if binding.status != ProjectObjectBindingStatusV01::Missing
-                        && binding.status != ProjectObjectBindingStatusV01::Stale
+                    } else if binding.status != ProjectObjectBindingStatusV01::Error
+                        || !has_issue(&[ProjectObjectBindingIssueCodeV01::ImplementationMissing])
                     {
                         errors.push(ValidationErrorV01::new(format!(
-                            "object binding {} references missing project patch: {}",
+                            "object binding {} references missing project patch: {} without error issue",
                             binding.id, patch_id
                         )));
                     }
@@ -4284,14 +4376,14 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                             "resolved object binding {} project patch {} revision is stale",
                             binding.id, patch_id
                         )));
-                    } else if binding.status != ProjectObjectBindingStatusV01::Stale
-                        || !has_diagnostic(&[
-                            ProjectObjectBindingDiagnosticCodeV01::ImplementationStale,
-                            ProjectObjectBindingDiagnosticCodeV01::InterfaceDrift,
+                    } else if binding.status != ProjectObjectBindingStatusV01::Error
+                        || !has_issue(&[
+                            ProjectObjectBindingIssueCodeV01::ImplementationStale,
+                            ProjectObjectBindingIssueCodeV01::InterfaceDrift,
                         ])
                     {
                         errors.push(ValidationErrorV01::new(format!(
-                            "object binding {} project patch {} revision is stale without diagnostics",
+                            "object binding {} project patch {} revision is stale without issues",
                             binding.id, patch_id
                         )));
                     }
@@ -4321,11 +4413,11 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                             "resolved object binding {} references missing lockEntryId: {}",
                             binding.id, lock_entry_id
                         )));
-                    } else if binding.status != ProjectObjectBindingStatusV01::Missing
-                        && binding.status != ProjectObjectBindingStatusV01::Stale
+                    } else if binding.status != ProjectObjectBindingStatusV01::Error
+                        || !has_issue(&[ProjectObjectBindingIssueCodeV01::ImplementationMissing])
                     {
                         errors.push(ValidationErrorV01::new(format!(
-                            "object binding {} references missing lockEntryId: {}",
+                            "object binding {} references missing lockEntryId: {} without error issue",
                             binding.id, lock_entry_id
                         )));
                     }
@@ -4370,7 +4462,7 @@ mod tests {
             status: ObjectResolutionStatusV01::Resolved,
             selected_spec: Some("float".to_owned()),
             candidates: Vec::new(),
-            diagnostics: Vec::new(),
+            issues: Vec::new(),
         }
     }
 
@@ -4620,7 +4712,7 @@ mod tests {
             Some(valid_default_without_accepts);
         let result = validate_graph_document_v01(&graph).expect("graph should validate");
         assert!(result.ok);
-        assert!(result.diagnostics.is_empty());
+        assert!(result.issues.is_empty());
 
         let serialized = serde_json::to_string(&graph).expect("graph should serialize");
         assert!(!serialized.contains("null"));
@@ -5549,6 +5641,7 @@ mod tests {
             "value.media.audio-sample",
             "value.media.audio-frame",
             "value.media.audio-buffer",
+            "value.media.future-frame",
             "value.media.image",
             "value.media.matrix",
         ];
@@ -5755,7 +5848,7 @@ mod tests {
         graph.edges[1].feedback.as_mut().unwrap().boundary = FeedbackBoundaryV01::SameTurn;
         let risky = analyze_graph_document_v01(&graph);
         assert!(risky.ok);
-        assert_eq!(risky.diagnostics[0].severity, "warning");
+        assert_eq!(risky.issues[0].severity, "warning");
         assert_eq!(
             risky.cycles[0].classification,
             CycleValidationV01::RiskyFeedback
