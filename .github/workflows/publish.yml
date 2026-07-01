@@ -53,8 +53,6 @@ jobs:
         with:
           ref: ${{ needs.validate-tag.outputs.tag }}
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10.12.4
       - uses: actions/setup-node@v6
         with:
           node-version: 22
