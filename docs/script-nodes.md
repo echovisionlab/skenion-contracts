@@ -67,7 +67,7 @@ Runtime enforcement must include:
 - memory budget
 - queue limits
 - output rate limits
-- structured diagnostics
+- structured issues
 - last-good or default output behavior after hook failure
 
 Script errors must never stop the Rust render loop or audio callback.

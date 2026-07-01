@@ -168,21 +168,21 @@ function sha256CanonicalDigest(value: unknown): PackageChecksumV01 {
   };
 }
 
-function stripCatalogRevisionAndDiagnostics(
+function stripCatalogRevisionAndIssues(
   snapshot: NodeCatalogSnapshotV01
 ): unknown {
   const {
     catalogRevision: _catalogRevision,
-    diagnostics: _diagnostics,
+    issues: _issues,
     entries,
     ...snapshotWithoutRevision
   } = snapshot;
 
   return {
     ...snapshotWithoutRevision,
-    entries: entries.map((entry): Omit<NodeCatalogEntryV01, "diagnostics"> => {
-      const { diagnostics: _entryDiagnostics, ...entryWithoutDiagnostics } = entry;
-      return entryWithoutDiagnostics;
+    entries: entries.map((entry): Omit<NodeCatalogEntryV01, "issues"> => {
+      const { issues: _entryIssues, ...entryWithoutIssues } = entry;
+      return entryWithoutIssues;
     })
   };
 }
@@ -198,7 +198,7 @@ export function computePatchInterfaceDigestV01(patch: PatchDefinitionV01): Packa
 export function computeNodeCatalogRevisionV01(
   snapshot: NodeCatalogSnapshotV01
 ): PackageChecksumV01 {
-  return sha256CanonicalDigest(stripCatalogRevisionAndDiagnostics(snapshot));
+  return sha256CanonicalDigest(stripCatalogRevisionAndIssues(snapshot));
 }
 
 export function sanitizeProjectPatchIdV01(patchId: string): string {

@@ -5,9 +5,9 @@ use std::{fs, path::Path};
 use skenion_contracts::{
     GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01,
     NodeDefinitionManifestV01, ObjectProviderRefV01, ObjectSpecParseResultV01,
-    PackageDiagnosticSeverityV01, PackageDiscoveryResponseV01, PackageInstallPlanRequestV01,
-    PackageInstallPlanResponseV01, PackageListingV01, PackageManifestV01, PackageRootDocumentV01,
-    ProjectDocumentV01, ProjectObjectBindingDiagnosticCodeV01, ProjectObjectBindingDiagnosticV01,
+    PackageDiscoveryResponseV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
+    PackageIssueSeverityV01, PackageListingV01, PackageManifestV01, PackageRootDocumentV01,
+    ProjectDocumentV01, ProjectObjectBindingIssueCodeV01, ProjectObjectBindingIssueV01,
     ProjectObjectBindingStatusV01, analyze_graph_fragment_v01, parse_object_spec_v01,
     validate_graph_document_v01, validate_graph_fragment_v01, validate_node_definition_v01,
     validate_object_spec_parse_result_v01, validate_package_discovery_response_v01,
@@ -662,13 +662,11 @@ fn project_document_fixture(relative: &str) -> ProjectDocumentV01 {
         .expect("project fixture should parse")
 }
 
-fn binding_diagnostic(
-    code: ProjectObjectBindingDiagnosticCodeV01,
-) -> ProjectObjectBindingDiagnosticV01 {
-    ProjectObjectBindingDiagnosticV01 {
-        severity: PackageDiagnosticSeverityV01::Warning,
+fn binding_issue(code: ProjectObjectBindingIssueCodeV01) -> ProjectObjectBindingIssueV01 {
+    ProjectObjectBindingIssueV01 {
+        severity: PackageIssueSeverityV01::Warning,
         code,
-        message: "coverage diagnostic".to_owned(),
+        message: "coverage issue".to_owned(),
         details: None,
     }
 }
@@ -758,7 +756,7 @@ fn validates_project_package_missing_lock_references() {
     );
 
     validate_project_document_v01(&base_project)
-        .expect("missing package-provider binding with diagnostics should remain valid");
+        .expect("missing package-provider binding with issues should remain valid");
 
     let mut missing_binding_ref = base_project;
     missing_binding_ref.graph.nodes[0].binding_ref = Some("missing-binding".to_owned());
@@ -820,25 +818,25 @@ fn validates_project_package_and_binding_semantic_error_branches() {
     for (status, expected) in [
         (
             ProjectObjectBindingStatusV01::Error,
-            "error object binding binding-example-oscillator requires implementation diagnostic",
+            "error object binding binding-example-oscillator requires implementation issue",
         ),
         (
             ProjectObjectBindingStatusV01::Unresolved,
             "unresolved object binding binding-example-oscillator must not include implementation",
         ),
     ] {
-        let mut missing_diagnostic = base_project.clone();
-        missing_diagnostic.object_bindings[0].status = status;
-        missing_diagnostic.object_bindings[0].diagnostics.clear();
-        assert_project_document_error(&missing_diagnostic, expected);
+        let mut missing_issue = base_project.clone();
+        missing_issue.object_bindings[0].status = status;
+        missing_issue.object_bindings[0].issues.clear();
+        assert_project_document_error(&missing_issue, expected);
     }
 
     let mut missing_patch_binding = base_project.clone();
     {
         let binding = &mut missing_patch_binding.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Unresolved;
-        binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::ResolutionUnresolved,
+        binding.issues = vec![binding_issue(
+            ProjectObjectBindingIssueCodeV01::ResolutionUnresolved,
         )];
         match &mut binding
             .implementation
@@ -859,12 +857,12 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         "unresolved object binding binding-local-wrapper must not include implementation",
     );
 
-    let mut missing_patch_with_diagnostic = base_project.clone();
+    let mut missing_patch_with_issue = base_project.clone();
     {
-        let binding = &mut missing_patch_with_diagnostic.object_bindings[1];
+        let binding = &mut missing_patch_with_issue.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Error;
-        binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::ImplementationMissing,
+        binding.issues = vec![binding_issue(
+            ProjectObjectBindingIssueCodeV01::ImplementationMissing,
         )];
         match &mut binding
             .implementation
@@ -880,8 +878,8 @@ fn validates_project_package_and_binding_semantic_error_branches() {
             }
         }
     }
-    validate_project_document_v01(&missing_patch_with_diagnostic)
-        .expect("error project patch binding with diagnostic should remain valid");
+    validate_project_document_v01(&missing_patch_with_issue)
+        .expect("error project patch binding with issue should remain valid");
 
     let mut resolved_stale_revision = base_project.clone();
     match &mut resolved_stale_revision.object_bindings[1]
@@ -902,11 +900,11 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         "resolved object binding binding-local-wrapper project patch local_wrapper revision is stale",
     );
 
-    let mut stale_revision_without_diagnostic = base_project.clone();
+    let mut stale_revision_without_issue = base_project.clone();
     {
-        let binding = &mut stale_revision_without_diagnostic.object_bindings[1];
+        let binding = &mut stale_revision_without_issue.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Error;
-        binding.diagnostics.clear();
+        binding.issues.clear();
         match &mut binding
             .implementation
             .as_mut()
@@ -922,16 +920,16 @@ fn validates_project_package_and_binding_semantic_error_branches() {
         }
     }
     assert_project_document_error(
-        &stale_revision_without_diagnostic,
-        "object binding binding-local-wrapper project patch local_wrapper revision is stale without diagnostics",
+        &stale_revision_without_issue,
+        "object binding binding-local-wrapper project patch local_wrapper revision is stale without issues",
     );
 
-    let mut stale_revision_with_diagnostic = base_project.clone();
+    let mut stale_revision_with_issue = base_project.clone();
     {
-        let binding = &mut stale_revision_with_diagnostic.object_bindings[1];
+        let binding = &mut stale_revision_with_issue.object_bindings[1];
         binding.status = ProjectObjectBindingStatusV01::Error;
-        binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::ImplementationStale,
+        binding.issues = vec![binding_issue(
+            ProjectObjectBindingIssueCodeV01::ImplementationStale,
         )];
         match &mut binding
             .implementation
@@ -947,8 +945,8 @@ fn validates_project_package_and_binding_semantic_error_branches() {
             }
         }
     }
-    validate_project_document_v01(&stale_revision_with_diagnostic)
-        .expect("error project patch binding with diagnostic should remain valid");
+    validate_project_document_v01(&stale_revision_with_issue)
+        .expect("error project patch binding with issue should remain valid");
 
     let mut invalid_provider_ids = base_project.clone();
     match &mut invalid_provider_ids.object_bindings[0]
@@ -973,8 +971,8 @@ fn validates_project_package_and_binding_semantic_error_branches() {
     {
         let binding = &mut unresolved_missing_lock.object_bindings[0];
         binding.status = ProjectObjectBindingStatusV01::Unresolved;
-        binding.diagnostics = vec![binding_diagnostic(
-            ProjectObjectBindingDiagnosticCodeV01::ResolutionUnresolved,
+        binding.issues = vec![binding_issue(
+            ProjectObjectBindingIssueCodeV01::ResolutionUnresolved,
         )];
         match &mut binding
             .implementation

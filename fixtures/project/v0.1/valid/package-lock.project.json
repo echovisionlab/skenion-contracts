@@ -131,7 +131,7 @@
         },
         "objectId": "example.missing-provider"
       },
-      "diagnostics": [
+      "issues": [
         {
           "severity": "warning",
           "code": "implementation-missing",
@@ -143,7 +143,7 @@
       "id": "binding-ambiguous-patcher",
       "objectSpec": "ambiguous-patcher",
       "status": "unresolved",
-      "diagnostics": [
+      "issues": [
         {
           "severity": "warning",
           "code": "resolution-ambiguous",

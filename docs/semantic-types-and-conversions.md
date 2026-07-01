@@ -62,7 +62,7 @@ conversion policy is deterministic:
 - Narrowing float and color conversions may quantize.
 - Color channel conversion clamps channels into the target representation range.
 
-Conversion diagnostics should be shown in inspectors, debug views, or edge
+Conversion issues should be shown in inspectors, debug views, or edge
 metadata. The default canvas should not be flooded with warnings for expected
 numeric/color conversions.
 

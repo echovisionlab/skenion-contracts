@@ -7,7 +7,6 @@
     "object.core.comment",
     "object.core.panel",
     "object.core.message",
-    "object.core.unresolved",
     "object.core.bang",
     "object.core.float",
     "object.core.int",

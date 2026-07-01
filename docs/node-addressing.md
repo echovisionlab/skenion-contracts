@@ -1,10 +1,10 @@
 # Node Addressing
 
 skenion uses stable addresses for editor panels, runtime control surfaces, and
-diagnostics that need to refer to a specific part of a loaded graph.
+issues that need to refer to a specific part of a loaded graph.
 
 Addresses are not hidden graph dependencies. They are safe for inspection,
-remote-control panels, diagnostics, and help links. Graph execution must still
+remote-control panels, issues, and help links. Graph execution must still
 express dependencies with explicit graph edges, or later with explicit
 `send`/`receive`-style nodes.
 
@@ -31,7 +31,7 @@ Inspector and control panels may read values by address:
 
 - graph params, such as `node:float_1/param:value`
 - runtime output/control state, such as `node:float_1/state:value`
-- port metadata and diagnostics, such as `node:shader_1/port:speed`
+- port metadata and issues, such as `node:shader_1/port:speed`
 
 Runtime graph execution must not read another node through an address unless the
 saved graph contains an explicit edge or an explicit future reference node. This

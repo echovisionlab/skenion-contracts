@@ -334,10 +334,10 @@ export type PackageTargetTripleV01 =
   | "aarch64-unknown-linux-gnu";
 export type PackageChecksumAlgorithmV01 = "sha256";
 export type PackageEvidenceKindV01 = "checksum" | "signature" | "sbom" | "attestation";
-export type PackageDiagnosticSeverityV01 = "error" | "warning" | "info";
+export type PackageIssueSeverityV01 = "error" | "warning" | "info";
 export type PackageListingTargetSupportKindV01 = "target-independent" | "targeted" | "unavailable";
 export type PackageListingArtifactKindV01 = "manifest" | "package-archive" | "native-artifact";
-export type PackageListingDiagnosticCodeV01 =
+export type PackageListingIssueCodeV01 =
   | "malformed-listing-metadata"
   | "unsupported-contracts-range"
   | "missing-artifact"
@@ -406,8 +406,8 @@ export interface PackageNativeArtifactV01 {
   evidenceRefs: string[];
 }
 
-export interface PackageDiagnosticV01 {
-  severity: PackageDiagnosticSeverityV01;
+export interface PackageIssueV01 {
+  severity: PackageIssueSeverityV01;
   code: string;
   message: string;
   details?: JsonValueV01;
@@ -429,7 +429,7 @@ export interface PackageManifestV01 {
   checksums: PackageChecksumRefV01[];
   evidence: PackageEvidenceRefV01[];
   nativeArtifacts?: PackageNativeArtifactV01[];
-  diagnostics?: PackageDiagnosticV01[];
+  issues?: PackageIssueV01[];
 }
 
 export interface PackageRootDocumentV01 {
@@ -494,9 +494,9 @@ export interface PackageListingDiscoverySignalsV01 {
   rankingScore: number;
 }
 
-export interface PackageListingDiagnosticV01 {
-  severity: PackageDiagnosticSeverityV01;
-  code: PackageListingDiagnosticCodeV01;
+export interface PackageListingIssueV01 {
+  severity: PackageIssueSeverityV01;
+  code: PackageListingIssueCodeV01;
   message: string;
   details?: JsonValueV01;
 }
@@ -508,7 +508,7 @@ export interface PackageListingDiagnosticV01 {
  * targetSupport targets, provides, and artifactEvidence from PackageManifestV01
  * plus release artifacts; displayName is manifest-derived when present.
  * Marketplace/discovery metadata owns summary, description, tags, license,
- * homepageUrl, repositoryUrl, discoverySignals, and visibility diagnostics.
+ * homepageUrl, repositoryUrl, discoverySignals, and visibility issues.
  * This DTO intentionally excludes accounts, auth, writes, install transactions,
  * local registry roots, and mutable package manifests.
  */
@@ -531,7 +531,7 @@ export interface PackageListingV01 {
   provides: PackageListingProvidesSummaryV01;
   artifactEvidence: PackageListingArtifactEvidenceSummaryV01;
   discoverySignals: PackageListingDiscoverySignalsV01;
-  diagnostics: PackageListingDiagnosticV01[];
+  issues: PackageListingIssueV01[];
 }
 
 /**
@@ -546,7 +546,7 @@ export interface PackageDiscoveryResponseV01 {
   schemaVersion: "0.1.0";
   ok: boolean;
   listings: PackageListingV01[];
-  diagnostics: PackageListingDiagnosticV01[];
+  issues: PackageListingIssueV01[];
 }
 
 export type PackageInstallPlanIntentV01 = "install" | "update";
@@ -572,7 +572,7 @@ export type PackageInstallPlanCheckKindV01 =
 export type PackageInstallPlanCheckStatusV01 = "pass" | "warning" | "fail" | "skipped";
 export type PackageInstallPlanCapabilityChangeKindV01 = "add" | "remove" | "keep";
 export type PackageInstallPlanCapabilityKindV01 = ProviderRefKindV01 | "capability";
-export type PackageInstallPlanDiagnosticCodeV01 =
+export type PackageInstallPlanIssueCodeV01 =
   | "incompatible-contracts-line"
   | "incompatible-runtime-abi"
   | "unsupported-target"
@@ -632,7 +632,7 @@ export interface PackageInstallPlanRequestV01 {
 export interface PackageInstallPlanCheckV01 {
   kind: PackageInstallPlanCheckKindV01;
   status: PackageInstallPlanCheckStatusV01;
-  diagnosticRefs?: string[];
+  issueRefs?: string[];
   message?: string;
 }
 
@@ -640,7 +640,7 @@ export interface PackageInstallPlanCapabilityChangeV01 {
   kind: PackageInstallPlanCapabilityChangeKindV01;
   capabilityKind: PackageInstallPlanCapabilityKindV01;
   id: string;
-  diagnosticRef?: string;
+  issueRef?: string;
 }
 
 export interface PackageInstallPlanActionV01 {
@@ -657,14 +657,14 @@ export interface PackageInstallPlanActionV01 {
   checksum?: PackageChecksumV01;
   evidenceRefs?: string[];
   capabilityChanges?: PackageInstallPlanCapabilityChangeV01[];
-  diagnosticRefs?: string[];
+  issueRefs?: string[];
   reason?: string;
 }
 
-export interface PackageInstallPlanDiagnosticV01 {
+export interface PackageInstallPlanIssueV01 {
   id: string;
-  severity: PackageDiagnosticSeverityV01;
-  code: PackageInstallPlanDiagnosticCodeV01;
+  severity: PackageIssueSeverityV01;
+  code: PackageInstallPlanIssueCodeV01;
   message: string;
   details?: JsonValueV01;
 }
@@ -673,7 +673,7 @@ export interface PackageInstallPlanDiagnosticV01 {
  * Declarative package install/update planning output.
  *
  * A response can express a safe keep/no-op, ordered download/verify/stage/
- * replace actions, rollback, or fail-closed rejection with diagnostics. The
+ * replace actions, rollback, or fail-closed rejection with issues. The
  * actions are planning records only and do not authorize Runtime mutation.
  */
 export interface PackageInstallPlanResponseV01 {
@@ -686,7 +686,7 @@ export interface PackageInstallPlanResponseV01 {
   target: PackageInstallPlanTargetV01;
   checks: PackageInstallPlanCheckV01[];
   actions: PackageInstallPlanActionV01[];
-  diagnostics: PackageInstallPlanDiagnosticV01[];
+  issues: PackageInstallPlanIssueV01[];
 }
 
 export interface AudioDeviceDescriptorV01 {
@@ -762,7 +762,7 @@ export interface AudioGraphPartitionV01 {
   nodeIds: string[];
 }
 
-export interface AudioClockBridgeDiagnosticV01 {
+export interface AudioClockBridgeIssueV01 {
   severity: "info" | "warning" | "error";
   code: string;
   message: string;
@@ -774,7 +774,7 @@ export interface AudioClockBridgePlanV01 {
   targetClockDomainId: string;
   method: AudioClockBridgeMethodV01;
   bridgeNodeId?: string;
-  diagnostics: AudioClockBridgeDiagnosticV01[];
+  issues: AudioClockBridgeIssueV01[];
 }
 
 export interface AudioResamplerPlanV01 {
@@ -813,7 +813,7 @@ export interface ConversionStepV01 {
   sanitize?: "nan-inf-to-finite";
 }
 
-export interface ConversionDiagnosticV01 {
+export interface ConversionIssueV01 {
   severity: "info" | "warning" | "error";
   code: string;
   message: string;
@@ -826,7 +826,7 @@ export interface ConversionPlanV01 {
   implicit: boolean;
   lossy: boolean;
   steps: ConversionStepV01[];
-  diagnostics: ConversionDiagnosticV01[];
+  issues: ConversionIssueV01[];
 }
 
 export interface PortV01 {
@@ -981,7 +981,7 @@ export interface ObjectImplementationRefV01 {
 
 export type ObjectResolutionStatusV01 = "resolved" | "unresolved" | "error";
 
-export type ObjectResolutionDiagnosticCodeV01 =
+export type ObjectResolutionIssueCodeV01 =
   | "resolution-unresolved"
   | "resolution-ambiguous"
   | "implementation-missing"
@@ -989,9 +989,9 @@ export type ObjectResolutionDiagnosticCodeV01 =
   | "implementation-lock-mismatch"
   | "interface-drift";
 
-export interface ObjectResolutionDiagnosticV01 {
+export interface ObjectResolutionIssueV01 {
   severity: "error" | "warning" | "info";
-  code: ObjectResolutionDiagnosticCodeV01;
+  code: ObjectResolutionIssueCodeV01;
   message: string;
   details?: JsonValueV01;
 }
@@ -1007,7 +1007,7 @@ export interface ObjectResolutionV01 {
   status: ObjectResolutionStatusV01;
   selectedSpec?: string;
   candidates?: ObjectResolutionCandidateV01[];
-  diagnostics?: ObjectResolutionDiagnosticV01[];
+  issues?: ObjectResolutionIssueV01[];
 }
 
 export interface GraphNodeV01 {
@@ -1082,7 +1082,7 @@ export interface GraphFragmentValidationOptionsV01 {
   outsideEndpointPolicy?: GraphFragmentOutsideEndpointPolicyV01;
 }
 
-export interface GraphFragmentDiagnosticV01 {
+export interface GraphFragmentIssueV01 {
   severity: "error" | "warning";
   code: string;
   message: string;
@@ -1092,7 +1092,7 @@ export interface GraphFragmentDiagnosticV01 {
 
 export interface GraphFragmentValidationResultV01 {
   ok: boolean;
-  diagnostics: GraphFragmentDiagnosticV01[];
+  issues: GraphFragmentIssueV01[];
   omittedEdgeIds: string[];
 }
 
@@ -1118,35 +1118,35 @@ export type PastePlacement =
   | { kind: "position"; x: number; y: number }
   | { kind: "anchor"; nodeId: string; offsetX?: number; offsetY?: number };
 
-export type InterfaceIncidentEdgePolicyV01 = "drop" | "preserve-diagnostic" | "reject";
+export type InterfaceIncidentEdgePolicyV01 = "drop" | "preserve-issue" | "reject";
 export type InterfaceRecoveryActionIdV01 = "drop-edge" | "reconnect" | "restore-port" | "replace-provider";
-export type InterfaceDiagnosticMissingEndpointV01 = "source-node" | "source-port" | "target-node" | "target-port";
-export type InterfaceDiagnosticCardinalityReasonV01 =
+export type InterfaceIssueMissingEndpointV01 = "source-node" | "source-port" | "target-node" | "target-port";
+export type InterfaceIssueCardinalityReasonV01 =
   | "fan-in"
   | "fan-out"
   | "merge-policy"
   | "min-connections"
   | "max-connections";
 
-export interface InterfaceDiagnosticCardinalityV01 {
-  reason: InterfaceDiagnosticCardinalityReasonV01;
+export interface InterfaceIssueCardinalityV01 {
+  reason: InterfaceIssueCardinalityReasonV01;
   policy?: string;
   limit?: number | null;
   actual?: number;
 }
 
-export interface InterfaceDiagnosticDetailV01 {
+export interface InterfaceIssueDetailV01 {
   edgeId: string;
   sourceNodeId: string;
   sourcePortId: string;
   targetNodeId: string;
   targetPortId: string;
-  missingEndpoint?: InterfaceDiagnosticMissingEndpointV01;
+  missingEndpoint?: InterfaceIssueMissingEndpointV01;
   expectedDirection?: PortDirection;
   actualDirection?: PortDirection;
   expectedType?: string;
   actualType?: string;
-  cardinality?: InterfaceDiagnosticCardinalityV01;
+  cardinality?: InterfaceIssueCardinalityV01;
   recoveryActions: InterfaceRecoveryActionIdV01[];
 }
 
@@ -1172,18 +1172,17 @@ export interface NodeCatalogDisplayV01 {
   helpId?: string | null;
 }
 
-export type NodeCatalogDiagnosticSeverityV01 = "info" | "warning" | "error";
+export type NodeCatalogIssueSeverityV01 = "info" | "warning" | "error";
 
-export type NodeCatalogDiagnosticTargetV01 =
+export type NodeCatalogIssueTargetV01 =
   | { kind: "catalog" }
-  | { kind: "entry"; catalogId: string }
-  | { kind: "diagnosticNodeDefinition"; diagnosticId: string };
+  | { kind: "entry"; catalogId: string };
 
-export interface NodeCatalogDiagnosticV01 {
-  severity: NodeCatalogDiagnosticSeverityV01;
+export interface NodeCatalogIssueV01 {
+  severity: NodeCatalogIssueSeverityV01;
   code: string;
   message: string;
-  target: NodeCatalogDiagnosticTargetV01;
+  target: NodeCatalogIssueTargetV01;
   details?: JsonValueV01;
 }
 
@@ -1196,13 +1195,7 @@ export interface NodeCatalogEntryV01 {
   definition: NodeDefinitionManifestV01;
   creatable: true;
   display: NodeCatalogDisplayV01;
-  diagnostics?: NodeCatalogDiagnosticV01[];
-}
-
-export interface NodeCatalogDiagnosticNodeDefinitionV01 {
-  diagnosticId: string;
-  reason: "unresolvedObject";
-  definition: NodeDefinitionManifestV01;
+  issues?: NodeCatalogIssueV01[];
 }
 
 export interface NodeCatalogSnapshotV01 {
@@ -1210,8 +1203,7 @@ export interface NodeCatalogSnapshotV01 {
   schemaVersion: "0.1.0";
   catalogRevision: PackageChecksumV01;
   entries: NodeCatalogEntryV01[];
-  diagnosticNodeDefinitions: NodeCatalogDiagnosticNodeDefinitionV01[];
-  diagnostics?: NodeCatalogDiagnosticV01[];
+  issues?: NodeCatalogIssueV01[];
 }
 
 export interface ProjectMetadataV01 {
@@ -1260,11 +1252,11 @@ export interface ProjectResourceLockEntryV01 {
 
 export type ProjectObjectBindingStatusV01 = "resolved" | "unresolved" | "error";
 
-export type ProjectObjectBindingDiagnosticCodeV01 = ObjectResolutionDiagnosticCodeV01;
+export type ProjectObjectBindingIssueCodeV01 = ObjectResolutionIssueCodeV01;
 
-export interface ProjectObjectBindingDiagnosticV01 {
-  severity: PackageDiagnosticSeverityV01;
-  code: ProjectObjectBindingDiagnosticCodeV01;
+export interface ProjectObjectBindingIssueV01 {
+  severity: PackageIssueSeverityV01;
+  code: ProjectObjectBindingIssueCodeV01;
   message: string;
   details?: JsonValueV01;
 }
@@ -1275,7 +1267,7 @@ export interface ProjectObjectBindingV01 {
   status: ProjectObjectBindingStatusV01;
   implementation?: ObjectImplementationRefV01;
   candidates?: ObjectResolutionCandidateV01[];
-  diagnostics?: ProjectObjectBindingDiagnosticV01[];
+  issues?: ProjectObjectBindingIssueV01[];
 }
 
 export interface PatchDefinitionV01 {
@@ -1332,7 +1324,7 @@ export interface RuntimeSessionLoadRequestV01 {
   precondition?: RuntimeSessionLoadPreconditionV01;
 }
 
-export interface GraphValidationDiagnosticV01 {
+export interface GraphValidationIssueV01 {
   severity: "error" | "warning";
   code: string;
   message: string;
@@ -1349,7 +1341,7 @@ export interface GraphCycleValidationV01 {
 
 export interface GraphValidationResultV01 {
   ok: boolean;
-  diagnostics: GraphValidationDiagnosticV01[];
+  issues: GraphValidationIssueV01[];
   cycles: GraphCycleValidationV01[];
 }
 
@@ -1418,15 +1410,15 @@ export interface ShaderInterfaceV01 {
   uniforms: ShaderUniformV01[];
 }
 
-export type ShaderDiagnosticSeverityV01 = "error" | "warning" | "info";
-export type ShaderDiagnosticPhaseV01 =
+export type ShaderIssueSeverityV01 = "error" | "warning" | "info";
+export type ShaderIssuePhaseV01 =
   | "interface-analysis"
   | "source-sync"
   | "wgsl-generation"
   | "wgsl-compile"
   | "render-pipeline"
   | "render-frame";
-export type ShaderDiagnosticSourceV01 = "user" | "generated" | "runtime";
+export type ShaderIssueSourceV01 = "user" | "generated" | "runtime";
 
 export interface ShaderSourceSpanV01 {
   line?: number;
@@ -1435,16 +1427,16 @@ export interface ShaderSourceSpanV01 {
   endColumn?: number;
 }
 
-export interface ShaderDiagnosticV01 extends ShaderSourceSpanV01 {
-  severity: ShaderDiagnosticSeverityV01;
-  phase: ShaderDiagnosticPhaseV01;
+export interface ShaderIssueV01 extends ShaderSourceSpanV01 {
+  severity: ShaderIssueSeverityV01;
+  phase: ShaderIssuePhaseV01;
   code: string;
   message: string;
   uniformId?: string;
-  source: ShaderDiagnosticSourceV01;
+  source: ShaderIssueSourceV01;
 }
 
-export type ShaderInterfaceDiagnosticV01 = ShaderDiagnosticV01;
+export type ShaderInterfaceIssueV01 = ShaderIssueV01;
 
 export interface GeneratedShaderSourceMapV01 {
   userSourceStartLine: number;
@@ -1454,7 +1446,7 @@ export interface GeneratedShaderSourceMapV01 {
 export interface ShaderInterfaceAnalysisV01 {
   ok: boolean;
   shaderInterface: ShaderInterfaceV01;
-  diagnostics: ShaderInterfaceDiagnosticV01[];
+  issues: ShaderInterfaceIssueV01[];
 }
 
 export type MessageAtomV01 =
@@ -1495,7 +1487,7 @@ export interface ObjectSpecPortV01 {
   description?: string;
 }
 
-export interface ObjectSpecDiagnosticV01 {
+export interface ObjectSpecIssueV01 {
   severity: "error" | "warning" | "info";
   code: string;
   message: string;
@@ -1513,7 +1505,7 @@ export interface ObjectSpecParseResultV01 {
   params: Record<string, unknown>;
   instancePorts: ObjectSpecPortV01[];
   displayText: string;
-  diagnostics: ObjectSpecDiagnosticV01[];
+  issues: ObjectSpecIssueV01[];
 }
 
 export type CompatibilityMatrixPackageEcosystemV01 = "npm" | "crates.io";

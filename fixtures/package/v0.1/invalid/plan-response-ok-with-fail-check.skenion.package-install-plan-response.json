@@ -18,7 +18,7 @@
     {
       "kind": "lock-state",
       "status": "fail",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-stale-installed-lock"
       ],
       "message": "Installed lock evidence is stale."
@@ -33,7 +33,7 @@
       "lockEntryId": "pkg-skenion-examples-0.45.0"
     }
   ],
-  "diagnostics": [
+  "issues": [
     {
       "id": "diag-stale-installed-lock",
       "severity": "error",

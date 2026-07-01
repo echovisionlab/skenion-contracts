@@ -8,7 +8,7 @@
     "schemaVersion",
     "ok",
     "listings",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -26,10 +26,10 @@
         "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json"
       }
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageListingDiagnostic"
+        "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/packageListingIssue"
       }
     }
   },

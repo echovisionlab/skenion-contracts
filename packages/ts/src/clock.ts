@@ -15,7 +15,7 @@ export interface MidiClockMessageV01 {
   receivedHostTimeNs?: number;
 }
 
-export interface MidiClockDiagnosticV01 {
+export interface MidiClockIssueV01 {
   severity: "warning" | "error";
   code: string;
   message: string;
@@ -41,7 +41,7 @@ export interface MidiClockSnapshotOptionsV01 {
 export interface MidiClockApplyResultV01 {
   snapshot: MidiClockSnapshotV01;
   clockState: ClockStateV01;
-  diagnostics: MidiClockDiagnosticV01[];
+  issues: MidiClockIssueV01[];
 }
 
 function isMidiDataByte(value: number | undefined): boolean {
@@ -126,12 +126,12 @@ export function applyMidiClockMessageV01(snapshot: MidiClockSnapshotV01, message
     lastUpdateHostTimeNs: message.receivedHostTimeNs ?? snapshot.lastUpdateHostTimeNs
   };
   const ticksPerSixteenth = next.ticksPerQuarter / 4;
-  const diagnostics: MidiClockDiagnosticV01[] = [];
+  const issues: MidiClockIssueV01[] = [];
 
   switch (message.kind) {
     case "tick":
       if (next.tickIndex >= Number.MAX_SAFE_INTEGER) {
-        diagnostics.push({
+        issues.push({
           severity: "warning",
           code: "midi-clock-tick-overflow",
           message: "MIDI Clock tickIndex reached JavaScript's safe integer limit"
@@ -154,7 +154,7 @@ export function applyMidiClockMessageV01(snapshot: MidiClockSnapshotV01, message
       break;
     case "song-position-pointer":
       if (!validSongPositionSixteenth(message.songPositionSixteenth)) {
-        diagnostics.push({
+        issues.push({
           severity: "error",
           code: "invalid-midi-song-position-pointer",
           message: "MIDI Song Position Pointer must be a 14-bit sixteenth-note position"
@@ -169,7 +169,7 @@ export function applyMidiClockMessageV01(snapshot: MidiClockSnapshotV01, message
   return {
     snapshot: next,
     clockState: midiClockSnapshotToClockStateV01(next),
-    diagnostics
+    issues
   };
 }
 

@@ -478,10 +478,10 @@
             "$ref": "#/$defs/objectResolutionCandidate"
           }
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/objectBindingDiagnostic"
+            "$ref": "#/$defs/objectBindingIssue"
           },
           "default": []
         }
@@ -525,12 +525,12 @@
             "required": ["status"]
           },
           "then": {
-            "required": ["implementation", "diagnostics"],
+            "required": ["implementation", "issues"],
             "properties": {
-              "diagnostics": {
+              "issues": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/objectBindingDiagnostic"
+                  "$ref": "#/$defs/objectBindingIssue"
                 },
                 "minItems": 1,
                 "contains": {
@@ -554,7 +554,7 @@
       ],
       "additionalProperties": false
     },
-    "objectBindingDiagnostic": {
+    "objectBindingIssue": {
       "type": "object",
       "required": ["severity", "code", "message"],
       "properties": {
@@ -576,7 +576,7 @@
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false

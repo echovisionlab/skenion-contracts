@@ -55,7 +55,7 @@
     "stargazerCount": 42,
     "rankingScore": 0.71
   },
-  "diagnostics": [
+  "issues": [
     {
       "severity": "error",
       "code": "missing-artifact",

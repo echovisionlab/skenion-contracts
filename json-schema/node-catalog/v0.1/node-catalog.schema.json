@@ -7,8 +7,7 @@
     "schema",
     "schemaVersion",
     "catalogRevision",
-    "entries",
-    "diagnosticNodeDefinitions"
+    "entries"
   ],
   "properties": {
     "schema": {
@@ -26,16 +25,10 @@
         "$ref": "#/$defs/entry"
       }
     },
-    "diagnosticNodeDefinitions": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/diagnosticNodeDefinition"
-      }
-    },
-    "diagnostics": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/diagnostic"
+        "$ref": "#/$defs/issue"
       }
     }
   },
@@ -142,7 +135,7 @@
         }
       ]
     },
-    "diagnosticTarget": {
+    "issueTarget": {
       "oneOf": [
         {
           "type": "object",
@@ -167,24 +160,10 @@
             }
           },
           "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["kind", "diagnosticId"],
-          "properties": {
-            "kind": {
-              "const": "diagnosticNodeDefinition"
-            },
-            "diagnosticId": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "additionalProperties": false
         }
       ]
     },
-    "diagnostic": {
+    "issue": {
       "type": "object",
       "required": ["severity", "code", "message", "target"],
       "properties": {
@@ -200,7 +179,7 @@
           "minLength": 1
         },
         "target": {
-          "$ref": "#/$defs/diagnosticTarget"
+          "$ref": "#/$defs/issueTarget"
         },
         "details": true
       },
@@ -250,28 +229,11 @@
         "display": {
           "$ref": "#/$defs/display"
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/diagnostic"
+            "$ref": "#/$defs/issue"
           }
-        }
-      },
-      "additionalProperties": false
-    },
-    "diagnosticNodeDefinition": {
-      "type": "object",
-      "required": ["diagnosticId", "reason", "definition"],
-      "properties": {
-        "diagnosticId": {
-          "type": "string",
-          "minLength": 1
-        },
-        "reason": {
-          "const": "unresolvedObject"
-        },
-        "definition": {
-          "$ref": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json"
         }
       },
       "additionalProperties": false

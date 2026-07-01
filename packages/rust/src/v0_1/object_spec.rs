@@ -87,7 +87,7 @@ pub struct ObjectSpecPortV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ObjectSpecDiagnosticSeverityV01 {
+pub enum ObjectSpecIssueSeverityV01 {
     Error,
     Warning,
     Info,
@@ -95,8 +95,8 @@ pub enum ObjectSpecDiagnosticSeverityV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct ObjectSpecDiagnosticV01 {
-    pub severity: ObjectSpecDiagnosticSeverityV01,
+pub struct ObjectSpecIssueV01 {
+    pub severity: ObjectSpecIssueSeverityV01,
     pub code: String,
     pub message: String,
 }
@@ -118,7 +118,7 @@ pub struct ObjectSpecParseResultV01 {
     pub params: Map<String, Value>,
     pub instance_ports: Vec<ObjectSpecPortV01>,
     pub display_text: String,
-    pub diagnostics: Vec<ObjectSpecDiagnosticV01>,
+    pub issues: Vec<ObjectSpecIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -247,18 +247,17 @@ fn object_spec_parse_result_semantic_errors(result: &ObjectSpecParseResultV01) -
                     errors
                         .push("error object spec parse result requires implementation".to_owned());
                 }
-                if !resolution.diagnostics.iter().any(|diagnostic| {
+                if !resolution.issues.iter().any(|issue| {
                     matches!(
-                        diagnostic.code,
-                        super::types::ObjectResolutionDiagnosticCodeV01::ImplementationMissing
-                            | super::types::ObjectResolutionDiagnosticCodeV01::ImplementationStale
-                            | super::types::ObjectResolutionDiagnosticCodeV01::ImplementationLockMismatch
-                            | super::types::ObjectResolutionDiagnosticCodeV01::InterfaceDrift
+                        issue.code,
+                        super::types::ObjectResolutionIssueCodeV01::ImplementationMissing
+                            | super::types::ObjectResolutionIssueCodeV01::ImplementationStale
+                            | super::types::ObjectResolutionIssueCodeV01::ImplementationLockMismatch
+                            | super::types::ObjectResolutionIssueCodeV01::InterfaceDrift
                     )
                 }) {
                     errors.push(
-                        "error object spec parse result requires implementation diagnostic"
-                            .to_owned(),
+                        "error object spec parse result requires implementation issue".to_owned(),
                     );
                 }
             }
@@ -273,9 +272,9 @@ fn object_spec_parse_result_semantic_errors(result: &ObjectSpecParseResultV01) -
     errors
 }
 
-fn diagnostic(code: &str, message: impl Into<String>) -> ObjectSpecDiagnosticV01 {
-    ObjectSpecDiagnosticV01 {
-        severity: ObjectSpecDiagnosticSeverityV01::Error,
+fn issue(code: &str, message: impl Into<String>) -> ObjectSpecIssueV01 {
+    ObjectSpecIssueV01 {
+        severity: ObjectSpecIssueSeverityV01::Error,
         code: code.to_owned(),
         message: message.into(),
     }
@@ -299,7 +298,7 @@ fn success(
         params: Map::new(),
         instance_ports: Vec::new(),
         display_text: display_text.to_owned(),
-        diagnostics: Vec::new(),
+        issues: Vec::new(),
     }
 }
 
@@ -323,7 +322,7 @@ fn failure(
         params: Map::new(),
         instance_ports: Vec::new(),
         display_text: display_text.to_owned(),
-        diagnostics: vec![diagnostic(code, message)],
+        issues: vec![issue(code, message)],
     }
 }
 
@@ -424,7 +423,7 @@ mod tests {
     use serde_json::json;
 
     fn code(input: &str) -> String {
-        parse_object_spec_v01(input).diagnostics[0].code.clone()
+        parse_object_spec_v01(input).issues[0].code.clone()
     }
 
     #[test]
@@ -467,12 +466,12 @@ mod tests {
     }
 
     #[test]
-    fn leaves_runtime_resolution_diagnostics_to_runtime() {
+    fn leaves_runtime_resolution_issues_to_runtime() {
         for input in ["sin~", "square~", "expr $f1", "frobnicate", "adc~ 1"] {
             let result = parse_object_spec_v01(input);
             assert!(result.ok, "{input} should be a lexical parse");
             assert!(
-                result.diagnostics.is_empty(),
+                result.issues.is_empty(),
                 "{input} should not resolve in Contracts"
             );
             assert_eq!(result.implementation, None);
@@ -547,9 +546,9 @@ mod tests {
         );
 
         let severities = [
-            ObjectSpecDiagnosticSeverityV01::Error,
-            ObjectSpecDiagnosticSeverityV01::Warning,
-            ObjectSpecDiagnosticSeverityV01::Info,
+            ObjectSpecIssueSeverityV01::Error,
+            ObjectSpecIssueSeverityV01::Warning,
+            ObjectSpecIssueSeverityV01::Info,
         ];
         assert_eq!(
             serde_json::to_value(severities).unwrap(),

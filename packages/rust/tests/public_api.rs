@@ -5,16 +5,14 @@ use skenion_contracts::{
     DataFlowV01, DataTypeV01, EndpointBindingValueFormatV01, ExtensionKindV01,
     ExtensionManifestV01, GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01,
     GraphFragmentV01, GraphTargetRef, MidiClockMessageKindV01, MidiClockMessageV01,
-    MidiClockSnapshotV01, NodeCatalogDiagnosticNodeDefinitionReasonV01,
-    NodeCatalogDiagnosticNodeDefinitionV01, NodeCatalogDiagnosticSeverityV01,
-    NodeCatalogDiagnosticTargetV01, NodeCatalogDiagnosticV01, NodeCatalogDisplayPaletteV01,
-    NodeCatalogDisplayV01, NodeCatalogEntryV01, NodeCatalogSnapshotV01, NodeDefinitionManifestV01,
-    NumberRangeV01, ObjectProviderRefV01, ObjectSpecAtomV01, ObjectSpecParseResultV01,
-    PackageCategoryV01, PackageDiscoveryResponseV01, PackageInstallPlanActionKindV01,
-    PackageInstallPlanCheckStatusV01, PackageInstallPlanDiagnosticCodeV01,
-    PackageInstallPlanIntentV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
+    MidiClockSnapshotV01, NodeCatalogDisplayPaletteV01, NodeCatalogDisplayV01, NodeCatalogEntryV01,
+    NodeCatalogIssueSeverityV01, NodeCatalogIssueTargetV01, NodeCatalogIssueV01,
+    NodeCatalogSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01, ObjectProviderRefV01,
+    ObjectSpecAtomV01, ObjectSpecParseResultV01, PackageCategoryV01, PackageDiscoveryResponseV01,
+    PackageInstallPlanActionKindV01, PackageInstallPlanCheckStatusV01, PackageInstallPlanIntentV01,
+    PackageInstallPlanIssueCodeV01, PackageInstallPlanRequestV01, PackageInstallPlanResponseV01,
     PackageInstallPlanTargetArchV01, PackageInstallPlanTargetOsV01, PackageListingArtifactKindV01,
-    PackageListingDiagnosticCodeV01, PackageListingObjectExportSummaryV01,
+    PackageListingIssueCodeV01, PackageListingObjectExportSummaryV01,
     PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
     PackageObjectExportV01, PackageRootDocumentV01, PackageTargetTripleV01,
     PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortSpecV01, ProjectDocumentV01,
@@ -722,10 +720,7 @@ fn validates_public_package_manifest_contract_surface() {
     assert!(patch_package.native_artifacts.is_empty());
     assert_eq!(patch_package.provides.patches[0].id, "example.oscillator");
     assert_eq!(
-        patch_package.diagnostics[0]
-            .details
-            .as_ref()
-            .expect("details")["fileName"],
+        patch_package.issues[0].details.as_ref().expect("details")["fileName"],
         SKENION_PACKAGE_MANIFEST_FILE_NAME
     );
 
@@ -927,16 +922,16 @@ fn validates_public_package_manifest_contract_surface() {
         "example.sensor-calibration-json"
     );
     assert_eq!(
-        discovery.listings[1].diagnostics[0].code,
-        PackageListingDiagnosticCodeV01::UnavailableTarget
+        discovery.listings[1].issues[0].code,
+        PackageListingIssueCodeV01::UnavailableTarget
     );
     assert_eq!(
-        discovery.diagnostics[0].code,
-        PackageListingDiagnosticCodeV01::HiddenPackage
+        discovery.issues[0].code,
+        PackageListingIssueCodeV01::HiddenPackage
     );
     assert_eq!(
-        discovery.diagnostics[1].code,
-        PackageListingDiagnosticCodeV01::QuarantinedPackage
+        discovery.issues[1].code,
+        PackageListingIssueCodeV01::QuarantinedPackage
     );
 
     let mut listing_missing_evidence = listing.clone();
@@ -1449,8 +1444,8 @@ fn validates_public_package_install_plan_contract_surface() {
         .expect("reject response should validate");
     assert!(!reject_response.ok);
     assert_eq!(
-        reject_response.diagnostics[0].code,
-        PackageInstallPlanDiagnosticCodeV01::UnsupportedTarget
+        reject_response.issues[0].code,
+        PackageInstallPlanIssueCodeV01::UnsupportedTarget
     );
 
     let unordered_actions: PackageInstallPlanResponseV01 = serde_json::from_str(include_str!(
@@ -1471,11 +1466,11 @@ fn validates_public_package_install_plan_contract_surface() {
     .expect("reject without error should parse before semantic validation");
     let reject_without_error_report =
         validate_package_install_plan_response_v01(&reject_without_error)
-            .expect_err("failed plan without error diagnostic should fail");
+            .expect_err("failed plan without error issue should fail");
     assert!(
         reject_without_error_report
             .to_string()
-            .contains("requires an error diagnostic")
+            .contains("requires an error issue")
     );
 
     let mut response_target_mismatch = keep_response.clone();
@@ -1758,45 +1753,44 @@ fn validates_public_package_install_plan_contract_surface() {
         .actions
         .push(duplicate_response_ids.actions[0].clone());
     duplicate_response_ids
-        .diagnostics
-        .push(duplicate_response_ids.diagnostics[0].clone());
+        .issues
+        .push(duplicate_response_ids.issues[0].clone());
     let duplicate_response_ids_report =
         validate_package_install_plan_response_v01(&duplicate_response_ids)
             .expect_err("duplicate response ids should fail");
     let duplicate_response_ids_text = duplicate_response_ids_report.to_string();
     assert!(duplicate_response_ids_text.contains("duplicate package install plan action id"));
-    assert!(duplicate_response_ids_text.contains("duplicate package install plan diagnostic id"));
+    assert!(duplicate_response_ids_text.contains("duplicate package install plan issue id"));
 
-    let mut malformed_diagnostic = reject_response.clone();
-    malformed_diagnostic.diagnostics[0].id.clear();
-    malformed_diagnostic.diagnostics[0].message.clear();
-    let malformed_diagnostic_report =
-        validate_package_install_plan_response_v01(&malformed_diagnostic)
-            .expect_err("malformed diagnostic should fail");
-    let malformed_diagnostic_text = malformed_diagnostic_report.to_string();
-    assert!(malformed_diagnostic_text.contains("diagnostic id"));
-    assert!(malformed_diagnostic_text.contains("message must not be empty"));
+    let mut malformed_issue = reject_response.clone();
+    malformed_issue.issues[0].id.clear();
+    malformed_issue.issues[0].message.clear();
+    let malformed_issue_report = validate_package_install_plan_response_v01(&malformed_issue)
+        .expect_err("malformed issue should fail");
+    let malformed_issue_text = malformed_issue_report.to_string();
+    assert!(malformed_issue_text.contains("issue id"));
+    assert!(malformed_issue_text.contains("message must not be empty"));
 
     let mut failing_check_without_ref = reject_response.clone();
-    failing_check_without_ref.checks[0].diagnostic_refs.clear();
+    failing_check_without_ref.checks[0].issue_refs.clear();
     let failing_check_without_ref_report =
         validate_package_install_plan_response_v01(&failing_check_without_ref)
-            .expect_err("failing check without diagnostic ref should fail");
+            .expect_err("failing check without issue ref should fail");
     assert!(
         failing_check_without_ref_report
             .to_string()
             .contains("failing check")
     );
 
-    let mut missing_check_diagnostic = reject_response.clone();
-    missing_check_diagnostic.checks[0].diagnostic_refs = vec!["missing-diagnostic".to_owned()];
-    let missing_check_diagnostic_report =
-        validate_package_install_plan_response_v01(&missing_check_diagnostic)
-            .expect_err("missing check diagnostic ref should fail");
+    let mut missing_check_issue = reject_response.clone();
+    missing_check_issue.checks[0].issue_refs = vec!["missing-issue".to_owned()];
+    let missing_check_issue_report =
+        validate_package_install_plan_response_v01(&missing_check_issue)
+            .expect_err("missing check issue ref should fail");
     assert!(
-        missing_check_diagnostic_report
+        missing_check_issue_report
             .to_string()
-            .contains("references missing diagnostic")
+            .contains("references missing issue")
     );
 
     let mut malformed_download_action = update_response.clone();
@@ -1890,44 +1884,41 @@ fn validates_public_package_install_plan_contract_surface() {
             .contains("rollback action")
     );
 
-    let mut missing_reject_diagnostics = reject_response.clone();
-    missing_reject_diagnostics.actions[0]
-        .diagnostic_refs
-        .clear();
-    let missing_reject_diagnostics_report =
-        validate_package_install_plan_response_v01(&missing_reject_diagnostics)
-            .expect_err("reject action missing diagnostic refs should fail");
+    let mut missing_reject_issues = reject_response.clone();
+    missing_reject_issues.actions[0].issue_refs.clear();
+    let missing_reject_issues_report =
+        validate_package_install_plan_response_v01(&missing_reject_issues)
+            .expect_err("reject action missing issue refs should fail");
     assert!(
-        missing_reject_diagnostics_report
+        missing_reject_issues_report
             .to_string()
             .contains("reject action")
     );
 
-    let mut missing_action_diagnostic = reject_response.clone();
-    missing_action_diagnostic.actions[0].diagnostic_refs = vec!["missing-diagnostic".to_owned()];
-    let missing_action_diagnostic_report =
-        validate_package_install_plan_response_v01(&missing_action_diagnostic)
-            .expect_err("action missing diagnostic ref should fail");
+    let mut missing_action_issue = reject_response.clone();
+    missing_action_issue.actions[0].issue_refs = vec!["missing-issue".to_owned()];
+    let missing_action_issue_report =
+        validate_package_install_plan_response_v01(&missing_action_issue)
+            .expect_err("action missing issue ref should fail");
     assert!(
-        missing_action_diagnostic_report
+        missing_action_issue_report
             .to_string()
-            .contains("action reject-native-sensor-windows-arm64 references missing diagnostic")
+            .contains("action reject-native-sensor-windows-arm64 references missing issue")
     );
 
     let mut malformed_capability_change = update_response.clone();
     malformed_capability_change.actions[5].capability_changes[0]
         .id
         .clear();
-    malformed_capability_change.actions[5].capability_changes[0].diagnostic_ref =
-        Some("missing-diagnostic".to_owned());
+    malformed_capability_change.actions[5].capability_changes[0].issue_ref =
+        Some("missing-issue".to_owned());
     let malformed_capability_change_report =
         validate_package_install_plan_response_v01(&malformed_capability_change)
             .expect_err("malformed capability change should fail");
     let malformed_capability_change_text = malformed_capability_change_report.to_string();
     assert!(malformed_capability_change_text.contains("capability change id"));
     assert!(
-        malformed_capability_change_text
-            .contains("capability change references missing diagnostic")
+        malformed_capability_change_text.contains("capability change references missing issue")
     );
 
     let mut failed_without_reject = reject_response.clone();
@@ -1977,7 +1968,7 @@ fn validates_public_object_spec_parse_results() {
             { "id": "out", "direction": "output", "type": "value.core.float64", "rate": "control" }
           ],
           "displayText": "example.gain 0.5",
-          "diagnostics": []
+          "issues": []
         }"#,
     )
     .expect("object spec result should parse");
@@ -2002,9 +1993,8 @@ fn validates_public_object_spec_parse_results() {
             .contains("requires implementation")
     );
 
-    let unsupported_resolution_diagnostic: Result<ObjectSpecParseResultV01, _> =
-        serde_json::from_str(
-            r#"{
+    let unsupported_resolution_issue: Result<ObjectSpecParseResultV01, _> = serde_json::from_str(
+        r#"{
               "schema": "skenion.object-spec.parse-result",
               "schemaVersion": "0.1.0",
               "input": "missing.object",
@@ -2018,23 +2008,23 @@ fn validates_public_object_spec_parse_results() {
               },
               "objectResolution": {
                 "status": "unresolved",
-                "diagnostics": [
+                "issues": [
                   {
                     "severity": "error",
                     "code": "binding-unresolved",
-                    "message": "unsupported diagnostic code must be rejected"
+                    "message": "unsupported issue code must be rejected"
                   }
                 ]
               },
               "params": {},
               "instancePorts": [],
               "displayText": "missing.object",
-              "diagnostics": []
+              "issues": []
             }"#,
-        );
+    );
     assert!(
-        unsupported_resolution_diagnostic
-            .expect_err("unsupported resolution diagnostic code should fail parsing")
+        unsupported_resolution_issue
+            .expect_err("unsupported resolution issue code should fail parsing")
             .to_string()
             .contains("binding-unresolved")
     );
@@ -2222,7 +2212,7 @@ fn valid_core_catalog_snapshot() -> NodeCatalogSnapshotV01 {
                     "description": "Core scalar node.",
                     "helpId": "object.core.float"
                 },
-                "diagnostics": [
+                "issues": [
                     {
                         "severity": "info",
                         "code": "catalog.note",
@@ -2245,19 +2235,12 @@ fn valid_core_catalog_snapshot() -> NodeCatalogSnapshotV01 {
                 }
             }
         ],
-        "diagnosticNodeDefinitions": [
-            {
-                "diagnosticId": "diag.unresolved",
-                "reason": "unresolvedObject",
-                "definition": minimal_node_definition_value("object.diagnostic.unresolved", "Unresolved Object")
-            }
-        ],
-        "diagnostics": [
+        "issues": [
             {
                 "severity": "warning",
                 "code": "catalog.generated",
-                "message": "Generated with non-fatal catalog diagnostics.",
-                "target": { "kind": "diagnosticNodeDefinition", "diagnosticId": "diag.unresolved" }
+                "message": "Generated with non-fatal catalog issues.",
+                "target": { "kind": "catalog" }
             }
         ]
     }))
@@ -2348,8 +2331,7 @@ fn valid_project_patch_catalog_snapshot() -> NodeCatalogSnapshotV01 {
                     "palette": "direct"
                 }
             }
-        ],
-        "diagnosticNodeDefinitions": []
+        ]
     }))
     .expect("project patch catalog should parse");
 
@@ -2372,25 +2354,18 @@ fn validates_public_node_catalog_contracts() {
     let _public_provider: ObjectProviderRefV01 =
         serde_json::from_value(serde_json::json!({ "kind": "core" }))
             .expect("provider should parse");
-    let _public_target: NodeCatalogDiagnosticTargetV01 =
+    let _public_target: NodeCatalogIssueTargetV01 =
         serde_json::from_value(serde_json::json!({ "kind": "entry", "catalogId": "core.float" }))
             .expect("target should parse");
-    let _public_severity = NodeCatalogDiagnosticSeverityV01::Warning;
-    let _public_diagnostic: NodeCatalogDiagnosticV01 = serde_json::from_value(serde_json::json!({
+    let _public_severity = NodeCatalogIssueSeverityV01::Warning;
+    let _public_issue: NodeCatalogIssueV01 = serde_json::from_value(serde_json::json!({
         "severity": "warning",
         "code": "catalog.generated",
         "message": "Generated.",
         "target": { "kind": "entry", "catalogId": "core.float" }
     }))
-    .expect("diagnostic should parse");
+    .expect("issue should parse");
     let _public_entry: NodeCatalogEntryV01 = valid_core_catalog_snapshot().entries[0].clone();
-    let _public_diagnostic_node_definition: NodeCatalogDiagnosticNodeDefinitionV01 =
-        valid_core_catalog_snapshot().diagnostic_node_definitions[0].clone();
-    let _public_reason = NodeCatalogDiagnosticNodeDefinitionReasonV01::UnresolvedObject;
-    assert_eq!(
-        serde_json::to_value(_public_reason).expect("reason should serialize"),
-        serde_json::json!("unresolvedObject")
-    );
 
     let core_catalog = valid_core_catalog_snapshot();
     let project_catalog = valid_project_patch_catalog_snapshot();
@@ -2421,8 +2396,7 @@ fn validates_public_node_catalog_contracts() {
                     "category": "Package"
                 }
             }
-        ],
-        "diagnosticNodeDefinitions": []
+        ]
     }))
     .expect("package catalog should parse");
     validate_node_catalog_snapshot_v01(&with_catalog_revision(package_catalog))
@@ -2438,11 +2412,11 @@ fn validates_public_node_catalog_contracts() {
     );
     assert_eq!(
         project_catalog.catalog_revision.value,
-        "e83bcb5043a0e2fde92bf4ba808726a89b5e5b72a66ade55bb9496a4aad4ebc8"
+        "341ecbe57d2adbbcde7dce728f48b604b480ca7f9415a05cdbcfd548525ec1b9"
     );
     assert_eq!(
         core_catalog.catalog_revision.value,
-        "7536ac0eb305d902c270630f356c1ec639923aaa3ff89512bfc5164eafef66b5"
+        "b9e8b86b2c27a93e3bee1572f22550684d105fad471e2f050cdbc73104f4aa07"
     );
 
     let mut changed_patch = valid_project_patch();
@@ -2476,36 +2450,33 @@ fn validates_public_node_catalog_contracts() {
     validate_node_catalog_snapshot_v01(&no_alias_entry)
         .expect("catalog entries without aliases should validate");
 
-    let mut catalog_scoped_diagnostic = core_catalog.clone();
-    catalog_scoped_diagnostic
-        .diagnostics
-        .as_mut()
-        .expect("diagnostics")[0]
-        .target = NodeCatalogDiagnosticTargetV01::Catalog;
-    validate_node_catalog_snapshot_v01(&catalog_scoped_diagnostic)
-        .expect("catalog-scoped diagnostics should validate");
+    let mut catalog_scoped_issue = core_catalog.clone();
+    catalog_scoped_issue.issues.as_mut().expect("issues")[0].target =
+        NodeCatalogIssueTargetV01::Catalog;
+    validate_node_catalog_snapshot_v01(&catalog_scoped_issue)
+        .expect("catalog-scoped issues should validate");
 
-    let mut revision_ignores_diagnostics = core_catalog.clone();
-    revision_ignores_diagnostics.diagnostics = Some(vec![
+    let mut revision_ignores_issues = core_catalog.clone();
+    revision_ignores_issues.issues = Some(vec![
         serde_json::from_value(serde_json::json!({
             "severity": "warning",
             "code": "catalog.changed",
             "message": "This warning is excluded from the revision preimage.",
             "target": { "kind": "catalog" }
         }))
-        .expect("diagnostic should parse"),
+        .expect("issue should parse"),
     ]);
-    revision_ignores_diagnostics.entries[0].diagnostics = Some(vec![
+    revision_ignores_issues.entries[0].issues = Some(vec![
         serde_json::from_value(serde_json::json!({
             "severity": "warning",
             "code": "entry.changed",
             "message": "This warning is also excluded from the revision preimage.",
             "target": { "kind": "entry", "catalogId": "core.float" }
         }))
-        .expect("diagnostic should parse"),
+        .expect("issue should parse"),
     ]);
     assert_eq!(
-        compute_node_catalog_revision_v01(&revision_ignores_diagnostics),
+        compute_node_catalog_revision_v01(&revision_ignores_issues),
         core_catalog.catalog_revision
     );
 }
@@ -2524,8 +2495,7 @@ fn reports_public_node_catalog_errors() {
     assert!(report.to_string().contains("duplicate catalogId"));
 
     let mut duplicate_definition = valid_core_catalog_snapshot();
-    duplicate_definition.diagnostic_node_definitions[0].definition =
-        duplicate_definition.entries[0].definition.clone();
+    duplicate_definition.entries[1].definition = duplicate_definition.entries[0].definition.clone();
     duplicate_definition = with_catalog_revision(duplicate_definition);
     let report = validate_node_catalog_snapshot_v01(&duplicate_definition)
         .expect_err("duplicate definition should fail");
@@ -2550,21 +2520,19 @@ fn reports_public_node_catalog_errors() {
     assert!(report.to_string().contains("aliases must be sorted"));
 
     let mut bad_target = valid_core_catalog_snapshot();
-    bad_target.diagnostics.as_mut().expect("diagnostics")[0].target =
-        NodeCatalogDiagnosticTargetV01::Entry {
-            catalog_id: "missing.entry".to_owned(),
-        };
+    bad_target.issues.as_mut().expect("issues")[0].target = NodeCatalogIssueTargetV01::Entry {
+        catalog_id: "missing.entry".to_owned(),
+    };
     bad_target = with_catalog_revision(bad_target);
     let report =
         validate_node_catalog_snapshot_v01(&bad_target).expect_err("bad target should fail");
     assert!(report.to_string().contains("missing entry catalogId"));
 
-    let mut error_diagnostic = valid_core_catalog_snapshot();
-    error_diagnostic.diagnostics.as_mut().expect("diagnostics")[0].severity =
-        NodeCatalogDiagnosticSeverityV01::Error;
-    error_diagnostic = with_catalog_revision(error_diagnostic);
-    let report = validate_node_catalog_snapshot_v01(&error_diagnostic)
-        .expect_err("error diagnostic should fail");
+    let mut error_issue = valid_core_catalog_snapshot();
+    error_issue.issues.as_mut().expect("issues")[0].severity = NodeCatalogIssueSeverityV01::Error;
+    error_issue = with_catalog_revision(error_issue);
+    let report =
+        validate_node_catalog_snapshot_v01(&error_issue).expect_err("error issue should fail");
     assert!(report.to_string().contains("must not use error severity"));
 
     let mut invalid_definition = valid_core_catalog_snapshot();
@@ -2620,21 +2588,6 @@ fn reports_public_node_catalog_errors() {
             .to_string()
             .contains("duplicate catalog entry core.message alias")
     );
-
-    let missing_diagnostic_definition_target =
-        NodeCatalogDiagnosticTargetV01::DiagnosticNodeDefinition {
-            diagnostic_id: "missing.diagnostic".to_owned(),
-        };
-    let mut missing_diagnostic_target = valid_core_catalog_snapshot();
-    missing_diagnostic_target
-        .diagnostics
-        .as_mut()
-        .expect("diagnostics")[0]
-        .target = missing_diagnostic_definition_target;
-    missing_diagnostic_target = with_catalog_revision(missing_diagnostic_target);
-    let report = validate_node_catalog_snapshot_v01(&missing_diagnostic_target)
-        .expect_err("missing diagnostic target should fail");
-    assert!(report.to_string().contains("missing diagnosticId"));
 
     let mut uppercase_checksum = valid_project_patch_catalog_snapshot();
     if let ObjectProviderRefV01::ProjectPatch {
@@ -2702,22 +2655,10 @@ fn reports_public_node_catalog_errors() {
             "unknown field",
         ),
         (
-            "diagnostic id",
+            "issue id",
             {
                 let mut value = removed_field_snapshot_value();
-                value["diagnostics"][0]["id"] = serde_json::json!("catalog.generated");
-                value
-            },
-            "unknown field",
-        ),
-        (
-            "diagnostic node display and target",
-            {
-                let mut value = removed_field_snapshot_value();
-                value["diagnosticNodeDefinitions"][0]["target"] =
-                    serde_json::json!({ "kind": "entry", "catalogId": "core.float" });
-                value["diagnosticNodeDefinitions"][0]["display"] =
-                    serde_json::json!({ "title": "Unresolved Object" });
+                value["issues"][0]["id"] = serde_json::json!("catalog.generated");
                 value
             },
             "unknown field",
@@ -2812,10 +2753,7 @@ fn parses_public_object_spec_lexical_matrix() {
         let result = parse_object_spec_v01(input);
         validate_object_spec_parse_result_v01(&result).expect("failure result should validate");
         assert!(!result.ok, "{input} should fail without throwing");
-        assert!(
-            !result.diagnostics.is_empty(),
-            "{input} should include diagnostics"
-        );
+        assert!(!result.issues.is_empty(), "{input} should include issues");
     }
 }
 
@@ -2854,7 +2792,7 @@ fn plans_public_audio_clock_bridge_requirements() {
     assert!(invalid.required);
     assert_eq!(invalid.method, AudioClockBridgeMethodV01::Invalid);
     assert_eq!(
-        invalid.diagnostics[0].code,
+        invalid.issues[0].code,
         "audio-clock-domain-crossing-requires-bridge"
     );
 
@@ -2902,7 +2840,7 @@ fn parses_public_midi_clock_messages_into_clock_state() {
         received_host_time_ns: Some(100),
     };
     let mut result = apply_midi_clock_message_v01(&snapshot, &start);
-    assert!(result.diagnostics.is_empty());
+    assert!(result.issues.is_empty());
     assert!(result.snapshot.running);
     assert_eq!(
         result
@@ -2936,7 +2874,7 @@ fn parses_public_midi_clock_messages_into_clock_state() {
         received_host_time_ns: None,
     };
     result = apply_midi_clock_message_v01(&result.snapshot, &tick);
-    assert!(result.diagnostics.is_empty());
+    assert!(result.issues.is_empty());
     assert_eq!(result.snapshot.tick_index, 1);
     assert_eq!(
         result
@@ -2953,7 +2891,7 @@ fn parses_public_midi_clock_messages_into_clock_state() {
         received_host_time_ns: None,
     };
     result = apply_midi_clock_message_v01(&result.snapshot, &spp);
-    assert!(result.diagnostics.is_empty());
+    assert!(result.issues.is_empty());
     assert_eq!(result.snapshot.tick_index, 96);
     assert_eq!(
         result
@@ -3029,10 +2967,7 @@ fn parses_public_midi_clock_messages_into_clock_state() {
         received_host_time_ns: None,
     };
     let result = apply_midi_clock_message_v01(&MidiClockSnapshotV01::new("midi-d"), &invalid_spp);
-    assert_eq!(
-        result.diagnostics[0].code,
-        "invalid-midi-song-position-pointer"
-    );
+    assert_eq!(result.issues[0].code, "invalid-midi-song-position-pointer");
     assert_eq!(result.snapshot.tick_index, 0);
 
     let missing_spp = MidiClockMessageV01 {
@@ -3041,15 +2976,12 @@ fn parses_public_midi_clock_messages_into_clock_state() {
         received_host_time_ns: None,
     };
     let result = apply_midi_clock_message_v01(&MidiClockSnapshotV01::new("midi-e"), &missing_spp);
-    assert_eq!(
-        result.diagnostics[0].code,
-        "invalid-midi-song-position-pointer"
-    );
+    assert_eq!(result.issues[0].code, "invalid-midi-song-position-pointer");
 
     let mut saturated = MidiClockSnapshotV01::new("midi-f");
     saturated.tick_index = u64::MAX;
     let result = apply_midi_clock_message_v01(&saturated, &tick);
-    assert_eq!(result.diagnostics[0].code, "midi-clock-tick-overflow");
+    assert_eq!(result.issues[0].code, "midi-clock-tick-overflow");
 }
 
 #[test]

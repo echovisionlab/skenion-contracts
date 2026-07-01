@@ -56,7 +56,7 @@ through canonical port type strings such as `value.core.float64`,
 
 Current v0 graphs use `control` and `signal`. Older `value`, `constant`, and `sampled`
 flow names are not valid `0.1` contract values and must be rejected with
-diagnostics.
+issues.
 
 ## Core Port Type Strings
 

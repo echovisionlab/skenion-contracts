@@ -1,7 +1,7 @@
 {
   "schema": "skenion.package.install-plan.response",
   "schemaVersion": "0.1.0",
-  "requestId": "plan-removed-capability-missing-diagnostic-ref",
+  "requestId": "plan-removed-capability-missing-issue-ref",
   "ok": true,
   "packageId": "example/native-sensor",
   "selectedVersion": "0.45.1",
@@ -19,7 +19,7 @@
     {
       "kind": "capability-change",
       "status": "warning",
-      "diagnosticRefs": [
+      "issueRefs": [
         "diag-removed-capability"
       ],
       "message": "A capability would be removed by the update."
@@ -39,10 +39,10 @@
           "kind": "remove",
           "capabilityKind": "resource",
           "id": "example.sensor-calibration",
-          "diagnosticRef": "diag-removed-capability"
+          "issueRef": "diag-removed-capability"
         }
       ]
     }
   ],
-  "diagnostics": []
+  "issues": []
 }

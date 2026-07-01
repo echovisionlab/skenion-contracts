@@ -184,23 +184,25 @@ function validateProjectV01Semantics(file, project) {
   }
 
   for (const binding of project.objectBindings ?? []) {
-    const diagnostics = binding.diagnostics ?? [];
-    const hasDiagnostic = (...codes) => diagnostics.some((diagnostic) => codes.includes(diagnostic.code));
+    const issues = binding.issues ?? [];
+    const hasIssue = (...codes) => issues.some((issue) => codes.includes(issue.code));
 
     if (binding.status === "resolved" && binding.implementation === undefined) {
       fail(file, `resolved object binding ${binding.id} requires implementation`);
     }
-    if (binding.status === "missing" && !hasDiagnostic("implementation-missing")) {
-      fail(file, `missing object binding ${binding.id} requires implementation-missing diagnostic`);
+    if (binding.status === "unresolved" && binding.implementation !== undefined) {
+      fail(file, `unresolved object binding ${binding.id} must not include implementation`);
     }
-    if (binding.status === "stale" && !hasDiagnostic("implementation-stale", "interface-drift")) {
-      fail(file, `stale object binding ${binding.id} requires stale or interface-drift diagnostic`);
-    }
-    if (binding.status === "unresolved" && !hasDiagnostic("resolution-unresolved")) {
-      fail(file, `unresolved object binding ${binding.id} requires resolution-unresolved diagnostic`);
-    }
-    if (binding.status === "ambiguous" && !hasDiagnostic("resolution-ambiguous")) {
-      fail(file, `ambiguous object binding ${binding.id} requires resolution-ambiguous diagnostic`);
+    if (
+      binding.status === "error" &&
+      !hasIssue(
+        "implementation-missing",
+        "implementation-stale",
+        "implementation-lock-mismatch",
+        "interface-drift"
+      )
+    ) {
+      fail(file, `error object binding ${binding.id} requires implementation issue`);
     }
 
     const implementation = binding.implementation;
@@ -211,7 +213,7 @@ function validateProjectV01Semantics(file, project) {
         if (binding.status === "resolved") {
           fail(file, `resolved object binding ${binding.id} references missing project patch: ${target.patchId}`);
         }
-        if (binding.status !== "missing" && binding.status !== "stale") {
+        if (binding.status !== "error" || !hasIssue("implementation-missing")) {
           fail(file, `object binding ${binding.id} references missing project patch: ${target.patchId}`);
         }
         continue;
@@ -220,8 +222,8 @@ function validateProjectV01Semantics(file, project) {
         if (binding.status === "resolved") {
           fail(file, `resolved object binding ${binding.id} project patch ${target.patchId} revision is stale`);
         }
-        if (binding.status !== "stale" || !hasDiagnostic("implementation-stale", "interface-drift")) {
-          fail(file, `object binding ${binding.id} project patch ${target.patchId} revision is stale without diagnostics`);
+        if (binding.status !== "error" || !hasIssue("implementation-stale", "interface-drift")) {
+          fail(file, `object binding ${binding.id} project patch ${target.patchId} revision is stale without issues`);
         }
       }
       continue;
@@ -238,7 +240,7 @@ function validateProjectV01Semantics(file, project) {
       if (binding.status === "resolved") {
         fail(file, `resolved object binding ${binding.id} references missing lockEntryId: ${implementation.provider.lockEntryId}`);
       }
-      if (binding.status !== "missing" && binding.status !== "stale") {
+      if (binding.status !== "error" || !hasIssue("implementation-missing")) {
         fail(file, `object binding ${binding.id} references missing lockEntryId: ${implementation.provider.lockEntryId}`);
       }
       continue;
@@ -466,7 +468,7 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(file, document) {
 
   const checks = Array.isArray(document.checks) ? document.checks : [];
   const actions = Array.isArray(document.actions) ? document.actions : [];
-  const diagnostics = Array.isArray(document.diagnostics) ? document.diagnostics : [];
+  const issues = Array.isArray(document.issues) ? document.issues : [];
 
   for (const check of checks) {
     if (check === null || typeof check !== "object") {
@@ -474,9 +476,9 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(file, document) {
     }
     if (
       check.status === "fail" &&
-      (!Array.isArray(check.diagnosticRefs) || check.diagnosticRefs.length === 0)
+      (!Array.isArray(check.issueRefs) || check.issueRefs.length === 0)
     ) {
-      fail(file, `package install plan failing check ${check.kind} requires diagnosticRefs`);
+      fail(file, `package install plan failing check ${check.kind} requires issueRefs`);
     }
   }
 
@@ -486,9 +488,9 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(file, document) {
     }
     if (
       action.kind === "reject" &&
-      (!Array.isArray(action.diagnosticRefs) || action.diagnosticRefs.length === 0)
+      (!Array.isArray(action.issueRefs) || action.issueRefs.length === 0)
     ) {
-      fail(file, `package install plan reject action ${action.id} requires diagnosticRefs`);
+      fail(file, `package install plan reject action ${action.id} requires issueRefs`);
     }
   }
 
@@ -498,8 +500,8 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(file, document) {
   const hasRejectAction = actions.some((action) => {
     return action !== null && typeof action === "object" && action.kind === "reject";
   });
-  const hasErrorDiagnostic = diagnostics.some((diagnostic) => {
-    return diagnostic !== null && typeof diagnostic === "object" && diagnostic.severity === "error";
+  const hasErrorIssue = issues.some((issue) => {
+    return issue !== null && typeof issue === "object" && issue.severity === "error";
   });
 
   if (document.ok === true) {
@@ -515,8 +517,8 @@ function validatePackageInstallPlanResponsePreSchemaSemantics(file, document) {
     if (!hasRejectAction) {
       fail(file, "failed package install plan response requires a reject action");
     }
-    if (!hasErrorDiagnostic) {
-      fail(file, "failed package install plan response requires an error diagnostic");
+    if (!hasErrorIssue) {
+      fail(file, "failed package install plan response requires an error issue");
     }
   }
 }
@@ -584,20 +586,20 @@ function validatePackageInstallPlanResponseV01Semantics(file, response) {
   validatePackageInstallPlanTargetV01Semantics(file, response.target);
 
   duplicateCheck(file, response.actions.map((action) => action.id), "package install plan action id");
-  duplicateCheck(file, response.diagnostics.map((diagnostic) => diagnostic.id), "package install plan diagnostic id");
+  duplicateCheck(file, response.issues.map((issue) => issue.id), "package install plan issue id");
 
-  const diagnosticIds = new Set(response.diagnostics.map((diagnostic) => diagnostic.id));
+  const issueIds = new Set(response.issues.map((issue) => issue.id));
   let hasFailedCheck = false;
   for (const check of response.checks) {
     if (check.status === "fail") {
       hasFailedCheck = true;
-      if (!Array.isArray(check.diagnosticRefs) || check.diagnosticRefs.length === 0) {
-        fail(file, `package install plan failing check ${check.kind} requires diagnosticRefs`);
+      if (!Array.isArray(check.issueRefs) || check.issueRefs.length === 0) {
+        fail(file, `package install plan failing check ${check.kind} requires issueRefs`);
       }
     }
-    for (const diagnosticRef of check.diagnosticRefs ?? []) {
-      if (!diagnosticIds.has(diagnosticRef)) {
-        fail(file, `package install plan check ${check.kind} references missing diagnostic ${diagnosticRef}`);
+    for (const issueRef of check.issueRefs ?? []) {
+      if (!issueIds.has(issueRef)) {
+        fail(file, `package install plan check ${check.kind} references missing issue ${issueRef}`);
       }
     }
   }
@@ -607,21 +609,21 @@ function validatePackageInstallPlanResponseV01Semantics(file, response) {
       fail(file, `package install plan action ${action.id} order must be ${index}`);
     }
 
-    for (const diagnosticRef of action.diagnosticRefs ?? []) {
-      if (!diagnosticIds.has(diagnosticRef)) {
-        fail(file, `package install plan action ${action.id} references missing diagnostic ${diagnosticRef}`);
+    for (const issueRef of action.issueRefs ?? []) {
+      if (!issueIds.has(issueRef)) {
+        fail(file, `package install plan action ${action.id} references missing issue ${issueRef}`);
       }
     }
 
     for (const capabilityChange of action.capabilityChanges ?? []) {
-      if (capabilityChange.diagnosticRef !== undefined && !diagnosticIds.has(capabilityChange.diagnosticRef)) {
-        fail(file, `package install plan action ${action.id} capability change references missing diagnostic ${capabilityChange.diagnosticRef}`);
+      if (capabilityChange.issueRef !== undefined && !issueIds.has(capabilityChange.issueRef)) {
+        fail(file, `package install plan action ${action.id} capability change references missing issue ${capabilityChange.issueRef}`);
       }
     }
   }
 
   const hasRejectAction = response.actions.some((action) => action.kind === "reject");
-  const hasErrorDiagnostic = response.diagnostics.some((diagnostic) => diagnostic.severity === "error");
+  const hasErrorIssue = response.issues.some((issue) => issue.severity === "error");
   if (response.ok) {
     if (hasFailedCheck) {
       fail(file, "successful package install plan response must not include failed checks");
@@ -633,8 +635,8 @@ function validatePackageInstallPlanResponseV01Semantics(file, response) {
     if (!hasRejectAction) {
       fail(file, "failed package install plan response requires a reject action");
     }
-    if (!hasErrorDiagnostic) {
-      fail(file, "failed package install plan response requires an error diagnostic");
+    if (!hasErrorIssue) {
+      fail(file, "failed package install plan response requires an error issue");
     }
   }
 }

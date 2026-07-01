@@ -50,5 +50,5 @@ payloads from this package, but this package is not the Runtime HTTP/WebSocket
 transport registry.
 
 Unsupported graph, project, package, manifest, and protocol versions are
-rejected with structured diagnostics. Do not add import-only compatibility
+rejected with structured issues. Do not add import-only compatibility
 paths, migration fixtures, or deprecated aliases for old v0 shapes during v0.

@@ -36,7 +36,7 @@ pub struct ShaderInterfaceV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ShaderDiagnosticSeverityV01 {
+pub enum ShaderIssueSeverityV01 {
     Error,
     Warning,
     Info,
@@ -44,7 +44,7 @@ pub enum ShaderDiagnosticSeverityV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum ShaderDiagnosticPhaseV01 {
+pub enum ShaderIssuePhaseV01 {
     InterfaceAnalysis,
     SourceSync,
     WgslGeneration,
@@ -55,7 +55,7 @@ pub enum ShaderDiagnosticPhaseV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ShaderDiagnosticSourceV01 {
+pub enum ShaderIssueSourceV01 {
     User,
     Generated,
     Runtime,
@@ -63,9 +63,9 @@ pub enum ShaderDiagnosticSourceV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ShaderDiagnosticV01 {
-    pub severity: ShaderDiagnosticSeverityV01,
-    pub phase: ShaderDiagnosticPhaseV01,
+pub struct ShaderIssueV01 {
+    pub severity: ShaderIssueSeverityV01,
+    pub phase: ShaderIssuePhaseV01,
     pub code: String,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -78,11 +78,11 @@ pub struct ShaderDiagnosticV01 {
     pub end_column: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uniform_id: Option<String>,
-    pub source: ShaderDiagnosticSourceV01,
+    pub source: ShaderIssueSourceV01,
 }
 
-pub type ShaderInterfaceDiagnosticSeverityV01 = ShaderDiagnosticSeverityV01;
-pub type ShaderInterfaceDiagnosticV01 = ShaderDiagnosticV01;
+pub type ShaderInterfaceIssueSeverityV01 = ShaderIssueSeverityV01;
+pub type ShaderInterfaceIssueV01 = ShaderIssueV01;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -96,11 +96,11 @@ pub struct GeneratedShaderSourceMapV01 {
 pub struct ShaderInterfaceAnalysisV01 {
     pub ok: bool,
     pub shader_interface: ShaderInterfaceV01,
-    pub diagnostics: Vec<ShaderInterfaceDiagnosticV01>,
+    pub issues: Vec<ShaderInterfaceIssueV01>,
 }
 
 pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 {
-    let mut diagnostics = Vec::new();
+    let mut issues = Vec::new();
     let mut uniforms = Vec::new();
     let mut ids = std::collections::BTreeSet::new();
 
@@ -109,7 +109,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
             if line.trim_start().starts_with("//")
                 && let Some(column) = line.find("@skenion.uniform").map(|index| index + 1)
             {
-                diagnostics.push(diagnostic(
+                issues.push(issue(
                     "malformed-annotation",
                     "malformed @skenion.uniform annotation",
                     Some(line_index + 1),
@@ -124,7 +124,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
             .splitn(3, char::is_whitespace)
             .filter(|part| !part.is_empty());
         let Some(id) = parts.next() else {
-            diagnostics.push(diagnostic(
+            issues.push(issue(
                 "malformed-annotation",
                 "malformed @skenion.uniform annotation",
                 Some(line_number),
@@ -135,7 +135,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
         };
         let id_column = line.find(id).map(|index| index + 1);
         let Some(raw_type) = parts.next() else {
-            diagnostics.push(diagnostic(
+            issues.push(issue(
                 "missing-uniform-type",
                 format!("missing uniform type for {id}"),
                 Some(line_number),
@@ -147,7 +147,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
         let attributes = parse_attributes(parts.next().unwrap_or_default());
 
         if !valid_port_id(id) {
-            diagnostics.push(diagnostic(
+            issues.push(issue(
                 "invalid-uniform-id",
                 format!("invalid uniform id: {id}"),
                 Some(line_number),
@@ -157,7 +157,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
             continue;
         }
         if ["out", "in", "set", "bang", "value"].contains(&id) {
-            diagnostics.push(diagnostic(
+            issues.push(issue(
                 "reserved-uniform-id",
                 format!("reserved uniform id: {id}"),
                 Some(line_number),
@@ -167,7 +167,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
             continue;
         }
         if !ids.insert(id.to_owned()) {
-            diagnostics.push(diagnostic(
+            issues.push(issue(
                 "duplicate-uniform-id",
                 format!("duplicate uniform id: {id}"),
                 Some(line_number),
@@ -185,7 +185,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
                 | "value.core.bool"
                 | "value.core.color"
         ) {
-            diagnostics.push(diagnostic(
+            issues.push(issue(
                 "unsupported-uniform-type",
                 format!("unsupported uniform type: {raw_type}"),
                 Some(line_number),
@@ -195,7 +195,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
             continue;
         }
 
-        diagnostics.extend(range_diagnostics(&attributes, line, line_number, id));
+        issues.extend(range_issues(&attributes, line, line_number, id));
         let mut uniform = ShaderUniformV01 {
             id: id.to_owned(),
             label: attributes
@@ -208,7 +208,7 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
         if let Some(default) = attributes.get("default") {
             match parse_default(raw_type, default) {
                 Ok(value) => uniform.default = Some(value),
-                Err(message) => diagnostics.push(diagnostic(
+                Err(message) => issues.push(issue(
                     "invalid-default",
                     message,
                     Some(line_number),
@@ -221,16 +221,16 @@ pub fn analyze_shader_interface_v01(source: &str) -> ShaderInterfaceAnalysisV01 
     }
 
     ShaderInterfaceAnalysisV01 {
-        ok: diagnostics
+        ok: issues
             .iter()
-            .all(|diagnostic| diagnostic.severity != ShaderDiagnosticSeverityV01::Error),
+            .all(|issue| issue.severity != ShaderIssueSeverityV01::Error),
         shader_interface: ShaderInterfaceV01 {
             schema: "skenion.shader.interface".to_owned(),
             schema_version: "0.1.0".to_owned(),
             language: ShaderLanguageV01::Wgsl,
             uniforms,
         },
-        diagnostics,
+        issues,
     }
 }
 
@@ -386,13 +386,13 @@ fn number_attribute(
         .filter(|value| value.is_finite())
 }
 
-fn range_diagnostics(
+fn range_issues(
     attributes: &std::collections::BTreeMap<String, String>,
     line: &str,
     line_number: usize,
     uniform_id: &str,
-) -> Vec<ShaderInterfaceDiagnosticV01> {
-    let mut diagnostics = Vec::new();
+) -> Vec<ShaderInterfaceIssueV01> {
+    let mut issues = Vec::new();
     for key in ["min", "max"] {
         if let Some(raw_value) = attributes.get(key)
             && raw_value
@@ -400,7 +400,7 @@ fn range_diagnostics(
                 .ok()
                 .is_none_or(|value| !value.is_finite())
         {
-            diagnostics.push(diagnostic(
+            issues.push(issue(
                 "invalid-number-range",
                 format!("invalid {key} range value: {raw_value}"),
                 Some(line_number),
@@ -416,7 +416,7 @@ fn range_diagnostics(
             .ok()
             .is_none_or(|value| !value.is_finite() || value <= 0.0)
     {
-        diagnostics.push(diagnostic(
+        issues.push(issue(
             "invalid-number-range",
             format!("invalid step range value: {raw_value}"),
             Some(line_number),
@@ -424,7 +424,7 @@ fn range_diagnostics(
             Some(uniform_id),
         ));
     }
-    diagnostics
+    issues
 }
 
 fn attribute_column(line: &str, key: &str) -> Option<usize> {
@@ -497,16 +497,16 @@ fn default_label(id: &str) -> String {
     format!("{}{}", first.to_ascii_uppercase(), chars.as_str())
 }
 
-fn diagnostic(
+fn issue(
     code: &str,
     message: impl Into<String>,
     line: Option<usize>,
     column: Option<usize>,
     uniform_id: Option<&str>,
-) -> ShaderInterfaceDiagnosticV01 {
-    ShaderInterfaceDiagnosticV01 {
-        severity: ShaderDiagnosticSeverityV01::Error,
-        phase: ShaderDiagnosticPhaseV01::InterfaceAnalysis,
+) -> ShaderInterfaceIssueV01 {
+    ShaderInterfaceIssueV01 {
+        severity: ShaderIssueSeverityV01::Error,
+        phase: ShaderIssuePhaseV01::InterfaceAnalysis,
         code: code.to_owned(),
         message: message.into(),
         line,
@@ -514,7 +514,7 @@ fn diagnostic(
         end_line: None,
         end_column: None,
         uniform_id: uniform_id.map(ToOwned::to_owned),
-        source: ShaderDiagnosticSourceV01::User,
+        source: ShaderIssueSourceV01::User,
     }
 }
 
@@ -646,9 +646,9 @@ mod tests {
         assert!(!analysis.ok);
         assert_eq!(
             analysis
-                .diagnostics
+                .issues
                 .iter()
-                .map(|diagnostic| diagnostic.code.as_str())
+                .map(|issue| issue.code.as_str())
                 .collect::<Vec<_>>(),
             vec![
                 "malformed-annotation",
@@ -670,14 +670,11 @@ mod tests {
             ]
         );
         assert_eq!(
-            analysis.diagnostics[0].phase,
-            ShaderDiagnosticPhaseV01::InterfaceAnalysis
+            analysis.issues[0].phase,
+            ShaderIssuePhaseV01::InterfaceAnalysis
         );
-        assert_eq!(
-            analysis.diagnostics[0].source,
-            ShaderDiagnosticSourceV01::User
-        );
-        assert_eq!(analysis.diagnostics[0].line, Some(3));
-        assert!(analysis.diagnostics[0].column.is_some());
+        assert_eq!(analysis.issues[0].source, ShaderIssueSourceV01::User);
+        assert_eq!(analysis.issues[0].line, Some(3));
+        assert!(analysis.issues[0].column.is_some());
     }
 }

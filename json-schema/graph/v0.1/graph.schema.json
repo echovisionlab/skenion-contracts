@@ -118,7 +118,7 @@
       },
       "additionalProperties": false
     },
-    "objectResolutionDiagnostic": {
+    "objectResolutionIssue": {
       "type": "object",
       "required": ["severity", "code", "message"],
       "properties": {
@@ -182,10 +182,10 @@
             "$ref": "#/$defs/objectResolutionCandidate"
           }
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/objectResolutionDiagnostic"
+            "$ref": "#/$defs/objectResolutionIssue"
           }
         }
       },
@@ -309,12 +309,12 @@
             "properties": {
               "objectResolution": {
                 "type": "object",
-                "required": ["diagnostics"],
+                "required": ["issues"],
                 "properties": {
-                  "diagnostics": {
+                  "issues": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/$defs/objectResolutionDiagnostic"
+                      "$ref": "#/$defs/objectResolutionIssue"
                     },
                     "minItems": 1,
                     "contains": {

@@ -129,15 +129,15 @@ pub struct AudioGraphPartitionV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum AudioClockBridgeDiagnosticSeverityV01 {
+pub enum AudioClockBridgeIssueSeverityV01 {
     Info,
     Warning,
     Error,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct AudioClockBridgeDiagnosticV01 {
-    pub severity: AudioClockBridgeDiagnosticSeverityV01,
+pub struct AudioClockBridgeIssueV01 {
+    pub severity: AudioClockBridgeIssueSeverityV01,
     pub code: String,
     pub message: String,
 }
@@ -151,7 +151,7 @@ pub struct AudioClockBridgePlanV01 {
     pub method: AudioClockBridgeMethodV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bridge_node_id: Option<String>,
-    pub diagnostics: Vec<AudioClockBridgeDiagnosticV01>,
+    pub issues: Vec<AudioClockBridgeIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -175,7 +175,7 @@ pub fn plan_audio_clock_bridge_v01(
             target_clock_domain_id: target.id.clone(),
             method: AudioClockBridgeMethodV01::Direct,
             bridge_node_id: None,
-            diagnostics: Vec::new(),
+            issues: Vec::new(),
         };
     }
 
@@ -186,8 +186,8 @@ pub fn plan_audio_clock_bridge_v01(
             target_clock_domain_id: target.id.clone(),
             method: AudioClockBridgeMethodV01::ClockBridge,
             bridge_node_id: Some(node_id.to_owned()),
-            diagnostics: vec![AudioClockBridgeDiagnosticV01 {
-                severity: AudioClockBridgeDiagnosticSeverityV01::Info,
+            issues: vec![AudioClockBridgeIssueV01 {
+                severity: AudioClockBridgeIssueSeverityV01::Info,
                 code: "explicit-audio-clock-bridge".to_owned(),
                 message:
                     "audio signal crosses independent clock domains through an explicit bridge node"
@@ -202,8 +202,8 @@ pub fn plan_audio_clock_bridge_v01(
         target_clock_domain_id: target.id.clone(),
         method: AudioClockBridgeMethodV01::Invalid,
         bridge_node_id: None,
-        diagnostics: vec![AudioClockBridgeDiagnosticV01 {
-            severity: AudioClockBridgeDiagnosticSeverityV01::Error,
+        issues: vec![AudioClockBridgeIssueV01 {
+            severity: AudioClockBridgeIssueSeverityV01::Error,
             code: "audio-clock-domain-crossing-requires-bridge".to_owned(),
             message: "audio signal crosses independent clock domains without object.core.audio.clock-bridge or object.core.audio.resample".to_owned(),
         }],

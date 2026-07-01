@@ -68,7 +68,7 @@
       }
     }
   ],
-  "diagnostics": [
+  "issues": [
     {
       "severity": "info",
       "code": "package-manifest-read",

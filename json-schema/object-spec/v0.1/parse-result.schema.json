@@ -13,7 +13,7 @@
     "params",
     "instancePorts",
     "displayText",
-    "diagnostics"
+    "issues"
   ],
   "properties": {
     "schema": {
@@ -59,10 +59,10 @@
       "type": "string",
       "minLength": 1
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/diagnostic"
+        "$ref": "#/$defs/issue"
       }
     }
   },
@@ -127,12 +127,12 @@
         "properties": {
           "objectResolution": {
             "type": "object",
-            "required": ["diagnostics"],
+            "required": ["issues"],
             "properties": {
-              "diagnostics": {
+              "issues": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/objectResolutionDiagnostic"
+                  "$ref": "#/$defs/objectResolutionIssue"
                 },
                 "minItems": 1,
                 "contains": {
@@ -283,16 +283,16 @@
             "$ref": "#/$defs/objectResolutionCandidate"
           }
         },
-        "diagnostics": {
+        "issues": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/objectResolutionDiagnostic"
+            "$ref": "#/$defs/objectResolutionIssue"
           }
         }
       },
       "additionalProperties": false
     },
-    "objectResolutionDiagnostic": {
+    "objectResolutionIssue": {
       "type": "object",
       "required": ["severity", "code", "message"],
       "properties": {
@@ -432,7 +432,7 @@
       "minItems": 1,
       "uniqueItems": true
     },
-    "diagnostic": {
+    "issue": {
       "type": "object",
       "required": ["severity", "code", "message"],
       "properties": {

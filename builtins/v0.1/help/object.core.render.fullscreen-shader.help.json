@@ -12,7 +12,7 @@
     "wgsl",
     "gpu"
   ],
-  "runtimeBehavior": "Runtime builds a dynamic uniform layout from the synced input ports, generates WGSL support code, and falls back to clear rendering with structured diagnostics on compile failure.",
+  "runtimeBehavior": "Runtime builds a dynamic uniform layout from the synced input ports, generates WGSL support code, and falls back to clear rendering with structured issues on compile failure.",
   "relatedNodes": [
     "object.core.float",
     "object.core.color",

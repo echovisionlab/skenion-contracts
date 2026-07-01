@@ -41,5 +41,5 @@
       "reason": "Installed package already satisfies the desired range."
     }
   ],
-  "diagnostics": []
+  "issues": []
 }

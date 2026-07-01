@@ -38,7 +38,7 @@ import {
   projectPatchNodeDefinitionIdV01,
   representationForDataType,
   representationRegistryV01,
-  shaderDiagnosticV01Schema,
+  shaderIssueV01Schema,
   shaderInterfaceV01Schema,
   viewStateV01Schema,
   analyzeShaderInterfaceV01,
@@ -163,7 +163,7 @@ test("exports active schema contracts", () => {
   assert.equal(CONTRACTS_COMPATIBILITY_RANGE, deriveV0CompatibilityRange(CONTRACTS_PACKAGE_VERSION));
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(messageValueV01Schema.properties.key.type, "string");
-  assert.deepEqual(shaderDiagnosticV01Schema.properties.phase.enum, [
+  assert.deepEqual(shaderIssueV01Schema.properties.phase.enum, [
     "interface-analysis",
     "source-sync",
     "wgsl-generation",
@@ -348,7 +348,7 @@ function validCoreCatalogSnapshot() {
           description: "Core scalar node.",
           helpId: "object.core.float"
         },
-        diagnostics: [
+        issues: [
           {
             severity: "info",
             code: "catalog.note",
@@ -371,19 +371,12 @@ function validCoreCatalogSnapshot() {
         }
       }
     ],
-    diagnosticNodeDefinitions: [
-      {
-        diagnosticId: "diag.unresolved",
-        reason: "unresolvedObject",
-        definition: minimalNodeDefinition("object.diagnostic.unresolved", "Unresolved Object")
-      }
-    ],
-    diagnostics: [
+    issues: [
       {
         severity: "warning",
         code: "catalog.generated",
-        message: "Generated with non-fatal catalog diagnostics.",
-        target: { kind: "diagnosticNodeDefinition", diagnosticId: "diag.unresolved" }
+        message: "Generated with non-fatal catalog issues.",
+        target: { kind: "catalog" }
       }
     ]
   });
@@ -458,8 +451,7 @@ function validProjectPatchCatalogSnapshot() {
           palette: "direct"
         }
       }
-    ],
-    diagnosticNodeDefinitions: []
+    ]
   });
 }
 
@@ -478,11 +470,11 @@ test("validates node catalog snapshots and digest helpers", () => {
   );
   assert.equal(
     projectCatalog.catalogRevision.value,
-    "e83bcb5043a0e2fde92bf4ba808726a89b5e5b72a66ade55bb9496a4aad4ebc8"
+    "341ecbe57d2adbbcde7dce728f48b604b480ca7f9415a05cdbcfd548525ec1b9"
   );
   assert.equal(
     coreCatalog.catalogRevision.value,
-    "7536ac0eb305d902c270630f356c1ec639923aaa3ff89512bfc5164eafef66b5"
+    "b9e8b86b2c27a93e3bee1572f22550684d105fad471e2f050cdbc73104f4aa07"
   );
 
   const withDifferentPatchRevision = structuredClone(projectPatch);
@@ -523,8 +515,8 @@ test("validates node catalog snapshots and digest helpers", () => {
     /cannot encode symbol/
   );
 
-  const revisionIgnoresDiagnostics = structuredClone(coreCatalog);
-  revisionIgnoresDiagnostics.diagnostics = [
+  const revisionIgnoresIssues = structuredClone(coreCatalog);
+  revisionIgnoresIssues.issues = [
     {
       severity: "warning",
       code: "catalog.changed",
@@ -532,7 +524,7 @@ test("validates node catalog snapshots and digest helpers", () => {
       target: { kind: "catalog" }
     }
   ];
-  revisionIgnoresDiagnostics.entries[0].diagnostics = [
+  revisionIgnoresIssues.entries[0].issues = [
     {
       severity: "warning",
       code: "entry.changed",
@@ -541,7 +533,7 @@ test("validates node catalog snapshots and digest helpers", () => {
     }
   ];
   assert.deepEqual(
-    computeNodeCatalogRevisionV01(revisionIgnoresDiagnostics),
+    computeNodeCatalogRevisionV01(revisionIgnoresIssues),
     coreCatalog.catalogRevision
   );
 });
@@ -566,7 +558,7 @@ test("rejects invalid node catalog snapshots", () => {
     [
       "duplicate definition id version",
       (snapshot) => {
-        snapshot.diagnosticNodeDefinitions[0].definition = structuredClone(snapshot.entries[0].definition);
+        snapshot.entries[1].definition = structuredClone(snapshot.entries[0].definition);
       },
       /duplicate node definition id\/version/
     ],
@@ -599,16 +591,16 @@ test("rejects invalid node catalog snapshots", () => {
       /aliases must be sorted/
     ],
     [
-      "bad diagnostic target",
+      "bad issue target",
       (snapshot) => {
-        snapshot.diagnostics[0].target = { kind: "entry", catalogId: "missing.entry" };
+        snapshot.issues[0].target = { kind: "entry", catalogId: "missing.entry" };
       },
       /missing entry catalogId/
     ],
     [
-      "error diagnostic",
+      "error issue",
       (snapshot) => {
-        snapshot.diagnostics[0].severity = "error";
+        snapshot.issues[0].severity = "error";
       },
       /must not use error severity/
     ],
@@ -649,17 +641,9 @@ test("rejects invalid node catalog snapshots", () => {
       /must NOT have additional properties/
     ],
     [
-      "diagnostic id removed",
+      "issue id removed",
       (snapshot) => {
-        snapshot.diagnostics[0].id = "catalog.generated";
-      },
-      /must NOT have additional properties/
-    ],
-    [
-      "diagnostic node display and target removed",
-      (snapshot) => {
-        snapshot.diagnosticNodeDefinitions[0].target = { kind: "entry", catalogId: "core.float" };
-        snapshot.diagnosticNodeDefinitions[0].display = { title: "Unresolved Object" };
+        snapshot.issues[0].id = "catalog.generated";
       },
       /must NOT have additional properties/
     ],
@@ -701,12 +685,6 @@ test("rejects invalid node catalog snapshots", () => {
   assert.equal(revisionMismatchResult.ok, false);
   assert.match(revisionMismatchResult.errors.join("\n"), /catalogRevision mismatch/);
 
-  const diagnosticNodeDefinitionWithDiagnostics = structuredClone(validCoreCatalogSnapshot());
-  diagnosticNodeDefinitionWithDiagnostics.diagnosticNodeDefinitions[0].diagnostics = [];
-  const diagnosticNodeDefinitionResult = validateNodeCatalogSnapshotV01(diagnosticNodeDefinitionWithDiagnostics);
-  assert.equal(diagnosticNodeDefinitionResult.ok, false);
-  assert.match(diagnosticNodeDefinitionResult.errors.join("\n"), /must NOT have additional properties/);
-
   const badProjectPatchDefinitionId = structuredClone(validProjectPatchCatalogSnapshot());
   badProjectPatchDefinitionId.entries[0].definition.id = "object.project.patch.bad";
   withCatalogRevision(badProjectPatchDefinitionId);
@@ -746,38 +724,20 @@ test("rejects invalid node catalog snapshots", () => {
   assert.equal(duplicateImplementationResult.ok, false);
   assert.match(duplicateImplementationResult.errors.join("\n"), /duplicate catalog implementation/);
 
-  const catalogScopedDiagnostic = structuredClone(validCoreCatalogSnapshot());
-  catalogScopedDiagnostic.diagnostics[0].target = { kind: "catalog" };
-  const catalogScopedDiagnosticResult = validateNodeCatalogSnapshotV01(catalogScopedDiagnostic);
-  assert.equal(catalogScopedDiagnosticResult.ok, true);
+  const catalogScopedIssue = structuredClone(validCoreCatalogSnapshot());
+  catalogScopedIssue.issues[0].target = { kind: "catalog" };
+  const catalogScopedIssueResult = validateNodeCatalogSnapshotV01(catalogScopedIssue);
+  assert.equal(catalogScopedIssueResult.ok, true);
 
-  const missingDiagnosticTarget = structuredClone(validCoreCatalogSnapshot());
-  missingDiagnosticTarget.diagnostics[0].target = {
-    kind: "diagnosticNodeDefinition",
-    diagnosticId: "missing.diagnostic"
-  };
-  const missingDiagnosticTargetResult = validateNodeCatalogSnapshotV01(missingDiagnosticTarget);
-  assert.equal(missingDiagnosticTargetResult.ok, false);
-  assert.match(missingDiagnosticTargetResult.errors.join("\n"), /missing diagnosticId/);
-
-  const missingEntryDiagnosticTarget = structuredClone(validCoreCatalogSnapshot());
-  missingEntryDiagnosticTarget.entries[0].diagnostics[0].target = {
+  const missingEntryIssueTarget = structuredClone(validCoreCatalogSnapshot());
+  missingEntryIssueTarget.entries[0].issues[0].target = {
     kind: "entry",
     catalogId: "missing.entry"
   };
-  const missingEntryDiagnosticTargetResult = validateNodeCatalogSnapshotV01(missingEntryDiagnosticTarget);
-  assert.equal(missingEntryDiagnosticTargetResult.ok, false);
-  assert.match(missingEntryDiagnosticTargetResult.errors.join("\n"), /missing entry catalogId/);
+  const missingEntryIssueTargetResult = validateNodeCatalogSnapshotV01(missingEntryIssueTarget);
+  assert.equal(missingEntryIssueTargetResult.ok, false);
+  assert.match(missingEntryIssueTargetResult.errors.join("\n"), /missing entry catalogId/);
 
-  const badDiagnosticNodeDefinition = structuredClone(validCoreCatalogSnapshot());
-  badDiagnosticNodeDefinition.diagnosticNodeDefinitions[0].definition.ports = [
-    { id: "dup", direction: "input", type: "value.core.float64" },
-    { id: "dup", direction: "output", type: "value.core.float64" }
-  ];
-  withCatalogRevision(badDiagnosticNodeDefinition);
-  const badDiagnosticNodeDefinitionResult = validateNodeCatalogSnapshotV01(badDiagnosticNodeDefinition);
-  assert.equal(badDiagnosticNodeDefinitionResult.ok, false);
-  assert.match(badDiagnosticNodeDefinitionResult.errors.join("\n"), /diagnostic node definition .*duplicate port id/);
 });
 
 test("node definition schema validates message key policy shape", () => {
@@ -964,8 +924,8 @@ test("validates package manifests and package roots", async () => {
   assert.equal(patchPackage.provides.objects[0].objectId, "example.oscillator");
   assert.equal(patchPackage.provides.objects[0].primaryObjectSpec, "osc~ 440");
   assert.equal(patchPackage.provides.objects[0].definitionPath, "nodes/example.oscillator.node.json");
-  assert.equal(patchPackage.diagnostics[0].code, "package-manifest-read");
-  assert.equal(patchPackage.diagnostics[0].details.fileName, SKENION_PACKAGE_MANIFEST_FILE_NAME);
+  assert.equal(patchPackage.issues[0].code, "package-manifest-read");
+  assert.equal(patchPackage.issues[0].details.fileName, SKENION_PACKAGE_MANIFEST_FILE_NAME);
 
   const mixedPackage = await readJson("fixtures/package/v0.1/valid/mixed-native.skenion.package.json");
   const mixedPackageResult = validatePackageManifestV01(mixedPackage);
@@ -1107,9 +1067,9 @@ test("validates public package listing and discovery DTOs", async () => {
   assert.equal(discovery.listings[1].provides.objects[0].objectId, "example.sensor-native");
   assert.equal(discovery.listings[1].provides.objects[0].primaryObjectSpec, "sensor");
   assert.equal(discovery.listings[1].provides.codecs[0].id, "example.sensor-calibration-json");
-  assert.equal(discovery.listings[1].diagnostics[0].code, "unavailable-target");
-  assert.equal(discovery.diagnostics[0].code, "hidden-package");
-  assert.equal(discovery.diagnostics[1].code, "quarantined-package");
+  assert.equal(discovery.listings[1].issues[0].code, "unavailable-target");
+  assert.equal(discovery.issues[0].code, "hidden-package");
+  assert.equal(discovery.issues[1].code, "quarantined-package");
 
   const duplicateDiscovery = structuredClone(discovery);
   duplicateDiscovery.listings.push(structuredClone(discovery.listings[0]));
@@ -1371,7 +1331,7 @@ test("validates package install and update plan DTOs", async () => {
   assert.equal(validatePackageInstallPlanResponseV01(rejectResponse).ok, true);
   assert.equal(rejectResponse.ok, false);
   assert.equal(rejectResponse.actions[0].kind, "reject");
-  assert.equal(rejectResponse.diagnostics[0].code, "unsupported-target");
+  assert.equal(rejectResponse.issues[0].code, "unsupported-target");
 
   const unorderedActions = await readJson("fixtures/package/v0.1/invalid/plan-response-unordered-actions.skenion.package-install-plan-response.json");
   const unorderedActionsResult = validatePackageInstallPlanResponseV01(unorderedActions);
@@ -1381,7 +1341,7 @@ test("validates package install and update plan DTOs", async () => {
   const rejectWithoutError = await readJson("fixtures/package/v0.1/invalid/plan-response-reject-without-error.skenion.package-install-plan-response.json");
   const rejectWithoutErrorResult = validatePackageInstallPlanResponseV01(rejectWithoutError);
   assert.equal(rejectWithoutErrorResult.ok, false);
-  assert.match(rejectWithoutErrorResult.errors.join("\n"), /requires an error diagnostic/);
+  assert.match(rejectWithoutErrorResult.errors.join("\n"), /requires an error issue/);
 
   const responseTargetMismatch = structuredClone(keepResponse);
   responseTargetMismatch.target.os = "linux";
@@ -1402,22 +1362,22 @@ test("validates package install and update plan DTOs", async () => {
   assert.equal(failedResponseWithoutRejectResult.ok, false);
   assert.match(failedResponseWithoutRejectResult.errors.join("\n"), /requires a reject action/);
 
-  const failedCheckWithEmptyDiagnosticRefs = structuredClone(rejectResponse);
-  failedCheckWithEmptyDiagnosticRefs.checks[0].diagnosticRefs = [];
-  const failedCheckWithEmptyDiagnosticRefsResult = validatePackageInstallPlanResponseV01(failedCheckWithEmptyDiagnosticRefs);
-  assert.equal(failedCheckWithEmptyDiagnosticRefsResult.ok, false);
-  assert.match(failedCheckWithEmptyDiagnosticRefsResult.errors.join("\n"), /failing check .* requires diagnosticRefs/);
+  const failedCheckWithEmptyIssueRefs = structuredClone(rejectResponse);
+  failedCheckWithEmptyIssueRefs.checks[0].issueRefs = [];
+  const failedCheckWithEmptyIssueRefsResult = validatePackageInstallPlanResponseV01(failedCheckWithEmptyIssueRefs);
+  assert.equal(failedCheckWithEmptyIssueRefsResult.ok, false);
+  assert.match(failedCheckWithEmptyIssueRefsResult.errors.join("\n"), /failing check .* requires issueRefs/);
 
-  const rejectActionWithEmptyDiagnosticRefs = structuredClone(rejectResponse);
-  rejectActionWithEmptyDiagnosticRefs.actions[0].diagnosticRefs = [];
-  const rejectActionWithEmptyDiagnosticRefsResult = validatePackageInstallPlanResponseV01(rejectActionWithEmptyDiagnosticRefs);
-  assert.equal(rejectActionWithEmptyDiagnosticRefsResult.ok, false);
-  assert.match(rejectActionWithEmptyDiagnosticRefsResult.errors.join("\n"), /reject action .* requires diagnosticRefs/);
+  const rejectActionWithEmptyIssueRefs = structuredClone(rejectResponse);
+  rejectActionWithEmptyIssueRefs.actions[0].issueRefs = [];
+  const rejectActionWithEmptyIssueRefsResult = validatePackageInstallPlanResponseV01(rejectActionWithEmptyIssueRefs);
+  assert.equal(rejectActionWithEmptyIssueRefsResult.ok, false);
+  assert.match(rejectActionWithEmptyIssueRefsResult.errors.join("\n"), /reject action .* requires issueRefs/);
 
   const invalidResponseShape = structuredClone(updateResponse);
   invalidResponseShape.checks = [null];
   invalidResponseShape.actions = [null];
-  invalidResponseShape.diagnostics = [null];
+  invalidResponseShape.issues = [null];
   assert.equal(validatePackageInstallPlanResponseV01(invalidResponseShape).ok, false);
 
   const invalidPlanResponses = [
@@ -1426,12 +1386,12 @@ test("validates package install and update plan DTOs", async () => {
       /must not include failed checks/
     ],
     [
-      "fixtures/package/v0.1/invalid/plan-response-removed-capability-missing-diagnostic-ref.skenion.package-install-plan-response.json",
-      /references missing diagnostic/
+      "fixtures/package/v0.1/invalid/plan-response-removed-capability-missing-issue-ref.skenion.package-install-plan-response.json",
+      /references missing issue/
     ],
     [
-      "fixtures/package/v0.1/invalid/plan-response-rollback-unavailable-missing-action-diagnostic.skenion.package-install-plan-response.json",
-      /references missing diagnostic/
+      "fixtures/package/v0.1/invalid/plan-response-rollback-unavailable-missing-action-issue.skenion.package-install-plan-response.json",
+      /references missing issue/
     ],
     [
       "fixtures/package/v0.1/invalid/plan-response-checksum-mismatch-bad-checksum.skenion.package-install-plan-response.json",
@@ -1439,11 +1399,11 @@ test("validates package install and update plan DTOs", async () => {
     ],
     [
       "fixtures/package/v0.1/invalid/plan-response-missing-provenance-evidence-ref.skenion.package-install-plan-response.json",
-      /references missing diagnostic/
+      /references missing issue/
     ],
     [
-      "fixtures/package/v0.1/invalid/plan-response-missing-diagnostic-refs.skenion.package-install-plan-response.json",
-      /requires diagnosticRefs/
+      "fixtures/package/v0.1/invalid/plan-response-missing-issue-refs.skenion.package-install-plan-response.json",
+      /requires issueRefs/
     ]
   ];
 
@@ -1502,7 +1462,7 @@ test("validates object spec parse result fixtures", async () => {
       { id: "out", direction: "output", type: "value.core.float64", rate: "control" }
     ],
     displayText: "example.gain 0.5",
-    diagnostics: []
+    issues: []
   };
   const runtimeResolvedResult = validateObjectSpecParseResult(runtimeResolved);
 
@@ -1518,19 +1478,19 @@ test("validates object spec parse result fixtures", async () => {
     /requires implementation|must have required property 'implementation'/
   );
 
-  const unsupportedResolutionDiagnostic = structuredClone(runtimeResolved);
-  unsupportedResolutionDiagnostic.objectResolution.diagnostics = [
+  const unsupportedResolutionIssue = structuredClone(runtimeResolved);
+  unsupportedResolutionIssue.objectResolution.issues = [
     {
       severity: "error",
       code: "binding-unresolved",
-      message: "unsupported diagnostic code must be rejected"
+      message: "unsupported issue code must be rejected"
     }
   ];
-  const unsupportedResolutionDiagnosticResult =
-    validateObjectSpecParseResult(unsupportedResolutionDiagnostic);
-  assert.equal(unsupportedResolutionDiagnosticResult.ok, false);
+  const unsupportedResolutionIssueResult =
+    validateObjectSpecParseResult(unsupportedResolutionIssue);
+  assert.equal(unsupportedResolutionIssueResult.ok, false);
   assert.match(
-    unsupportedResolutionDiagnosticResult.errors.join("\n"),
+    unsupportedResolutionIssueResult.errors.join("\n"),
     /allowed values|resolution-unresolved|binding-unresolved/
   );
 
@@ -1540,7 +1500,7 @@ test("validates object spec parse result fixtures", async () => {
   assert.equal(symbolicResult.ok, true);
   assert.equal(symbolic.ok, true);
   assert.equal(symbolic.implementation, undefined);
-  assert.deepEqual(symbolic.diagnostics, []);
+  assert.deepEqual(symbolic.issues, []);
 
   const invalid = await readJson("fixtures/object-spec/v0.1/invalid/missing-class-symbol.parse.json");
   const invalidResult = validateObjectSpecParseResult(invalid);
@@ -1587,14 +1547,14 @@ test("parses object spec into golden parse results", async () => {
   assert.equal(runtimeOwned.ok, true);
   assert.equal(runtimeOwned.className, "frobnicate");
   assert.deepEqual(runtimeOwned.creationArgs, [{ type: "bool", value: true }]);
-  assert.deepEqual(runtimeOwned.diagnostics, []);
+  assert.deepEqual(runtimeOwned.issues, []);
 
   const nonFinite = parseObjectSpecV01("+ 1e309");
   assert.deepEqual(nonFinite.creationArgs, [{ type: "identifier", value: "1e309" }]);
 
-  assert.equal(parseObjectSpecV01("[+ 1").diagnostics[0].code, "invalid-syntax");
-  assert.equal(parseObjectSpecV01("+ 1]").diagnostics[0].code, "invalid-syntax");
-  assert.equal(parseObjectSpecV01("").diagnostics[0].code, "empty-object-spec");
+  assert.equal(parseObjectSpecV01("[+ 1").issues[0].code, "invalid-syntax");
+  assert.equal(parseObjectSpecV01("+ 1]").issues[0].code, "invalid-syntax");
+  assert.equal(parseObjectSpecV01("").issues[0].code, "empty-object-spec");
 });
 
 test("validates control messages as key and atoms", () => {
@@ -1957,7 +1917,7 @@ test("parses MIDI Clock messages into clock state authority", () => {
     receivedHostTimeNs: 100
   });
   assert.equal(result.snapshot.running, true);
-  assert.deepEqual(result.diagnostics, []);
+  assert.deepEqual(result.issues, []);
   assert.equal(result.clockState.running.value, true);
   assert.equal(result.clockState.bar.value, 1);
   assert.equal(result.clockState.beat.value, 1);
@@ -1966,7 +1926,7 @@ test("parses MIDI Clock messages into clock state authority", () => {
 
   snapshot = result.snapshot;
   result = applyMidiClockMessageV01(snapshot, { kind: "tick" });
-  assert.deepEqual(result.diagnostics, []);
+  assert.deepEqual(result.issues, []);
   assert.equal(result.snapshot.tickIndex, 1);
   assert.equal(result.clockState.tickIndex.value, 1);
   assert.equal(result.clockState.ppqPosition.value, 1 / 24);
@@ -1977,7 +1937,7 @@ test("parses MIDI Clock messages into clock state authority", () => {
     kind: "song-position-pointer",
     songPositionSixteenth: 16
   });
-  assert.deepEqual(result.diagnostics, []);
+  assert.deepEqual(result.issues, []);
   assert.equal(result.snapshot.tickIndex, 96);
   assert.equal(result.clockState.bar.value, 2);
   assert.equal(result.clockState.beat.value, 1);
@@ -1998,7 +1958,7 @@ test("parses MIDI Clock messages into clock state authority", () => {
     lastUpdateHostTimeNs: 7
   });
   result = applyMidiClockMessageV01(custom, { kind: "song-position-pointer" });
-  assert.equal(result.diagnostics[0].code, "invalid-midi-song-position-pointer");
+  assert.equal(result.issues[0].code, "invalid-midi-song-position-pointer");
   assert.equal(result.snapshot.tickIndex, 0);
   assert.equal(result.snapshot.lastUpdateHostTimeNs, 7);
 
@@ -2006,7 +1966,7 @@ test("parses MIDI Clock messages into clock state authority", () => {
     kind: "song-position-pointer",
     songPositionSixteenth: 16_384
   });
-  assert.equal(result.diagnostics[0].code, "invalid-midi-song-position-pointer");
+  assert.equal(result.issues[0].code, "invalid-midi-song-position-pointer");
   assert.equal(result.snapshot.tickIndex, 0);
 
   const invalidTiming = midiClockSnapshotToClockStateV01({
@@ -2021,7 +1981,7 @@ test("parses MIDI Clock messages into clock state authority", () => {
     ...custom,
     tickIndex: Number.MAX_SAFE_INTEGER
   }, { kind: "tick" });
-  assert.equal(result.diagnostics[0].code, "midi-clock-tick-overflow");
+  assert.equal(result.issues[0].code, "midi-clock-tick-overflow");
 });
 
 test("plans audio clock-domain bridge requirements", () => {
@@ -2049,13 +2009,13 @@ test("plans audio clock-domain bridge requirements", () => {
     sourceClockDomainId: "input-device",
     targetClockDomainId: "input-device",
     method: "direct",
-    diagnostics: []
+    issues: []
   });
 
   const invalid = planAudioClockBridgeV01(source, independent);
   assert.equal(invalid.required, true);
   assert.equal(invalid.method, "invalid");
-  assert.equal(invalid.diagnostics[0].code, "audio-clock-domain-crossing-requires-bridge");
+  assert.equal(invalid.issues[0].code, "audio-clock-domain-crossing-requires-bridge");
 
   const bridged = planAudioClockBridgeV01(source, independent, "bridge");
   assert.equal(bridged.required, true);
@@ -2228,7 +2188,7 @@ test("plans implicit numeric and color representation conversions", () => {
   );
   assert.equal(colorIdentity.ok, true);
   assert.equal(colorIdentity.lossy, false);
-  assert.equal(colorIdentity.diagnostics.length, 0);
+  assert.equal(colorIdentity.issues.length, 0);
 
   const incompatible = planConversion(
     { flow: "control", dataKind: "value.core.bool" },
@@ -2304,7 +2264,7 @@ test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
   const result = analyzeShaderInterfaceV01(source, { language: "wgsl" });
 
   assert.equal(result.ok, true);
-  assert.equal(result.diagnostics.length, 0);
+  assert.equal(result.issues.length, 0);
   assert.equal(validateShaderInterface(result.shaderInterface).ok, true);
   assert.deepEqual(
     result.shaderInterface.uniforms.map((uniform) => [uniform.id, uniform.type.dataKind, uniform.default]),
@@ -2331,7 +2291,7 @@ test("analyzes WGSL shader uniform annotations into dynamic ports", () => {
   assert.equal(ports[6].type.dataKind, "value.core.tensor");
 });
 
-test("reports shader uniform annotation diagnostics", () => {
+test("reports shader uniform annotation issues", () => {
   const source = [
     "// @skenion.uniform",
     "const note = \"@skenion.uniform\";",
@@ -2353,7 +2313,7 @@ test("reports shader uniform annotation diagnostics", () => {
 
   assert.equal(result.ok, false);
   assert.deepEqual(
-    result.diagnostics.map((diagnostic) => diagnostic.code),
+    result.issues.map((issue) => issue.code),
     [
       "unsupported-language",
       "malformed-annotation",
@@ -2373,12 +2333,12 @@ test("reports shader uniform annotation diagnostics", () => {
     ]
   );
   assert.deepEqual(
-    result.diagnostics.map((diagnostic) => [diagnostic.phase, diagnostic.source]),
-    result.diagnostics.map(() => ["interface-analysis", "user"])
+    result.issues.map((issue) => [issue.phase, issue.source]),
+    result.issues.map(() => ["interface-analysis", "user"])
   );
-  assert.equal(result.diagnostics[1]?.line, 1);
-  assert.equal(result.diagnostics[1]?.column, 4);
-  assert.equal(result.diagnostics.find((diagnostic) => diagnostic.code === "invalid-default")?.column, 49);
+  assert.equal(result.issues[1]?.line, 1);
+  assert.equal(result.issues[1]?.column, 4);
+  assert.equal(result.issues.find((issue) => issue.code === "invalid-default")?.column, 49);
   assert.equal(result.shaderInterface.uniforms.at(-1)?.label, "Plain");
 });
 
@@ -2425,7 +2385,7 @@ test("exports and validates v0.1 graph and node schemas", async () => {
   const resolvedWithoutImplementationAnalysis = analyzeGraphDocumentV01(resolvedWithoutImplementation);
   assert.equal(resolvedWithoutImplementationAnalysis.ok, false);
   assert.match(
-    resolvedWithoutImplementationAnalysis.diagnostics.map((entry) => entry.code).join("\n"),
+    resolvedWithoutImplementationAnalysis.issues.map((entry) => entry.code).join("\n"),
     /resolved-object-missing-implementation/
   );
 
@@ -2460,7 +2420,7 @@ test("exports and validates v0.1 graph fragment contracts", async () => {
 
   const omitted = analyzeGraphFragmentV01(outside, { outsideEndpointPolicy: "omit" });
   assert.equal(omitted.ok, true);
-  assert.equal(omitted.diagnostics[0].severity, "warning");
+  assert.equal(omitted.issues[0].severity, "warning");
   assert.deepEqual(omitted.omittedEdgeIds, ["edge-to-outside"]);
 
   const schemaInvalid = structuredClone(fragment);
@@ -2640,7 +2600,7 @@ test("validates graph fragment paste requests as transform payloads", async () =
     nodeId: "embedded"
   };
   embeddedPatchRequest.placement = { kind: "anchor", nodeId: "osc" };
-  embeddedPatchRequest.options = { interfaceIncidentEdgePolicy: "preserve-diagnostic" };
+  embeddedPatchRequest.options = { interfaceIncidentEdgePolicy: "preserve-issue" };
   assert.equal(validatePasteGraphFragmentRequest(embeddedPatchRequest).ok, true);
 
   const helpWorkingCopyRequest = structuredClone(request);
@@ -2844,15 +2804,15 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   assert.match(packageBindingWithoutLockEntryResult.errors.join("\n"), /package implementation requires lockEntryId/);
 
   for (const [status, bindingIndex, expected] of [
-    ["error", 2, /error object binding .*implementation diagnostic/],
+    ["error", 2, /error object binding .*implementation issue/],
     ["unresolved", 0, /unresolved object binding .*must not include implementation/]
   ]) {
-    const missingDiagnostics = structuredClone(validPackageProject);
-    missingDiagnostics.objectBindings[bindingIndex].status = status;
-    delete missingDiagnostics.objectBindings[bindingIndex].diagnostics;
-    const missingDiagnosticsResult = validateProjectDocumentV01(missingDiagnostics);
-    assert.equal(missingDiagnosticsResult.ok, false, status);
-    assert.match(missingDiagnosticsResult.errors.join("\n"), expected, status);
+    const missingIssues = structuredClone(validPackageProject);
+    missingIssues.objectBindings[bindingIndex].status = status;
+    delete missingIssues.objectBindings[bindingIndex].issues;
+    const missingIssuesResult = validateProjectDocumentV01(missingIssues);
+    assert.equal(missingIssuesResult.ok, false, status);
+    assert.match(missingIssuesResult.errors.join("\n"), expected, status);
   }
 
   for (const unsupportedStatus of ["missing", "stale", "ambiguous"]) {
@@ -2873,23 +2833,23 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   malformedBindingStatus.objectBindings = [{}];
   assert.equal(validateProjectDocumentV01(malformedBindingStatus).ok, false);
 
-  const malformedDiagnostic = structuredClone(validPackageProject);
-  malformedDiagnostic.objectBindings[2].diagnostics = [null];
-  const malformedDiagnosticResult = validateProjectDocumentV01(malformedDiagnostic);
-  assert.equal(malformedDiagnosticResult.ok, false);
-  assert.match(malformedDiagnosticResult.errors.join("\n"), /object|implementation diagnostic/);
+  const malformedIssue = structuredClone(validPackageProject);
+  malformedIssue.objectBindings[2].issues = [null];
+  const malformedIssueResult = validateProjectDocumentV01(malformedIssue);
+  assert.equal(malformedIssueResult.ok, false);
+  assert.match(malformedIssueResult.errors.join("\n"), /object|implementation issue/);
 
-  const wrongDiagnosticCode = structuredClone(validPackageProject);
-  wrongDiagnosticCode.objectBindings[2].diagnostics = [
+  const wrongIssueCode = structuredClone(validPackageProject);
+  wrongIssueCode.objectBindings[2].issues = [
     {
       severity: "warning",
       code: "resolution-unresolved",
-      message: "This diagnostic does not satisfy an error binding."
+      message: "This issue does not satisfy an error binding."
     }
   ];
-  const wrongDiagnosticCodeResult = validateProjectDocumentV01(wrongDiagnosticCode);
-  assert.equal(wrongDiagnosticCodeResult.ok, false);
-  assert.match(wrongDiagnosticCodeResult.errors.join("\n"), /error object binding .*implementation diagnostic/);
+  const wrongIssueCodeResult = validateProjectDocumentV01(wrongIssueCode);
+  assert.equal(wrongIssueCodeResult.ok, false);
+  assert.match(wrongIssueCodeResult.errors.join("\n"), /error object binding .*implementation issue/);
 
   const resolvedNoTarget = validateProjectDocumentV01(
     await readJson("fixtures/project/v0.1/invalid/resolved-binding-missing-target.project.json")
@@ -2913,7 +2873,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   unresolvedProjectMissingPatch.objectBindings[1].status = "unresolved";
   unresolvedProjectMissingPatch.objectBindings[1].implementation.provider.patchId = "missing_patch";
   unresolvedProjectMissingPatch.objectBindings[1].implementation.objectId = "missing_patch";
-  unresolvedProjectMissingPatch.objectBindings[1].diagnostics = [
+  unresolvedProjectMissingPatch.objectBindings[1].issues = [
     {
       severity: "warning",
       code: "resolution-unresolved",
@@ -2927,7 +2887,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   const unresolvedPackageMissingLock = structuredClone(validPackageProject);
   unresolvedPackageMissingLock.objectBindings[0].status = "unresolved";
   unresolvedPackageMissingLock.objectBindings[0].implementation.provider.lockEntryId = "missing-lock";
-  unresolvedPackageMissingLock.objectBindings[0].diagnostics = [
+  unresolvedPackageMissingLock.objectBindings[0].issues = [
     {
       severity: "warning",
       code: "resolution-unresolved",
@@ -2951,7 +2911,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   assert.match(staleProjectPatchBindingResult.errors.join("\n"), /resolved object binding .*revision is stale/);
 
   staleProjectPatchBinding.objectBindings[1].status = "error";
-  staleProjectPatchBinding.objectBindings[1].diagnostics = [
+  staleProjectPatchBinding.objectBindings[1].issues = [
     {
       severity: "warning",
       code: "implementation-stale",
@@ -2960,7 +2920,7 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   ];
   assert.equal(validateProjectDocumentV01(staleProjectPatchBinding).ok, true);
 
-  staleProjectPatchBinding.objectBindings[1].diagnostics = [
+  staleProjectPatchBinding.objectBindings[1].issues = [
     {
       severity: "warning",
       code: "interface-drift",
@@ -2969,23 +2929,23 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   ];
   assert.equal(validateProjectDocumentV01(staleProjectPatchBinding).ok, true);
 
-  const errorStaleProjectPatchBindingWithoutImplementationDiagnostic = structuredClone(validPackageProject);
-  errorStaleProjectPatchBindingWithoutImplementationDiagnostic.objectBindings[1].status = "error";
-  errorStaleProjectPatchBindingWithoutImplementationDiagnostic.objectBindings[1].implementation.provider.revision = "stale-revision";
-  errorStaleProjectPatchBindingWithoutImplementationDiagnostic.objectBindings[1].diagnostics = [
+  const errorStaleProjectPatchBindingWithoutImplementationIssue = structuredClone(validPackageProject);
+  errorStaleProjectPatchBindingWithoutImplementationIssue.objectBindings[1].status = "error";
+  errorStaleProjectPatchBindingWithoutImplementationIssue.objectBindings[1].implementation.provider.revision = "stale-revision";
+  errorStaleProjectPatchBindingWithoutImplementationIssue.objectBindings[1].issues = [
     {
       severity: "warning",
       code: "resolution-unresolved",
-      message: "The binding is not resolved, but this diagnostic does not satisfy error state."
+      message: "The binding is not resolved, but this issue does not satisfy error state."
     }
   ];
-  const errorStaleProjectPatchBindingWithoutImplementationDiagnosticResult = validateProjectDocumentV01(
-    errorStaleProjectPatchBindingWithoutImplementationDiagnostic
+  const errorStaleProjectPatchBindingWithoutImplementationIssueResult = validateProjectDocumentV01(
+    errorStaleProjectPatchBindingWithoutImplementationIssue
   );
-  assert.equal(errorStaleProjectPatchBindingWithoutImplementationDiagnosticResult.ok, false);
+  assert.equal(errorStaleProjectPatchBindingWithoutImplementationIssueResult.ok, false);
   assert.match(
-    errorStaleProjectPatchBindingWithoutImplementationDiagnosticResult.errors.join("\n"),
-    /error object binding .*implementation diagnostic/
+    errorStaleProjectPatchBindingWithoutImplementationIssueResult.errors.join("\n"),
+    /error object binding .*implementation issue/
   );
 
   const graphInvalidPatch = structuredClone(validProject.patchLibrary[0]);
@@ -3086,7 +3046,7 @@ test("v0.1 validates fan-out, fan-in, accepts, and feedback fixtures", async () 
   feedbackGraph.edges[0].feedback.boundary = "same-turn";
   const riskyAnalysis = analyzeGraphDocumentV01(feedbackGraph);
   assert.equal(riskyAnalysis.ok, true);
-  assert.equal(riskyAnalysis.diagnostics[0].severity, "warning");
+  assert.equal(riskyAnalysis.issues[0].severity, "warning");
   assert.equal(riskyAnalysis.cycles[0].classification, "risky-feedback");
 
   delete feedbackGraph.edges[0].feedback;
@@ -3331,7 +3291,7 @@ test("v0.1 rejects invalid direction fan-in and algebraic-loop fixtures", async 
   assert.equal(missingTargetPortCycleAnalysis.cycles[0].classification, "invalid-cycle");
 });
 
-test("v0.1 reports detailed semantic diagnostics", async () => {
+test("v0.1 reports detailed semantic issues", async () => {
   const graph = await readJson("fixtures/graph/v0.1/valid/source-fan-out.graph.json");
   graph.nodes[0].ports[0].fanOutPolicy = "forbid";
   graph.nodes[1].ports[0].required = true;
@@ -3388,16 +3348,16 @@ test("v0.1 reports detailed semantic diagnostics", async () => {
   const analysis = analyzeGraphDocumentV01(graph);
 
   assert.equal(analysis.ok, false);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /missing-source-port/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /missing-target-port/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-node-id/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-port-id/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-edge-id/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /duplicate-edge/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /incompatible-type/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /fan-out-forbidden/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /invalid-value-type/);
-  assert.match(analysis.diagnostics.map((entry) => entry.code).join("\n"), /message-key-policy/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /missing-source-port/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /missing-target-port/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /duplicate-node-id/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /duplicate-port-id/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /duplicate-edge-id/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /duplicate-edge/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /incompatible-type/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /fan-out-forbidden/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /invalid-value-type/);
+  assert.match(analysis.issues.map((entry) => entry.code).join("\n"), /message-key-policy/);
 
   const acceptingGraph = await readJson("fixtures/graph/v0.1/valid/render-output.graph.json");
   acceptingGraph.nodes[1].ports[0].accepts = ["value.core.tensor"];

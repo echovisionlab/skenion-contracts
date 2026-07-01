@@ -82,10 +82,10 @@
         "$ref": "#/$defs/nativeArtifact"
       }
     },
-    "diagnostics": {
+    "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/packageDiagnostic"
+        "$ref": "#/$defs/packageIssue"
       },
       "default": []
     }
@@ -396,7 +396,7 @@
       },
       "additionalProperties": false
     },
-    "packageDiagnostic": {
+    "packageIssue": {
       "type": "object",
       "required": ["severity", "code", "message"],
       "properties": {
@@ -412,7 +412,7 @@
           "minLength": 1
         },
         "details": {
-          "description": "Arbitrary JSON diagnostic metadata."
+          "description": "Arbitrary JSON issue metadata."
         }
       },
       "additionalProperties": false

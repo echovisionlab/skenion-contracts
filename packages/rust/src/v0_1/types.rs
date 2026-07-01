@@ -576,7 +576,7 @@ pub enum ObjectResolutionStatusV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum ObjectResolutionDiagnosticCodeV01 {
+pub enum ObjectResolutionIssueCodeV01 {
     ResolutionUnresolved,
     ResolutionAmbiguous,
     ImplementationMissing,
@@ -588,9 +588,9 @@ pub enum ObjectResolutionDiagnosticCodeV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct ObjectResolutionDiagnosticV01 {
-    pub severity: PackageDiagnosticSeverityV01,
-    pub code: ObjectResolutionDiagnosticCodeV01,
+pub struct ObjectResolutionIssueV01 {
+    pub severity: PackageIssueSeverityV01,
+    pub code: ObjectResolutionIssueCodeV01,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<Value>,
@@ -619,7 +619,7 @@ pub struct ObjectResolutionV01 {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidates: Vec<ObjectResolutionCandidateV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub diagnostics: Vec<ObjectResolutionDiagnosticV01>,
+    pub issues: Vec<ObjectResolutionIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -707,7 +707,7 @@ pub enum GraphFragmentOutsideEndpointPolicyV01 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct GraphFragmentDiagnosticV01 {
+pub struct GraphFragmentIssueV01 {
     pub severity: String,
     pub code: String,
     pub message: String,
@@ -721,7 +721,7 @@ pub struct GraphFragmentDiagnosticV01 {
 #[serde(rename_all = "camelCase")]
 pub struct GraphFragmentValidationResultV01 {
     pub ok: bool,
-    pub diagnostics: Vec<GraphFragmentDiagnosticV01>,
+    pub issues: Vec<GraphFragmentIssueV01>,
     pub omitted_edge_ids: Vec<String>,
 }
 
@@ -796,7 +796,7 @@ pub enum IdConflictPolicy {
 #[serde(rename_all = "kebab-case")]
 pub enum InterfaceIncidentEdgePolicyV01 {
     Drop,
-    PreserveDiagnostic,
+    PreserveIssue,
     Reject,
 }
 
@@ -811,7 +811,7 @@ pub enum InterfaceRecoveryActionIdV01 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum InterfaceDiagnosticMissingEndpointV01 {
+pub enum InterfaceIssueMissingEndpointV01 {
     SourceNode,
     SourcePort,
     TargetNode,
@@ -820,7 +820,7 @@ pub enum InterfaceDiagnosticMissingEndpointV01 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum InterfaceDiagnosticCardinalityReasonV01 {
+pub enum InterfaceIssueCardinalityReasonV01 {
     FanIn,
     FanOut,
     MergePolicy,
@@ -831,8 +831,8 @@ pub enum InterfaceDiagnosticCardinalityReasonV01 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct InterfaceDiagnosticCardinalityV01 {
-    pub reason: InterfaceDiagnosticCardinalityReasonV01,
+pub struct InterfaceIssueCardinalityV01 {
+    pub reason: InterfaceIssueCardinalityReasonV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub policy: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -844,14 +844,14 @@ pub struct InterfaceDiagnosticCardinalityV01 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct InterfaceDiagnosticDetailV01 {
+pub struct InterfaceIssueDetailV01 {
     pub edge_id: String,
     pub source_node_id: String,
     pub source_port_id: String,
     pub target_node_id: String,
     pub target_port_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub missing_endpoint: Option<InterfaceDiagnosticMissingEndpointV01>,
+    pub missing_endpoint: Option<InterfaceIssueMissingEndpointV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expected_direction: Option<PortDirectionV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -861,7 +861,7 @@ pub struct InterfaceDiagnosticDetailV01 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub actual_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cardinality: Option<InterfaceDiagnosticCardinalityV01>,
+    pub cardinality: Option<InterfaceIssueCardinalityV01>,
     pub recovery_actions: Vec<InterfaceRecoveryActionIdV01>,
 }
 
@@ -915,7 +915,7 @@ pub struct NodeCatalogDisplayV01 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum NodeCatalogDiagnosticSeverityV01 {
+pub enum NodeCatalogIssueSeverityV01 {
     Info,
     Warning,
     Error,
@@ -928,20 +928,19 @@ pub enum NodeCatalogDiagnosticSeverityV01 {
     rename_all_fields = "camelCase",
     deny_unknown_fields
 )]
-pub enum NodeCatalogDiagnosticTargetV01 {
+pub enum NodeCatalogIssueTargetV01 {
     Catalog,
     Entry { catalog_id: String },
-    DiagnosticNodeDefinition { diagnostic_id: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct NodeCatalogDiagnosticV01 {
-    pub severity: NodeCatalogDiagnosticSeverityV01,
+pub struct NodeCatalogIssueV01 {
+    pub severity: NodeCatalogIssueSeverityV01,
     pub code: String,
     pub message: String,
-    pub target: NodeCatalogDiagnosticTargetV01,
+    pub target: NodeCatalogIssueTargetV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<Value>,
 }
@@ -960,22 +959,7 @@ pub struct NodeCatalogEntryV01 {
     pub creatable: bool,
     pub display: NodeCatalogDisplayV01,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub diagnostics: Option<Vec<NodeCatalogDiagnosticV01>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
-pub struct NodeCatalogDiagnosticNodeDefinitionV01 {
-    pub diagnostic_id: String,
-    pub reason: NodeCatalogDiagnosticNodeDefinitionReasonV01,
-    pub definition: NodeDefinitionManifestV01,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum NodeCatalogDiagnosticNodeDefinitionReasonV01 {
-    UnresolvedObject,
+    pub issues: Option<Vec<NodeCatalogIssueV01>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -986,9 +970,8 @@ pub struct NodeCatalogSnapshotV01 {
     pub schema_version: String,
     pub catalog_revision: PackageChecksumV01,
     pub entries: Vec<NodeCatalogEntryV01>,
-    pub diagnostic_node_definitions: Vec<NodeCatalogDiagnosticNodeDefinitionV01>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub diagnostics: Option<Vec<NodeCatalogDiagnosticV01>>,
+    pub issues: Option<Vec<NodeCatalogIssueV01>>,
 }
 
 pub const SKENION_PACKAGE_MANIFEST_FILE_NAME: &str = "skenion.package.json";
@@ -1060,7 +1043,7 @@ pub enum PackageEvidenceKindV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum PackageDiagnosticSeverityV01 {
+pub enum PackageIssueSeverityV01 {
     Error,
     Warning,
     Info,
@@ -1084,7 +1067,7 @@ pub enum PackageListingArtifactKindV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum PackageListingDiagnosticCodeV01 {
+pub enum PackageListingIssueCodeV01 {
     MalformedListingMetadata,
     UnsupportedContractsRange,
     MissingArtifact,
@@ -1197,8 +1180,8 @@ pub struct PackageNativeArtifactV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct PackageDiagnosticV01 {
-    pub severity: PackageDiagnosticSeverityV01,
+pub struct PackageIssueV01 {
+    pub severity: PackageIssueSeverityV01,
     pub code: String,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1230,7 +1213,7 @@ pub struct PackageManifestV01 {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub native_artifacts: Vec<PackageNativeArtifactV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub diagnostics: Vec<PackageDiagnosticV01>,
+    pub issues: Vec<PackageIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -1339,9 +1322,9 @@ pub struct PackageListingDiscoverySignalsV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct PackageListingDiagnosticV01 {
-    pub severity: PackageDiagnosticSeverityV01,
-    pub code: PackageListingDiagnosticCodeV01,
+pub struct PackageListingIssueV01 {
+    pub severity: PackageIssueSeverityV01,
+    pub code: PackageListingIssueCodeV01,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<Value>,
@@ -1353,7 +1336,7 @@ pub struct PackageListingDiagnosticV01 {
 /// targetSupport targets, provides, and artifactEvidence from PackageManifestV01
 /// plus release artifacts; displayName is manifest-derived when present.
 /// Marketplace/discovery metadata owns summary, description, tags, license,
-/// homepageUrl, repositoryUrl, discoverySignals, and visibility diagnostics.
+/// homepageUrl, repositoryUrl, discoverySignals, and visibility issues.
 /// This DTO intentionally excludes accounts, auth, writes, install
 /// transactions, local registry roots, and mutable package manifests.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -1383,7 +1366,7 @@ pub struct PackageListingV01 {
     pub provides: PackageListingProvidesSummaryV01,
     pub artifact_evidence: PackageListingArtifactEvidenceSummaryV01,
     pub discovery_signals: PackageListingDiscoverySignalsV01,
-    pub diagnostics: Vec<PackageListingDiagnosticV01>,
+    pub issues: Vec<PackageListingIssueV01>,
 }
 
 /// Public package discovery/search response.
@@ -1398,7 +1381,7 @@ pub struct PackageDiscoveryResponseV01 {
     pub schema_version: String,
     pub ok: bool,
     pub listings: Vec<PackageListingV01>,
-    pub diagnostics: Vec<PackageListingDiagnosticV01>,
+    pub issues: Vec<PackageListingIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -1480,7 +1463,7 @@ pub enum PackageInstallPlanCapabilityKindV01 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum PackageInstallPlanDiagnosticCodeV01 {
+pub enum PackageInstallPlanIssueCodeV01 {
     IncompatibleContractsLine,
     IncompatibleRuntimeAbi,
     UnsupportedTarget,
@@ -1566,7 +1549,7 @@ pub struct PackageInstallPlanCheckV01 {
     pub kind: PackageInstallPlanCheckKindV01,
     pub status: PackageInstallPlanCheckStatusV01,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub diagnostic_refs: Vec<String>,
+    pub issue_refs: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
@@ -1579,7 +1562,7 @@ pub struct PackageInstallPlanCapabilityChangeV01 {
     pub capability_kind: PackageInstallPlanCapabilityKindV01,
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub diagnostic_ref: Option<String>,
+    pub issue_ref: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -1609,7 +1592,7 @@ pub struct PackageInstallPlanActionV01 {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub capability_changes: Vec<PackageInstallPlanCapabilityChangeV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub diagnostic_refs: Vec<String>,
+    pub issue_refs: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
 }
@@ -1617,10 +1600,10 @@ pub struct PackageInstallPlanActionV01 {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct PackageInstallPlanDiagnosticV01 {
+pub struct PackageInstallPlanIssueV01 {
     pub id: String,
-    pub severity: PackageDiagnosticSeverityV01,
-    pub code: PackageInstallPlanDiagnosticCodeV01,
+    pub severity: PackageIssueSeverityV01,
+    pub code: PackageInstallPlanIssueCodeV01,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<Value>,
@@ -1629,7 +1612,7 @@ pub struct PackageInstallPlanDiagnosticV01 {
 /// Declarative package install/update planning output.
 ///
 /// A response can express a safe keep/no-op, ordered download/verify/stage/
-/// replace actions, rollback, or fail-closed rejection with diagnostics. The
+/// replace actions, rollback, or fail-closed rejection with issues. The
 /// actions are planning records only and do not authorize Runtime mutation.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -1645,7 +1628,7 @@ pub struct PackageInstallPlanResponseV01 {
     pub target: PackageInstallPlanTargetV01,
     pub checks: Vec<PackageInstallPlanCheckV01>,
     pub actions: Vec<PackageInstallPlanActionV01>,
-    pub diagnostics: Vec<PackageInstallPlanDiagnosticV01>,
+    pub issues: Vec<PackageInstallPlanIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -1716,8 +1699,8 @@ pub enum ProjectObjectBindingStatusV01 {
     Error,
 }
 
-pub type ProjectObjectBindingDiagnosticCodeV01 = ObjectResolutionDiagnosticCodeV01;
-pub type ProjectObjectBindingDiagnosticV01 = ObjectResolutionDiagnosticV01;
+pub type ProjectObjectBindingIssueCodeV01 = ObjectResolutionIssueCodeV01;
+pub type ProjectObjectBindingIssueV01 = ObjectResolutionIssueV01;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -1731,7 +1714,7 @@ pub struct ProjectObjectBindingV01 {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidates: Vec<ObjectResolutionCandidateV01>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub diagnostics: Vec<ProjectObjectBindingDiagnosticV01>,
+    pub issues: Vec<ProjectObjectBindingIssueV01>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -1999,7 +1982,7 @@ fn node_catalog_revision_preimage_v01(snapshot: &NodeCatalogSnapshotV01) -> Valu
         .as_object_mut()
         .expect("node catalog snapshot should serialize as object");
     snapshot_object.remove("catalogRevision");
-    snapshot_object.remove("diagnostics");
+    snapshot_object.remove("issues");
     let entries = snapshot_object
         .get_mut("entries")
         .and_then(Value::as_array_mut)
@@ -2008,7 +1991,7 @@ fn node_catalog_revision_preimage_v01(snapshot: &NodeCatalogSnapshotV01) -> Valu
         let entry_object = entry
             .as_object_mut()
             .expect("node catalog entry should serialize as object");
-        entry_object.remove("diagnostics");
+        entry_object.remove("issues");
     }
     value
 }
@@ -2048,7 +2031,7 @@ pub fn project_patch_node_definition_id_v01(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct GraphValidationDiagnosticV01 {
+pub struct GraphValidationIssueV01 {
     pub severity: String,
     pub code: String,
     pub message: String,
@@ -2069,7 +2052,7 @@ pub struct GraphCycleValidationV01 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct GraphValidationResultV01 {
     pub ok: bool,
-    pub diagnostics: Vec<GraphValidationDiagnosticV01>,
+    pub issues: Vec<GraphValidationIssueV01>,
     pub cycles: Vec<GraphCycleValidationV01>,
 }
 

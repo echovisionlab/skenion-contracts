@@ -33,7 +33,7 @@ v0.1 graph/project/patch compatibility and migration helpers are not active
 contract surfaces.
 
 Objects preserve user-entered `objectSpec`; Runtime resolution maps that spec to
-implementation kinds and diagnostics without making unresolved specs a separate
+implementation kinds and issues without making unresolved specs a separate
 user-facing node class.
 
 Package manifests and public listings declare object authoring exports under
