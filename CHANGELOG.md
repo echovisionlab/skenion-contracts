@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.58.0](https://github.com/skenion/skenion-contracts/compare/v0.57.0...v0.58.0) (2026-07-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove persisted viewport from view state
+
+### Features
+
+* remove persisted viewport from view state ([d063701](https://github.com/skenion/skenion-contracts/commit/d063701e83156281481d2d809e6be7a144bbf85a))
+
 ## [0.57.0](https://github.com/skenion/skenion-contracts/compare/v0.56.0...v0.57.0) (2026-07-01)
 
 
