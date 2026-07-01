@@ -32,6 +32,13 @@ use super::version::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PortConnectionPolicyV01 {
+    pub accepted: bool,
+    pub reason: &'static str,
+    pub effective_type: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationErrorV01 {
     pub message: String,
 }
@@ -245,10 +252,17 @@ fn is_value_type_id_v01(value: &str) -> bool {
     if is_first_party_value_type(value) {
         return true;
     }
-    if value.starts_with("value.core.") || value.starts_with("value.media.") {
+    is_valid_custom_value_type_id_v01(value)
+}
+
+pub fn is_reserved_value_type_id_v01(value: &str) -> bool {
+    value.starts_with("value.core.") || value.starts_with("value.media.")
+}
+
+pub fn is_valid_custom_value_type_id_v01(value: &str) -> bool {
+    if is_reserved_value_type_id_v01(value) {
         return false;
     }
-
     let mut parts = value.split('.');
     if parts.next() != Some("value") {
         return false;
@@ -692,19 +706,62 @@ fn merge_policy_for(port: &PortSpecV01) -> MergePolicyV01 {
 }
 
 fn accepts(source: &PortSpecV01, target: &PortSpecV01) -> bool {
-    if target.port_type == "value.core.message" && is_message_value_port_type(&source.port_type) {
-        return true;
-    }
-    if source.port_type == target.port_type {
-        return true;
-    }
-    if let Some(accepted) = &target.accepts {
-        return accepted.contains(&source.port_type);
-    }
-    false
+    port_type_accepts_v01(source, target)
 }
 
-fn is_message_value_port_type(port_type: &str) -> bool {
+fn port_type_policy_v01(source: &PortSpecV01, target: &PortSpecV01) -> PortConnectionPolicyV01 {
+    if source.port_type == target.port_type {
+        return PortConnectionPolicyV01 {
+            accepted: true,
+            reason: "type-match",
+            effective_type: Some(source.port_type.clone()),
+        };
+    }
+    if target.port_type == "value.core.message" && is_message_value_port_type_v01(&source.port_type)
+    {
+        return PortConnectionPolicyV01 {
+            accepted: true,
+            reason: "message-selector",
+            effective_type: Some(source.port_type.clone()),
+        };
+    }
+    if target
+        .accepts
+        .as_ref()
+        .is_some_and(|accepted| accepted.contains(&source.port_type))
+    {
+        return PortConnectionPolicyV01 {
+            accepted: true,
+            reason: "target-accepts",
+            effective_type: Some(source.port_type.clone()),
+        };
+    }
+    PortConnectionPolicyV01 {
+        accepted: false,
+        reason: "incompatible-type",
+        effective_type: None,
+    }
+}
+
+pub fn port_type_accepts_v01(source: &PortSpecV01, target: &PortSpecV01) -> bool {
+    port_type_policy_v01(source, target).accepted
+}
+
+pub fn port_connection_policy_v01(
+    source: &PortSpecV01,
+    target: &PortSpecV01,
+) -> PortConnectionPolicyV01 {
+    if source.direction != PortDirectionV01::Output || target.direction != PortDirectionV01::Input {
+        return PortConnectionPolicyV01 {
+            accepted: false,
+            reason: "direction-mismatch",
+            effective_type: None,
+        };
+    }
+    port_type_policy_v01(source, target)
+}
+
+pub fn is_message_value_port_type_v01(port_type: &str) -> bool {
     is_message_value_data_kind(port_type)
 }
 
@@ -791,7 +848,16 @@ fn is_invalid_value_type(port_type: &str) -> bool {
     {
         return true;
     }
-    if port_type.starts_with("value.") && !is_first_party_value_type(port_type) {
+    if port_type.starts_with("value.core.") && !is_first_party_value_type(port_type) {
+        return true;
+    }
+    if port_type.starts_with("value.media.") {
+        return true;
+    }
+    if port_type.starts_with("value.")
+        && !is_first_party_value_type(port_type)
+        && !is_valid_custom_value_type_id_v01(port_type)
+    {
         return true;
     }
     false

@@ -889,6 +889,19 @@ export interface PortSpecV01 {
   description?: string;
 }
 
+export type PortConnectionPolicyReasonV01 =
+  | "type-match"
+  | "message-selector"
+  | "target-accepts"
+  | "direction-mismatch"
+  | "incompatible-type";
+
+export interface PortConnectionPolicyV01 {
+  accepted: boolean;
+  reason: PortConnectionPolicyReasonV01;
+  effectiveType?: string;
+}
+
 export interface PortGroupSpecV01 {
   id: string;
   direction: PortDirection;

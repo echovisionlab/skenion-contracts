@@ -17,23 +17,25 @@ use skenion_contracts::{
     PackageListingDiagnosticCodeV01, PackageListingObjectExportSummaryV01,
     PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
     PackageObjectExportV01, PackageRootDocumentV01, PackageTargetTripleV01,
-    PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, ProjectDocumentV01,
+    PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortSpecV01, ProjectDocumentV01,
     RuntimeSessionLoadModeV01, RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
     SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, ValueFormatV01,
     ValueOccurrenceHeaderV01, ValuePayloadKindV01, analyze_graph_document_v01,
     analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
     compute_node_catalog_revision_v01, compute_patch_interface_digest_v01,
     derive_patch_contract_v01, derive_patch_contracts_v01, derive_v0_compatibility_line,
-    derive_v0_compatibility_range, is_same_v0_compatibility_line,
+    derive_v0_compatibility_range, is_message_value_port_type_v01, is_reserved_value_type_id_v01,
+    is_same_v0_compatibility_line, is_valid_custom_value_type_id_v01,
     midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_spec_v01,
-    plan_audio_clock_bridge_v01, project_patch_node_definition_id_v01,
-    sanitize_project_patch_id_v01, satisfies_v0_compatibility_range, type_label_v01,
-    validate_compatibility_matrix_v01, validate_endpoint_binding_value_format_v01,
-    validate_extension_manifest_v01, validate_graph_document_v01, validate_graph_fragment_v01,
-    validate_node_catalog_snapshot_v01, validate_node_definition_v01,
-    validate_object_spec_parse_result_v01, validate_package_discovery_response_v01,
-    validate_package_install_plan_request_v01, validate_package_install_plan_response_v01,
-    validate_package_listing_v01, validate_package_manifest_v01, validate_package_root_v01,
+    plan_audio_clock_bridge_v01, port_connection_policy_v01, port_type_accepts_v01,
+    project_patch_node_definition_id_v01, sanitize_project_patch_id_v01,
+    satisfies_v0_compatibility_range, type_label_v01, validate_compatibility_matrix_v01,
+    validate_endpoint_binding_value_format_v01, validate_extension_manifest_v01,
+    validate_graph_document_v01, validate_graph_fragment_v01, validate_node_catalog_snapshot_v01,
+    validate_node_definition_v01, validate_object_spec_parse_result_v01,
+    validate_package_discovery_response_v01, validate_package_install_plan_request_v01,
+    validate_package_install_plan_response_v01, validate_package_listing_v01,
+    validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_project_document_v01,
     validate_runtime_session_load_request_v01, validate_value_format_v01,
     validate_value_occurrence_header_v01,
@@ -54,6 +56,57 @@ fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
         alpha_policy: None,
         values: None,
     }
+}
+
+fn port_spec(direction: &str, port_type: &str) -> PortSpecV01 {
+    serde_json::from_value(serde_json::json!({
+        "id": if direction == "output" { "out" } else { "in" },
+        "direction": direction,
+        "type": port_type
+    }))
+    .expect("port spec should parse")
+}
+
+fn graph_with_connection(source_type: &str, target_type: &str) -> GraphDocumentV01 {
+    let mut target_port =
+        serde_json::json!({ "id": "in", "direction": "input", "type": target_type });
+    if target_type == "value.core.message" {
+        target_port["messageKeys"] = serde_json::json!({
+            "accepted": ["set", "bang"],
+            "store": ["set"],
+            "trigger": ["bang"]
+        });
+    }
+    serde_json::from_value(serde_json::json!({
+        "schema": "skenion.graph",
+        "schemaVersion": "0.1.0",
+        "id": "port-policy-test",
+        "revision": "1",
+        "nodes": [
+            {
+                "id": "source",
+                "implementation": { "provider": { "kind": "core" }, "objectId": "source", "version": "0.1.0" },
+                "objectSpec": "source",
+                "params": {},
+                "ports": [{ "id": "out", "direction": "output", "type": source_type }]
+            },
+            {
+                "id": "target",
+                "implementation": { "provider": { "kind": "core" }, "objectId": "target", "version": "0.1.0" },
+                "objectSpec": "target",
+                "params": {},
+                "ports": [target_port]
+            }
+        ],
+        "edges": [
+            {
+                "id": "edge_1",
+                "source": { "nodeId": "source", "portId": "out" },
+                "target": { "nodeId": "target", "portId": "in" }
+            }
+        ]
+    }))
+    .expect("graph should parse")
 }
 
 #[test]
@@ -130,6 +183,70 @@ fn derives_public_contracts_compatibility_line_helpers() {
         "0.45.0",
         ">=0.44.0 <0.45.0"
     ));
+}
+
+#[test]
+fn exposes_public_port_connection_policy_helpers() {
+    let source = port_spec("output", "value.core.float32");
+    let message_target = port_spec("input", "value.core.message");
+    let bool_target = port_spec("input", "value.core.bool");
+    let passive_source = port_spec("input", "value.core.float32");
+
+    assert!(is_message_value_port_type_v01("value.core.float32"));
+    assert!(!is_message_value_port_type_v01("value.acme.scalar"));
+    assert!(port_type_accepts_v01(&source, &message_target));
+
+    let message_policy = port_connection_policy_v01(&source, &message_target);
+    assert!(message_policy.accepted);
+    assert_eq!(message_policy.reason, "message-selector");
+    assert_eq!(
+        message_policy.effective_type.as_deref(),
+        Some("value.core.float32")
+    );
+
+    let incompatible_policy = port_connection_policy_v01(&source, &bool_target);
+    assert!(!incompatible_policy.accepted);
+    assert_eq!(incompatible_policy.reason, "incompatible-type");
+
+    let direction_policy = port_connection_policy_v01(&passive_source, &message_target);
+    assert!(!direction_policy.accepted);
+    assert_eq!(direction_policy.reason, "direction-mismatch");
+}
+
+#[test]
+fn validates_value_type_namespace_policy() {
+    assert!(is_reserved_value_type_id_v01("value.core.float32"));
+    assert!(is_reserved_value_type_id_v01("value.media.video-frame"));
+    assert!(is_valid_custom_value_type_id_v01("value.acme.scalar"));
+    assert!(!is_valid_custom_value_type_id_v01("value.core.float32"));
+    assert!(!is_valid_custom_value_type_id_v01(
+        "value.media.video-frame"
+    ));
+
+    validate_graph_document_v01(&graph_with_connection(
+        "value.core.float32",
+        "value.core.message",
+    ))
+    .expect("message inlet should accept scalar value messages");
+    validate_graph_document_v01(&graph_with_connection(
+        "value.acme.scalar",
+        "value.acme.scalar",
+    ))
+    .expect("custom provider value type should validate");
+
+    let unknown_core = validate_graph_document_v01(&graph_with_connection(
+        "value.core.scalar",
+        "value.core.scalar",
+    ))
+    .expect_err("unknown value.core type should fail");
+    assert!(unknown_core.to_string().contains("invalid-value-type"));
+
+    let reserved_media = validate_graph_document_v01(&graph_with_connection(
+        "value.media.video-frame",
+        "value.media.video-frame",
+    ))
+    .expect_err("reserved value.media type should fail");
+    assert!(reserved_media.to_string().contains("invalid-value-type"));
 }
 
 #[test]

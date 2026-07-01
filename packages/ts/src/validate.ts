@@ -57,6 +57,7 @@ import type {
   PackageRootDocumentV01,
   PatchDefinitionV01,
   PasteGraphFragmentRequest,
+  PortConnectionPolicyV01,
   PortSpecV01,
   ProjectDocumentV01,
   ProjectPackageLockEntryV01,
@@ -974,14 +975,31 @@ function portFanOutPolicy(port: PortSpecV01): string {
   return port.fanOutPolicy ?? "allow";
 }
 
-function portTypeAccepts(source: PortSpecV01, target: PortSpecV01): boolean {
-  if (target.type === "value.core.message" && isMessageValuePortType(source.type)) {
-    return true;
+function portTypePolicyV01(source: PortSpecV01, target: PortSpecV01): PortConnectionPolicyV01 {
+  if (source.type === target.type) {
+    return { accepted: true, reason: "type-match", effectiveType: source.type };
   }
-  return source.type === target.type || target.accepts?.includes(source.type) === true;
+  if (target.type === "value.core.message" && isMessageValuePortType(source.type)) {
+    return { accepted: true, reason: "message-selector", effectiveType: source.type };
+  }
+  if (target.accepts?.includes(source.type) === true) {
+    return { accepted: true, reason: "target-accepts", effectiveType: source.type };
+  }
+  return { accepted: false, reason: "incompatible-type" };
 }
 
-function isMessageValuePortType(type: string): boolean {
+export function portTypeAcceptsV01(source: PortSpecV01, target: PortSpecV01): boolean {
+  return portTypePolicyV01(source, target).accepted;
+}
+
+export function portConnectionPolicyV01(source: PortSpecV01, target: PortSpecV01): PortConnectionPolicyV01 {
+  if (source.direction !== "output" || target.direction !== "input") {
+    return { accepted: false, reason: "direction-mismatch" };
+  }
+  return portTypePolicyV01(source, target);
+}
+
+export function isMessageValuePortTypeV01(type: string): boolean {
   return [
     "value.core.message",
     "value.core.bang",
@@ -1005,6 +1023,10 @@ function isMessageValuePortType(type: string): boolean {
     "value.core.color",
     "value.core.string"
   ].includes(type);
+}
+
+function isMessageValuePortType(type: string): boolean {
+  return isMessageValuePortTypeV01(type);
 }
 
 const firstPartyValueTypeIds = new Set([
@@ -1083,6 +1105,14 @@ const firstPartyRepresentations = new Set([
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function isReservedValueTypeIdV01(type: string): boolean {
+  return type.startsWith("value.core.") || type.startsWith("value.media.");
+}
+
+export function isValidCustomValueTypeIdV01(type: string): boolean {
+  return valueTypeIdPattern.test(type) && !isReservedValueTypeIdV01(type) && !invalidValueTypeIds.has(type);
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -1496,7 +1526,13 @@ function invalidPortValueType(type: string): boolean {
   if (invalidValueTypeIds.has(type)) {
     return true;
   }
-  if (type.startsWith("value.") && !firstPartyValueTypeIds.has(type)) {
+  if (type.startsWith("value.core.") && !firstPartyValueTypeIds.has(type)) {
+    return true;
+  }
+  if (type.startsWith("value.media.")) {
+    return true;
+  }
+  if (type.startsWith("value.") && !firstPartyValueTypeIds.has(type) && !isValidCustomValueTypeIdV01(type)) {
     return true;
   }
   return false;
@@ -1776,12 +1812,13 @@ function analyzeFragmentSemantics(
         { edges: [edge.id] }
       );
     }
-    if (!portTypeAccepts(source, target)) {
+    const connectionPolicy = portConnectionPolicyV01(source, target);
+    if (!connectionPolicy.accepted && connectionPolicy.reason !== "direction-mismatch") {
       fragmentDiagnostic(
         diagnostics,
         "error",
         "incompatible-type",
-        `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}`,
+        `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}: ${connectionPolicy.reason}`,
         { edges: [edge.id] }
       );
     }
@@ -2108,8 +2145,9 @@ export function analyzeGraphDocumentV01(graph: GraphDocumentV01): GraphValidatio
     if (target.direction !== "input") {
       diagnostic(diagnostics, "error", "invalid-target-direction", `edge ${edge.id} target ${targetKey} is not an input port`, { edges: [edge.id] });
     }
-    if (!portTypeAccepts(source, target)) {
-      diagnostic(diagnostics, "error", "incompatible-type", `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}`, { edges: [edge.id] });
+    const connectionPolicy = portConnectionPolicyV01(source, target);
+    if (!connectionPolicy.accepted && connectionPolicy.reason !== "direction-mismatch") {
+      diagnostic(diagnostics, "error", "incompatible-type", `edge ${edge.id} cannot connect ${sourceKey} ${source.type} to ${targetKey} ${target.type}: ${connectionPolicy.reason}`, { edges: [edge.id] });
     }
 
     if (isEdgeEnabled(edge)) {

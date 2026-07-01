@@ -33,6 +33,8 @@ import {
   projectV01Schema,
   runtimeSessionLoadRequestV01Schema,
   parseObjectSpecV01,
+  portConnectionPolicyV01,
+  portTypeAcceptsV01,
   projectPatchNodeDefinitionIdV01,
   representationForDataType,
   representationRegistryV01,
@@ -71,6 +73,9 @@ import {
   validateValueFormatV01,
   validateValueOccurrenceHeaderV01,
   validateNodeCatalogSnapshotV01,
+  isMessageValuePortTypeV01,
+  isReservedValueTypeIdV01,
+  isValidCustomValueTypeIdV01,
   validateCompatibilityMatrixV01,
   validateViewState,
   validateViewStateV01,
@@ -145,6 +150,11 @@ test("exports active schema contracts", () => {
   assert.equal(runtimeSessionLoadRequestV01Schema.properties.schema.const, "skenion.runtime.session-load-request");
   assert.equal(Object.hasOwn(contracts, "validateRuntimeSessionLoadRequestV01"), true);
   assert.equal(Object.hasOwn(contracts, "isRuntimeSessionLoadRequestV01"), true);
+  assert.equal(Object.hasOwn(contracts, "portConnectionPolicyV01"), true);
+  assert.equal(Object.hasOwn(contracts, "portTypeAcceptsV01"), true);
+  assert.equal(Object.hasOwn(contracts, "isMessageValuePortTypeV01"), true);
+  assert.equal(Object.hasOwn(contracts, "isReservedValueTypeIdV01"), true);
+  assert.equal(Object.hasOwn(contracts, "isValidCustomValueTypeIdV01"), true);
   assert.equal(SKENION_PACKAGE_MANIFEST_FILE_NAME, "skenion.package.json");
   assert.equal(compatibilityMatrixV01Schema.properties.schema.const, "skenion.compatibility-matrix");
   assert.equal(compatibilityMatrixV01Schema.properties["schema-version"].const, "0.1.0");
@@ -183,6 +193,83 @@ test("exports active schema contracts", () => {
   ]) {
     assert.equal(Object.hasOwn(contracts, runtimeExport), false, runtimeExport);
   }
+});
+
+function minimalGraphWithConnection(sourceType, targetType) {
+  const targetPort = { id: "in", direction: "input", type: targetType };
+  if (targetType === "value.core.message") {
+    targetPort.messageKeys = {
+      accepted: ["set", "bang"],
+      store: ["set"],
+      trigger: ["bang"]
+    };
+  }
+  return {
+    schema: "skenion.graph",
+    schemaVersion: "0.1.0",
+    id: "port-policy-test",
+    revision: "1",
+    nodes: [
+      {
+        id: "source",
+        implementation: coreImplementation("source", "0.1.0"),
+        objectSpec: "source",
+        params: {},
+        ports: [{ id: "out", direction: "output", type: sourceType }]
+      },
+      {
+        id: "target",
+        implementation: coreImplementation("target", "0.1.0"),
+        objectSpec: "target",
+        params: {},
+        ports: [targetPort]
+      }
+    ],
+    edges: [
+      {
+        id: "edge_1",
+        source: { nodeId: "source", portId: "out" },
+        target: { nodeId: "target", portId: "in" }
+      }
+    ]
+  };
+}
+
+test("exposes port connection policy semantics", () => {
+  const source = { id: "out", direction: "output", type: "value.core.float32" };
+  const messageTarget = { id: "in", direction: "input", type: "value.core.message" };
+  const boolTarget = { id: "in", direction: "input", type: "value.core.bool" };
+  const passiveSource = { id: "in", direction: "input", type: "value.core.float32" };
+
+  assert.equal(isMessageValuePortTypeV01("value.core.float32"), true);
+  assert.equal(isMessageValuePortTypeV01("value.acme.scalar"), false);
+  assert.equal(portTypeAcceptsV01(source, messageTarget), true);
+  assert.deepEqual(portConnectionPolicyV01(source, messageTarget), {
+    accepted: true,
+    reason: "message-selector",
+    effectiveType: "value.core.float32"
+  });
+  assert.equal(portConnectionPolicyV01(source, boolTarget).reason, "incompatible-type");
+  assert.equal(portConnectionPolicyV01(passiveSource, messageTarget).reason, "direction-mismatch");
+});
+
+test("validates value type namespace policy", () => {
+  assert.equal(isReservedValueTypeIdV01("value.core.float32"), true);
+  assert.equal(isReservedValueTypeIdV01("value.media.video-frame"), true);
+  assert.equal(isValidCustomValueTypeIdV01("value.acme.scalar"), true);
+  assert.equal(isValidCustomValueTypeIdV01("value.core.float32"), false);
+  assert.equal(isValidCustomValueTypeIdV01("value.media.video-frame"), false);
+
+  assert.equal(validateGraphDocumentV01(minimalGraphWithConnection("value.core.float32", "value.core.message")).ok, true);
+  assert.equal(validateGraphDocumentV01(minimalGraphWithConnection("value.acme.scalar", "value.acme.scalar")).ok, true);
+
+  const unknownCore = validateGraphDocumentV01(minimalGraphWithConnection("value.core.scalar", "value.core.scalar"));
+  assert.equal(unknownCore.ok, false);
+  assert.match(unknownCore.errors.join("\n"), /invalid value type value\.core\.scalar/);
+
+  const reservedMedia = validateGraphDocumentV01(minimalGraphWithConnection("value.media.video-frame", "value.media.video-frame"));
+  assert.equal(reservedMedia.ok, false);
+  assert.match(reservedMedia.errors.join("\n"), /invalid value type value\.media\.video-frame/);
 });
 
 test("validates runtime session load request contracts", async () => {
