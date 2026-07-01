@@ -4,7 +4,7 @@
   "private": true,
   "description": "skenion contracts workspace",
   "license": "Apache-2.0",
-  "packageManager": "pnpm@10.12.4",
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "ci": "pnpm lint && pnpm --filter @skenion/contracts run ci",
     "build": "pnpm --filter @skenion/contracts run build",
