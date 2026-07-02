@@ -1737,7 +1737,7 @@ export const runtimeRealtimeV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/runtime/v0.1/realtime.schema.json",
   "title": "skenion Runtime Realtime v0.1",
-  "description": "Public realtime WebSocket envelope and payload contract. Graph authoring uses graph.command, live execution input uses node.input, and every command-like request is acknowledged with command.ack.",
+  "description": "Public realtime envelope for the single persistent Runtime session pipe. Graph authoring uses graph.command, live execution input uses node.input, control.emitted carries the broadcast session event stream, and command-like requests can be acknowledged with command.ack.",
   "type": "object",
   "required": [
     "schema",
@@ -1809,7 +1809,45 @@ export const runtimeRealtimeV01Schema = {
       "if": {
         "properties": {
           "type": {
-            "const": "graph.command"
+            "const": "session.hello"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "clientId"
+              ]
+            },
+            {
+              "required": [
+                "windowId"
+              ]
+            },
+            {
+              "required": [
+                "hints"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/sessionHelloPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "session.attached"
           }
         },
         "required": [
@@ -1818,6 +1856,54 @@ export const runtimeRealtimeV01Schema = {
       },
       "then": {
         "properties": {
+          "payload": {
+            "$ref": "#/$defs/sessionAttachedPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "session.syncRequired"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/sessionSyncRequiredPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "graph.command"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "commandId",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "commandId": {
+            "$ref": "#/$defs/commandMetadataString"
+          },
+          "idempotencyKey": {
+            "$ref": "#/$defs/commandMetadataString"
+          },
           "payload": {
             "$ref": "#/$defs/graphCommandPayload"
           }
@@ -1841,6 +1927,12 @@ export const runtimeRealtimeV01Schema = {
           "idempotencyKey"
         ],
         "properties": {
+          "commandId": {
+            "$ref": "#/$defs/commandMetadataString"
+          },
+          "idempotencyKey": {
+            "$ref": "#/$defs/commandMetadataString"
+          },
           "payload": {
             "$ref": "#/$defs/nodeInputPayload"
           }
@@ -1921,6 +2013,12 @@ export const runtimeRealtimeV01Schema = {
           "idempotencyKey"
         ],
         "properties": {
+          "commandId": {
+            "$ref": "#/$defs/commandMetadataString"
+          },
+          "idempotencyKey": {
+            "$ref": "#/$defs/commandMetadataString"
+          },
           "payload": {
             "$ref": "#/$defs/selectionUpdatePayload"
           }
@@ -1964,11 +2062,90 @@ export const runtimeRealtimeV01Schema = {
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "nodeCatalog.request"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/nodeCatalogRequestPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "nodeCatalog.snapshot"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/nodeCatalogSnapshotPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "nodeCatalog.unchanged"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/nodeCatalogUnchangedPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "nodeCatalog.changed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/nodeCatalogChangedPayload"
+          }
+        }
+      }
     }
   ],
   "$defs": {
     "frameType": {
       "enum": [
+        "session.hello",
+        "session.attached",
+        "session.syncRequired",
         "graph.command",
         "node.input",
         "command.ack",
@@ -1976,8 +2153,17 @@ export const runtimeRealtimeV01Schema = {
         "control.emitted",
         "selection.update",
         "selection.updated",
-        "runtime.issue"
+        "runtime.issue",
+        "nodeCatalog.request",
+        "nodeCatalog.snapshot",
+        "nodeCatalog.unchanged",
+        "nodeCatalog.changed"
       ]
+    },
+    "commandMetadataString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "runtimeIssue": {
       "type": "object",
@@ -2003,6 +2189,205 @@ export const runtimeRealtimeV01Schema = {
           "minLength": 1
         },
         "details": true
+      },
+      "additionalProperties": false
+    },
+    "nodeCatalogHelloRequest": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "none",
+            "ifChanged",
+            "always"
+          ]
+        },
+        "knownRevision": true
+      },
+      "additionalProperties": false
+    },
+    "sessionHelloPayload": {
+      "type": "object",
+      "properties": {
+        "lastCursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resumeToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeCatalog": {
+          "$ref": "#/$defs/nodeCatalogHelloRequest"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sessionRevisions": {
+      "type": "object",
+      "required": [
+        "sessionRevision",
+        "viewRevision",
+        "controlRevision"
+      ],
+      "properties": {
+        "sessionRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "viewRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "controlRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "graphRevision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "nodeCatalogStatusPayload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "const": "notRequested"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "status",
+            "catalogRevision"
+          ],
+          "properties": {
+            "status": {
+              "const": "unchanged"
+            },
+            "catalogRevision": true
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "status",
+            "catalogRevision",
+            "snapshot"
+          ],
+          "properties": {
+            "status": {
+              "const": "included"
+            },
+            "catalogRevision": true,
+            "snapshot": {
+              "$ref": "https://skenion.dev/schemas/node-catalog/v0.1/node-catalog.schema.json"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sessionAttachedPayload": {
+      "type": "object",
+      "required": [
+        "connectionId",
+        "clientId",
+        "windowId",
+        "resumeToken",
+        "currentRevisions",
+        "snapshot",
+        "globalCursor",
+        "nodeCatalog"
+      ],
+      "properties": {
+        "connectionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resumeToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currentRevisions": {
+          "$ref": "#/$defs/sessionRevisions"
+        },
+        "snapshot": true,
+        "globalCursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeCatalog": {
+          "$ref": "#/$defs/nodeCatalogStatusPayload"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sessionSyncRequiredPayload": {
+      "type": "object",
+      "required": [
+        "connectionId",
+        "clientId",
+        "windowId",
+        "resumeToken",
+        "currentRevisions",
+        "snapshot",
+        "globalCursor",
+        "nodeCatalog",
+        "issue"
+      ],
+      "properties": {
+        "connectionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resumeToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currentRevisions": {
+          "$ref": "#/$defs/sessionRevisions"
+        },
+        "snapshot": true,
+        "globalCursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeCatalog": {
+          "$ref": "#/$defs/nodeCatalogStatusPayload"
+        },
+        "issue": {
+          "$ref": "#/$defs/runtimeIssue"
+        }
       },
       "additionalProperties": false
     },
@@ -2405,6 +2790,62 @@ export const runtimeRealtimeV01Schema = {
       "properties": {
         "issue": {
           "$ref": "#/$defs/runtimeIssue"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nodeCatalogRequestPayload": {
+      "type": "object",
+      "properties": {
+        "knownRevision": true
+      },
+      "additionalProperties": false
+    },
+    "nodeCatalogSnapshotPayload": {
+      "type": "object",
+      "required": [
+        "status",
+        "catalogRevision",
+        "snapshot"
+      ],
+      "properties": {
+        "status": {
+          "const": "included"
+        },
+        "catalogRevision": true,
+        "snapshot": {
+          "$ref": "https://skenion.dev/schemas/node-catalog/v0.1/node-catalog.schema.json"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nodeCatalogUnchangedPayload": {
+      "type": "object",
+      "required": [
+        "status",
+        "catalogRevision"
+      ],
+      "properties": {
+        "status": {
+          "const": "unchanged"
+        },
+        "catalogRevision": true
+      },
+      "additionalProperties": false
+    },
+    "nodeCatalogChangedPayload": {
+      "type": "object",
+      "required": [
+        "catalogRevision",
+        "snapshot"
+      ],
+      "properties": {
+        "catalogRevision": true,
+        "snapshot": {
+          "$ref": "https://skenion.dev/schemas/node-catalog/v0.1/node-catalog.schema.json"
+        },
+        "replayed": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

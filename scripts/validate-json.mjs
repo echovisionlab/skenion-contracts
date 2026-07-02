@@ -1618,6 +1618,7 @@ ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(projectV01Schema);
 ajv.addSchema(runtimeSessionLoadRequestV01Schema);
 ajv.addSchema(messageValueV01Schema);
+ajv.addSchema(nodeCatalogV01Schema);
 ajv.addSchema(runtimeRealtimeV01Schema);
 ajv.addSchema(packageListingV01Schema);
 ajv.addSchema(packageInstallPlanRequestV01Schema);

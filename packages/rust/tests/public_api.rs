@@ -18,16 +18,22 @@ use skenion_contracts::{
     PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortSpecV01, ProjectDocumentV01,
     RuntimeCommandAckPayloadV01, RuntimeCommandAckStatusV01, RuntimeControlEmittedEventV01,
     RuntimeControlEmittedPayloadV01, RuntimeGraphAppliedPayloadV01, RuntimeGraphCommandPayloadV01,
-    RuntimeIssuePayloadV01, RuntimeIssueSeverityV01, RuntimeIssueV01, RuntimeNodeInputPayloadV01,
-    RuntimeNodeInputV01, RuntimeRealtimeEnvelopeV01, RuntimeRealtimeFrameTypeV01,
-    RuntimeSelectionUpdatePayloadV01, RuntimeSelectionUpdatedPayloadV01, RuntimeSessionLoadModeV01,
+    RuntimeIssuePayloadV01, RuntimeIssueSeverityV01, RuntimeIssueV01,
+    RuntimeNodeCatalogChangedPayloadV01, RuntimeNodeCatalogHelloModeV01,
+    RuntimeNodeCatalogHelloRequestV01, RuntimeNodeCatalogRequestPayloadV01,
+    RuntimeNodeCatalogSnapshotPayloadV01, RuntimeNodeCatalogSnapshotStatusV01,
+    RuntimeNodeCatalogStatusPayloadV01, RuntimeNodeCatalogUnchangedPayloadV01,
+    RuntimeNodeCatalogUnchangedStatusV01, RuntimeNodeInputPayloadV01, RuntimeNodeInputV01,
+    RuntimeRealtimeEnvelopeV01, RuntimeRealtimeFrameTypeV01, RuntimeRealtimeSessionRevisionsV01,
+    RuntimeSelectionUpdatePayloadV01, RuntimeSelectionUpdatedPayloadV01,
+    RuntimeSessionAttachedPayloadV01, RuntimeSessionHelloPayloadV01, RuntimeSessionLoadModeV01,
     RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
-    SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, ValueFormatV01,
-    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, analyze_graph_document_v01,
-    analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
-    compute_node_catalog_revision_v01, compute_patch_interface_digest_v01,
-    derive_current_v0_version_range, derive_patch_contract_v01, derive_patch_contracts_v01,
-    is_exact_contracts_package_version, is_message_value_port_type_v01,
+    RuntimeSessionSyncRequiredPayloadV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01,
+    ValueFormatV01, ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01,
+    analyze_graph_document_v01, analyze_graph_fragment_v01, apply_midi_clock_message_v01,
+    compatible_data_types_v01, compute_node_catalog_revision_v01,
+    compute_patch_interface_digest_v01, derive_current_v0_version_range, derive_patch_contract_v01,
+    derive_patch_contracts_v01, is_exact_contracts_package_version, is_message_value_port_type_v01,
     is_reserved_value_type_id_v01, is_v0_semver_version, is_valid_custom_value_type_id_v01,
     midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_spec_v01,
     plan_audio_clock_bridge_v01, port_connection_policy_v01, port_type_accepts_v01,
@@ -415,6 +421,52 @@ fn runtime_envelope(
     }
 }
 
+fn assert_command_metadata_required(envelope: &RuntimeRealtimeEnvelopeV01, frame_type: &str) {
+    let mut missing_command_id = envelope.clone();
+    missing_command_id.command_id = None;
+    let report = match validate_runtime_realtime_envelope_v01(&missing_command_id) {
+        Ok(()) => panic!("{frame_type} must reject missing commandId"),
+        Err(report) => report,
+    };
+    assert!(
+        report.to_string().contains("requires commandId"),
+        "{frame_type} missing commandId report: {report}"
+    );
+
+    let mut blank_command_id = envelope.clone();
+    blank_command_id.command_id = Some(" \t\n ".to_owned());
+    let report = match validate_runtime_realtime_envelope_v01(&blank_command_id) {
+        Ok(()) => panic!("{frame_type} must reject whitespace-only commandId"),
+        Err(report) => report,
+    };
+    assert!(
+        report.to_string().contains("requires commandId"),
+        "{frame_type} whitespace commandId report: {report}"
+    );
+
+    let mut missing_idempotency_key = envelope.clone();
+    missing_idempotency_key.idempotency_key = None;
+    let report = match validate_runtime_realtime_envelope_v01(&missing_idempotency_key) {
+        Ok(()) => panic!("{frame_type} must reject missing idempotencyKey"),
+        Err(report) => report,
+    };
+    assert!(
+        report.to_string().contains("requires idempotencyKey"),
+        "{frame_type} missing idempotencyKey report: {report}"
+    );
+
+    let mut blank_idempotency_key = envelope.clone();
+    blank_idempotency_key.idempotency_key = Some(" \t\n ".to_owned());
+    let report = match validate_runtime_realtime_envelope_v01(&blank_idempotency_key) {
+        Ok(()) => panic!("{frame_type} must reject whitespace-only idempotencyKey"),
+        Err(report) => report,
+    };
+    assert!(
+        report.to_string().contains("requires idempotencyKey"),
+        "{frame_type} whitespace idempotencyKey report: {report}"
+    );
+}
+
 #[test]
 fn validates_public_runtime_realtime_transport_contract() {
     let graph_payload = RuntimeGraphCommandPayloadV01 {
@@ -437,13 +489,166 @@ fn validates_public_runtime_realtime_transport_contract() {
         interface_incident_edge_policy: None,
         description: None,
     };
+    let node_catalog_snapshot = valid_core_catalog_snapshot();
+    let catalog_revision =
+        serde_json::to_value(&node_catalog_snapshot.catalog_revision).expect("catalog revision");
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionHello,
+        serde_json::to_value(RuntimeSessionHelloPayloadV01 {
+            last_cursor: Some("runtime:1".to_owned()),
+            resume_token: Some("resume-previous".to_owned()),
+            node_catalog: Some(RuntimeNodeCatalogHelloRequestV01 {
+                mode: Some(RuntimeNodeCatalogHelloModeV01::IfChanged),
+                known_revision: Some(catalog_revision.clone()),
+            }),
+        })
+        .expect("session hello payload value"),
+    ))
+    .expect("session.hello envelope should validate");
+    for (field, payload) in [
+        ("clientId", serde_json::json!({ "clientId": "client-1" })),
+        ("windowId", serde_json::json!({ "windowId": "window-1" })),
+        (
+            "hints",
+            serde_json::json!({ "hints": { "reconnect": true } }),
+        ),
+    ] {
+        let report = match validate_runtime_realtime_envelope_v01(&runtime_envelope(
+            RuntimeRealtimeFrameTypeV01::SessionHello,
+            payload,
+        )) {
+            Ok(()) => panic!("session.hello payload must reject extra {field} field"),
+            Err(report) => report,
+        };
+        assert!(
+            report.to_string().contains(field),
+            "session.hello payload extra {field} report: {report}"
+        );
+    }
+    let mut hello_with_client_id = runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionHello,
+        serde_json::json!({}),
+    );
+    hello_with_client_id.client_id = Some("client-1".to_owned());
+    let report = validate_runtime_realtime_envelope_v01(&hello_with_client_id)
+        .expect_err("session.hello envelope must reject clientId");
+    assert!(
+        report.to_string().contains("clientId"),
+        "session.hello envelope clientId report: {report}"
+    );
+    let mut hello_with_window_id = runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionHello,
+        serde_json::json!({}),
+    );
+    hello_with_window_id.window_id = Some("window-1".to_owned());
+    let report = validate_runtime_realtime_envelope_v01(&hello_with_window_id)
+        .expect_err("session.hello envelope must reject windowId");
+    assert!(
+        report.to_string().contains("windowId"),
+        "session.hello envelope windowId report: {report}"
+    );
+    let hello_with_hints = serde_json::json!({
+        "schema": "skenion.runtime.realtime",
+        "schemaVersion": "0.1.0",
+        "type": "session.hello",
+        "messageId": "runtime-realtime-message",
+        "sessionId": "default",
+        "hints": { "reconnect": true },
+        "payload": {}
+    });
+    let error = serde_json::from_value::<RuntimeRealtimeEnvelopeV01>(hello_with_hints)
+        .expect_err("session.hello envelope must reject top-level hints");
+    assert!(
+        error.to_string().contains("hints"),
+        "session.hello envelope hints error: {error}"
+    );
+    let attached_payload = RuntimeSessionAttachedPayloadV01 {
+        connection_id: "rtconn-1".to_owned(),
+        client_id: "client-1".to_owned(),
+        window_id: "window-1".to_owned(),
+        resume_token: "resume-1".to_owned(),
+        current_revisions: RuntimeRealtimeSessionRevisionsV01 {
+            session_revision: 1,
+            view_revision: 2,
+            control_revision: 3,
+            graph_revision: Some("graph-1".to_owned()),
+        },
+        snapshot: serde_json::json!({ "sessionRevision": 1 }),
+        global_cursor: "runtime:3".to_owned(),
+        node_catalog: RuntimeNodeCatalogStatusPayloadV01::Included {
+            catalog_revision: catalog_revision.clone(),
+            snapshot: node_catalog_snapshot.clone(),
+        },
+    };
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionAttached,
+        serde_json::to_value(&attached_payload).expect("session attached payload value"),
+    ))
+    .expect("session.attached envelope should validate");
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionAttached,
+        serde_json::to_value(RuntimeSessionAttachedPayloadV01 {
+            node_catalog: RuntimeNodeCatalogStatusPayloadV01::NotRequested,
+            ..attached_payload.clone()
+        })
+        .expect("not requested node catalog payload value"),
+    ))
+    .expect("session.attached with not requested node catalog should validate");
+    let mut included_without_snapshot =
+        serde_json::to_value(&attached_payload).expect("session attached payload value");
+    included_without_snapshot["nodeCatalog"] = serde_json::json!({
+        "status": "included",
+        "catalogRevision": catalog_revision.clone()
+    });
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionAttached,
+        included_without_snapshot,
+    ))
+    .expect_err("included node catalog status requires a snapshot");
+    let mut unchanged_with_snapshot =
+        serde_json::to_value(&attached_payload).expect("session attached payload value");
+    unchanged_with_snapshot["nodeCatalog"] = serde_json::json!({
+        "status": "unchanged",
+        "catalogRevision": catalog_revision.clone(),
+        "snapshot": node_catalog_snapshot.clone()
+    });
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionAttached,
+        unchanged_with_snapshot,
+    ))
+    .expect_err("unchanged node catalog status must not include a snapshot");
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SessionSyncRequired,
+        serde_json::to_value(RuntimeSessionSyncRequiredPayloadV01 {
+            connection_id: attached_payload.connection_id.clone(),
+            client_id: attached_payload.client_id.clone(),
+            window_id: attached_payload.window_id.clone(),
+            resume_token: attached_payload.resume_token.clone(),
+            current_revisions: attached_payload.current_revisions.clone(),
+            snapshot: attached_payload.snapshot.clone(),
+            global_cursor: attached_payload.global_cursor.clone(),
+            node_catalog: attached_payload.node_catalog.clone(),
+            issue: RuntimeIssueV01 {
+                severity: RuntimeIssueSeverityV01::Warning,
+                code: "realtime.cursor.expired".to_owned(),
+                message: "cursor expired".to_owned(),
+                details: None,
+            },
+        })
+        .expect("session sync required payload value"),
+    ))
+    .expect("session.syncRequired envelope should validate");
     validate_runtime_graph_command_payload_v01(&graph_payload)
         .expect("graph command payload should validate");
-    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+    let mut graph_command = runtime_envelope(
         RuntimeRealtimeFrameTypeV01::GraphCommand,
         serde_json::to_value(&graph_payload).expect("graph payload value"),
-    ))
-    .expect("graph.command envelope should validate");
+    );
+    graph_command.command_id = Some("graph-command-1".to_owned());
+    graph_command.idempotency_key = Some("graph-command-1".to_owned());
+    validate_runtime_realtime_envelope_v01(&graph_command)
+        .expect("graph.command envelope should validate");
+    assert_command_metadata_required(&graph_command, "graph.command");
 
     let node_input_payload = RuntimeNodeInputPayloadV01 {
         inputs: vec![
@@ -465,10 +670,11 @@ fn validates_public_runtime_realtime_transport_contract() {
         RuntimeRealtimeFrameTypeV01::NodeInput,
         serde_json::to_value(&node_input_payload).expect("node input payload value"),
     );
-    node_input.command_id = Some("input-1".to_owned());
-    node_input.idempotency_key = Some("input-1".to_owned());
+    node_input.command_id = Some("node-input-1".to_owned());
+    node_input.idempotency_key = Some("node-input-1".to_owned());
     validate_runtime_realtime_envelope_v01(&node_input)
         .expect("node.input envelope should validate");
+    assert_command_metadata_required(&node_input, "node.input");
 
     validate_runtime_realtime_envelope_v01(&runtime_envelope(
         RuntimeRealtimeFrameTypeV01::CommandAck,
@@ -560,6 +766,7 @@ fn validates_public_runtime_realtime_transport_contract() {
     selection_update.idempotency_key = Some("selection-1".to_owned());
     validate_runtime_realtime_envelope_v01(&selection_update)
         .expect("selection.update envelope should validate");
+    assert_command_metadata_required(&selection_update, "selection.update");
 
     validate_runtime_realtime_envelope_v01(&runtime_envelope(
         RuntimeRealtimeFrameTypeV01::SelectionUpdated,
@@ -589,6 +796,44 @@ fn validates_public_runtime_realtime_transport_contract() {
         .expect("runtime issue payload value"),
     ))
     .expect("runtime.issue envelope should validate");
+
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::NodeCatalogRequest,
+        serde_json::to_value(RuntimeNodeCatalogRequestPayloadV01 {
+            known_revision: Some(catalog_revision.clone()),
+        })
+        .expect("node catalog request payload value"),
+    ))
+    .expect("nodeCatalog.request envelope should validate");
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::NodeCatalogSnapshot,
+        serde_json::to_value(RuntimeNodeCatalogSnapshotPayloadV01 {
+            status: RuntimeNodeCatalogSnapshotStatusV01::Included,
+            catalog_revision: catalog_revision.clone(),
+            snapshot: node_catalog_snapshot.clone(),
+        })
+        .expect("node catalog snapshot payload value"),
+    ))
+    .expect("nodeCatalog.snapshot envelope should validate");
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::NodeCatalogUnchanged,
+        serde_json::to_value(RuntimeNodeCatalogUnchangedPayloadV01 {
+            status: RuntimeNodeCatalogUnchangedStatusV01::Unchanged,
+            catalog_revision: catalog_revision.clone(),
+        })
+        .expect("node catalog unchanged payload value"),
+    ))
+    .expect("nodeCatalog.unchanged envelope should validate");
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::NodeCatalogChanged,
+        serde_json::to_value(RuntimeNodeCatalogChangedPayloadV01 {
+            catalog_revision,
+            snapshot: node_catalog_snapshot,
+            replayed: Some(false),
+        })
+        .expect("node catalog changed payload value"),
+    ))
+    .expect("nodeCatalog.changed envelope should validate");
 
     for removed_type in [
         "graph.ack",
@@ -670,17 +915,6 @@ fn validates_public_runtime_realtime_transport_contract() {
     );
     validate_runtime_realtime_envelope_v01(&key_plus_selector_control_emitted)
         .expect_err("control.emitted message must not accept selector alias");
-
-    let missing_command_metadata = runtime_envelope(
-        RuntimeRealtimeFrameTypeV01::NodeInput,
-        serde_json::to_value(&node_input_payload).expect("node input payload value"),
-    );
-    let missing_command_metadata_report =
-        validate_runtime_realtime_envelope_v01(&missing_command_metadata)
-            .expect_err("node.input command metadata should be required");
-    let text = missing_command_metadata_report.to_string();
-    assert!(text.contains("requires commandId"));
-    assert!(text.contains("requires idempotencyKey"));
 }
 
 #[test]

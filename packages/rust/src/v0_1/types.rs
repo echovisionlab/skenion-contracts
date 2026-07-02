@@ -1831,8 +1831,113 @@ pub struct RuntimeIssueV01 {
     pub details: Option<Value>,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RuntimeNodeCatalogHelloModeV01 {
+    #[default]
+    None,
+    IfChanged,
+    Always,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeNodeCatalogHelloRequestV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<RuntimeNodeCatalogHelloModeV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub known_revision: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSessionHelloPayloadV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_cursor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resume_token: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_catalog: Option<RuntimeNodeCatalogHelloRequestV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeRealtimeSessionRevisionsV01 {
+    pub session_revision: u64,
+    pub view_revision: u64,
+    pub control_revision: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_revision: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "status")]
+pub enum RuntimeNodeCatalogStatusPayloadV01 {
+    #[serde(rename = "notRequested")]
+    NotRequested,
+    #[serde(rename = "unchanged")]
+    Unchanged {
+        #[serde(rename = "catalogRevision")]
+        catalog_revision: Value,
+    },
+    #[serde(rename = "included")]
+    Included {
+        #[serde(rename = "catalogRevision")]
+        catalog_revision: Value,
+        snapshot: NodeCatalogSnapshotV01,
+    },
+}
+
+impl RuntimeNodeCatalogStatusPayloadV01 {
+    pub fn snapshot(&self) -> Option<&NodeCatalogSnapshotV01> {
+        match self {
+            Self::Included { snapshot, .. } => Some(snapshot),
+            Self::NotRequested | Self::Unchanged { .. } => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSessionAttachedPayloadV01 {
+    pub connection_id: String,
+    pub client_id: String,
+    pub window_id: String,
+    pub resume_token: String,
+    pub current_revisions: RuntimeRealtimeSessionRevisionsV01,
+    pub snapshot: Value,
+    pub global_cursor: String,
+    pub node_catalog: RuntimeNodeCatalogStatusPayloadV01,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSessionSyncRequiredPayloadV01 {
+    pub connection_id: String,
+    pub client_id: String,
+    pub window_id: String,
+    pub resume_token: String,
+    pub current_revisions: RuntimeRealtimeSessionRevisionsV01,
+    pub snapshot: Value,
+    pub global_cursor: String,
+    pub node_catalog: RuntimeNodeCatalogStatusPayloadV01,
+    pub issue: RuntimeIssueV01,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub enum RuntimeRealtimeFrameTypeV01 {
+    #[serde(rename = "session.hello")]
+    SessionHello,
+    #[serde(rename = "session.attached")]
+    SessionAttached,
+    #[serde(rename = "session.syncRequired")]
+    SessionSyncRequired,
     #[serde(rename = "graph.command")]
     GraphCommand,
     #[serde(rename = "node.input")]
@@ -1849,6 +1954,14 @@ pub enum RuntimeRealtimeFrameTypeV01 {
     SelectionUpdated,
     #[serde(rename = "runtime.issue")]
     RuntimeIssue,
+    #[serde(rename = "nodeCatalog.request")]
+    NodeCatalogRequest,
+    #[serde(rename = "nodeCatalog.snapshot")]
+    NodeCatalogSnapshot,
+    #[serde(rename = "nodeCatalog.unchanged")]
+    NodeCatalogUnchanged,
+    #[serde(rename = "nodeCatalog.changed")]
+    NodeCatalogChanged,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -2135,6 +2248,53 @@ pub struct RuntimeSelectionUpdatedPayloadV01 {
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeIssuePayloadV01 {
     pub issue: RuntimeIssueV01,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeNodeCatalogRequestPayloadV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub known_revision: Option<Value>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum RuntimeNodeCatalogSnapshotStatusV01 {
+    #[serde(rename = "included")]
+    Included,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeNodeCatalogSnapshotPayloadV01 {
+    pub status: RuntimeNodeCatalogSnapshotStatusV01,
+    pub catalog_revision: Value,
+    pub snapshot: NodeCatalogSnapshotV01,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum RuntimeNodeCatalogUnchangedStatusV01 {
+    #[serde(rename = "unchanged")]
+    Unchanged,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeNodeCatalogUnchangedPayloadV01 {
+    pub status: RuntimeNodeCatalogUnchangedStatusV01,
+    pub catalog_revision: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeNodeCatalogChangedPayloadV01 {
+    pub catalog_revision: Value,
+    pub snapshot: NodeCatalogSnapshotV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replayed: Option<bool>,
 }
 
 fn string_param(node: &GraphNodeV01, key: &str) -> Option<String> {

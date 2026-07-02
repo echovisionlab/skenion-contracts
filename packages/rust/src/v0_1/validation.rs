@@ -22,11 +22,14 @@ use super::types::{
     PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortDirectionV01, PortSpecV01,
     ProjectDocumentV01, ProjectObjectBindingIssueCodeV01, ProjectObjectBindingStatusV01,
     RuntimeCommandAckPayloadV01, RuntimeControlEmittedPayloadV01, RuntimeGraphAppliedPayloadV01,
-    RuntimeGraphCommandPayloadV01, RuntimeIssuePayloadV01, RuntimeNodeInputPayloadV01,
-    RuntimeRealtimeEnvelopeV01, RuntimeRealtimeFrameTypeV01, RuntimeSelectionUpdatePayloadV01,
-    RuntimeSelectionUpdatedPayloadV01, RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01,
-    SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01, ValueOccurrenceHeaderV01,
-    ValuePayloadKindV01, ViewStateV01, compute_node_catalog_revision_v01,
+    RuntimeGraphCommandPayloadV01, RuntimeIssuePayloadV01, RuntimeNodeCatalogChangedPayloadV01,
+    RuntimeNodeCatalogRequestPayloadV01, RuntimeNodeCatalogSnapshotPayloadV01,
+    RuntimeNodeCatalogUnchangedPayloadV01, RuntimeNodeInputPayloadV01, RuntimeRealtimeEnvelopeV01,
+    RuntimeRealtimeFrameTypeV01, RuntimeSelectionUpdatePayloadV01,
+    RuntimeSelectionUpdatedPayloadV01, RuntimeSessionAttachedPayloadV01,
+    RuntimeSessionHelloPayloadV01, RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01,
+    RuntimeSessionSyncRequiredPayloadV01, SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01,
+    ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, compute_node_catalog_revision_v01,
     derive_patch_contract_v01, project_patch_node_definition_id_v01,
 };
 use super::version::{
@@ -2973,6 +2976,42 @@ fn validate_runtime_node_input_payload_errors(
     errors
 }
 
+fn validate_optional_realtime_node_catalog_snapshot(
+    snapshot: Option<&NodeCatalogSnapshotV01>,
+) -> Vec<ValidationErrorV01> {
+    let Some(snapshot) = snapshot else {
+        return Vec::new();
+    };
+    validate_node_catalog_snapshot_v01(snapshot)
+        .map(|_| Vec::new())
+        .unwrap_or_else(|report| report.errors().iter().cloned().collect())
+}
+
+fn validate_realtime_command_metadata(
+    envelope: &RuntimeRealtimeEnvelopeV01,
+    frame_type: &str,
+    errors: &mut Vec<ValidationErrorV01>,
+) {
+    if envelope
+        .command_id
+        .as_ref()
+        .is_none_or(|value| is_blank(value))
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "{frame_type} frame requires commandId"
+        )));
+    }
+    if envelope
+        .idempotency_key
+        .as_ref()
+        .is_none_or(|value| is_blank(value))
+    {
+        errors.push(ValidationErrorV01::new(format!(
+            "{frame_type} frame requires idempotencyKey"
+        )));
+    }
+}
+
 pub fn validate_runtime_graph_command_payload_v01(
     payload: &RuntimeGraphCommandPayloadV01,
 ) -> Result<(), ValidationReportV01> {
@@ -3045,7 +3084,50 @@ pub fn validate_runtime_realtime_envelope_v01(
         ));
     }
     match envelope.message_type {
+        RuntimeRealtimeFrameTypeV01::SessionHello => {
+            if envelope.client_id.is_some() {
+                errors.push(ValidationErrorV01::new(
+                    "session.hello frame must not include clientId",
+                ));
+            }
+            if envelope.window_id.is_some() {
+                errors.push(ValidationErrorV01::new(
+                    "session.hello frame must not include windowId",
+                ));
+            }
+            errors.extend(validate_payload::<RuntimeSessionHelloPayloadV01>(
+                &envelope.payload,
+                "session.hello",
+            ))
+        }
+        RuntimeRealtimeFrameTypeV01::SessionAttached => {
+            errors.extend(validate_payload::<RuntimeSessionAttachedPayloadV01>(
+                &envelope.payload,
+                "session.attached",
+            ));
+            if let Ok(payload) =
+                serde_json::from_value::<RuntimeSessionAttachedPayloadV01>(envelope.payload.clone())
+            {
+                errors.extend(validate_optional_realtime_node_catalog_snapshot(
+                    payload.node_catalog.snapshot(),
+                ));
+            }
+        }
+        RuntimeRealtimeFrameTypeV01::SessionSyncRequired => {
+            errors.extend(validate_payload::<RuntimeSessionSyncRequiredPayloadV01>(
+                &envelope.payload,
+                "session.syncRequired",
+            ));
+            if let Ok(payload) = serde_json::from_value::<RuntimeSessionSyncRequiredPayloadV01>(
+                envelope.payload.clone(),
+            ) {
+                errors.extend(validate_optional_realtime_node_catalog_snapshot(
+                    payload.node_catalog.snapshot(),
+                ));
+            }
+        }
         RuntimeRealtimeFrameTypeV01::GraphCommand => {
+            validate_realtime_command_metadata(envelope, "graph.command", &mut errors);
             errors.extend(validate_payload::<RuntimeGraphCommandPayloadV01>(
                 &envelope.payload,
                 "graph.command",
@@ -3058,24 +3140,7 @@ pub fn validate_runtime_realtime_envelope_v01(
             }
         }
         RuntimeRealtimeFrameTypeV01::NodeInput => {
-            if envelope
-                .command_id
-                .as_ref()
-                .is_none_or(|value| is_blank(value))
-            {
-                errors.push(ValidationErrorV01::new(
-                    "node.input frame requires commandId",
-                ));
-            }
-            if envelope
-                .idempotency_key
-                .as_ref()
-                .is_none_or(|value| is_blank(value))
-            {
-                errors.push(ValidationErrorV01::new(
-                    "node.input frame requires idempotencyKey",
-                ));
-            }
+            validate_realtime_command_metadata(envelope, "node.input", &mut errors);
             errors.extend(validate_payload::<RuntimeNodeInputPayloadV01>(
                 &envelope.payload,
                 "node.input",
@@ -3105,24 +3170,7 @@ pub fn validate_runtime_realtime_envelope_v01(
             ))
         }
         RuntimeRealtimeFrameTypeV01::SelectionUpdate => {
-            if envelope
-                .command_id
-                .as_ref()
-                .is_none_or(|value| is_blank(value))
-            {
-                errors.push(ValidationErrorV01::new(
-                    "selection.update frame requires commandId",
-                ));
-            }
-            if envelope
-                .idempotency_key
-                .as_ref()
-                .is_none_or(|value| is_blank(value))
-            {
-                errors.push(ValidationErrorV01::new(
-                    "selection.update frame requires idempotencyKey",
-                ));
-            }
+            validate_realtime_command_metadata(envelope, "selection.update", &mut errors);
             errors.extend(validate_payload::<RuntimeSelectionUpdatePayloadV01>(
                 &envelope.payload,
                 "selection.update",
@@ -3139,6 +3187,42 @@ pub fn validate_runtime_realtime_envelope_v01(
                 &envelope.payload,
                 "runtime.issue",
             ))
+        }
+        RuntimeRealtimeFrameTypeV01::NodeCatalogRequest => {
+            errors.extend(validate_payload::<RuntimeNodeCatalogRequestPayloadV01>(
+                &envelope.payload,
+                "nodeCatalog.request",
+            ))
+        }
+        RuntimeRealtimeFrameTypeV01::NodeCatalogSnapshot => {
+            errors.extend(validate_payload::<RuntimeNodeCatalogSnapshotPayloadV01>(
+                &envelope.payload,
+                "nodeCatalog.snapshot",
+            ));
+            if let Ok(payload) = serde_json::from_value::<RuntimeNodeCatalogSnapshotPayloadV01>(
+                envelope.payload.clone(),
+            ) && let Err(report) = validate_node_catalog_snapshot_v01(&payload.snapshot)
+            {
+                errors.extend(report.errors().iter().cloned());
+            }
+        }
+        RuntimeRealtimeFrameTypeV01::NodeCatalogUnchanged => {
+            errors.extend(validate_payload::<RuntimeNodeCatalogUnchangedPayloadV01>(
+                &envelope.payload,
+                "nodeCatalog.unchanged",
+            ))
+        }
+        RuntimeRealtimeFrameTypeV01::NodeCatalogChanged => {
+            errors.extend(validate_payload::<RuntimeNodeCatalogChangedPayloadV01>(
+                &envelope.payload,
+                "nodeCatalog.changed",
+            ));
+            if let Ok(payload) = serde_json::from_value::<RuntimeNodeCatalogChangedPayloadV01>(
+                envelope.payload.clone(),
+            ) && let Err(report) = validate_node_catalog_snapshot_v01(&payload.snapshot)
+            {
+                errors.extend(report.errors().iter().cloned());
+            }
         }
     }
 
