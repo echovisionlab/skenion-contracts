@@ -1323,7 +1323,56 @@ export interface RuntimeIssueV01 {
   details?: unknown;
 }
 
+export type RuntimeNodeCatalogHelloModeV01 = "none" | "ifChanged" | "always";
+
+export interface RuntimeNodeCatalogHelloRequestV01 {
+  mode?: RuntimeNodeCatalogHelloModeV01;
+  knownRevision?: unknown;
+}
+
+export interface RuntimeSessionHelloPayloadV01 {
+  lastCursor?: string;
+  resumeToken?: string;
+  nodeCatalog?: RuntimeNodeCatalogHelloRequestV01;
+}
+
+export interface RuntimeRealtimeSessionRevisionsV01 {
+  sessionRevision: number;
+  viewRevision: number;
+  controlRevision: number;
+  graphRevision?: string | null;
+}
+
+export interface RuntimeNodeCatalogNotRequestedPayloadV01 {
+  status: "notRequested";
+}
+
+export type RuntimeNodeCatalogStatusPayloadV01 =
+  | RuntimeNodeCatalogNotRequestedPayloadV01
+  | RuntimeNodeCatalogUnchangedPayloadV01
+  | RuntimeNodeCatalogSnapshotPayloadV01;
+
+export type RuntimeNodeCatalogStatusV01 = RuntimeNodeCatalogStatusPayloadV01["status"];
+
+export interface RuntimeSessionAttachedPayloadV01 {
+  connectionId: string;
+  clientId: string;
+  windowId: string;
+  resumeToken: string;
+  currentRevisions: RuntimeRealtimeSessionRevisionsV01;
+  snapshot: unknown;
+  globalCursor: string;
+  nodeCatalog: RuntimeNodeCatalogStatusPayloadV01;
+}
+
+export interface RuntimeSessionSyncRequiredPayloadV01 extends RuntimeSessionAttachedPayloadV01 {
+  issue: RuntimeIssueV01;
+}
+
 export type RuntimeRealtimeFrameTypeV01 =
+  | "session.hello"
+  | "session.attached"
+  | "session.syncRequired"
   | "graph.command"
   | "node.input"
   | "command.ack"
@@ -1331,7 +1380,11 @@ export type RuntimeRealtimeFrameTypeV01 =
   | "control.emitted"
   | "selection.update"
   | "selection.updated"
-  | "runtime.issue";
+  | "runtime.issue"
+  | "nodeCatalog.request"
+  | "nodeCatalog.snapshot"
+  | "nodeCatalog.unchanged"
+  | "nodeCatalog.changed";
 
 export interface RuntimeRealtimeEnvelopeV01 {
   schema: "skenion.runtime.realtime";
@@ -1478,6 +1531,27 @@ export interface RuntimeSelectionUpdatedPayloadV01 extends RuntimeSelectionUpdat
 
 export interface RuntimeIssuePayloadV01 {
   issue: RuntimeIssueV01;
+}
+
+export interface RuntimeNodeCatalogRequestPayloadV01 {
+  knownRevision?: unknown;
+}
+
+export interface RuntimeNodeCatalogSnapshotPayloadV01 {
+  status: "included";
+  catalogRevision: unknown;
+  snapshot: NodeCatalogSnapshotV01;
+}
+
+export interface RuntimeNodeCatalogUnchangedPayloadV01 {
+  status: "unchanged";
+  catalogRevision: unknown;
+}
+
+export interface RuntimeNodeCatalogChangedPayloadV01 {
+  catalogRevision: unknown;
+  snapshot: NodeCatalogSnapshotV01;
+  replayed?: boolean;
 }
 
 export interface GraphValidationIssueV01 {

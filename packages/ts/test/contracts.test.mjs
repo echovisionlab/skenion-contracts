@@ -164,6 +164,9 @@ test("exports active schema contracts", () => {
   assert.equal(Object.hasOwn(contracts, "validateRuntimeNodeInputPayloadV01"), true);
   assert.equal(Object.hasOwn(contracts, "isRuntimeRealtimeEnvelopeV01"), true);
   assert.deepEqual(runtimeRealtimeV01Schema.$defs.frameType.enum, [
+    "session.hello",
+    "session.attached",
+    "session.syncRequired",
     "graph.command",
     "node.input",
     "command.ack",
@@ -171,7 +174,11 @@ test("exports active schema contracts", () => {
     "control.emitted",
     "selection.update",
     "selection.updated",
-    "runtime.issue"
+    "runtime.issue",
+    "nodeCatalog.request",
+    "nodeCatalog.snapshot",
+    "nodeCatalog.unchanged",
+    "nodeCatalog.changed"
   ]);
   assert.deepEqual(runtimeRealtimeV01Schema.$defs.graphCommandKind.enum.includes("node.input"), false);
   assert.equal(Object.hasOwn(contracts, "portConnectionPolicyV01"), true);
@@ -239,25 +246,163 @@ function floatMessage(value) {
 
 test("validates runtime realtime transport taxonomy", () => {
   const graphCommandPayload = { kind: "node.create", objectSpec: "float", requestedNodeId: "float_1" };
+  const nodeCatalogSnapshot = validCoreCatalogSnapshot();
+  const sessionAttachedPayload = {
+    connectionId: "rtconn-1",
+    clientId: "client-1",
+    windowId: "window-1",
+    resumeToken: "resume-1",
+    currentRevisions: {
+      sessionRevision: 1,
+      viewRevision: 2,
+      controlRevision: 3,
+      graphRevision: "graph-1"
+    },
+    snapshot: { sessionRevision: 1 },
+    globalCursor: "runtime:3",
+    nodeCatalog: {
+      status: "included",
+      catalogRevision: nodeCatalogSnapshot.catalogRevision,
+      snapshot: nodeCatalogSnapshot
+    }
+  };
   const nodeInputPayload = {
     inputs: [
       { nodeId: "float_1", portId: "in", message: floatMessage(2) },
       { nodeId: "float_1", portId: "in", message: floatMessage(3) }
     ]
   };
+  const graphCommandMetadata = {
+    commandId: "graph-command-1",
+    idempotencyKey: "graph-command-1"
+  };
+  const nodeInputMetadata = {
+    commandId: "node-input-1",
+    idempotencyKey: "node-input-1"
+  };
+  const selectionUpdatePayload = { target: { kind: "root" }, selection: { nodes: [] } };
+  const selectionUpdateMetadata = {
+    commandId: "selection-1",
+    idempotencyKey: "selection-1"
+  };
 
   assert.equal(validateRuntimeGraphCommandPayloadV01(graphCommandPayload).ok, true);
   assert.equal(validateRuntimeNodeInputPayloadV01(nodeInputPayload).ok, true);
-  assert.equal(validateRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("graph.command", graphCommandPayload)).ok, true);
   assert.equal(
     validateRuntimeRealtimeEnvelopeV01(
-      runtimeRealtimeEnvelope("node.input", nodeInputPayload, {
-        commandId: "input-1",
-        idempotencyKey: "input-1"
+      runtimeRealtimeEnvelope("session.hello", {
+        lastCursor: "runtime:1",
+        resumeToken: "resume-previous",
+        nodeCatalog: { mode: "ifChanged", knownRevision: nodeCatalogSnapshot.catalogRevision }
       })
     ).ok,
     true
   );
+  for (const [field, value] of [
+    ["clientId", "client-1"],
+    ["windowId", "window-1"],
+    ["hints", { reconnect: true }]
+  ]) {
+    assert.equal(
+      validateRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("session.hello", { [field]: value })).ok,
+      false,
+      `session.hello payload must reject ${field}`
+    );
+    assert.equal(
+      validateRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("session.hello", {}, { [field]: value })).ok,
+      false,
+      `session.hello envelope must reject ${field}`
+    );
+  }
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("session.attached", sessionAttachedPayload)).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("session.attached", {
+        ...sessionAttachedPayload,
+        nodeCatalog: { status: "notRequested" }
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("session.attached", {
+        ...sessionAttachedPayload,
+        nodeCatalog: { status: "included", catalogRevision: nodeCatalogSnapshot.catalogRevision }
+      })
+    ).ok,
+    false
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("session.attached", {
+        ...sessionAttachedPayload,
+        nodeCatalog: {
+          status: "unchanged",
+          catalogRevision: nodeCatalogSnapshot.catalogRevision,
+          snapshot: nodeCatalogSnapshot
+        }
+      })
+    ).ok,
+    false
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("session.syncRequired", {
+        ...sessionAttachedPayload,
+        issue: {
+          severity: "warning",
+          code: "realtime.cursor.expired",
+          message: "cursor expired"
+        }
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("graph.command", graphCommandPayload, graphCommandMetadata)
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("node.input", nodeInputPayload, nodeInputMetadata)
+    ).ok,
+    true
+  );
+  for (const [type, payload, metadata] of [
+    ["graph.command", graphCommandPayload, graphCommandMetadata],
+    ["node.input", nodeInputPayload, nodeInputMetadata],
+    ["selection.update", selectionUpdatePayload, selectionUpdateMetadata]
+  ]) {
+    const missingCommandId = validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope(type, payload, { idempotencyKey: metadata.idempotencyKey })
+    );
+    assert.equal(missingCommandId.ok, false, `${type} must reject missing commandId`);
+    assert.match(missingCommandId.errors.join("\n"), /commandId/u);
+
+    const missingIdempotencyKey = validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope(type, payload, { commandId: metadata.commandId })
+    );
+    assert.equal(missingIdempotencyKey.ok, false, `${type} must reject missing idempotencyKey`);
+    assert.match(missingIdempotencyKey.errors.join("\n"), /idempotencyKey/u);
+
+    const whitespaceCommandId = validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope(type, payload, { ...metadata, commandId: " \t\n " })
+    );
+    assert.equal(whitespaceCommandId.ok, false, `${type} must reject whitespace-only commandId`);
+    assert.match(whitespaceCommandId.errors.join("\n"), /commandId/u);
+
+    const whitespaceIdempotencyKey = validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope(type, payload, { ...metadata, idempotencyKey: " \t\n " })
+    );
+    assert.equal(whitespaceIdempotencyKey.ok, false, `${type} must reject whitespace-only idempotencyKey`);
+    assert.match(whitespaceIdempotencyKey.errors.join("\n"), /idempotencyKey/u);
+  }
   assert.equal(
     validateRuntimeRealtimeEnvelopeV01(
       runtimeRealtimeEnvelope("command.ack", {
@@ -295,10 +440,7 @@ test("validates runtime realtime transport taxonomy", () => {
   );
   assert.equal(
     validateRuntimeRealtimeEnvelopeV01(
-      runtimeRealtimeEnvelope("selection.update", { target: { kind: "root" }, selection: { nodes: [] } }, {
-        commandId: "selection-1",
-        idempotencyKey: "selection-1"
-      })
+      runtimeRealtimeEnvelope("selection.update", selectionUpdatePayload, selectionUpdateMetadata)
     ).ok,
     true
   );
@@ -325,7 +467,41 @@ test("validates runtime realtime transport taxonomy", () => {
     ).ok,
     true
   );
-  assert.equal(isRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("graph.command", graphCommandPayload)), true);
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("nodeCatalog.request", { knownRevision: nodeCatalogSnapshot.catalogRevision })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("nodeCatalog.snapshot", {
+        status: "included",
+        catalogRevision: nodeCatalogSnapshot.catalogRevision,
+        snapshot: nodeCatalogSnapshot
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("nodeCatalog.unchanged", {
+        status: "unchanged",
+        catalogRevision: nodeCatalogSnapshot.catalogRevision
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("nodeCatalog.changed", {
+        catalogRevision: nodeCatalogSnapshot.catalogRevision,
+        snapshot: nodeCatalogSnapshot
+      })
+    ).ok,
+    true
+  );
+  assert.equal(isRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("graph.command", graphCommandPayload, graphCommandMetadata)), true);
 
   for (const removedType of [
     "graph.ack",
@@ -391,11 +567,6 @@ test("validates runtime realtime transport taxonomy", () => {
   assert.equal(keyPlusSelectorControlEmitted.ok, false);
   assert.match(keyPlusSelectorControlEmitted.errors.join("\n"), /additional properties/u);
 
-  const missingCommandMetadata = validateRuntimeRealtimeEnvelopeV01(
-    runtimeRealtimeEnvelope("node.input", nodeInputPayload)
-  );
-  assert.equal(missingCommandMetadata.ok, false);
-  assert.match(missingCommandMetadata.errors.join("\n"), /commandId|idempotencyKey/u);
 });
 
 function minimalGraphWithConnection(sourceType, targetType) {
