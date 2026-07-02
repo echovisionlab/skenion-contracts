@@ -1316,6 +1316,172 @@ export interface RuntimeSessionLoadRequestV01 {
   precondition?: RuntimeSessionLoadPreconditionV01;
 }
 
+export type RuntimeIssueSeverityV01 = "error" | "warning" | "info";
+
+export interface RuntimeIssueV01 {
+  severity: RuntimeIssueSeverityV01;
+  code: string;
+  message: string;
+  details?: unknown;
+}
+
+export type RuntimeRealtimeFrameTypeV01 =
+  | "graph.command"
+  | "node.input"
+  | "command.ack"
+  | "graph.applied"
+  | "control.emitted"
+  | "selection.update"
+  | "selection.updated"
+  | "runtime.issue";
+
+export interface RuntimeRealtimeEnvelopeV01 {
+  schema: "skenion.runtime.realtime";
+  schemaVersion: "0.1.0";
+  type: RuntimeRealtimeFrameTypeV01;
+  messageId: string;
+  sessionId: string;
+  connectionId?: string;
+  clientId?: string;
+  windowId?: string;
+  commandId?: string;
+  correlationId?: string;
+  idempotencyKey?: string;
+  sequence?: number;
+  cursor?: string;
+  createdAt?: string;
+  payload: unknown;
+}
+
+export type GraphCommandKindV01 =
+  | "view.patch"
+  | "graph.changeSet"
+  | "graph.pasteFragment"
+  | "history.undo"
+  | "history.redo"
+  | "node.resolve"
+  | "node.create"
+  | "node.replace"
+  | "node.delete"
+  | "node.update";
+
+export type RuntimeGraphCommandScopeV01 = "client" | "global";
+
+export type RuntimeGraphCommandUnresolvedPolicyV01 = "reject" | "materialize-issue";
+
+export interface RuntimeGraphCommandPayloadV01 {
+  kind: GraphCommandKindV01;
+  baseSessionRevision?: number;
+  baseGraphRevision?: string;
+  baseViewRevision?: number;
+  target?: GraphTargetRef;
+  surfacePath?: unknown;
+  viewPatch?: unknown;
+  changes?: unknown[];
+  objectSpec?: string;
+  nodeId?: string;
+  requestedNodeId?: string;
+  view?: CanvasNodeViewV01;
+  params?: Record<string, unknown>;
+  request?: PasteGraphFragmentRequest;
+  scope?: RuntimeGraphCommandScopeV01;
+  unresolvedPolicy?: RuntimeGraphCommandUnresolvedPolicyV01;
+  interfaceIncidentEdgePolicy?: InterfaceIncidentEdgePolicyV01;
+  description?: string;
+}
+
+export interface RuntimeNodeInputV01 {
+  nodeId: string;
+  portId: string;
+  message: MessageValueV01;
+}
+
+export interface RuntimeNodeInputPayloadV01 {
+  inputs: RuntimeNodeInputV01[];
+}
+
+export type RuntimeCommandAckStatusV01 = "accepted" | "conflict" | "rejected";
+
+export interface RuntimeCommandAckPayloadV01 {
+  status: RuntimeCommandAckStatusV01;
+  accepted: boolean;
+  applied?: boolean;
+  conflict?: boolean;
+  cached?: boolean;
+  kind?: string;
+  commandId?: string;
+  correlationId?: string;
+  idempotencyKey?: string;
+  eventCursor?: string;
+  graphSequence?: number;
+  target?: unknown;
+  surfacePath?: unknown;
+  baseSessionRevision?: number;
+  baseGraphRevision?: string;
+  baseViewRevision?: number;
+  sessionRevision?: number;
+  graphRevision?: string;
+  viewRevision?: number;
+  historySummary?: unknown;
+  node?: unknown;
+  operation?: unknown;
+  issues: RuntimeIssueV01[];
+}
+
+export interface RuntimeGraphAppliedPayloadV01 {
+  kind: GraphCommandKindV01;
+  commandId?: string;
+  correlationId?: string;
+  idempotencyKey?: string;
+  graphSequence?: number;
+  target?: unknown;
+  surfacePath?: unknown;
+  node?: unknown;
+  operation?: unknown;
+  sessionRevision?: number;
+  graphRevision?: string;
+  viewRevision?: number;
+  historyEntryId?: string | null;
+  issues: RuntimeIssueV01[];
+  replayed?: boolean;
+}
+
+export interface RuntimeControlEmittedEventV01 {
+  nodeId: string;
+  portId: string;
+  message: MessageValueV01;
+}
+
+export interface RuntimeControlEmittedPayloadV01 {
+  commandId?: string;
+  correlationId?: string;
+  idempotencyKey?: string;
+  controlSequence?: number;
+  controlRevision?: number | null;
+  changed?: boolean;
+  events: RuntimeControlEmittedEventV01[];
+  values?: unknown;
+  issues: RuntimeIssueV01[];
+  replayed?: boolean;
+}
+
+export interface RuntimeSelectionUpdatePayloadV01 {
+  target: unknown;
+  selection: unknown;
+  cursor?: unknown;
+  ttlMs?: number;
+}
+
+export interface RuntimeSelectionUpdatedPayloadV01 extends RuntimeSelectionUpdatePayloadV01 {
+  participantId: string;
+  updatedAt: string;
+  replayed?: boolean;
+}
+
+export interface RuntimeIssuePayloadV01 {
+  issue: RuntimeIssueV01;
+}
+
 export interface GraphValidationIssueV01 {
   severity: "error" | "warning";
   code: string;

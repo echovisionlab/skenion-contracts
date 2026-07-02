@@ -60,6 +60,10 @@
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"
     },
+    "./runtime/v0.1/realtime-schema": {
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
+    },
     "./package/v0.1/schema": {
       "types": "./dist/generated/schemas.d.ts",
       "import": "./dist/generated/schemas.js"

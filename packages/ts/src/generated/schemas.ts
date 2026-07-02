@@ -1741,6 +1741,685 @@ export const runtimeSessionLoadRequestV01Schema = {
   }
 } as const;
 
+export const runtimeRealtimeV01Schema = {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skenion.dev/schemas/runtime/v0.1/realtime.schema.json",
+  "title": "skenion Runtime Realtime v0.1",
+  "description": "Public realtime WebSocket envelope and payload contract. Graph authoring uses graph.command, live execution input uses node.input, and every command-like request is acknowledged with command.ack.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "type",
+    "messageId",
+    "sessionId",
+    "payload"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skenion.runtime.realtime"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "type": {
+      "$ref": "#/$defs/frameType"
+    },
+    "messageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "connectionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "clientId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "windowId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commandId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cursor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload": true
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "graph.command"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/graphCommandPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "node.input"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "commandId",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/nodeInputPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "command.ack"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/commandAckPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "graph.applied"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/graphAppliedPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "control.emitted"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/controlEmittedPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "selection.update"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "commandId",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/selectionUpdatePayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "selection.updated"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/selectionUpdatedPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "runtime.issue"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/runtimeIssuePayload"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "frameType": {
+      "enum": [
+        "graph.command",
+        "node.input",
+        "command.ack",
+        "graph.applied",
+        "control.emitted",
+        "selection.update",
+        "selection.updated",
+        "runtime.issue"
+      ]
+    },
+    "runtimeIssue": {
+      "type": "object",
+      "required": [
+        "severity",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": true
+      },
+      "additionalProperties": false
+    },
+    "graphCommandKind": {
+      "enum": [
+        "view.patch",
+        "graph.changeSet",
+        "graph.pasteFragment",
+        "history.undo",
+        "history.redo",
+        "node.resolve",
+        "node.create",
+        "node.replace",
+        "node.delete",
+        "node.update"
+      ]
+    },
+    "graphCommandPayload": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/graphCommandKind"
+        },
+        "baseSessionRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "baseGraphRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseViewRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": true,
+        "surfacePath": true,
+        "viewPatch": true,
+        "changes": {
+          "type": "array"
+        },
+        "objectSpec": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requestedNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "view": true,
+        "params": {
+          "type": "object"
+        },
+        "request": true,
+        "scope": {
+          "enum": [
+            "client",
+            "global"
+          ]
+        },
+        "unresolvedPolicy": {
+          "enum": [
+            "reject",
+            "materialize-issue"
+          ]
+        },
+        "interfaceIncidentEdgePolicy": {
+          "enum": [
+            "drop",
+            "reject"
+          ]
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nodeInput": {
+      "type": "object",
+      "required": [
+        "nodeId",
+        "portId",
+        "message"
+      ],
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "portId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "$ref": "https://skenion.dev/schemas/message/v0.1/message-value.schema.json"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nodeInputPayload": {
+      "type": "object",
+      "required": [
+        "inputs"
+      ],
+      "properties": {
+        "inputs": {
+          "description": "Ordered batch. Runtime applies entries in array order and emits resulting control events in order.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nodeInput"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "commandAckPayload": {
+      "type": "object",
+      "required": [
+        "status",
+        "accepted",
+        "issues"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "accepted",
+            "conflict",
+            "rejected"
+          ]
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "conflict": {
+          "type": "boolean"
+        },
+        "cached": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "eventCursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "graphSequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": true,
+        "surfacePath": true,
+        "baseSessionRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "baseGraphRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseViewRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sessionRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "graphRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "viewRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "historySummary": true,
+        "node": true,
+        "operation": true,
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeIssue"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "graphAppliedPayload": {
+      "type": "object",
+      "required": [
+        "kind",
+        "issues"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/graphCommandKind"
+        },
+        "commandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "graphSequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": true,
+        "surfacePath": true,
+        "node": true,
+        "operation": true,
+        "sessionRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "graphRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "viewRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "historyEntryId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeIssue"
+          }
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "controlEvent": {
+      "type": "object",
+      "required": [
+        "nodeId",
+        "portId",
+        "message"
+      ],
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "portId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "$ref": "https://skenion.dev/schemas/message/v0.1/message-value.schema.json"
+        }
+      },
+      "additionalProperties": false
+    },
+    "controlEmittedPayload": {
+      "type": "object",
+      "required": [
+        "events",
+        "issues"
+      ],
+      "properties": {
+        "commandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "controlSequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "controlRevision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/controlEvent"
+          }
+        },
+        "values": true,
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeIssue"
+          }
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "selectionUpdatePayload": {
+      "type": "object",
+      "required": [
+        "target",
+        "selection"
+      ],
+      "properties": {
+        "target": true,
+        "selection": true,
+        "cursor": true,
+        "ttlMs": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "selectionUpdatedPayload": {
+      "type": "object",
+      "required": [
+        "target",
+        "selection",
+        "participantId",
+        "updatedAt"
+      ],
+      "properties": {
+        "target": true,
+        "selection": true,
+        "cursor": true,
+        "ttlMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "participantId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "updatedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtimeIssuePayload": {
+      "type": "object",
+      "required": [
+        "issue"
+      ],
+      "properties": {
+        "issue": {
+          "$ref": "#/$defs/runtimeIssue"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
 export const nodeDefinitionV01Schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skenion.dev/schemas/node/v0.1/node-definition.schema.json",

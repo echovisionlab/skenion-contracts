@@ -1297,6 +1297,9 @@ function selectValidator(file, document, validators) {
   if (document.schema === "skenion.runtime.session-load-request" && document.schemaVersion === "0.1.0") {
     return validators.runtimeSessionLoadRequestV01;
   }
+  if (document.schema === "skenion.runtime.realtime" && document.schemaVersion === "0.1.0") {
+    return validators.runtimeRealtimeV01;
+  }
   if (document.schema === "skenion.compatibility-matrix" && document["schema-version"] === "0.1.0") {
     return validators.compatibilityMatrixV01;
   }
@@ -1594,6 +1597,8 @@ const graphFragmentV01Schema = await readJson("json-schema/graph/v0.1/fragment.s
 const viewStateV01Schema = await readJson("json-schema/view/v0.1/view-state.schema.json");
 const projectV01Schema = await readJson("json-schema/project/v0.1/project.schema.json");
 const runtimeSessionLoadRequestV01Schema = await readJson("json-schema/runtime/v0.1/session-load-request.schema.json");
+const runtimeRealtimeV01Schema = await readJson("json-schema/runtime/v0.1/realtime.schema.json");
+const messageValueV01Schema = await readJson("json-schema/message/v0.1/message-value.schema.json");
 const nodeDefinitionV01Schema = await readJson("json-schema/node/v0.1/node-definition.schema.json");
 const nodeCatalogV01Schema = await readJson("json-schema/node-catalog/v0.1/node-catalog.schema.json");
 const extensionManifestV01Schema = await readJson("json-schema/extension/v0.1/extension-manifest.schema.json");
@@ -1609,6 +1614,8 @@ ajv.addSchema(viewStateV01Schema);
 ajv.addSchema(nodeDefinitionV01Schema);
 ajv.addSchema(projectV01Schema);
 ajv.addSchema(runtimeSessionLoadRequestV01Schema);
+ajv.addSchema(messageValueV01Schema);
+ajv.addSchema(runtimeRealtimeV01Schema);
 ajv.addSchema(packageListingV01Schema);
 ajv.addSchema(packageInstallPlanRequestV01Schema);
 ajv.addSchema(compatibilityMatrixV01Schema);
@@ -1618,6 +1625,7 @@ const validators = {
   viewStateV01: ajv.compile(viewStateV01Schema),
   projectV01: ajv.compile(projectV01Schema),
   runtimeSessionLoadRequestV01: ajv.compile(runtimeSessionLoadRequestV01Schema),
+  runtimeRealtimeV01: ajv.compile(runtimeRealtimeV01Schema),
   nodeDefinitionV01: ajv.compile(nodeDefinitionV01Schema),
   nodeCatalogV01: ajv.compile(nodeCatalogV01Schema),
   shaderInterfaceV01: ajv.compile(

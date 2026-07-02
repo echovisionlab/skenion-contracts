@@ -28,6 +28,9 @@ const projectV01Schema = await readSchema("json-schema/project/v0.1/project.sche
 const runtimeSessionLoadRequestV01Schema = await readSchema(
   "json-schema/runtime/v0.1/session-load-request.schema.json"
 );
+const runtimeRealtimeV01Schema = await readSchema(
+  "json-schema/runtime/v0.1/realtime.schema.json"
+);
 const nodeDefinitionV01Schema = await readSchema(
   "json-schema/node/v0.1/node-definition.schema.json"
 );
@@ -83,6 +86,8 @@ await writeFile(
     `export const projectV01Schema = ${JSON.stringify(projectV01Schema, null, 2)} as const;`,
     "",
     `export const runtimeSessionLoadRequestV01Schema = ${JSON.stringify(runtimeSessionLoadRequestV01Schema, null, 2)} as const;`,
+    "",
+    `export const runtimeRealtimeV01Schema = ${JSON.stringify(runtimeRealtimeV01Schema, null, 2)} as const;`,
     "",
     `export const nodeDefinitionV01Schema = ${JSON.stringify(nodeDefinitionV01Schema, null, 2)} as const;`,
     "",

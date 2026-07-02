@@ -3,9 +3,10 @@ use skenion_contracts::{
     CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
     ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, CompatibilityMatrixV01,
     DataFlowV01, DataTypeV01, EndpointBindingValueFormatV01, ExtensionKindV01,
-    ExtensionManifestV01, GraphDocumentV01, GraphFragmentOutsideEndpointPolicyV01,
-    GraphFragmentV01, GraphTargetRef, MidiClockMessageKindV01, MidiClockMessageV01,
-    MidiClockSnapshotV01, NodeCatalogDisplayPaletteV01, NodeCatalogDisplayV01, NodeCatalogEntryV01,
+    ExtensionManifestV01, GraphCommandKindV01, GraphDocumentV01,
+    GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, GraphTargetRef, MessageAtomV01,
+    MessageValueV01, MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01,
+    NodeCatalogDisplayPaletteV01, NodeCatalogDisplayV01, NodeCatalogEntryV01,
     NodeCatalogIssueSeverityV01, NodeCatalogIssueTargetV01, NodeCatalogIssueV01,
     NodeCatalogSnapshotV01, NodeDefinitionManifestV01, NumberRangeV01, ObjectProviderRefV01,
     ObjectSpecAtomV01, ObjectSpecParseResultV01, PackageCategoryV01, PackageDiscoveryResponseV01,
@@ -16,7 +17,12 @@ use skenion_contracts::{
     PackageListingTargetSupportKindV01, PackageListingV01, PackageManifestV01,
     PackageObjectExportV01, PackageRootDocumentV01, PackageTargetTripleV01,
     PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortSpecV01, ProjectDocumentV01,
-    RuntimeSessionLoadModeV01, RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
+    RuntimeCommandAckPayloadV01, RuntimeCommandAckStatusV01, RuntimeControlEmittedEventV01,
+    RuntimeControlEmittedPayloadV01, RuntimeGraphAppliedPayloadV01, RuntimeGraphCommandPayloadV01,
+    RuntimeIssuePayloadV01, RuntimeIssueSeverityV01, RuntimeIssueV01, RuntimeNodeInputPayloadV01,
+    RuntimeNodeInputV01, RuntimeRealtimeEnvelopeV01, RuntimeRealtimeFrameTypeV01,
+    RuntimeSelectionUpdatePayloadV01, RuntimeSelectionUpdatedPayloadV01, RuntimeSessionLoadModeV01,
+    RuntimeSessionLoadPreconditionV01, RuntimeSessionLoadRequestV01,
     SKENION_PACKAGE_MANIFEST_FILE_NAME, StringOrStringsV01, ValueFormatV01,
     ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, analyze_graph_document_v01,
     analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
@@ -35,8 +41,9 @@ use skenion_contracts::{
     validate_package_install_plan_response_v01, validate_package_listing_v01,
     validate_package_manifest_v01, validate_package_root_v01,
     validate_paste_graph_fragment_request, validate_project_document_v01,
-    validate_runtime_session_load_request_v01, validate_value_format_v01,
-    validate_value_occurrence_header_v01,
+    validate_runtime_graph_command_payload_v01, validate_runtime_node_input_payload_v01,
+    validate_runtime_realtime_envelope_v01, validate_runtime_session_load_request_v01,
+    validate_value_format_v01, validate_value_occurrence_header_v01,
 };
 
 fn data_type(flow: DataFlowV01, data_kind: &str) -> DataTypeV01 {
@@ -381,6 +388,307 @@ fn validates_public_runtime_session_load_request_contract() {
             .to_string()
             .contains("documentId must be a UUID")
     );
+}
+
+fn runtime_float_message(value: f64) -> MessageValueV01 {
+    MessageValueV01 {
+        key: "float".to_owned(),
+        atoms: vec![MessageAtomV01::Float {
+            representation: "f32".to_owned(),
+            value,
+        }],
+    }
+}
+
+fn runtime_envelope(
+    message_type: RuntimeRealtimeFrameTypeV01,
+    payload: serde_json::Value,
+) -> RuntimeRealtimeEnvelopeV01 {
+    RuntimeRealtimeEnvelopeV01 {
+        schema: "skenion.runtime.realtime".to_owned(),
+        schema_version: "0.1.0".to_owned(),
+        message_type,
+        message_id: "runtime-realtime-message".to_owned(),
+        session_id: "default".to_owned(),
+        connection_id: None,
+        client_id: None,
+        window_id: None,
+        command_id: None,
+        correlation_id: None,
+        idempotency_key: None,
+        sequence: None,
+        cursor: None,
+        created_at: None,
+        payload,
+    }
+}
+
+#[test]
+fn validates_public_runtime_realtime_transport_contract() {
+    let graph_payload = RuntimeGraphCommandPayloadV01 {
+        kind: GraphCommandKindV01::NodeCreate,
+        base_session_revision: None,
+        base_graph_revision: None,
+        base_view_revision: None,
+        target: None,
+        surface_path: None,
+        view_patch: None,
+        changes: None,
+        object_spec: Some("float".to_owned()),
+        node_id: None,
+        requested_node_id: Some("float_1".to_owned()),
+        view: None,
+        params: None,
+        request: None,
+        scope: None,
+        unresolved_policy: None,
+        interface_incident_edge_policy: None,
+        description: None,
+    };
+    validate_runtime_graph_command_payload_v01(&graph_payload)
+        .expect("graph command payload should validate");
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::GraphCommand,
+        serde_json::to_value(&graph_payload).expect("graph payload value"),
+    ))
+    .expect("graph.command envelope should validate");
+
+    let node_input_payload = RuntimeNodeInputPayloadV01 {
+        inputs: vec![
+            RuntimeNodeInputV01 {
+                node_id: "float_1".to_owned(),
+                port_id: "in".to_owned(),
+                message: runtime_float_message(2.0),
+            },
+            RuntimeNodeInputV01 {
+                node_id: "float_1".to_owned(),
+                port_id: "in".to_owned(),
+                message: runtime_float_message(3.0),
+            },
+        ],
+    };
+    validate_runtime_node_input_payload_v01(&node_input_payload)
+        .expect("node.input payload should validate");
+    let mut node_input = runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::NodeInput,
+        serde_json::to_value(&node_input_payload).expect("node input payload value"),
+    );
+    node_input.command_id = Some("input-1".to_owned());
+    node_input.idempotency_key = Some("input-1".to_owned());
+    validate_runtime_realtime_envelope_v01(&node_input)
+        .expect("node.input envelope should validate");
+
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::CommandAck,
+        serde_json::to_value(RuntimeCommandAckPayloadV01 {
+            status: RuntimeCommandAckStatusV01::Accepted,
+            accepted: true,
+            applied: Some(false),
+            conflict: Some(false),
+            cached: None,
+            kind: Some("node.input".to_owned()),
+            command_id: None,
+            correlation_id: None,
+            idempotency_key: None,
+            event_cursor: None,
+            graph_sequence: None,
+            target: None,
+            surface_path: None,
+            base_session_revision: None,
+            base_graph_revision: None,
+            base_view_revision: None,
+            session_revision: None,
+            graph_revision: None,
+            view_revision: None,
+            history_summary: None,
+            node: None,
+            operation: None,
+            issues: Vec::new(),
+        })
+        .expect("ack payload value"),
+    ))
+    .expect("command.ack envelope should validate");
+
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::GraphApplied,
+        serde_json::to_value(RuntimeGraphAppliedPayloadV01 {
+            kind: GraphCommandKindV01::NodeCreate,
+            command_id: None,
+            correlation_id: None,
+            idempotency_key: None,
+            graph_sequence: Some(7),
+            target: None,
+            surface_path: None,
+            node: None,
+            operation: None,
+            session_revision: None,
+            graph_revision: None,
+            view_revision: None,
+            history_entry_id: None,
+            issues: Vec::new(),
+            replayed: Some(false),
+        })
+        .expect("graph applied payload value"),
+    ))
+    .expect("graph.applied envelope should validate");
+
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::ControlEmitted,
+        serde_json::to_value(RuntimeControlEmittedPayloadV01 {
+            command_id: None,
+            correlation_id: None,
+            idempotency_key: None,
+            control_sequence: Some(8),
+            control_revision: None,
+            changed: Some(true),
+            events: vec![RuntimeControlEmittedEventV01 {
+                node_id: "float_1".to_owned(),
+                port_id: "value".to_owned(),
+                message: runtime_float_message(3.0),
+            }],
+            values: None,
+            issues: Vec::new(),
+            replayed: Some(false),
+        })
+        .expect("control emitted payload value"),
+    ))
+    .expect("control.emitted envelope should validate");
+
+    let mut selection_update = runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SelectionUpdate,
+        serde_json::to_value(RuntimeSelectionUpdatePayloadV01 {
+            target: serde_json::json!({ "kind": "root" }),
+            selection: serde_json::json!({ "nodes": [] }),
+            cursor: None,
+            ttl_ms: Some(30_000),
+        })
+        .expect("selection update payload value"),
+    );
+    selection_update.command_id = Some("selection-1".to_owned());
+    selection_update.idempotency_key = Some("selection-1".to_owned());
+    validate_runtime_realtime_envelope_v01(&selection_update)
+        .expect("selection.update envelope should validate");
+
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::SelectionUpdated,
+        serde_json::to_value(RuntimeSelectionUpdatedPayloadV01 {
+            target: serde_json::json!({ "kind": "root" }),
+            selection: serde_json::json!({ "nodes": [] }),
+            cursor: None,
+            ttl_ms: Some(30_000),
+            participant_id: "participant-1".to_owned(),
+            updated_at: "2026-07-02T00:00:00.000Z".to_owned(),
+            replayed: Some(false),
+        })
+        .expect("selection updated payload value"),
+    ))
+    .expect("selection.updated envelope should validate");
+
+    validate_runtime_realtime_envelope_v01(&runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::RuntimeIssue,
+        serde_json::to_value(RuntimeIssuePayloadV01 {
+            issue: RuntimeIssueV01 {
+                severity: RuntimeIssueSeverityV01::Error,
+                code: "runtime.test".to_owned(),
+                message: "test issue".to_owned(),
+                details: None,
+            },
+        })
+        .expect("runtime issue payload value"),
+    ))
+    .expect("runtime.issue envelope should validate");
+
+    for removed_type in [
+        "graph.ack",
+        "runtime.error",
+        "control.command",
+        "presence.update",
+        "presence.updated",
+    ] {
+        serde_json::from_value::<RuntimeRealtimeEnvelopeV01>(serde_json::json!({
+            "schema": "skenion.runtime.realtime",
+            "schemaVersion": "0.1.0",
+            "type": removed_type,
+            "messageId": "removed-frame",
+            "sessionId": "default",
+            "payload": {}
+        }))
+        .expect_err("removed frame type should fail public DTO parsing");
+    }
+
+    serde_json::from_value::<RuntimeGraphCommandPayloadV01>(serde_json::json!({
+        "kind": "node.input",
+        "nodeId": "float_1",
+        "portId": "in",
+        "message": serde_json::to_value(runtime_float_message(2.0)).expect("message")
+    }))
+    .expect_err("node.input must not parse as graph.command payload");
+
+    let empty_batch = RuntimeNodeInputPayloadV01 { inputs: Vec::new() };
+    let empty_batch_report = validate_runtime_node_input_payload_v01(&empty_batch)
+        .expect_err("empty node.input batch should fail");
+    assert!(
+        empty_batch_report
+            .to_string()
+            .contains("inputs must not be empty")
+    );
+
+    serde_json::from_value::<RuntimeNodeInputPayloadV01>(serde_json::json!({
+        "inputs": [{
+            "nodeId": "float_1",
+            "portId": "in",
+            "message": { "selector": "float", "atoms": [] }
+        }]
+    }))
+    .expect_err("node.input message must use key, not selector");
+
+    serde_json::from_value::<RuntimeNodeInputPayloadV01>(serde_json::json!({
+        "inputs": [{
+            "nodeId": "float_1",
+            "portId": "in",
+            "message": { "key": "float", "selector": "float", "atoms": [] }
+        }]
+    }))
+    .expect_err("node.input message must not accept selector alias");
+
+    let selector_control_emitted = runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::ControlEmitted,
+        serde_json::json!({
+            "events": [{
+                "nodeId": "float_1",
+                "portId": "value",
+                "message": { "selector": "float", "atoms": [] }
+            }],
+            "issues": []
+        }),
+    );
+    validate_runtime_realtime_envelope_v01(&selector_control_emitted)
+        .expect_err("control.emitted message must use key, not selector");
+
+    let key_plus_selector_control_emitted = runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::ControlEmitted,
+        serde_json::json!({
+            "events": [{
+                "nodeId": "float_1",
+                "portId": "value",
+                "message": { "key": "float", "selector": "float", "atoms": [] }
+            }],
+            "issues": []
+        }),
+    );
+    validate_runtime_realtime_envelope_v01(&key_plus_selector_control_emitted)
+        .expect_err("control.emitted message must not accept selector alias");
+
+    let missing_command_metadata = runtime_envelope(
+        RuntimeRealtimeFrameTypeV01::NodeInput,
+        serde_json::to_value(&node_input_payload).expect("node input payload value"),
+    );
+    let missing_command_metadata_report =
+        validate_runtime_realtime_envelope_v01(&missing_command_metadata)
+            .expect_err("node.input command metadata should be required");
+    let text = missing_command_metadata_report.to_string();
+    assert!(text.contains("requires commandId"));
+    assert!(text.contains("requires idempotencyKey"));
 }
 
 #[test]
