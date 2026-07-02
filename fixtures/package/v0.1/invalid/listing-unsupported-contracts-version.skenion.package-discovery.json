@@ -13,8 +13,7 @@
       "category": "patch",
       "license": "Apache-2.0",
       "contracts": {
-        "line": "0.45",
-        "range": ">=0.45.0"
+        "version": "1.0.0"
       },
       "targetSupport": {
         "kind": "target-independent"
@@ -53,8 +52,8 @@
       "issues": [
         {
           "severity": "error",
-          "code": "unsupported-contracts-range",
-          "message": "Listing contracts range is not a supported v0 compatibility range."
+          "code": "unsupported-contracts-version",
+          "message": "Listing contracts version is not supported."
         }
       ]
     }
@@ -62,8 +61,8 @@
   "issues": [
     {
       "severity": "error",
-      "code": "unsupported-contracts-range",
-      "message": "One listing used an unsupported Contracts range."
+      "code": "unsupported-contracts-version",
+      "message": "One listing used an unsupported Contracts version."
     }
   ]
 }

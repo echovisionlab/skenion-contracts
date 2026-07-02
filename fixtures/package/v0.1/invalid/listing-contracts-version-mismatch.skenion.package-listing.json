@@ -8,8 +8,7 @@
   "category": "patch",
   "license": "Apache-2.0",
   "contracts": {
-    "line": "0.45",
-    "range": ">=0.45.0 <0.47.0"
+    "version": "1.0.0"
   },
   "targetSupport": {
     "kind": "target-independent"
@@ -48,8 +47,8 @@
   "issues": [
     {
       "severity": "error",
-      "code": "unsupported-contracts-range",
-      "message": "Listing contracts range spans multiple v0 compatibility lines."
+      "code": "unsupported-contracts-version",
+      "message": "Listing contracts version is not supported."
     }
   ]
 }

@@ -154,7 +154,7 @@
     },
     "packageInstallPlanCheckKind": {
       "enum": [
-        "contracts-line",
+        "contracts-version",
         "runtime-abi",
         "target-triple",
         "checksum",
@@ -384,7 +384,7 @@
     },
     "packageInstallPlanIssueCode": {
       "enum": [
-        "incompatible-contracts-line",
+        "incompatible-contracts-version",
         "incompatible-runtime-abi",
         "unsupported-target",
         "missing-artifact",

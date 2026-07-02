@@ -109,10 +109,10 @@ publishable release artifacts because they are importable contract and
 schema/shape validator libraries. Publishing still runs only through GitHub
 Actions release workflows.
 
-Contracts packages also export canonical v0 compatibility-line helpers and the
+Contracts packages also export exact v0 Contracts version helpers and the
 `skenion.compatibility-matrix` schema/types/validators. The compatibility
-matrix records Contracts package identity, SDK-supported Contracts ranges,
-component versions, and protocol baselines. Runtime/Studio release artifacts,
+matrix records Contracts package identity, the SDK-required exact Contracts
+version, component versions, and protocol baselines. Runtime/Studio release artifacts,
 checksums, S3 locations, promotion gates, and product release-set completeness
 belong to the repositories and workflows that produce those artifacts, not to
 the Contracts package.

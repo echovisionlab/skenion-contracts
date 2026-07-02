@@ -339,15 +339,14 @@ export type PackageListingTargetSupportKindV01 = "target-independent" | "targete
 export type PackageListingArtifactKindV01 = "manifest" | "package-archive" | "native-artifact";
 export type PackageListingIssueCodeV01 =
   | "malformed-listing-metadata"
-  | "unsupported-contracts-range"
+  | "unsupported-contracts-version"
   | "missing-artifact"
   | "unavailable-target"
   | "quarantined-package"
   | "hidden-package";
 
-export interface PackageContractsSupportV01 {
-  line: string;
-  range: string;
+export interface PackageContractsRequirementV01 {
+  version: string;
 }
 
 export interface PackageProvidedRefV01 {
@@ -420,7 +419,7 @@ export interface PackageManifestV01 {
   version: string;
   displayName?: string;
   category: PackageCategoryV01;
-  contracts: PackageContractsSupportV01;
+  contracts: PackageContractsRequirementV01;
   runtimeAbiRange?: string;
   targets?: PackageTargetTripleV01[];
   provides: PackageProvidesV01;
@@ -525,7 +524,7 @@ export interface PackageListingV01 {
   license: string;
   homepageUrl?: string;
   repositoryUrl?: string;
-  contracts: PackageContractsSupportV01;
+  contracts: PackageContractsRequirementV01;
   runtimeAbiRange?: string;
   targetSupport: PackageListingTargetSupportV01;
   provides: PackageListingProvidesSummaryV01;
@@ -562,7 +561,7 @@ export type PackageInstallPlanActionKindV01 =
   | "keep"
   | "reject";
 export type PackageInstallPlanCheckKindV01 =
-  | "contracts-line"
+  | "contracts-version"
   | "runtime-abi"
   | "target-triple"
   | "checksum"
@@ -573,7 +572,7 @@ export type PackageInstallPlanCheckStatusV01 = "pass" | "warning" | "fail" | "sk
 export type PackageInstallPlanCapabilityChangeKindV01 = "add" | "remove" | "keep";
 export type PackageInstallPlanCapabilityKindV01 = ProviderRefKindV01 | "capability";
 export type PackageInstallPlanIssueCodeV01 =
-  | "incompatible-contracts-line"
+  | "incompatible-contracts-version"
   | "incompatible-runtime-abi"
   | "unsupported-target"
   | "missing-artifact"
@@ -594,7 +593,7 @@ export interface PackageInstallPlanTargetV01 {
   os: PackageInstallPlanTargetOsV01;
   arch: PackageInstallPlanTargetArchV01;
   triple: PackageTargetTripleV01;
-  contracts: PackageContractsSupportV01;
+  contracts: PackageContractsRequirementV01;
   runtimeAbiRange?: string;
 }
 
@@ -1223,8 +1222,7 @@ export interface ProjectPackageLockEntryV01 {
   source: PackageSourceV01;
   root: PackageRootV01;
   trust: PackageTrustV01;
-  contractsLine: string;
-  contractsRange: string;
+  contractsVersion: string;
   manifestPath: string;
   manifestChecksum: PackageChecksumV01;
   evidenceRefs?: string[];
@@ -1695,7 +1693,7 @@ export interface CompatibilityMatrixRuntimeComponentV01 {
 
 export interface CompatibilityMatrixSdkComponentV01 {
   npm: CompatibilityMatrixRegistryPackageV01;
-  "supported-contracts-range": string;
+  "required-contracts-version": string;
 }
 
 export interface CompatibilityMatrixStudioComponentV01 {
@@ -1713,8 +1711,7 @@ export interface CompatibilityMatrixV01 {
   schema: "skenion.compatibility-matrix";
   "schema-version": "0.1.0";
   "matrix-id": string;
-  "contracts-line": string;
-  "contracts-range": string;
+  "contracts-version": string;
   "protocol-baselines": CompatibilityMatrixProtocolBaselinesV01;
   components: CompatibilityMatrixComponentsV01;
 }

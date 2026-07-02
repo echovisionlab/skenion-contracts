@@ -10,13 +10,12 @@
     "arch": "aarch64",
     "triple": "aarch64-apple-darwin",
     "contracts": {
-      "line": "0.45",
-      "range": ">=0.45.0 <0.46.0"
+      "version": "0.45.0"
     }
   },
   "checks": [
     {
-      "kind": "contracts-line",
+      "kind": "contracts-version",
       "status": "pass"
     }
   ],

@@ -13,8 +13,7 @@
   "homepageUrl": "ftp://skenion.dev/examples",
   "repositoryUrl": "https://github.com/skenion/skenion examples",
   "contracts": {
-    "line": "0.45",
-    "range": ">=0.45.0 <0.46.0"
+    "version": "0.45.0"
   },
   "targetSupport": {
     "kind": "target-independent"

@@ -4,18 +4,16 @@ import path from "node:path";
 import test from "node:test";
 import * as contracts from "../dist/index.js";
 import {
-  CONTRACTS_COMPATIBILITY_LINE,
-  CONTRACTS_COMPATIBILITY_RANGE,
   CONTRACTS_PACKAGE_VERSION,
+  assertV0SemverVersion,
   compatibilityMatrixV01Schema,
   SKENION_PACKAGE_MANIFEST_FILE_NAME,
   createDefaultViewStateForGraph,
   computeNodeCatalogRevisionV01,
   computePatchInterfaceDigestV01,
+  deriveCurrentV0VersionRange,
   derivePatchContractV01,
   derivePatchContractsV01,
-  deriveV0CompatibilityLine,
-  deriveV0CompatibilityRange,
   messageValueV01Schema,
   extensionManifestV01Schema,
   graphFragmentV01Schema,
@@ -91,8 +89,9 @@ import {
   isPackageListingV01,
   isRuntimeSessionLoadRequestV01,
   isRuntimeRealtimeEnvelopeV01,
-  isSameV0CompatibilityLine,
-  satisfiesV0CompatibilityRange
+  isExactContractsPackageVersion,
+  isV0SemverVersion,
+  satisfiesCurrentV0VersionRange
 } from "../dist/index.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
@@ -184,8 +183,7 @@ test("exports active schema contracts", () => {
   assert.equal(compatibilityMatrixV01Schema.properties.schema.const, "skenion.compatibility-matrix");
   assert.equal(compatibilityMatrixV01Schema.properties["schema-version"].const, "0.1.0");
   assert.equal(CONTRACTS_PACKAGE_VERSION, tsPackageJson.version);
-  assert.equal(CONTRACTS_COMPATIBILITY_LINE, deriveV0CompatibilityLine(CONTRACTS_PACKAGE_VERSION));
-  assert.equal(CONTRACTS_COMPATIBILITY_RANGE, deriveV0CompatibilityRange(CONTRACTS_PACKAGE_VERSION));
+  assert.equal(isExactContractsPackageVersion(CONTRACTS_PACKAGE_VERSION), true);
   assert.equal(shaderInterfaceV01Schema.properties.schema.const, "skenion.shader.interface");
   assert.equal(messageValueV01Schema.properties.key.type, "string");
   assert.deepEqual(shaderIssueV01Schema.properties.phase.enum, [
@@ -1011,22 +1009,22 @@ test("node definition schema validates message key policy shape", () => {
   assert.match(unacceptedTriggerResult.errors.join("\n"), /key unknown is not accepted/);
 });
 
-test("derives v0 compatibility lines and ranges", () => {
-  assert.equal(deriveV0CompatibilityLine("0.44.0"), "0.44");
-  assert.equal(deriveV0CompatibilityLine("0.44.33"), "0.44");
-  assert.equal(deriveV0CompatibilityRange("0.44.33"), ">=0.44.0 <0.45.0");
-  assert.equal(isSameV0CompatibilityLine("0.44.0", "0.44.33"), true);
-  assert.equal(isSameV0CompatibilityLine("0.44.33", "0.45.0"), false);
-  assert.equal(satisfiesV0CompatibilityRange("0.44.33", ">=0.44.0 <0.45.0"), true);
-  assert.equal(satisfiesV0CompatibilityRange("0.45.0", ">=0.44.0 <0.45.0"), false);
-  assert.equal(satisfiesV0CompatibilityRange("not-semver", ">=0.44.0 <0.45.0"), false);
-  assert.equal(satisfiesV0CompatibilityRange("0.44.0", "not-range"), false);
-  assert.equal(satisfiesV0CompatibilityRange("0.44.0", ">=0.44.0 <0.46.0"), false);
-  assert.equal(satisfiesV0CompatibilityRange("0.44.0", ">=1.44.0 <1.45.0"), false);
-  assert.equal(isSameV0CompatibilityLine("not-semver", "0.44.0"), false);
-  assert.throws(() => deriveV0CompatibilityLine("not-semver"), /SemVer/);
-  assert.throws(() => deriveV0CompatibilityLine("1.0.0"), /v0 SemVer/);
-  assert.throws(() => deriveV0CompatibilityRange("1.0.0"), /v0 SemVer/);
+test("validates exact contracts versions and v0 version ranges", () => {
+  assert.equal(isV0SemverVersion("0.44.0"), true);
+  assert.equal(isV0SemverVersion("0.44.0-alpha.1+build.1"), true);
+  assert.equal(isV0SemverVersion("1.0.0"), false);
+  assert.equal(isV0SemverVersion("not-semver"), false);
+  assert.equal(deriveCurrentV0VersionRange("0.44.33"), ">=0.44.0 <0.45.0");
+  assert.equal(satisfiesCurrentV0VersionRange("0.44.33", ">=0.44.0 <0.45.0"), true);
+  assert.equal(satisfiesCurrentV0VersionRange("0.45.0", ">=0.44.0 <0.45.0"), false);
+  assert.equal(satisfiesCurrentV0VersionRange("not-semver", ">=0.44.0 <0.45.0"), false);
+  assert.equal(satisfiesCurrentV0VersionRange("0.44.0", "not-range"), false);
+  assert.equal(satisfiesCurrentV0VersionRange("0.44.0", ">=0.44.0 <0.46.0"), false);
+  assert.equal(satisfiesCurrentV0VersionRange("0.44.0", ">=1.44.0 <1.45.0"), false);
+  assert.doesNotThrow(() => assertV0SemverVersion("0.44.0"));
+  assert.throws(() => assertV0SemverVersion("not-semver"), /SemVer/);
+  assert.throws(() => assertV0SemverVersion("1.0.0"), /v0 SemVer/);
+  assert.throws(() => deriveCurrentV0VersionRange("1.0.0"), /v0 SemVer/);
 });
 
 test("validates compatibility matrix fixtures and semantic failures", async () => {
@@ -1038,30 +1036,29 @@ test("validates compatibility matrix fixtures and semantic failures", async () =
   assert.equal(result.ok, true);
   assert.equal(isCompatibilityMatrixV01(matrix), true);
   assert.equal(matrix.schema, "skenion.compatibility-matrix");
-  assert.equal(matrix["contracts-line"], "0.45");
+  assert.equal(matrix["contracts-version"], "0.45.0");
   assert.equal(matrix.components.contracts.npm.version, "0.45.0");
   assert.equal(matrix.components.runtime.version, "0.44.2");
   assert.equal(matrix.components.sdk.npm.version, "0.17.0");
   assert.equal(matrix.components.studio.version, "0.44.5");
 
-  const incompatibleSdkRange = structuredClone(matrix);
-  incompatibleSdkRange.components.sdk["supported-contracts-range"] = ">=0.44.0 <0.45.0";
-  const incompatibleSdkRangeResult = validateCompatibilityMatrixV01(incompatibleSdkRange);
-  assert.equal(incompatibleSdkRangeResult.ok, false);
-  assert.match(incompatibleSdkRangeResult.errors.join("\n"), /supported-contracts-range/);
+  const incompatibleSdkVersion = structuredClone(matrix);
+  incompatibleSdkVersion.components.sdk["required-contracts-version"] = "0.44.0";
+  const incompatibleSdkVersionResult = validateCompatibilityMatrixV01(incompatibleSdkVersion);
+  assert.equal(incompatibleSdkVersionResult.ok, false);
+  assert.match(incompatibleSdkVersionResult.errors.join("\n"), /required-contracts-version/);
 
-  const identityAndLineFailures = structuredClone(matrix);
-  identityAndLineFailures.components.contracts.npm.name = "@skenion/not-contracts";
-  identityAndLineFailures.components.contracts.crate.name = "not-skenion-contracts";
-  identityAndLineFailures.components.sdk.npm.name = "@skenion/not-sdk";
-  identityAndLineFailures["contracts-line"] = "0.44";
-  identityAndLineFailures["contracts-range"] = ">=0.44.0 <0.45.0";
-  identityAndLineFailures.components.contracts.crate.version = "0.44.33";
-  const identityAndLineFailuresResult = validateCompatibilityMatrixV01(identityAndLineFailures);
-  assert.equal(identityAndLineFailuresResult.ok, false);
+  const identityAndVersionFailures = structuredClone(matrix);
+  identityAndVersionFailures.components.contracts.npm.name = "@skenion/not-contracts";
+  identityAndVersionFailures.components.contracts.crate.name = "not-skenion-contracts";
+  identityAndVersionFailures.components.sdk.npm.name = "@skenion/not-sdk";
+  identityAndVersionFailures["contracts-version"] = "0.44.0";
+  identityAndVersionFailures.components.contracts.crate.version = "0.44.33";
+  const identityAndVersionFailuresResult = validateCompatibilityMatrixV01(identityAndVersionFailures);
+  assert.equal(identityAndVersionFailuresResult.ok, false);
   assert.match(
-    identityAndLineFailuresResult.errors.join("\n"),
-    /@skenion\/contracts|skenion-contracts|@skenion\/sdk|contracts-line|contracts-range|same v0 compatibility line/
+    identityAndVersionFailuresResult.errors.join("\n"),
+    /@skenion\/contracts|skenion-contracts|@skenion\/sdk|contracts-version|exact same Contracts version/
   );
 
   const invalidContractsVersion = structuredClone(matrix);
@@ -1210,6 +1207,12 @@ test("validates package manifests and package roots", async () => {
   manifestInstallState.source = "first-party";
   assert.equal(validatePackageManifestV01(manifestInstallState).ok, false);
 
+  const unsupportedContractsVersion = structuredClone(patchPackage);
+  unsupportedContractsVersion.contracts.version = "1.0.0";
+  const unsupportedContractsVersionResult = validatePackageManifestV01(unsupportedContractsVersion);
+  assert.equal(unsupportedContractsVersionResult.ok, false);
+  assert.match(unsupportedContractsVersionResult.errors.join("\n"), /contracts\.version/);
+
   const blankObjectSpec = structuredClone(patchPackage);
   blankObjectSpec.provides.objects[0].primaryObjectSpec = "   ";
   const blankObjectSpecResult = validatePackageManifestV01(blankObjectSpec);
@@ -1275,6 +1278,7 @@ test("validates public package listing and discovery DTOs", async () => {
   assert.equal(discovery.listings[1].issues[0].code, "unavailable-target");
   assert.equal(discovery.issues[0].code, "hidden-package");
   assert.equal(discovery.issues[1].code, "quarantined-package");
+  assert.equal(validatePackageDiscoveryResponseV01({ schema: "skenion.package.discovery" }).ok, false);
 
   const duplicateDiscovery = structuredClone(discovery);
   duplicateDiscovery.listings.push(structuredClone(discovery.listings[0]));
@@ -1292,11 +1296,11 @@ test("validates public package listing and discovery DTOs", async () => {
   assert.equal(missingEvidenceResult.ok, false);
   assert.match(missingEvidenceResult.errors.join("\n"), /missing evidence/);
 
-  const lineMismatch = structuredClone(listing);
-  lineMismatch.contracts.line = "0.44";
-  const lineMismatchResult = validatePackageListingV01(lineMismatch);
-  assert.equal(lineMismatchResult.ok, false);
-  assert.match(lineMismatchResult.errors.join("\n"), /contracts line must match contracts range/);
+  const unsupportedContractsVersion = structuredClone(listing);
+  unsupportedContractsVersion.contracts.version = "1.0.0";
+  const unsupportedContractsVersionResult = validatePackageListingV01(unsupportedContractsVersion);
+  assert.equal(unsupportedContractsVersionResult.ok, false);
+  assert.match(unsupportedContractsVersionResult.errors.join("\n"), /contracts\.version/);
 
   const patchWithNativeArtifact = structuredClone(listing);
   patchWithNativeArtifact.artifactEvidence.artifacts.push(
@@ -1353,13 +1357,13 @@ test("validates public package listing and discovery DTOs", async () => {
   }
 
   const invalidCases = [
-    ["fixtures/package/v0.1/invalid/listing-contracts-range-mismatch.skenion.package-listing.json", validatePackageListingV01, /contracts line must match contracts range/],
+    ["fixtures/package/v0.1/invalid/listing-contracts-version-mismatch.skenion.package-listing.json", validatePackageListingV01, /contracts\.version/],
     ["fixtures/package/v0.1/invalid/listing-invalid-artifact-evidence.skenion.package-listing.json", validatePackageListingV01, /checksum|path/],
     ["fixtures/package/v0.1/invalid/listing-malformed-public-metadata.skenion.package-listing.json", validatePackageListingV01, /version|homepageUrl|repositoryUrl|rankingScore/],
     ["fixtures/package/v0.1/invalid/listing-missing-summary.skenion.package-listing.json", validatePackageListingV01, /summary/],
     ["fixtures/package/v0.1/invalid/listing-missing-native-artifact.skenion.package-listing.json", validatePackageListingV01, /contains|constant|native artifact/],
     ["fixtures/package/v0.1/invalid/listing-widened-runtime-abi-range.skenion.package-listing.json", validatePackageListingV01, /runtimeAbiRange/],
-    ["fixtures/package/v0.1/invalid/listing-unsupported-contracts-range.skenion.package-discovery.json", validatePackageDiscoveryResponseV01, /range/]
+    ["fixtures/package/v0.1/invalid/listing-unsupported-contracts-version.skenion.package-discovery.json", validatePackageDiscoveryResponseV01, /contracts\.version/]
   ];
 
   for (const [fixture, validate, expected] of invalidCases) {
@@ -1422,10 +1426,22 @@ test("validates package install and update plan DTOs", async () => {
   assert.match(targetMismatchResult.errors.join("\n"), /target .* must use target triple/);
 
   const targetContractsMismatch = structuredClone(request);
-  targetContractsMismatch.target.contracts.range = ">=0.45.1 <0.46.0";
+  targetContractsMismatch.target.contracts.version = "0.44.0";
   const targetContractsMismatchResult = validatePackageInstallPlanRequestV01(targetContractsMismatch);
   assert.equal(targetContractsMismatchResult.ok, false);
-  assert.match(targetContractsMismatchResult.errors.join("\n"), /target contracts line/);
+  assert.match(targetContractsMismatchResult.errors.join("\n"), /does not match target/);
+
+  const invalidTargetContractsVersion = structuredClone(request);
+  invalidTargetContractsVersion.target.contracts.version = "1.0.0";
+  const invalidTargetContractsVersionResult = validatePackageInstallPlanRequestV01(invalidTargetContractsVersion);
+  assert.equal(invalidTargetContractsVersionResult.ok, false);
+  assert.match(invalidTargetContractsVersionResult.errors.join("\n"), /target contracts\.version/);
+
+  const manifestContractsMismatch = structuredClone(request);
+  manifestContractsMismatch.candidates[0].manifest.contracts.version = "0.44.0";
+  const manifestContractsMismatchResult = validatePackageInstallPlanRequestV01(manifestContractsMismatch);
+  assert.equal(manifestContractsMismatchResult.ok, false);
+  assert.match(manifestContractsMismatchResult.errors.join("\n"), /manifest contracts\.version/);
 
   const targetRuntimeAbiMismatch = structuredClone(request);
   targetRuntimeAbiMismatch.target.runtimeAbiRange = ">=0.45.1 <0.46.0";
@@ -1462,6 +1478,14 @@ test("validates package install and update plan DTOs", async () => {
   const mixedLockWithoutTargetResult = validatePackageInstallPlanRequestV01(mixedLockWithoutTarget);
   assert.equal(mixedLockWithoutTargetResult.ok, false);
   assert.match(mixedLockWithoutTargetResult.errors.join("\n"), /requires target/);
+
+  const lockWithUnsupportedContractsVersion = structuredClone(request);
+  lockWithUnsupportedContractsVersion.current.packageLock[0].contractsVersion = "1.0.0";
+  const lockWithUnsupportedContractsVersionResult = validatePackageInstallPlanRequestV01(
+    lockWithUnsupportedContractsVersion
+  );
+  assert.equal(lockWithUnsupportedContractsVersionResult.ok, false);
+  assert.match(lockWithUnsupportedContractsVersionResult.errors.join("\n"), /contractsVersion/);
 
   const bindingWithoutPackageLock = structuredClone(request);
   delete bindingWithoutPackageLock.current.objectBindings[0].implementation.provider.lockEntryId;
@@ -3060,6 +3084,12 @@ test("exports and validates v0.1 project patch library contracts", async () => {
   const missingResourceLockResult = validateProjectDocumentV01(missingResourceLock);
   assert.equal(missingResourceLockResult.ok, false);
   assert.match(missingResourceLockResult.errors.join("\n"), /resource lock .*missing-resource-lock-entry/);
+
+  const unsupportedLockContractsVersion = structuredClone(validPackageProject);
+  unsupportedLockContractsVersion.packageLock[0].contractsVersion = "1.0.0";
+  const unsupportedLockContractsVersionResult = validateProjectDocumentV01(unsupportedLockContractsVersion);
+  assert.equal(unsupportedLockContractsVersionResult.ok, false);
+  assert.match(unsupportedLockContractsVersionResult.errors.join("\n"), /contractsVersion/);
 
   const missingProviderBinding = validPackageProject.objectBindings.find((binding) => binding.id === "binding-missing-provider");
   assert.equal(missingProviderBinding.status, "error");

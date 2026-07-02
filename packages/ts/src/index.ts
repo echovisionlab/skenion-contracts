@@ -135,7 +135,7 @@ export type {
   PackageChecksumAlgorithmV01,
   PackageChecksumRefV01,
   PackageChecksumV01,
-  PackageContractsSupportV01,
+  PackageContractsRequirementV01,
   PackageDiscoveryResponseV01,
   PackageIssueSeverityV01,
   PackageIssueV01,
@@ -299,13 +299,12 @@ export {
 } from "./project.js";
 export { analyzeShaderInterfaceV01, shaderInterfaceToPortsV01 } from "./shaderInterface.js";
 export {
-  CONTRACTS_COMPATIBILITY_LINE,
-  CONTRACTS_COMPATIBILITY_RANGE,
   CONTRACTS_PACKAGE_VERSION,
-  deriveV0CompatibilityLine,
-  deriveV0CompatibilityRange,
-  isSameV0CompatibilityLine,
-  satisfiesV0CompatibilityRange
+  assertV0SemverVersion,
+  deriveCurrentV0VersionRange,
+  isExactContractsPackageVersion,
+  isV0SemverVersion,
+  satisfiesCurrentV0VersionRange
 } from "./version.js";
 export {
   analyzeGraphFragmentV01,

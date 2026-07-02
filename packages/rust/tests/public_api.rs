@@ -1,9 +1,8 @@
 use skenion_contracts::{
     AudioClockBridgeMethodV01, AudioClockDomainAuthorityV01, AudioClockDomainV01,
-    CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
-    ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01, CompatibilityMatrixV01,
-    DataFlowV01, DataTypeV01, EndpointBindingValueFormatV01, ExtensionKindV01,
-    ExtensionManifestV01, GraphCommandKindV01, GraphDocumentV01,
+    CONTRACTS_PACKAGE_VERSION, ClockAuthorityV01, ClockCapabilityV01, ClockTimeSignatureV01,
+    CompatibilityMatrixV01, DataFlowV01, DataTypeV01, EndpointBindingValueFormatV01,
+    ExtensionKindV01, ExtensionManifestV01, GraphCommandKindV01, GraphDocumentV01,
     GraphFragmentOutsideEndpointPolicyV01, GraphFragmentV01, GraphTargetRef, MessageAtomV01,
     MessageValueV01, MidiClockMessageKindV01, MidiClockMessageV01, MidiClockSnapshotV01,
     NodeCatalogDisplayPaletteV01, NodeCatalogDisplayV01, NodeCatalogEntryV01,
@@ -27,13 +26,13 @@ use skenion_contracts::{
     ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01, analyze_graph_document_v01,
     analyze_graph_fragment_v01, apply_midi_clock_message_v01, compatible_data_types_v01,
     compute_node_catalog_revision_v01, compute_patch_interface_digest_v01,
-    derive_patch_contract_v01, derive_patch_contracts_v01, derive_v0_compatibility_line,
-    derive_v0_compatibility_range, is_message_value_port_type_v01, is_reserved_value_type_id_v01,
-    is_same_v0_compatibility_line, is_valid_custom_value_type_id_v01,
+    derive_current_v0_version_range, derive_patch_contract_v01, derive_patch_contracts_v01,
+    is_exact_contracts_package_version, is_message_value_port_type_v01,
+    is_reserved_value_type_id_v01, is_v0_semver_version, is_valid_custom_value_type_id_v01,
     midi_clock_snapshot_to_clock_state_v01, parse_midi_clock_message_v01, parse_object_spec_v01,
     plan_audio_clock_bridge_v01, port_connection_policy_v01, port_type_accepts_v01,
     project_patch_node_definition_id_v01, sanitize_project_patch_id_v01,
-    satisfies_v0_compatibility_range, type_label_v01, validate_compatibility_matrix_v01,
+    satisfies_current_v0_version_range, type_label_v01, validate_compatibility_matrix_v01,
     validate_endpoint_binding_value_format_v01, validate_extension_manifest_v01,
     validate_graph_document_v01, validate_graph_fragment_v01, validate_node_catalog_snapshot_v01,
     validate_node_definition_v01, validate_object_spec_parse_result_v01,
@@ -165,30 +164,22 @@ fn serializes_optional_contract_fields_as_absent() {
 }
 
 #[test]
-fn derives_public_contracts_compatibility_line_helpers() {
-    let expected_line = derive_v0_compatibility_line(CONTRACTS_PACKAGE_VERSION)
-        .expect("package version should define a v0 compatibility line");
-    let expected_range = derive_v0_compatibility_range(CONTRACTS_PACKAGE_VERSION)
-        .expect("package version should define a v0 compatibility range");
-
+fn validates_public_contracts_exact_version_helpers() {
     assert_eq!(CONTRACTS_PACKAGE_VERSION, env!("CARGO_PKG_VERSION"));
-    assert_eq!(CONTRACTS_COMPATIBILITY_LINE, expected_line);
-    assert_eq!(CONTRACTS_COMPATIBILITY_RANGE, expected_range);
+    assert!(is_exact_contracts_package_version(
+        CONTRACTS_PACKAGE_VERSION
+    ));
+    assert!(is_v0_semver_version("0.44.0"));
+    assert!(!is_v0_semver_version("1.0.0"));
     assert_eq!(
-        derive_v0_compatibility_line("0.44.0").as_deref(),
-        Some("0.44")
-    );
-    assert_eq!(
-        derive_v0_compatibility_range("0.44.33").as_deref(),
+        derive_current_v0_version_range("0.44.33").as_deref(),
         Some(">=0.44.0 <0.45.0")
     );
-    assert!(is_same_v0_compatibility_line("0.44.0", "0.44.33"));
-    assert!(!is_same_v0_compatibility_line("0.44.33", "0.45.0"));
-    assert!(satisfies_v0_compatibility_range(
+    assert!(satisfies_current_v0_version_range(
         "0.44.33",
         ">=0.44.0 <0.45.0"
     ));
-    assert!(!satisfies_v0_compatibility_range(
+    assert!(!satisfies_current_v0_version_range(
         "0.45.0",
         ">=0.44.0 <0.45.0"
     ));
@@ -267,25 +258,26 @@ fn parses_public_compatibility_matrix_contract() {
 
     validate_compatibility_matrix_v01(&matrix).expect("compatibility matrix should validate");
     assert_eq!(matrix.schema, "skenion.compatibility-matrix");
-    assert_eq!(matrix.contracts_line, "0.45");
+    assert_eq!(matrix.contracts_version, "0.45.0");
     assert_eq!(matrix.protocol_baselines.runtime_http, "v0");
     assert_eq!(matrix.components.contracts.npm.version, "0.45.0");
     assert_eq!(matrix.components.runtime.version, "0.44.2");
     assert_eq!(matrix.components.sdk.npm.version, "0.17.0");
     assert_eq!(matrix.components.studio.version, "0.44.5");
 
-    let mut incompatible_sdk_range = serde_json::to_value(&matrix).expect("matrix to value");
-    incompatible_sdk_range["components"]["sdk"]["supported-contracts-range"] =
-        serde_json::json!(">=0.44.0 <0.45.0");
-    let incompatible_sdk_range: CompatibilityMatrixV01 =
-        serde_json::from_value(incompatible_sdk_range).expect("matrix should parse");
-    let incompatible_sdk_range_report = validate_compatibility_matrix_v01(&incompatible_sdk_range)
-        .expect_err("incompatible SDK range should fail");
+    let mut incompatible_sdk_version = serde_json::to_value(&matrix).expect("matrix to value");
+    incompatible_sdk_version["components"]["sdk"]["required-contracts-version"] =
+        serde_json::json!("0.44.0");
+    let incompatible_sdk_version: CompatibilityMatrixV01 =
+        serde_json::from_value(incompatible_sdk_version).expect("matrix should parse");
+    let incompatible_sdk_version_report =
+        validate_compatibility_matrix_v01(&incompatible_sdk_version)
+            .expect_err("incompatible SDK Contracts version should fail");
     assert!(
-        incompatible_sdk_range_report
+        incompatible_sdk_version_report
             .errors()
             .iter()
-            .any(|error| error.message.contains("supported-contracts-range"))
+            .any(|error| error.message.contains("required-contracts-version"))
     );
 
     let mut artifact_surface = serde_json::to_value(&matrix).expect("matrix to value");
@@ -1171,6 +1163,17 @@ fn validates_public_package_manifest_contract_surface() {
         project.graph.nodes[0].binding_ref.as_deref(),
         Some("binding-example-oscillator")
     );
+    let mut unsupported_contracts_version_project = project.clone();
+    unsupported_contracts_version_project.package_lock[0].contracts_version = "1.0.0".to_owned();
+    let unsupported_contracts_version_project_report =
+        validate_project_document_v01(&unsupported_contracts_version_project)
+            .expect_err("unsupported package lock Contracts version should fail");
+    assert!(
+        unsupported_contracts_version_project_report
+            .to_string()
+            .contains("contractsVersion")
+    );
+
     let mut project_with_core_binding = project.clone();
     project_with_core_binding.object_bindings.push(
         serde_json::from_value(serde_json::json!({
@@ -1396,16 +1399,16 @@ fn validates_public_package_manifest_contract_surface() {
             .contains("duplicate listing artifact")
     );
 
-    let range_mismatch: PackageListingV01 = serde_json::from_str(include_str!(
-        "../../../fixtures/package/v0.1/invalid/listing-contracts-range-mismatch.skenion.package-listing.json"
+    let version_mismatch: PackageListingV01 = serde_json::from_str(include_str!(
+        "../../../fixtures/package/v0.1/invalid/listing-contracts-version-mismatch.skenion.package-listing.json"
     ))
-    .expect("range mismatch listing should parse before validation");
-    let range_mismatch_report =
-        validate_package_listing_v01(&range_mismatch).expect_err("line/range mismatch should fail");
+    .expect("version mismatch listing should parse before validation");
+    let version_mismatch_report = validate_package_listing_v01(&version_mismatch)
+        .expect_err("Contracts version mismatch should fail");
     assert!(
-        range_mismatch_report
+        version_mismatch_report
             .to_string()
-            .contains("contracts line must match contracts range")
+            .contains("contracts.version")
     );
 
     let mut malformed_build_suffix = listing.clone();
@@ -1686,6 +1689,18 @@ fn validates_public_package_install_plan_contract_surface() {
             .contains("missing installedLockEntryId")
     );
 
+    let mut unsupported_contracts_version_lock = request.clone();
+    unsupported_contracts_version_lock.current.package_lock[0].contracts_version =
+        "1.0.0".to_owned();
+    let unsupported_contracts_version_lock_report =
+        validate_package_install_plan_request_v01(&unsupported_contracts_version_lock)
+            .expect_err("unsupported install plan lock Contracts version should fail");
+    assert!(
+        unsupported_contracts_version_lock_report
+            .to_string()
+            .contains("contractsVersion")
+    );
+
     let mut mismatched_candidate = install_request.clone();
     mismatched_candidate.candidates[0].listing.package_id = "example/other-package".to_owned();
     let mismatched_candidate_report =
@@ -1863,13 +1878,13 @@ fn validates_public_package_install_plan_contract_surface() {
     assert!(malformed_desired_text.contains("desired versionRange"));
 
     let mut malformed_target_contracts = request.clone();
-    malformed_target_contracts.target.contracts.line = "0.44".to_owned();
+    malformed_target_contracts.target.contracts.version = "1.0.0".to_owned();
     malformed_target_contracts.target.runtime_abi_range = Some("0.45.0".to_owned());
     let malformed_target_contracts_report =
         validate_package_install_plan_request_v01(&malformed_target_contracts)
             .expect_err("malformed target contracts should fail");
     let malformed_target_contracts_text = malformed_target_contracts_report.to_string();
-    assert!(malformed_target_contracts_text.contains("target contracts line"));
+    assert!(malformed_target_contracts_text.contains("target contracts.version"));
     assert!(malformed_target_contracts_text.contains("target runtimeAbiRange"));
 
     let mut malformed_lock = request.clone();

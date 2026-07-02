@@ -7,8 +7,7 @@
     "schema",
     "schema-version",
     "matrix-id",
-    "contracts-line",
-    "contracts-range",
+    "contracts-version",
     "protocol-baselines",
     "components"
   ],
@@ -23,13 +22,8 @@
       "type": "string",
       "minLength": 1
     },
-    "contracts-line": {
-      "type": "string",
-      "pattern": "^0\\.[0-9]+$"
-    },
-    "contracts-range": {
-      "type": "string",
-      "pattern": "^>=0\\.[0-9]+\\.0 <0\\.[0-9]+\\.0$"
+    "contracts-version": {
+      "$ref": "#/$defs/version"
     },
     "protocol-baselines": {
       "$ref": "#/$defs/protocolBaselines"
@@ -42,7 +36,7 @@
   "$defs": {
     "version": {
       "type": "string",
-      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
     },
     "packageEcosystem": {
       "enum": [
@@ -150,15 +144,14 @@
           "type": "object",
           "required": [
             "npm",
-            "supported-contracts-range"
+            "required-contracts-version"
           ],
           "properties": {
             "npm": {
               "$ref": "#/$defs/registryPackage"
             },
-            "supported-contracts-range": {
-              "type": "string",
-              "pattern": "^>=0\\.[0-9]+\\.0 <0\\.[0-9]+\\.0$"
+            "required-contracts-version": {
+              "$ref": "#/$defs/version"
             }
           },
           "additionalProperties": false

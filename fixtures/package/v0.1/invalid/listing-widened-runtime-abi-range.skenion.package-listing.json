@@ -5,7 +5,7 @@
   "version": "0.45.1",
   "displayName": "Native Sensor",
   "summary": "Native sensor node package with a widened Runtime ABI range.",
-  "description": "A schema-valid listing that must fail semantic validation because runtimeAbiRange spans more than the current v0 compatibility line.",
+  "description": "A schema-valid listing that must fail semantic validation because runtimeAbiRange spans more than the current v0 semver range.",
   "category": "mixed",
   "tags": [
     "native",
@@ -15,8 +15,7 @@
   "homepageUrl": "https://skenion.dev/packages/native-sensor",
   "repositoryUrl": "https://github.com/skenion/native-sensor",
   "contracts": {
-    "line": "0.45",
-    "range": ">=0.45.0 <0.46.0"
+    "version": "0.45.0"
   },
   "runtimeAbiRange": ">=0.45.0 <0.47.0",
   "targetSupport": {

@@ -1086,10 +1086,6 @@ export const projectV01Schema = {
       "type": "string",
       "pattern": "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
     },
-    "contractsLine": {
-      "type": "string",
-      "pattern": "^0\\.[0-9]+$"
-    },
     "relativePath": {
       "type": "string",
       "minLength": 1,
@@ -1178,8 +1174,7 @@ export const projectV01Schema = {
         "source",
         "root",
         "trust",
-        "contractsLine",
-        "contractsRange",
+        "contractsVersion",
         "manifestPath",
         "manifestChecksum"
       ],
@@ -1206,11 +1201,8 @@ export const projectV01Schema = {
         "trust": {
           "$ref": "#/$defs/packageTrust"
         },
-        "contractsLine": {
-          "$ref": "#/$defs/contractsLine"
-        },
-        "contractsRange": {
-          "$ref": "#/$defs/semverRange"
+        "contractsVersion": {
+          "$ref": "#/$defs/semver"
         },
         "manifestPath": {
           "$ref": "#/$defs/relativePath"
@@ -4347,7 +4339,7 @@ export const packageManifestV01Schema = {
       "$ref": "#/$defs/packageCategory"
     },
     "contracts": {
-      "$ref": "#/$defs/contractsSupport"
+      "$ref": "#/$defs/contractsRequirement"
     },
     "runtimeAbiRange": {
       "$ref": "#/$defs/semverRange"
@@ -4485,10 +4477,6 @@ export const packageManifestV01Schema = {
       "type": "string",
       "pattern": "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
     },
-    "contractsLine": {
-      "type": "string",
-      "pattern": "^0\\.[0-9]+$"
-    },
     "packageCategory": {
       "enum": [
         "patch",
@@ -4511,18 +4499,14 @@ export const packageManifestV01Schema = {
       "minLength": 1,
       "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._~!$&'()+,;=:@%/-]+$"
     },
-    "contractsSupport": {
+    "contractsRequirement": {
       "type": "object",
       "required": [
-        "line",
-        "range"
+        "version"
       ],
       "properties": {
-        "line": {
-          "$ref": "#/$defs/contractsLine"
-        },
-        "range": {
-          "$ref": "#/$defs/semverRange"
+        "version": {
+          "$ref": "#/$defs/semver"
         }
       },
       "additionalProperties": false
@@ -4863,7 +4847,7 @@ export const packageListingV01Schema = {
       "$ref": "#/$defs/httpUrl"
     },
     "contracts": {
-      "$ref": "#/$defs/contractsSupport"
+      "$ref": "#/$defs/contractsRequirement"
     },
     "runtimeAbiRange": {
       "$ref": "#/$defs/semverRange"
@@ -5012,10 +4996,6 @@ export const packageListingV01Schema = {
       "type": "string",
       "pattern": "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
     },
-    "contractsLine": {
-      "type": "string",
-      "pattern": "^0\\.[0-9]+$"
-    },
     "packageCategory": {
       "enum": [
         "patch",
@@ -5046,18 +5026,14 @@ export const packageListingV01Schema = {
       "type": "string",
       "pattern": "^https?://[^\\s]+$"
     },
-    "contractsSupport": {
+    "contractsRequirement": {
       "type": "object",
       "required": [
-        "line",
-        "range"
+        "version"
       ],
       "properties": {
-        "line": {
-          "$ref": "#/$defs/contractsLine"
-        },
-        "range": {
-          "$ref": "#/$defs/semverRange"
+        "version": {
+          "$ref": "#/$defs/semver"
         }
       },
       "additionalProperties": false
@@ -5388,7 +5364,7 @@ export const packageListingV01Schema = {
     "packageListingIssueCode": {
       "enum": [
         "malformed-listing-metadata",
-        "unsupported-contracts-range",
+        "unsupported-contracts-version",
         "missing-artifact",
         "unavailable-target",
         "quarantined-package",
@@ -5610,7 +5586,7 @@ export const packageInstallPlanRequestV01Schema = {
           "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/targetTriple"
         },
         "contracts": {
-          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/contractsSupport"
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/contractsRequirement"
         },
         "runtimeAbiRange": {
           "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semverRange"
@@ -5832,7 +5808,7 @@ export const packageInstallPlanResponseV01Schema = {
     },
     "packageInstallPlanCheckKind": {
       "enum": [
-        "contracts-line",
+        "contracts-version",
         "runtime-abi",
         "target-triple",
         "checksum",
@@ -6130,7 +6106,7 @@ export const packageInstallPlanResponseV01Schema = {
     },
     "packageInstallPlanIssueCode": {
       "enum": [
-        "incompatible-contracts-line",
+        "incompatible-contracts-version",
         "incompatible-runtime-abi",
         "unsupported-target",
         "missing-artifact",
@@ -6188,8 +6164,7 @@ export const compatibilityMatrixV01Schema = {
     "schema",
     "schema-version",
     "matrix-id",
-    "contracts-line",
-    "contracts-range",
+    "contracts-version",
     "protocol-baselines",
     "components"
   ],
@@ -6204,13 +6179,8 @@ export const compatibilityMatrixV01Schema = {
       "type": "string",
       "minLength": 1
     },
-    "contracts-line": {
-      "type": "string",
-      "pattern": "^0\\.[0-9]+$"
-    },
-    "contracts-range": {
-      "type": "string",
-      "pattern": "^>=0\\.[0-9]+\\.0 <0\\.[0-9]+\\.0$"
+    "contracts-version": {
+      "$ref": "#/$defs/version"
     },
     "protocol-baselines": {
       "$ref": "#/$defs/protocolBaselines"
@@ -6223,7 +6193,7 @@ export const compatibilityMatrixV01Schema = {
   "$defs": {
     "version": {
       "type": "string",
-      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
     },
     "packageEcosystem": {
       "enum": [
@@ -6331,15 +6301,14 @@ export const compatibilityMatrixV01Schema = {
           "type": "object",
           "required": [
             "npm",
-            "supported-contracts-range"
+            "required-contracts-version"
           ],
           "properties": {
             "npm": {
               "$ref": "#/$defs/registryPackage"
             },
-            "supported-contracts-range": {
-              "type": "string",
-              "pattern": "^>=0\\.[0-9]+\\.0 <0\\.[0-9]+\\.0$"
+            "required-contracts-version": {
+              "$ref": "#/$defs/version"
             }
           },
           "additionalProperties": false
