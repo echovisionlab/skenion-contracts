@@ -21,10 +21,13 @@ use super::types::{
     PackageObjectExportV01, PackageRootDocumentV01, PackageTargetTripleV01,
     PasteGraphFragmentRequest, PatchDefinitionV01, PatchPath, PortDirectionV01, PortSpecV01,
     ProjectDocumentV01, ProjectObjectBindingIssueCodeV01, ProjectObjectBindingStatusV01,
-    RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01, SKENION_PACKAGE_MANIFEST_FILE_NAME,
-    ValueFormatV01, ValueOccurrenceHeaderV01, ValuePayloadKindV01, ViewStateV01,
-    compute_node_catalog_revision_v01, derive_patch_contract_v01,
-    project_patch_node_definition_id_v01,
+    RuntimeCommandAckPayloadV01, RuntimeControlEmittedPayloadV01, RuntimeGraphAppliedPayloadV01,
+    RuntimeGraphCommandPayloadV01, RuntimeIssuePayloadV01, RuntimeNodeInputPayloadV01,
+    RuntimeRealtimeEnvelopeV01, RuntimeRealtimeFrameTypeV01, RuntimeSelectionUpdatePayloadV01,
+    RuntimeSelectionUpdatedPayloadV01, RuntimeSessionLoadModeV01, RuntimeSessionLoadRequestV01,
+    SKENION_PACKAGE_MANIFEST_FILE_NAME, ValueFormatV01, ValueOccurrenceHeaderV01,
+    ValuePayloadKindV01, ViewStateV01, compute_node_catalog_revision_v01,
+    derive_patch_contract_v01, project_patch_node_definition_id_v01,
 };
 use super::version::{
     derive_v0_compatibility_line, derive_v0_compatibility_range, satisfies_v0_compatibility_range,
@@ -2918,6 +2921,224 @@ pub fn validate_runtime_session_load_request_v01(
             errors.push(ValidationErrorV01::new(
                 "runtime session load precondition graphRevision must not be empty",
             ));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+fn validate_payload<T>(payload: &serde_json::Value, label: &str) -> Vec<ValidationErrorV01>
+where
+    T: serde::de::DeserializeOwned,
+{
+    serde_json::from_value::<T>(payload.clone())
+        .map(|_| Vec::new())
+        .unwrap_or_else(|error| {
+            vec![ValidationErrorV01::new(format!(
+                "{label} payload invalid: {error}"
+            ))]
+        })
+}
+
+fn validate_runtime_node_input_payload_errors(
+    payload: &RuntimeNodeInputPayloadV01,
+) -> Vec<ValidationErrorV01> {
+    let mut errors = Vec::new();
+    if payload.inputs.is_empty() {
+        errors.push(ValidationErrorV01::new(
+            "node.input payload inputs must not be empty",
+        ));
+    }
+    for (index, input) in payload.inputs.iter().enumerate() {
+        if is_blank(&input.node_id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "node.input payload inputs[{index}].nodeId must not be blank"
+            )));
+        }
+        if is_blank(&input.port_id) {
+            errors.push(ValidationErrorV01::new(format!(
+                "node.input payload inputs[{index}].portId must not be blank"
+            )));
+        }
+        if is_blank(&input.message.key) {
+            errors.push(ValidationErrorV01::new(format!(
+                "node.input payload inputs[{index}].message.key must not be blank"
+            )));
+        }
+    }
+    errors
+}
+
+pub fn validate_runtime_graph_command_payload_v01(
+    payload: &RuntimeGraphCommandPayloadV01,
+) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+    if let Some(object_spec) = &payload.object_spec
+        && is_blank(object_spec)
+    {
+        errors.push(ValidationErrorV01::new(
+            "graph.command payload objectSpec must not be blank",
+        ));
+    }
+    if let Some(node_id) = &payload.node_id
+        && is_blank(node_id)
+    {
+        errors.push(ValidationErrorV01::new(
+            "graph.command payload nodeId must not be blank",
+        ));
+    }
+    if let Some(requested_node_id) = &payload.requested_node_id
+        && is_blank(requested_node_id)
+    {
+        errors.push(ValidationErrorV01::new(
+            "graph.command payload requestedNodeId must not be blank",
+        ));
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_runtime_node_input_payload_v01(
+    payload: &RuntimeNodeInputPayloadV01,
+) -> Result<(), ValidationReportV01> {
+    let errors = validate_runtime_node_input_payload_errors(payload);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(ValidationReportV01::new(errors))
+    }
+}
+
+pub fn validate_runtime_realtime_envelope_v01(
+    envelope: &RuntimeRealtimeEnvelopeV01,
+) -> Result<(), ValidationReportV01> {
+    let mut errors = Vec::new();
+
+    if envelope.schema != "skenion.runtime.realtime" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schema skenion.runtime.realtime, found {}",
+            envelope.schema
+        )));
+    }
+    if envelope.schema_version != "0.1.0" {
+        errors.push(ValidationErrorV01::new(format!(
+            "expected schemaVersion 0.1.0, found {}",
+            envelope.schema_version
+        )));
+    }
+    if is_blank(&envelope.message_id) {
+        errors.push(ValidationErrorV01::new(
+            "runtime realtime messageId must not be blank",
+        ));
+    }
+    if is_blank(&envelope.session_id) {
+        errors.push(ValidationErrorV01::new(
+            "runtime realtime sessionId must not be blank",
+        ));
+    }
+    match envelope.message_type {
+        RuntimeRealtimeFrameTypeV01::GraphCommand => {
+            errors.extend(validate_payload::<RuntimeGraphCommandPayloadV01>(
+                &envelope.payload,
+                "graph.command",
+            ));
+            if let Ok(payload) =
+                serde_json::from_value::<RuntimeGraphCommandPayloadV01>(envelope.payload.clone())
+                && let Err(report) = validate_runtime_graph_command_payload_v01(&payload)
+            {
+                errors.extend(report.errors().iter().cloned());
+            }
+        }
+        RuntimeRealtimeFrameTypeV01::NodeInput => {
+            if envelope
+                .command_id
+                .as_ref()
+                .is_none_or(|value| is_blank(value))
+            {
+                errors.push(ValidationErrorV01::new(
+                    "node.input frame requires commandId",
+                ));
+            }
+            if envelope
+                .idempotency_key
+                .as_ref()
+                .is_none_or(|value| is_blank(value))
+            {
+                errors.push(ValidationErrorV01::new(
+                    "node.input frame requires idempotencyKey",
+                ));
+            }
+            errors.extend(validate_payload::<RuntimeNodeInputPayloadV01>(
+                &envelope.payload,
+                "node.input",
+            ));
+            if let Ok(payload) =
+                serde_json::from_value::<RuntimeNodeInputPayloadV01>(envelope.payload.clone())
+            {
+                errors.extend(validate_runtime_node_input_payload_errors(&payload));
+            }
+        }
+        RuntimeRealtimeFrameTypeV01::CommandAck => {
+            errors.extend(validate_payload::<RuntimeCommandAckPayloadV01>(
+                &envelope.payload,
+                "command.ack",
+            ))
+        }
+        RuntimeRealtimeFrameTypeV01::GraphApplied => {
+            errors.extend(validate_payload::<RuntimeGraphAppliedPayloadV01>(
+                &envelope.payload,
+                "graph.applied",
+            ))
+        }
+        RuntimeRealtimeFrameTypeV01::ControlEmitted => {
+            errors.extend(validate_payload::<RuntimeControlEmittedPayloadV01>(
+                &envelope.payload,
+                "control.emitted",
+            ))
+        }
+        RuntimeRealtimeFrameTypeV01::SelectionUpdate => {
+            if envelope
+                .command_id
+                .as_ref()
+                .is_none_or(|value| is_blank(value))
+            {
+                errors.push(ValidationErrorV01::new(
+                    "selection.update frame requires commandId",
+                ));
+            }
+            if envelope
+                .idempotency_key
+                .as_ref()
+                .is_none_or(|value| is_blank(value))
+            {
+                errors.push(ValidationErrorV01::new(
+                    "selection.update frame requires idempotencyKey",
+                ));
+            }
+            errors.extend(validate_payload::<RuntimeSelectionUpdatePayloadV01>(
+                &envelope.payload,
+                "selection.update",
+            ));
+        }
+        RuntimeRealtimeFrameTypeV01::SelectionUpdated => {
+            errors.extend(validate_payload::<RuntimeSelectionUpdatedPayloadV01>(
+                &envelope.payload,
+                "selection.updated",
+            ))
+        }
+        RuntimeRealtimeFrameTypeV01::RuntimeIssue => {
+            errors.extend(validate_payload::<RuntimeIssuePayloadV01>(
+                &envelope.payload,
+                "runtime.issue",
+            ))
         }
     }
 

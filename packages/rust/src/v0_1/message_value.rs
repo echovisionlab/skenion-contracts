@@ -24,6 +24,7 @@ pub enum MessageAtomV01 {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageValueV01 {
     pub key: String,

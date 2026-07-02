@@ -3,6 +3,8 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+use super::message_value::MessageValueV01;
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DataFlowV01 {
@@ -1810,6 +1812,331 @@ pub struct RuntimeSessionLoadRequestV01 {
     pub mode: RuntimeSessionLoadModeV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub precondition: Option<RuntimeSessionLoadPreconditionV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeIssueSeverityV01 {
+    Error,
+    Warning,
+    Info,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeIssueV01 {
+    pub severity: RuntimeIssueSeverityV01,
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum RuntimeRealtimeFrameTypeV01 {
+    #[serde(rename = "graph.command")]
+    GraphCommand,
+    #[serde(rename = "node.input")]
+    NodeInput,
+    #[serde(rename = "command.ack")]
+    CommandAck,
+    #[serde(rename = "graph.applied")]
+    GraphApplied,
+    #[serde(rename = "control.emitted")]
+    ControlEmitted,
+    #[serde(rename = "selection.update")]
+    SelectionUpdate,
+    #[serde(rename = "selection.updated")]
+    SelectionUpdated,
+    #[serde(rename = "runtime.issue")]
+    RuntimeIssue,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeRealtimeEnvelopeV01 {
+    pub schema: String,
+    pub schema_version: String,
+    #[serde(rename = "type")]
+    pub message_type: RuntimeRealtimeFrameTypeV01,
+    pub message_id: String,
+    pub session_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub connection_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correlation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idempotency_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sequence: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    pub payload: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub enum GraphCommandKindV01 {
+    #[serde(rename = "view.patch")]
+    ViewPatch,
+    #[serde(rename = "graph.changeSet")]
+    GraphChangeSet,
+    #[serde(rename = "graph.pasteFragment")]
+    GraphPasteFragment,
+    #[serde(rename = "history.undo")]
+    HistoryUndo,
+    #[serde(rename = "history.redo")]
+    HistoryRedo,
+    #[serde(rename = "node.resolve")]
+    NodeResolve,
+    #[serde(rename = "node.create")]
+    NodeCreate,
+    #[serde(rename = "node.replace")]
+    NodeReplace,
+    #[serde(rename = "node.delete")]
+    NodeDelete,
+    #[serde(rename = "node.update")]
+    NodeUpdate,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeGraphCommandScopeV01 {
+    Client,
+    Global,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum RuntimeGraphCommandUnresolvedPolicyV01 {
+    #[serde(rename = "reject")]
+    Reject,
+    #[serde(rename = "materialize-issue")]
+    MaterializeIssue,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeGraphCommandPayloadV01 {
+    pub kind: GraphCommandKindV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_session_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_graph_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_view_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<GraphTargetRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub surface_path: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view_patch: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub changes: Option<Vec<Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub object_spec: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requested_node_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view: Option<CanvasNodeViewV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<serde_json::Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request: Option<PasteGraphFragmentRequest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<RuntimeGraphCommandScopeV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unresolved_policy: Option<RuntimeGraphCommandUnresolvedPolicyV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface_incident_edge_policy: Option<InterfaceIncidentEdgePolicyV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeNodeInputV01 {
+    pub node_id: String,
+    pub port_id: String,
+    pub message: MessageValueV01,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeNodeInputPayloadV01 {
+    pub inputs: Vec<RuntimeNodeInputV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeCommandAckStatusV01 {
+    Accepted,
+    Conflict,
+    Rejected,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeCommandAckPayloadV01 {
+    pub status: RuntimeCommandAckStatusV01,
+    pub accepted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub applied: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conflict: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cached: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correlation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idempotency_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_cursor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_sequence: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub surface_path: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_session_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_graph_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_view_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub history_summary: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<Value>,
+    pub issues: Vec<RuntimeIssueV01>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeGraphAppliedPayloadV01 {
+    pub kind: GraphCommandKindV01,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correlation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idempotency_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_sequence: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub surface_path: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub history_entry_id: Option<String>,
+    pub issues: Vec<RuntimeIssueV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replayed: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeControlEmittedEventV01 {
+    pub node_id: String,
+    pub port_id: String,
+    pub message: MessageValueV01,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeControlEmittedPayloadV01 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correlation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idempotency_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub control_sequence: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub control_revision: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub changed: Option<bool>,
+    pub events: Vec<RuntimeControlEmittedEventV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub values: Option<Value>,
+    pub issues: Vec<RuntimeIssueV01>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replayed: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSelectionUpdatePayloadV01 {
+    pub target: Value,
+    pub selection: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ttl_ms: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeSelectionUpdatedPayloadV01 {
+    pub target: Value,
+    pub selection: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ttl_ms: Option<u64>,
+    pub participant_id: String,
+    pub updated_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replayed: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeIssuePayloadV01 {
+    pub issue: RuntimeIssueV01,
 }
 
 fn string_param(node: &GraphNodeV01, key: &str) -> Option<String> {

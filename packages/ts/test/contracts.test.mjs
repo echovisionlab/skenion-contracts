@@ -31,6 +31,7 @@ import {
   planAudioClockBridgeV01,
   planConversion,
   projectV01Schema,
+  runtimeRealtimeV01Schema,
   runtimeSessionLoadRequestV01Schema,
   parseObjectSpecV01,
   portConnectionPolicyV01,
@@ -70,6 +71,9 @@ import {
   validateProjectDocument,
   validateProjectDocumentV01,
   validateRuntimeSessionLoadRequestV01,
+  validateRuntimeRealtimeEnvelopeV01,
+  validateRuntimeGraphCommandPayloadV01,
+  validateRuntimeNodeInputPayloadV01,
   validateValueFormatV01,
   validateValueOccurrenceHeaderV01,
   validateNodeCatalogSnapshotV01,
@@ -86,6 +90,7 @@ import {
   isPackageInstallPlanResponseV01,
   isPackageListingV01,
   isRuntimeSessionLoadRequestV01,
+  isRuntimeRealtimeEnvelopeV01,
   isSameV0CompatibilityLine,
   satisfiesV0CompatibilityRange
 } from "../dist/index.js";
@@ -154,6 +159,22 @@ test("exports active schema contracts", () => {
   assert.equal(runtimeSessionLoadRequestV01Schema.properties.schema.const, "skenion.runtime.session-load-request");
   assert.equal(Object.hasOwn(contracts, "validateRuntimeSessionLoadRequestV01"), true);
   assert.equal(Object.hasOwn(contracts, "isRuntimeSessionLoadRequestV01"), true);
+  assert.equal(runtimeRealtimeV01Schema.properties.schema.const, "skenion.runtime.realtime");
+  assert.equal(Object.hasOwn(contracts, "validateRuntimeRealtimeEnvelopeV01"), true);
+  assert.equal(Object.hasOwn(contracts, "validateRuntimeGraphCommandPayloadV01"), true);
+  assert.equal(Object.hasOwn(contracts, "validateRuntimeNodeInputPayloadV01"), true);
+  assert.equal(Object.hasOwn(contracts, "isRuntimeRealtimeEnvelopeV01"), true);
+  assert.deepEqual(runtimeRealtimeV01Schema.$defs.frameType.enum, [
+    "graph.command",
+    "node.input",
+    "command.ack",
+    "graph.applied",
+    "control.emitted",
+    "selection.update",
+    "selection.updated",
+    "runtime.issue"
+  ]);
+  assert.deepEqual(runtimeRealtimeV01Schema.$defs.graphCommandKind.enum.includes("node.input"), false);
   assert.equal(Object.hasOwn(contracts, "portConnectionPolicyV01"), true);
   assert.equal(Object.hasOwn(contracts, "portTypeAcceptsV01"), true);
   assert.equal(Object.hasOwn(contracts, "isMessageValuePortTypeV01"), true);
@@ -197,6 +218,186 @@ test("exports active schema contracts", () => {
   ]) {
     assert.equal(Object.hasOwn(contracts, runtimeExport), false, runtimeExport);
   }
+});
+
+function runtimeRealtimeEnvelope(type, payload, overrides = {}) {
+  return {
+    schema: "skenion.runtime.realtime",
+    schemaVersion: "0.1.0",
+    type,
+    messageId: `${type}-message`,
+    sessionId: "default",
+    ...overrides,
+    payload
+  };
+}
+
+function floatMessage(value) {
+  return {
+    key: "float",
+    atoms: [{ type: "float", representation: "f32", value }]
+  };
+}
+
+test("validates runtime realtime transport taxonomy", () => {
+  const graphCommandPayload = { kind: "node.create", objectSpec: "float", requestedNodeId: "float_1" };
+  const nodeInputPayload = {
+    inputs: [
+      { nodeId: "float_1", portId: "in", message: floatMessage(2) },
+      { nodeId: "float_1", portId: "in", message: floatMessage(3) }
+    ]
+  };
+
+  assert.equal(validateRuntimeGraphCommandPayloadV01(graphCommandPayload).ok, true);
+  assert.equal(validateRuntimeNodeInputPayloadV01(nodeInputPayload).ok, true);
+  assert.equal(validateRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("graph.command", graphCommandPayload)).ok, true);
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("node.input", nodeInputPayload, {
+        commandId: "input-1",
+        idempotencyKey: "input-1"
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("command.ack", {
+        status: "accepted",
+        accepted: true,
+        applied: false,
+        kind: "node.input",
+        issues: []
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("graph.applied", {
+        kind: "node.create",
+        graphSequence: 7,
+        issues: [],
+        replayed: false
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("control.emitted", {
+        controlSequence: 8,
+        changed: true,
+        events: [{ nodeId: "float_1", portId: "value", message: floatMessage(3) }],
+        issues: [],
+        replayed: false
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("selection.update", { target: { kind: "root" }, selection: { nodes: [] } }, {
+        commandId: "selection-1",
+        idempotencyKey: "selection-1"
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("selection.updated", {
+        target: { kind: "root" },
+        selection: { nodes: [] },
+        participantId: "participant-1",
+        updatedAt: "2026-07-02T00:00:00.000Z"
+      })
+    ).ok,
+    true
+  );
+  assert.equal(
+    validateRuntimeRealtimeEnvelopeV01(
+      runtimeRealtimeEnvelope("runtime.issue", {
+        issue: {
+          severity: "error",
+          code: "runtime.test",
+          message: "test issue"
+        }
+      })
+    ).ok,
+    true
+  );
+  assert.equal(isRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope("graph.command", graphCommandPayload)), true);
+
+  for (const removedType of [
+    "graph.ack",
+    "runtime.error",
+    "control.command",
+    "presence.update",
+    "presence.updated"
+  ]) {
+    assert.equal(
+      validateRuntimeRealtimeEnvelopeV01(runtimeRealtimeEnvelope(removedType, {})).ok,
+      false,
+      removedType
+    );
+  }
+
+  const graphInputResult = validateRuntimeGraphCommandPayloadV01({ kind: "node.input" });
+  assert.equal(graphInputResult.ok, false);
+  assert.match(graphInputResult.errors.join("\n"), /allowed values/u);
+
+  const emptyBatch = validateRuntimeNodeInputPayloadV01({ inputs: [] });
+  assert.equal(emptyBatch.ok, false);
+  assert.match(emptyBatch.errors.join("\n"), /must NOT have fewer than 1 items/u);
+
+  const selectorNodeInput = validateRuntimeNodeInputPayloadV01({
+    inputs: [
+      {
+        nodeId: "float_1",
+        portId: "in",
+        message: { selector: "float", atoms: [] }
+      }
+    ]
+  });
+  assert.equal(selectorNodeInput.ok, false);
+  assert.match(selectorNodeInput.errors.join("\n"), /key|additional properties/u);
+
+  const keyPlusSelectorNodeInput = validateRuntimeNodeInputPayloadV01({
+    inputs: [
+      {
+        nodeId: "float_1",
+        portId: "in",
+        message: { key: "float", selector: "float", atoms: [] }
+      }
+    ]
+  });
+  assert.equal(keyPlusSelectorNodeInput.ok, false);
+  assert.match(keyPlusSelectorNodeInput.errors.join("\n"), /additional properties/u);
+
+  const selectorControlEmitted = validateRuntimeRealtimeEnvelopeV01(
+    runtimeRealtimeEnvelope("control.emitted", {
+      events: [{ nodeId: "float_1", portId: "value", message: { selector: "float", atoms: [] } }],
+      issues: []
+    })
+  );
+  assert.equal(selectorControlEmitted.ok, false);
+  assert.match(selectorControlEmitted.errors.join("\n"), /key|additional properties/u);
+
+  const keyPlusSelectorControlEmitted = validateRuntimeRealtimeEnvelopeV01(
+    runtimeRealtimeEnvelope("control.emitted", {
+      events: [{ nodeId: "float_1", portId: "value", message: { key: "float", selector: "float", atoms: [] } }],
+      issues: []
+    })
+  );
+  assert.equal(keyPlusSelectorControlEmitted.ok, false);
+  assert.match(keyPlusSelectorControlEmitted.errors.join("\n"), /additional properties/u);
+
+  const missingCommandMetadata = validateRuntimeRealtimeEnvelopeV01(
+    runtimeRealtimeEnvelope("node.input", nodeInputPayload)
+  );
+  assert.equal(missingCommandMetadata.ok, false);
+  assert.match(missingCommandMetadata.errors.join("\n"), /commandId|idempotencyKey/u);
 });
 
 function minimalGraphWithConnection(sourceType, targetType) {

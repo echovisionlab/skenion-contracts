@@ -18,6 +18,7 @@ import {
   packageInstallPlanResponseV01Schema,
   packageListingV01Schema,
   packageManifestV01Schema,
+  runtimeRealtimeV01Schema,
   projectV01Schema,
   runtimeSessionLoadRequestV01Schema,
   shaderInterfaceV01Schema,
@@ -62,6 +63,9 @@ import type {
   ProjectDocumentV01,
   ProjectPackageLockEntryV01,
   RuntimeSessionLoadRequestV01,
+  RuntimeRealtimeEnvelopeV01,
+  RuntimeGraphCommandPayloadV01,
+  RuntimeNodeInputPayloadV01,
   ValueFormatV01,
   ValueOccurrenceHeaderV01,
   ShaderInterfaceV01,
@@ -98,6 +102,7 @@ const shaderInterfaceV01Validator = ajv.compile(shaderInterfaceV01Schema);
 const viewStateV01Validator = ajv.compile(viewStateV01Schema);
 const projectV01Validator = ajv.compile(projectV01Schema);
 const runtimeSessionLoadRequestV01Validator = ajv.compile(runtimeSessionLoadRequestV01Schema);
+const runtimeRealtimeV01Validator = ajv.compile(runtimeRealtimeV01Schema);
 const patchDefinitionV01Validator = ajv.compile({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://skenion.dev/schemas/project/v0.1/patch-definition.schema.json",
@@ -2679,6 +2684,60 @@ export function isRuntimeSessionLoadRequestV01(
   document: unknown
 ): document is RuntimeSessionLoadRequestV01 {
   return validateRuntimeSessionLoadRequestV01(document).ok;
+}
+
+export function validateRuntimeRealtimeEnvelopeV01(
+  document: unknown
+): ValidationResult<RuntimeRealtimeEnvelopeV01> {
+  if (!runtimeRealtimeV01Validator(document)) {
+    return {
+      ok: false,
+      errors: schemaErrors(runtimeRealtimeV01Validator.errors as ErrorObject[])
+    };
+  }
+
+  return { ok: true, value: document as RuntimeRealtimeEnvelopeV01 };
+}
+
+export function isRuntimeRealtimeEnvelopeV01(
+  document: unknown
+): document is RuntimeRealtimeEnvelopeV01 {
+  return validateRuntimeRealtimeEnvelopeV01(document).ok;
+}
+
+function realtimePayloadEnvelope(type: RuntimeRealtimeEnvelopeV01["type"], payload: unknown): RuntimeRealtimeEnvelopeV01 {
+  return {
+    schema: "skenion.runtime.realtime",
+    schemaVersion: "0.1.0",
+    type,
+    messageId: "validation",
+    sessionId: "validation",
+    commandId: "validation",
+    idempotencyKey: "validation",
+    payload
+  };
+}
+
+export function validateRuntimeGraphCommandPayloadV01(
+  document: unknown
+): ValidationResult<RuntimeGraphCommandPayloadV01> {
+  const result = validateRuntimeRealtimeEnvelopeV01(realtimePayloadEnvelope("graph.command", document));
+  if (!result.ok) {
+    return { ok: false, errors: result.errors.map((error) => error.replace(/^\/payload /u, "/ ")) };
+  }
+
+  return { ok: true, value: document as RuntimeGraphCommandPayloadV01 };
+}
+
+export function validateRuntimeNodeInputPayloadV01(
+  document: unknown
+): ValidationResult<RuntimeNodeInputPayloadV01> {
+  const result = validateRuntimeRealtimeEnvelopeV01(realtimePayloadEnvelope("node.input", document));
+  if (!result.ok) {
+    return { ok: false, errors: result.errors.map((error) => error.replace(/^\/payload /u, "/ ")) };
+  }
+
+  return { ok: true, value: document as RuntimeNodeInputPayloadV01 };
 }
 
 function validateProjectObjectBindingStatusInvariants(document: unknown): string[] {
