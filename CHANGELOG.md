@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.61.0](https://github.com/skenion/skenion-contracts/compare/v0.60.0...v0.61.0) (2026-07-02)
+
+
+### Features
+
+* require exact contracts versions ([d0c608d](https://github.com/skenion/skenion-contracts/commit/d0c608db07a441937e9545c06e3ef1dbd9fc271c))
+
 ## [0.60.0](https://github.com/skenion/skenion-contracts/compare/v0.59.0...v0.60.0) (2026-07-02)
 
 
