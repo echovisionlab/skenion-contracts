@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
-    ValidationErrorV01, ValidationReportV01, derive_v0_compatibility_line,
-    derive_v0_compatibility_range, satisfies_v0_compatibility_range,
-};
+use super::{ValidationErrorV01, ValidationReportV01, is_v0_semver_version};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -57,7 +54,7 @@ pub struct CompatibilityMatrixRuntimeComponentV01 {
 #[serde(rename_all = "kebab-case")]
 pub struct CompatibilityMatrixSdkComponentV01 {
     pub npm: CompatibilityMatrixRegistryPackageV01,
-    pub supported_contracts_range: String,
+    pub required_contracts_version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -84,8 +81,7 @@ pub struct CompatibilityMatrixV01 {
     pub schema: String,
     pub schema_version: String,
     pub matrix_id: String,
-    pub contracts_line: String,
-    pub contracts_range: String,
+    pub contracts_version: String,
     pub protocol_baselines: CompatibilityMatrixProtocolBaselinesV01,
     pub components: CompatibilityMatrixComponentsV01,
 }
@@ -160,40 +156,22 @@ pub fn validate_compatibility_matrix_v01(
         ));
     }
 
-    let expected_line = derive_v0_compatibility_line(&contracts_npm.version);
-    let expected_range = derive_v0_compatibility_range(&contracts_npm.version);
-    match expected_line {
-        Some(line) if matrix.contracts_line == line => {}
-        Some(line) => errors.push(ValidationErrorV01::new(format!(
-            "contracts-line must be {line}"
-        ))),
-        None => errors.push(ValidationErrorV01::new("invalid contracts npm version")),
+    if !is_v0_semver_version(&contracts_npm.version) {
+        errors.push(ValidationErrorV01::new("invalid contracts npm version"));
     }
-    match expected_range {
-        Some(range) if matrix.contracts_range == range => {}
-        Some(range) => errors.push(ValidationErrorV01::new(format!(
-            "contracts-range must be {range}"
-        ))),
-        None => errors.push(ValidationErrorV01::new("invalid contracts npm version")),
-    }
-    if derive_v0_compatibility_line(&contracts_npm.version)
-        != derive_v0_compatibility_line(&contracts_crate.version)
-    {
+    if matrix.contracts_version != contracts_npm.version {
         errors.push(ValidationErrorV01::new(
-            "contracts npm and crate versions must be on the same v0 compatibility line",
+            "contracts-version must match components.contracts.npm.version",
         ));
     }
-    if !satisfies_v0_compatibility_range(
-        &contracts_npm.version,
-        &matrix.components.sdk.supported_contracts_range,
-    ) {
+    if contracts_crate.version != contracts_npm.version {
         errors.push(ValidationErrorV01::new(
-            "sdk supported-contracts-range must include the Contracts package version",
+            "contracts npm and crate versions must be the exact same Contracts version",
         ));
     }
-    if !satisfies_v0_compatibility_range(&contracts_npm.version, &matrix.contracts_range) {
+    if matrix.components.sdk.required_contracts_version != contracts_npm.version {
         errors.push(ValidationErrorV01::new(
-            "contracts-range must include the Contracts package version",
+            "sdk required-contracts-version must match the Contracts package version",
         ));
     }
 
@@ -206,9 +184,7 @@ pub fn validate_compatibility_matrix_v01(
 
 #[cfg(test)]
 mod tests {
-    use super::super::{
-        CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
-    };
+    use super::super::CONTRACTS_PACKAGE_VERSION;
     use super::*;
 
     fn package(
@@ -229,8 +205,7 @@ mod tests {
             schema: "skenion.compatibility-matrix".to_owned(),
             schema_version: "0.1.0".to_owned(),
             matrix_id: "test-matrix".to_owned(),
-            contracts_line: CONTRACTS_COMPATIBILITY_LINE.to_owned(),
-            contracts_range: CONTRACTS_COMPATIBILITY_RANGE.to_owned(),
+            contracts_version: CONTRACTS_PACKAGE_VERSION.to_owned(),
             protocol_baselines: CompatibilityMatrixProtocolBaselinesV01 {
                 graph: "0.1".to_owned(),
                 project: "0.1".to_owned(),
@@ -261,7 +236,7 @@ mod tests {
                         "@skenion/sdk",
                         "0.17.0",
                     ),
-                    supported_contracts_range: CONTRACTS_COMPATIBILITY_RANGE.to_owned(),
+                    required_contracts_version: CONTRACTS_PACKAGE_VERSION.to_owned(),
                 },
                 studio: CompatibilityMatrixStudioComponentV01 {
                     version: "0.44.5".to_owned(),
@@ -280,14 +255,14 @@ mod tests {
         let mut matrix = matrix();
         matrix.components.contracts.npm.name = "@skenion/not-contracts".to_owned();
         matrix.components.contracts.crate_package.version = "0.99.0".to_owned();
-        matrix.components.sdk.supported_contracts_range = ">=0.44.0 <0.45.0".to_owned();
+        matrix.components.sdk.required_contracts_version = "0.44.0".to_owned();
 
         let report = validate_compatibility_matrix_v01(&matrix)
             .expect_err("matrix should reject dependency mismatches");
         let message = report.to_string();
         assert!(message.contains("@skenion/contracts"));
-        assert!(message.contains("same v0 compatibility line"));
-        assert!(message.contains("supported-contracts-range"));
+        assert!(message.contains("exact same Contracts version"));
+        assert!(message.contains("required-contracts-version"));
     }
 
     #[test]
@@ -328,17 +303,17 @@ mod tests {
     }
 
     #[test]
-    fn rejects_derived_contract_line_and_range_mismatches() {
+    fn rejects_contracts_version_mismatch() {
         let mut matrix = matrix();
-        matrix.contracts_line = "0.44".to_owned();
-        matrix.contracts_range = ">=0.44.0 <0.45.0".to_owned();
+        matrix.contracts_version = "0.44.0".to_owned();
 
         let report = validate_compatibility_matrix_v01(&matrix)
-            .expect_err("matrix should reject derived compatibility mismatches");
-        let message = report.to_string();
-        assert!(message.contains("contracts-line must be"));
-        assert!(message.contains("contracts-range must be"));
-        assert!(message.contains("contracts-range must include"));
+            .expect_err("matrix should reject Contracts version mismatches");
+        assert!(
+            report
+                .to_string()
+                .contains("contracts-version must match components.contracts.npm.version")
+        );
     }
 
     #[test]

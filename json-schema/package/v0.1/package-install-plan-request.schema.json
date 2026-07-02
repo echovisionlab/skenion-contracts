@@ -121,7 +121,7 @@
           "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/targetTriple"
         },
         "contracts": {
-          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/contractsSupport"
+          "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/contractsRequirement"
         },
         "runtimeAbiRange": {
           "$ref": "https://skenion.dev/schemas/package/v0.1/package-listing.schema.json#/$defs/semverRange"

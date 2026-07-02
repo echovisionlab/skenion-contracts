@@ -59,7 +59,7 @@ pub use types::{
     ObjectResolutionCandidateV01, ObjectResolutionIssueCodeV01, ObjectResolutionIssueV01,
     ObjectResolutionStatusV01, ObjectResolutionV01, PackageCategoryV01,
     PackageChecksumAlgorithmV01, PackageChecksumRefV01, PackageChecksumV01,
-    PackageContractsSupportV01, PackageDiscoveryResponseV01, PackageEvidenceKindV01,
+    PackageContractsRequirementV01, PackageDiscoveryResponseV01, PackageEvidenceKindV01,
     PackageEvidenceRefV01, PackageInstallPlanActionKindV01, PackageInstallPlanActionV01,
     PackageInstallPlanCandidateV01, PackageInstallPlanCapabilityChangeKindV01,
     PackageInstallPlanCapabilityChangeV01, PackageInstallPlanCapabilityKindV01,
@@ -114,7 +114,6 @@ pub use validation::{
     validate_value_occurrence_header_v01,
 };
 pub use version::{
-    CONTRACTS_COMPATIBILITY_LINE, CONTRACTS_COMPATIBILITY_RANGE, CONTRACTS_PACKAGE_VERSION,
-    derive_v0_compatibility_line, derive_v0_compatibility_range, is_same_v0_compatibility_line,
-    satisfies_v0_compatibility_range,
+    CONTRACTS_PACKAGE_VERSION, derive_current_v0_version_range, is_exact_contracts_package_version,
+    is_v0_semver_version, satisfies_current_v0_version_range,
 };

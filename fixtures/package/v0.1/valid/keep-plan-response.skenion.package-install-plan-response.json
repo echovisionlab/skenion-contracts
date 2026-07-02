@@ -10,15 +10,14 @@
     "arch": "aarch64",
     "triple": "aarch64-apple-darwin",
     "contracts": {
-      "line": "0.45",
-      "range": ">=0.45.0 <0.46.0"
+      "version": "0.45.0"
     }
   },
   "checks": [
     {
-      "kind": "contracts-line",
+      "kind": "contracts-version",
       "status": "pass",
-      "message": "Installed package already satisfies the requested Contracts line."
+      "message": "Installed package already satisfies the requested Contracts version."
     },
     {
       "kind": "runtime-abi",
@@ -38,7 +37,7 @@
       "kind": "keep",
       "packageId": "skenion/examples",
       "lockEntryId": "pkg-skenion-examples-0.45.0",
-      "reason": "Installed package already satisfies the desired range."
+      "reason": "Installed package already satisfies the desired version."
     }
   ],
   "issues": []

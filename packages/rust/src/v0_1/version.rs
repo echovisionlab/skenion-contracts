@@ -1,5 +1,4 @@
 pub const CONTRACTS_PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
-include!(concat!(env!("OUT_DIR"), "/version_constants.rs"));
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ParsedVersion {
@@ -9,7 +8,17 @@ struct ParsedVersion {
 }
 
 fn parse_semver(version: &str) -> Option<ParsedVersion> {
-    let parts: Vec<&str> = version.split('.').collect();
+    let without_build = match version.split_once('+') {
+        Some((without_build, build)) if is_semver_suffix(build) => without_build,
+        Some(_) => return None,
+        None => version,
+    };
+    let core = match without_build.split_once('-') {
+        Some((core, prerelease)) if is_semver_suffix(prerelease) => core,
+        Some(_) => return None,
+        None => without_build,
+    };
+    let parts: Vec<&str> = core.split('.').collect();
     if parts.len() != 3 {
         return None;
     }
@@ -33,15 +42,20 @@ fn parse_semver_part(part: &str) -> Option<u64> {
     part.parse().ok()
 }
 
-pub fn derive_v0_compatibility_line(version: &str) -> Option<String> {
-    let parsed = parse_semver(version)?;
-    if parsed.major != 0 {
-        return None;
-    }
-    Some(format!("0.{}", parsed.minor))
+fn is_semver_suffix(value: &str) -> bool {
+    !value.is_empty()
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'.' || byte == b'-')
 }
 
-pub fn derive_v0_compatibility_range(version: &str) -> Option<String> {
+pub fn is_v0_semver_version(version: &str) -> bool {
+    parse_semver(version)
+        .map(|parsed| parsed.major == 0)
+        .unwrap_or(false)
+}
+
+pub fn derive_current_v0_version_range(version: &str) -> Option<String> {
     let parsed = parse_semver(version)?;
     if parsed.major != 0 {
         return None;
@@ -49,12 +63,11 @@ pub fn derive_v0_compatibility_range(version: &str) -> Option<String> {
     Some(format!(">=0.{}.0 <0.{}.0", parsed.minor, parsed.minor + 1))
 }
 
-pub fn is_same_v0_compatibility_line(left_version: &str, right_version: &str) -> bool {
-    derive_v0_compatibility_line(left_version) == derive_v0_compatibility_line(right_version)
-        && derive_v0_compatibility_line(left_version).is_some()
+pub fn is_exact_contracts_package_version(version: &str) -> bool {
+    version == CONTRACTS_PACKAGE_VERSION
 }
 
-pub fn satisfies_v0_compatibility_range(version: &str, range: &str) -> bool {
+pub fn satisfies_current_v0_version_range(version: &str, range: &str) -> bool {
     let Some(version) = parse_semver(version) else {
         return false;
     };
@@ -92,108 +105,99 @@ mod tests {
     use super::*;
 
     #[test]
-    fn derives_v0_lines_and_ranges() {
+    fn derives_current_v0_version_ranges() {
         assert_eq!(
-            derive_v0_compatibility_line("0.44.0").as_deref(),
-            Some("0.44")
-        );
-        assert_eq!(
-            derive_v0_compatibility_range("0.44.33").as_deref(),
+            derive_current_v0_version_range("0.44.33").as_deref(),
             Some(">=0.44.0 <0.45.0")
         );
-        assert!(is_same_v0_compatibility_line("0.44.0", "0.44.33"));
-        assert!(!is_same_v0_compatibility_line("0.44.33", "0.45.0"));
-        assert!(satisfies_v0_compatibility_range(
+        assert!(satisfies_current_v0_version_range(
             "0.44.33",
             ">=0.44.0 <0.45.0"
         ));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             "0.45.0",
             ">=0.44.0 <0.45.0"
         ));
     }
 
     #[test]
-    fn derives_package_line_and_range_from_current_version() {
+    fn derives_package_range_from_current_version() {
         let package_minor = CONTRACTS_PACKAGE_VERSION
             .split('.')
             .nth(1)
             .expect("package version should have a minor component")
             .parse::<u64>()
             .expect("package minor should be numeric");
-        let same_line_patch = format!("0.{}.99", package_minor);
         let next_line_version = format!("0.{}.0", package_minor + 1);
 
         assert_eq!(
-            derive_v0_compatibility_line(CONTRACTS_PACKAGE_VERSION).as_deref(),
-            Some(CONTRACTS_COMPATIBILITY_LINE)
+            derive_current_v0_version_range(CONTRACTS_PACKAGE_VERSION).as_deref(),
+            Some(format!(">=0.{package_minor}.0 <0.{}.0", package_minor + 1).as_str())
         );
-        assert_eq!(
-            derive_v0_compatibility_range(CONTRACTS_PACKAGE_VERSION).as_deref(),
-            Some(CONTRACTS_COMPATIBILITY_RANGE)
-        );
-        assert!(is_same_v0_compatibility_line(
-            CONTRACTS_PACKAGE_VERSION,
-            &same_line_patch
+        assert!(is_exact_contracts_package_version(
+            CONTRACTS_PACKAGE_VERSION
         ));
-        assert!(!is_same_v0_compatibility_line(
+        assert!(!is_exact_contracts_package_version(&next_line_version));
+        assert!(satisfies_current_v0_version_range(
             CONTRACTS_PACKAGE_VERSION,
-            &next_line_version
+            &format!(">=0.{package_minor}.0 <0.{}.0", package_minor + 1)
         ));
-        assert!(satisfies_v0_compatibility_range(
-            CONTRACTS_PACKAGE_VERSION,
-            CONTRACTS_COMPATIBILITY_RANGE
-        ));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             &next_line_version,
-            CONTRACTS_COMPATIBILITY_RANGE
+            &format!(">=0.{package_minor}.0 <0.{}.0", package_minor + 1)
         ));
     }
 
     #[test]
     fn rejects_invalid_semver_inputs() {
-        assert_eq!(derive_v0_compatibility_line("0.44"), None);
-        assert_eq!(derive_v0_compatibility_line("0.x.0"), None);
-        assert_eq!(derive_v0_compatibility_line("0.044.0"), None);
-        assert_eq!(derive_v0_compatibility_line("1.0.0"), None);
-        assert_eq!(derive_v0_compatibility_range("1.0.0"), None);
-        assert!(!is_same_v0_compatibility_line("not-semver", "not-semver"));
+        assert!(is_v0_semver_version("0.44.0-alpha.1+build.1"));
+        assert!(!is_v0_semver_version("0.44"));
+        assert!(!is_v0_semver_version("0.x.0"));
+        assert!(!is_v0_semver_version("0.044.0"));
+        assert!(!is_v0_semver_version("1.0.0"));
+        assert_eq!(derive_current_v0_version_range("1.0.0"), None);
     }
 
     #[test]
     fn rejects_invalid_v0_range_inputs() {
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             "not-semver",
             ">=0.44.0 <0.45.0"
         ));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             "1.0.0",
             ">=0.44.0 <0.45.0"
         ));
-        assert!(!satisfies_v0_compatibility_range("0.44.0", ">=0.44.0"));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range("0.44.0", ">=0.44.0"));
+        assert!(!satisfies_current_v0_version_range(
             "0.44.0",
             ">0.44.0 <0.45.0"
         ));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             "0.44.0",
             ">=0.44.0 0.45.0"
         ));
-        assert!(!satisfies_v0_compatibility_range("0.44.0", ">=bad <0.45.0"));
-        assert!(!satisfies_v0_compatibility_range("0.44.0", ">=0.44.0 <bad"));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
+            "0.44.0",
+            ">=bad <0.45.0"
+        ));
+        assert!(!satisfies_current_v0_version_range(
+            "0.44.0",
+            ">=0.44.0 <bad"
+        ));
+        assert!(!satisfies_current_v0_version_range(
             "0.44.0",
             ">=1.44.0 <1.45.0"
         ));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             "0.44.0",
             ">=0.44.1 <0.45.0"
         ));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             "0.44.0",
             ">=0.44.0 <0.45.1"
         ));
-        assert!(!satisfies_v0_compatibility_range(
+        assert!(!satisfies_current_v0_version_range(
             "0.44.0",
             ">=0.44.0 <0.46.0"
         ));

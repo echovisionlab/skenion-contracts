@@ -5,8 +5,7 @@
   "version": "0.45.0",
   "category": "patch",
   "contracts": {
-    "line": "0.45",
-    "range": ">=0.45.0 <0.46.0"
+    "version": "0.45.0"
   },
   "runtimeAbiRange": ">=0.45.0 <0.46.0",
   "provides": {},

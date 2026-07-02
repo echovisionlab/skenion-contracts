@@ -30,7 +30,7 @@ use super::types::{
     derive_patch_contract_v01, project_patch_node_definition_id_v01,
 };
 use super::version::{
-    derive_v0_compatibility_line, derive_v0_compatibility_range, satisfies_v0_compatibility_range,
+    derive_current_v0_version_range, is_v0_semver_version, satisfies_current_v0_version_range,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -179,7 +179,7 @@ fn is_current_v0_compatibility_range(range: &str) -> bool {
     let Some(lower_bound) = compatibility_range_lower_bound(range) else {
         return false;
     };
-    derive_v0_compatibility_range(lower_bound).as_deref() == Some(range)
+    derive_current_v0_version_range(lower_bound).as_deref() == Some(range)
 }
 
 fn is_http_url_v01(value: &str) -> bool {
@@ -3182,6 +3182,11 @@ pub fn validate_package_manifest_v01(
             manifest.version
         )));
     }
+    if !is_v0_semver_version(&manifest.contracts.version) {
+        errors.push(ValidationErrorV01::new(
+            "package manifest contracts.version must be an exact v0 SemVer version",
+        ));
+    }
     if manifest.checksums.is_empty() {
         errors.push(ValidationErrorV01::new(
             "package manifest requires checksum references",
@@ -3439,22 +3444,16 @@ fn package_listing_errors(listing: &PackageListingV01) -> Vec<ValidationErrorV01
         )));
     }
 
-    let contracts_lower_bound =
-        compatibility_range_lower_bound(&listing.contracts.range).unwrap_or_default();
-    if derive_v0_compatibility_line(contracts_lower_bound).as_deref()
-        != Some(listing.contracts.line.as_str())
-        || derive_v0_compatibility_range(contracts_lower_bound).as_deref()
-            != Some(listing.contracts.range.as_str())
-    {
+    if !is_v0_semver_version(&listing.contracts.version) {
         errors.push(ValidationErrorV01::new(
-            "package listing contracts line must match contracts range",
+            "package listing contracts.version must be an exact v0 SemVer version",
         ));
     }
     if let Some(runtime_abi_range) = &listing.runtime_abi_range
         && !is_current_v0_compatibility_range(runtime_abi_range)
     {
         errors.push(ValidationErrorV01::new(
-            "package listing runtimeAbiRange must be a current v0 compatibility range",
+            "package listing runtimeAbiRange must be a current v0 semver range",
         ));
     }
     let mut target_support_targets = BTreeSet::new();
@@ -3833,22 +3832,16 @@ fn package_install_plan_target_errors(
             target.os, target.arch, expected
         )));
     }
-    let contracts_lower_bound =
-        compatibility_range_lower_bound(&target.contracts.range).unwrap_or_default();
-    if derive_v0_compatibility_line(contracts_lower_bound).as_deref()
-        != Some(target.contracts.line.as_str())
-        || derive_v0_compatibility_range(contracts_lower_bound).as_deref()
-            != Some(target.contracts.range.as_str())
-    {
+    if !is_v0_semver_version(&target.contracts.version) {
         errors.push(ValidationErrorV01::new(
-            "package install plan target contracts line must match contracts range",
+            "package install plan target contracts.version must be an exact v0 SemVer version",
         ));
     }
     if let Some(runtime_abi_range) = &target.runtime_abi_range
         && !is_current_v0_compatibility_range(runtime_abi_range)
     {
         errors.push(ValidationErrorV01::new(
-            "package install plan target runtimeAbiRange must be a current v0 compatibility range",
+            "package install plan target runtimeAbiRange must be a current v0 semver range",
         ));
     }
 
@@ -3859,6 +3852,13 @@ fn package_install_plan_lock_entry_errors(
     lock_entry: &super::ProjectPackageLockEntryV01,
 ) -> Vec<ValidationErrorV01> {
     let mut errors = Vec::new();
+
+    if !is_v0_semver_version(&lock_entry.contracts_version) {
+        errors.push(ValidationErrorV01::new(format!(
+            "package install plan lock {} contractsVersion must be an exact v0 SemVer version",
+            lock_entry.id
+        )));
+    }
 
     if !is_package_id_v01(&lock_entry.package_id) {
         errors.push(ValidationErrorV01::new(format!(
@@ -3968,7 +3968,7 @@ pub fn validate_package_install_plan_request_v01(
         && !is_current_v0_compatibility_range(version_range)
     {
         errors.push(ValidationErrorV01::new(
-            "package install plan desired versionRange must be a current v0 compatibility range",
+            "package install plan desired versionRange must be a current v0 semver range",
         ));
     }
 
@@ -4057,6 +4057,14 @@ pub fn validate_package_install_plan_request_v01(
                 candidate.listing.package_id, request.package_id
             )));
         }
+        if candidate.listing.contracts.version != request.target.contracts.version {
+            errors.push(ValidationErrorV01::new(format!(
+                "package install plan candidate {} contracts.version {} does not match target {}",
+                candidate.listing.package_id,
+                candidate.listing.contracts.version,
+                request.target.contracts.version
+            )));
+        }
         if let Some(manifest) = &candidate.manifest {
             if let Err(report) = validate_package_manifest_v01(manifest) {
                 errors.extend(report.errors);
@@ -4071,6 +4079,12 @@ pub fn validate_package_install_plan_request_v01(
                 errors.push(ValidationErrorV01::new(format!(
                     "package install plan candidate manifest version {} does not match listing version {}",
                     manifest.version, candidate.listing.version
+                )));
+            }
+            if manifest.contracts.version != candidate.listing.contracts.version {
+                errors.push(ValidationErrorV01::new(format!(
+                    "package install plan candidate manifest contracts.version {} does not match listing contracts.version {}",
+                    manifest.contracts.version, candidate.listing.contracts.version
                 )));
             }
         }
@@ -4403,6 +4417,12 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
     ));
 
     for lock_entry in &project.package_lock {
+        if !is_v0_semver_version(&lock_entry.contracts_version) {
+            errors.push(ValidationErrorV01::new(format!(
+                "package lock {} contractsVersion must be an exact v0 SemVer version",
+                lock_entry.id
+            )));
+        }
         if !is_package_id_v01(&lock_entry.package_id) {
             errors.push(ValidationErrorV01::new(format!(
                 "package lock {} packageId must match publisher/package lowercase digit hyphen grammar: {}",
@@ -4473,7 +4493,7 @@ fn project_package_reference_errors(project: &ProjectDocumentV01) -> Vec<Validat
                 dependency.package_id, dependency.lock_entry_id, lock_entry.package_id
             )));
         }
-        if !satisfies_v0_compatibility_range(&lock_entry.version, &dependency.version_range) {
+        if !satisfies_current_v0_version_range(&lock_entry.version, &dependency.version_range) {
             errors.push(ValidationErrorV01::new(format!(
                 "package dependency {} locked version {} does not satisfy {}",
                 dependency.package_id, lock_entry.version, dependency.version_range

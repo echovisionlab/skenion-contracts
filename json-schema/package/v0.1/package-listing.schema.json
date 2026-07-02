@@ -66,7 +66,7 @@
       "$ref": "#/$defs/httpUrl"
     },
     "contracts": {
-      "$ref": "#/$defs/contractsSupport"
+      "$ref": "#/$defs/contractsRequirement"
     },
     "runtimeAbiRange": {
       "$ref": "#/$defs/semverRange"
@@ -197,10 +197,6 @@
       "type": "string",
       "pattern": "^>=0\\.[0-9]+\\.[0-9]+ <0\\.[0-9]+\\.[0-9]+$"
     },
-    "contractsLine": {
-      "type": "string",
-      "pattern": "^0\\.[0-9]+$"
-    },
     "packageCategory": {
       "enum": ["patch", "native", "mixed"]
     },
@@ -227,15 +223,12 @@
       "type": "string",
       "pattern": "^https?://[^\\s]+$"
     },
-    "contractsSupport": {
+    "contractsRequirement": {
       "type": "object",
-      "required": ["line", "range"],
+      "required": ["version"],
       "properties": {
-        "line": {
-          "$ref": "#/$defs/contractsLine"
-        },
-        "range": {
-          "$ref": "#/$defs/semverRange"
+        "version": {
+          "$ref": "#/$defs/semver"
         }
       },
       "additionalProperties": false
@@ -512,7 +505,7 @@
     "packageListingIssueCode": {
       "enum": [
         "malformed-listing-metadata",
-        "unsupported-contracts-range",
+        "unsupported-contracts-version",
         "missing-artifact",
         "unavailable-target",
         "quarantined-package",

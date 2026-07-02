@@ -56,8 +56,6 @@
       "source": "marketplace",
       "root": "marketplace-install",
       "trust": "trusted",
-      "contractsLine": "0.45",
-      "contractsRange": ">=0.45.0 <0.46.0",
       "manifestPath": "registry/example/native-sensor/skenion.package.json",
       "manifestChecksum": {
         "algorithm": "sha256",
@@ -81,7 +79,8 @@
             "native-attestation"
           ]
         }
-      ]
+      ],
+      "contractsVersion": "0.45.0"
     }
   ],
   "objectBindings": [

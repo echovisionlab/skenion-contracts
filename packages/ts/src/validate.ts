@@ -74,9 +74,10 @@ import type {
 } from "./types.js";
 import { SKENION_PACKAGE_MANIFEST_FILE_NAME } from "./types.js";
 import {
-  deriveV0CompatibilityLine,
-  deriveV0CompatibilityRange,
-  satisfiesV0CompatibilityRange
+  assertV0SemverVersion,
+  deriveCurrentV0VersionRange,
+  isV0SemverVersion,
+  satisfiesCurrentV0VersionRange
 } from "./version.js";
 
 const allowedNodePermissions = new Set<string>();
@@ -261,6 +262,10 @@ function validatePackageManifestV01Semantics(manifest: PackageManifestV01): stri
   const errors: string[] = [];
   const evidenceIds = new Set(manifest.evidence.map((evidence) => evidence.id));
 
+  if (!isV0SemverVersion(manifest.contracts.version)) {
+    errors.push("package manifest contracts.version must be an exact v0 SemVer version");
+  }
+
   errors.push(...duplicateErrors((manifest.provides.patches ?? []).map((provided) => provided.id), "provided patch id"));
   errors.push(...duplicateErrors((manifest.provides.nodes ?? []).map((provided) => provided.id), "provided node id"));
   errors.push(...duplicateErrors((manifest.provides.resources ?? []).map((provided) => provided.id), "provided resource id"));
@@ -291,17 +296,13 @@ function validatePackageListingV01Semantics(listing: PackageListingV01): string[
   errors.push(...packageObjectExportErrors(listing.provides.objects ?? [], listing.packageId, "provided object"));
   errors.push(...duplicateErrors((listing.provides.codecs ?? []).map((provided) => provided.id), "provided codec id"));
 
-  const lowerBoundVersion = listing.contracts.range.slice(2).split(" ", 1)[0];
-  if (
-    deriveV0CompatibilityLine(lowerBoundVersion) !== listing.contracts.line ||
-    deriveV0CompatibilityRange(lowerBoundVersion) !== listing.contracts.range
-  ) {
-    errors.push("package listing contracts line must match contracts range");
+  if (!isV0SemverVersion(listing.contracts.version)) {
+    errors.push("package listing contracts.version must be an exact v0 SemVer version");
   }
   if (listing.runtimeAbiRange !== undefined) {
     const runtimeAbiLowerBoundVersion = listing.runtimeAbiRange.slice(2).split(" ", 1)[0];
-    if (deriveV0CompatibilityRange(runtimeAbiLowerBoundVersion) !== listing.runtimeAbiRange) {
-      errors.push("package listing runtimeAbiRange must be a current v0 compatibility range");
+    if (deriveCurrentV0VersionRange(runtimeAbiLowerBoundVersion) !== listing.runtimeAbiRange) {
+      errors.push("package listing runtimeAbiRange must be a current v0 semver range");
     }
   }
 
@@ -554,18 +555,14 @@ function validatePackageInstallPlanTargetV01Semantics(
     errors.push(`package install plan target ${target.os}/${target.arch} must use target triple ${expectedTriple}`);
   }
 
-  const contractsLowerBoundVersion = target.contracts.range.slice(2).split(" ", 1)[0];
-  if (
-    deriveV0CompatibilityLine(contractsLowerBoundVersion) !== target.contracts.line ||
-    deriveV0CompatibilityRange(contractsLowerBoundVersion) !== target.contracts.range
-  ) {
-    errors.push("package install plan target contracts line must match contracts range");
+  if (!isV0SemverVersion(target.contracts.version)) {
+    errors.push("package install plan target contracts.version must be an exact v0 SemVer version");
   }
 
   if (target.runtimeAbiRange !== undefined) {
     const runtimeAbiLowerBoundVersion = target.runtimeAbiRange.slice(2).split(" ", 1)[0];
-    if (deriveV0CompatibilityRange(runtimeAbiLowerBoundVersion) !== target.runtimeAbiRange) {
-      errors.push("package install plan target runtimeAbiRange must be a current v0 compatibility range");
+    if (deriveCurrentV0VersionRange(runtimeAbiLowerBoundVersion) !== target.runtimeAbiRange) {
+      errors.push("package install plan target runtimeAbiRange must be a current v0 semver range");
     }
   }
 
@@ -576,6 +573,12 @@ function validatePackageInstallPlanLockEntryV01Semantics(
   lockEntry: ProjectPackageLockEntryV01
 ): string[] {
   const errors: string[] = [];
+
+  if (!isV0SemverVersion(lockEntry.contractsVersion)) {
+    errors.push(
+      `package install plan lock ${lockEntry.id} contractsVersion must be an exact v0 SemVer version`
+    );
+  }
 
   if (lockEntry.category === "patch") {
     if (lockEntry.runtimeAbiRange !== undefined) {
@@ -719,8 +722,8 @@ function validatePackageInstallPlanRequestV01Semantics(
 
   if (request.desired.versionRange !== undefined) {
     const desiredLowerBoundVersion = request.desired.versionRange.slice(2).split(" ", 1)[0];
-    if (deriveV0CompatibilityRange(desiredLowerBoundVersion) !== request.desired.versionRange) {
-      errors.push("package install plan desired versionRange must be a current v0 compatibility range");
+    if (deriveCurrentV0VersionRange(desiredLowerBoundVersion) !== request.desired.versionRange) {
+      errors.push("package install plan desired versionRange must be a current v0 semver range");
     }
   }
 
@@ -758,6 +761,11 @@ function validatePackageInstallPlanRequestV01Semantics(
     if (candidate.listing.packageId !== request.packageId) {
       errors.push(`package install plan candidate ${candidate.listing.packageId} does not match request packageId ${request.packageId}`);
     }
+    if (candidate.listing.contracts.version !== request.target.contracts.version) {
+      errors.push(
+        `package install plan candidate ${candidate.listing.packageId} contracts.version ${candidate.listing.contracts.version} does not match target ${request.target.contracts.version}`
+      );
+    }
 
     if (candidate.manifest !== undefined) {
       errors.push(...validatePackageManifestV01Semantics(candidate.manifest));
@@ -766,6 +774,11 @@ function validatePackageInstallPlanRequestV01Semantics(
       }
       if (candidate.manifest.version !== candidate.listing.version) {
         errors.push(`package install plan candidate manifest version ${candidate.manifest.version} does not match listing version ${candidate.listing.version}`);
+      }
+      if (candidate.manifest.contracts.version !== candidate.listing.contracts.version) {
+        errors.push(
+          `package install plan candidate manifest contracts.version ${candidate.manifest.contracts.version} does not match listing contracts.version ${candidate.listing.contracts.version}`
+        );
       }
     }
   }
@@ -834,9 +847,17 @@ function validateProjectPackageReferencesV01(project: ProjectDocumentV01): strin
         `package dependency ${dependency.packageId} lockEntryId ${dependency.lockEntryId} points to package ${lockEntry.packageId}`
       );
     }
-    if (!satisfiesV0CompatibilityRange(lockEntry.version, dependency.versionRange)) {
+    if (!satisfiesCurrentV0VersionRange(lockEntry.version, dependency.versionRange)) {
       errors.push(
         `package dependency ${dependency.packageId} locked version ${lockEntry.version} does not satisfy ${dependency.versionRange}`
+      );
+    }
+  }
+
+  for (const lockEntry of packageLock) {
+    if (!isV0SemverVersion(lockEntry.contractsVersion)) {
+      errors.push(
+        `package lock ${lockEntry.id} contractsVersion must be an exact v0 SemVer version`
       );
     }
   }
@@ -2546,26 +2567,19 @@ function validateCompatibilityMatrixV01Semantics(matrix: CompatibilityMatrixV01)
   }
 
   try {
-    const expectedLine = deriveV0CompatibilityLine(contractsNpm.version);
-    const expectedRange = deriveV0CompatibilityRange(contractsNpm.version);
-    if (matrix["contracts-line"] !== expectedLine) {
-      errors.push(`contracts-line must be ${expectedLine}`);
-    }
-    if (matrix["contracts-range"] !== expectedRange) {
-      errors.push(`contracts-range must be ${expectedRange}`);
-    }
-    if (deriveV0CompatibilityLine(contractsCrate.version) !== expectedLine) {
-      errors.push("contracts npm and crate versions must be on the same v0 compatibility line");
-    }
+    assertV0SemverVersion(contractsNpm.version);
   } catch (error) {
     errors.push((error as Error).message);
   }
 
-  if (!satisfiesV0CompatibilityRange(contractsNpm.version, matrix.components.sdk["supported-contracts-range"])) {
-    errors.push("sdk supported-contracts-range must include the Contracts package version");
+  if (matrix["contracts-version"] !== contractsNpm.version) {
+    errors.push("contracts-version must match components.contracts.npm.version");
   }
-  if (!satisfiesV0CompatibilityRange(contractsNpm.version, matrix["contracts-range"])) {
-    errors.push("contracts-range must include the Contracts package version");
+  if (contractsCrate.version !== contractsNpm.version) {
+    errors.push("contracts npm and crate versions must be the exact same Contracts version");
+  }
+  if (matrix.components.sdk["required-contracts-version"] !== contractsNpm.version) {
+    errors.push("sdk required-contracts-version must match the Contracts package version");
   }
 
   return errors;

@@ -12,8 +12,7 @@
     "arch": "x86_64",
     "triple": "aarch64-apple-darwin",
     "contracts": {
-      "line": "0.45",
-      "range": ">=0.45.0 <0.46.0"
+      "version": "0.45.0"
     }
   },
   "current": {
@@ -36,12 +35,11 @@
         ],
         "license": "Apache-2.0",
         "contracts": {
-          "line": "0.45",
-          "range": ">=0.45.0 <0.46.0"
+          "version": "0.45.0"
         },
         "targetSupport": {
           "kind": "target-independent",
-          "summary": "Patch packages run on every Runtime target that supports this Contracts line."
+          "summary": "Patch packages run on every Runtime target that supports this Contracts version."
         },
         "provides": {
           "patches": [

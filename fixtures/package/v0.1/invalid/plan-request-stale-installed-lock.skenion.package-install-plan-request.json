@@ -12,8 +12,7 @@
     "arch": "aarch64",
     "triple": "aarch64-apple-darwin",
     "contracts": {
-      "line": "0.45",
-      "range": ">=0.45.0 <0.46.0"
+      "version": "0.45.0"
     }
   },
   "current": {
@@ -27,13 +26,12 @@
         "source": "marketplace",
         "root": "marketplace-install",
         "trust": "trusted",
-        "contractsLine": "0.45",
-        "contractsRange": ">=0.45.0 <0.46.0",
         "manifestPath": "registry/skenion/examples/0.45.0/skenion.package.json",
         "manifestChecksum": {
           "algorithm": "sha256",
           "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        }
+        },
+        "contractsVersion": "0.45.0"
       }
     ],
     "objectBindings": []
@@ -50,8 +48,7 @@
         "category": "patch",
         "license": "Apache-2.0",
         "contracts": {
-          "line": "0.45",
-          "range": ">=0.45.0 <0.46.0"
+          "version": "0.45.0"
         },
         "targetSupport": {
           "kind": "target-independent"

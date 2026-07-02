@@ -1,11 +1,9 @@
 import { contractsPackageVersion } from "./generated/package-version.js";
 
-const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const V0_RANGE_PATTERN = /^>=(0|[1-9]\d*)\.(0|[1-9]\d*)\.0 <(0|[1-9]\d*)\.(0|[1-9]\d*)\.0$/;
 
 export const CONTRACTS_PACKAGE_VERSION = contractsPackageVersion;
-export const CONTRACTS_COMPATIBILITY_LINE = deriveV0CompatibilityLine(CONTRACTS_PACKAGE_VERSION);
-export const CONTRACTS_COMPATIBILITY_RANGE = deriveV0CompatibilityRange(CONTRACTS_PACKAGE_VERSION);
 
 interface ParsedVersion {
   major: number;
@@ -26,16 +24,22 @@ function parseSemver(version: string): ParsedVersion {
   };
 }
 
-export function deriveV0CompatibilityLine(version: string): string {
+export function isV0SemverVersion(version: string): boolean {
+  try {
+    return parseSemver(version).major === 0;
+  } catch {
+    return false;
+  }
+}
+
+export function assertV0SemverVersion(version: string): void {
   const parsed = parseSemver(version);
   if (parsed.major !== 0) {
     throw new TypeError(`expected v0 SemVer version, found ${version}`);
   }
-
-  return `0.${parsed.minor}`;
 }
 
-export function deriveV0CompatibilityRange(version: string): string {
+export function deriveCurrentV0VersionRange(version: string): string {
   const parsed = parseSemver(version);
   if (parsed.major !== 0) {
     throw new TypeError(`expected v0 SemVer version, found ${version}`);
@@ -44,15 +48,11 @@ export function deriveV0CompatibilityRange(version: string): string {
   return `>=0.${parsed.minor}.0 <0.${parsed.minor + 1}.0`;
 }
 
-export function isSameV0CompatibilityLine(leftVersion: string, rightVersion: string): boolean {
-  try {
-    return deriveV0CompatibilityLine(leftVersion) === deriveV0CompatibilityLine(rightVersion);
-  } catch {
-    return false;
-  }
+export function isExactContractsPackageVersion(version: string): boolean {
+  return version === CONTRACTS_PACKAGE_VERSION;
 }
 
-export function satisfiesV0CompatibilityRange(version: string, range: string): boolean {
+export function satisfiesCurrentV0VersionRange(version: string, range: string): boolean {
   const versionMatch = SEMVER_PATTERN.exec(version);
   const rangeMatch = V0_RANGE_PATTERN.exec(range);
   if (!versionMatch || !rangeMatch) {

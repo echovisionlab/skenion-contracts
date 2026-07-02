@@ -64,8 +64,6 @@
       "source": "first-party",
       "root": "package",
       "trust": "trusted",
-      "contractsLine": "0.45",
-      "contractsRange": ">=0.45.0 <0.46.0",
       "manifestPath": "packages/skenion-examples/skenion.package.json",
       "manifestChecksum": {
         "algorithm": "sha256",
@@ -73,7 +71,8 @@
       },
       "evidenceRefs": [
         "manifest-checksum"
-      ]
+      ],
+      "contractsVersion": "0.45.0"
     }
   ],
   "resourceLock": [

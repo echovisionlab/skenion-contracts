@@ -1058,7 +1058,7 @@ pub enum PackageListingArtifactKindV01 {
 #[serde(rename_all = "kebab-case")]
 pub enum PackageListingIssueCodeV01 {
     MalformedListingMetadata,
-    UnsupportedContractsRange,
+    UnsupportedContractsVersion,
     MissingArtifact,
     UnavailableTarget,
     QuarantinedPackage,
@@ -1068,9 +1068,8 @@ pub enum PackageListingIssueCodeV01 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
-pub struct PackageContractsSupportV01 {
-    pub line: String,
-    pub range: String,
+pub struct PackageContractsRequirementV01 {
+    pub version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -1188,7 +1187,7 @@ pub struct PackageManifestV01 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     pub category: PackageCategoryV01,
-    pub contracts: PackageContractsSupportV01,
+    pub contracts: PackageContractsRequirementV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runtime_abi_range: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1348,7 +1347,7 @@ pub struct PackageListingV01 {
     pub homepage_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub repository_url: Option<String>,
-    pub contracts: PackageContractsSupportV01,
+    pub contracts: PackageContractsRequirementV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runtime_abi_range: Option<String>,
     pub target_support: PackageListingTargetSupportV01,
@@ -1412,7 +1411,7 @@ pub enum PackageInstallPlanActionKindV01 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum PackageInstallPlanCheckKindV01 {
-    ContractsLine,
+    ContractsVersion,
     RuntimeAbi,
     TargetTriple,
     Checksum,
@@ -1453,7 +1452,7 @@ pub enum PackageInstallPlanCapabilityKindV01 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum PackageInstallPlanIssueCodeV01 {
-    IncompatibleContractsLine,
+    IncompatibleContractsVersion,
     IncompatibleRuntimeAbi,
     UnsupportedTarget,
     MissingArtifact,
@@ -1483,7 +1482,7 @@ pub struct PackageInstallPlanTargetV01 {
     pub os: PackageInstallPlanTargetOsV01,
     pub arch: PackageInstallPlanTargetArchV01,
     pub triple: PackageTargetTripleV01,
-    pub contracts: PackageContractsSupportV01,
+    pub contracts: PackageContractsRequirementV01,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runtime_abi_range: Option<String>,
 }
@@ -1653,8 +1652,7 @@ pub struct ProjectPackageLockEntryV01 {
     pub source: PackageSourceV01,
     pub root: PackageRootKindV01,
     pub trust: PackageTrustV01,
-    pub contracts_line: String,
-    pub contracts_range: String,
+    pub contracts_version: String,
     pub manifest_path: String,
     pub manifest_checksum: PackageChecksumV01,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
