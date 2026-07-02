@@ -2984,7 +2984,7 @@ fn validate_optional_realtime_node_catalog_snapshot(
     };
     validate_node_catalog_snapshot_v01(snapshot)
         .map(|_| Vec::new())
-        .unwrap_or_else(|report| report.errors().iter().cloned().collect())
+        .unwrap_or_else(|report| report.errors().to_vec())
 }
 
 fn validate_realtime_command_metadata(
